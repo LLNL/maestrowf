@@ -181,7 +181,7 @@ def main():
 
     if uinput.lower() in ACCEPTED_INPUT:
         # Launch manager with nohup
-        cmd = ["nohup", "manager",
+        cmd = ["nohup", "conductor",
                "-t", str(args.sleeptime),
                "-d", str(args.debug_lvl),
                path,
