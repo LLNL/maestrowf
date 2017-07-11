@@ -11,8 +11,8 @@ setup(name='maestrowf',
       packages=find_packages(),
       entry_points={
         'console_scripts': [
-            'maestro = maestrowf.launcher:main',
-            'conductor = maestrowf.manager:main',
+            'maestro = maestrowf.maestro:main',
+            'conductor = maestrowf.conductor:main',
         ]
       },
       install_requires=[
