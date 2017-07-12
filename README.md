@@ -1,4 +1,15 @@
 # Maestro Workflow Conductor (MaestroWF)
+.. image:: https://img.shields.io/github/issues/LLNL/maestrowf.svg
+   :target: https://github.com/LLNL/maestrowf/issues
+
+.. image:: https://img.shields.io/github/forks/LLNL/maestrowf.svg
+   :target: https://github.com/LLNL/maestrowf/network
+
+.. image:: https://img.shields.io/github/stars/LLNL/maestrowf.svg
+   :target: https://github.com/LLNL/maestrowf/stargazers
+
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
+   :target: https://raw.githubusercontent.com/LLNL/maestrowf/master/LICENSE
 
 A Python package that implements the workflow and run specification. The
 package provides users with a generalized way to define a workflow, configure
