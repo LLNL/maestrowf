@@ -7,7 +7,8 @@
 # All rights reserved.
 # This file is part of MaestroWF, Version: 1.0.0.
 #
-# For details, see <URL describing code and how to download source>.
+# For details, see https://github.com/LLNL/maestrowf\.
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
