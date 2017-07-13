@@ -1,37 +1,21 @@
-VENV = venv
 DOCS = docs
 EGG = $(wildcard *.egg-info)
 
-all:
-	$(MAKE) cleanall
-	$(MAKE) wheel
-	$(MAKE) clean
+.PHONY: cleanall clean cleandocs docs
+
+all: cleanall release docs
+
+release:
+	python setup.py sdist bdist_wheel
+
+docs:
+	$(MAKE) -C $(DOCS) html
 
 clean:
-	rm -rf $(VENV)
+	rm -rf dist
+	rm -rf build
 
 cleandocs:
-	rm -rf $(DOCS)/build/
+	rm -rf $(DOCS)/build
 
-cleanall:
-	$(MAKE) clean
-	rm -rf build/
-	rm -rf dist/
-	rm -rf $(EGG)
-
-venv: $(VENV)/bin/activate
-
-$(VENV)/bin/activate: requirements.txt
-	test -d $(VENV) || python -m virtualenv $(VENV)
-	$(VENV)/bin/pip install -U pip setuptools
-	$(VENV)/bin/pip install -Ur requirements.txt
-	touch $(VENV)/bin/activate
-
-test: venv
-	$(VENV)/bin/nosetests
-
-wheel: venv
-	$(VENV)/bin/python setup.py bdist_wheel
-
-sphinx: venv
-	source $(VENV)/bin/activate && cd $(DOCS) && make html
+cleanall: clean cleandocs

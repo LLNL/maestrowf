@@ -138,18 +138,6 @@ as well. Those responsibilities include (but are not limited to):
     - Recognize when a step executes in the global workspace
 - Expanding the abstract flow to the full set of specified parameters.
 
-----------------
-
-## Setup Dev Environment
-
-    % python -m virtualenv venv
-    % source venv/bin/activate    # for bash, if on cshrc use activate.csh
-    % pip install -r requirements
-
-The requirements.txt should install the package in editable mode. If not, you
-can install it via the following:
-
-    % pip install -e .
 
 ----------------
 
@@ -175,45 +163,45 @@ can install it via the following:
 
 ## Calling the CLI
 
-    % sim -h
-
-NOTE: This project is currently in WIP. The command line does not currently do
-much of anything, save for output help.
+    % maestro <some path to a YAML specification>
 
 ----------------
 
-## Building the Documentation
+## Getting Started
 
-### With the Project's Makefile
+To get started, we recommend using virtual environments. If you do not have the
+Python virtual environment package and wrapper installed follow this [guide](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/).
 
-You can build the Sphinx documentation from the project Makefile using:
+### Environment Setup
+If you do not have or use virtualenvwrapper:
 
-    % make sphinx
+    $ python -m virtualenv venv
+    $ source venv/bin/activate
+Otherwise:
 
-This will create a temp virtualenv, install the dependencies, and build the
-documentation.
-
-### With Sphinx's Makefile
-
-You can also build the documentation from the docs directory from the Makefile
-Sphinx provides:
-
-    % cd docs
-    % make html
-
-This will build the docs in your current Python environment so Sphinx will
-need to be installed.
-
-Both will create the HTML documentation in docs/build/html.
+    $ mkvirtualenv venv
 
 
-# Contributors
+Once set up, test the environment. The paths should point to a virtual environment folder.
+
+    $ which python
+    $ which pip
+
+If you plan to develop on MaestroWF, install the repository directly using:
+
+    $ pip install -r requirements.txt
+    $ pip install -e .
+
+----------------
+
+## Contributors
 Many thanks go to MaestroWF's [contributors](https://github.com/LLNL/maestrowf/graphs/contributors).
 
-MaestroWF was created by Francesco Di Natale, dinatale3@llnl.gov.
+If you have any questions, please [open a ticket](https://github.com/llnl/maestrowf/issues).
 
+----------------
 
-# Release
+## Release
 MaestroWF is released under an MIT license.  For more details see the
 NOTICE and LICENSE files.
 
