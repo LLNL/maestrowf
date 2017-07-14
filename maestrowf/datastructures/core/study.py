@@ -840,10 +840,10 @@ class ExecutionGraph(DAG):
             msg = "Job status check failed -- Aborting."
             logger.error(msg)
             raise RuntimeError(msg)
-
         elif retcode == JobStatusCode.OK:
             # For the status of each currently in progress job, check its
             # state.
+            cleanup_steps = set()  # Steps that are in progress showing failed.
             for name, status in job_status.items():
                 logger.debug("Checking job '%s' with status %s.",
                              name, status)
@@ -870,10 +870,8 @@ class ExecutionGraph(DAG):
                                     "failed.", name,
                                     record.num_restarts,
                                     record.restart_limit)
-                        path, parent = self.bfs_subtree(name)
-                        for node in path:
-                            self.failed_steps.add(node)
-                            self.values[node].status = State.FAILED
+                        self.in_progress.remove(name)
+                        cleanup_steps.update(self.bfs_subtree(name)[0])
 
                 elif status == State.HWFAILURE:
                     # TODO: Need to make sure that we do this a finite number
@@ -884,6 +882,20 @@ class ExecutionGraph(DAG):
                     # We can just let the logic below handle submission with
                     # everything else.
                     ready_steps[name] = self.values[name]
+
+                elif status == State.FAILED:
+                    logger.warning(
+                        "Job failure reported. Aborting %s -- flagging all "
+                        "dependent jobs as failed.",
+                        name
+                    )
+                    self.in_progress.remove(name)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
+
+            # Let's handle all the failed steps in one go.
+            for node in cleanup_steps:
+                self.failed_steps.add(node)
+                self.values[node].status = State.FAILED
 
         # Now that we've checked the statuses of existing jobs we need to make
         # sure dependencies haven't been met.
