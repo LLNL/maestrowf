@@ -31,6 +31,7 @@
 from abc import ABCMeta, abstractmethod
 import logging
 import os
+import re
 import six
 import stat
 
@@ -52,9 +53,13 @@ class ScriptAdapter(object):
         - Submitting a script using the proper command.
         - Checking job status.
     """
-
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
+    # Allocation regex and compilation
+    alloc_regex = re.compile(
+        re.escape(launcher_var) +
+        r"(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)"
+    )
 
     def __init__(self):
         """
