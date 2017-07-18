@@ -107,30 +107,26 @@ class SlurmScriptAdapter(ScriptAdapter):
 
         return "\n".join(modified_header)
 
-    def get_parallelize_command(self, step):
+    def get_parallelize_command(self, procs, nodes=1):
         """
         Generate the SLURM parallelization segement of the command line.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the parallelize command configured using step.
+        :param procs: Number of processors to allocate to the parallel call.
+        :param nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+        :returns: A string of the parallelize command configured using nodes
+        and procs.
         """
         args = [
-                # SLURM srun command
-                self._cmd_flags["cmd"],
-                # Job name maps to step name
-                self._cmd_flags["job-name"], step.name,
-                # Comment maps to description
-                self._cmd_flags["comment"], "\"{}\"".format(step.description)
-                ]
-        # If procs is specified, append to the command args.
-        if step.run["procs"]:
-            args.append(self._cmd_flags["ntasks"])
-            args.append(str(int(step.run["procs"])))
-
-        # If nodes is specified, append to the command args.
-        if step.run["nodes"]:
-            args.append(self._cmd_flags["nodes"])
-            args.append(str(int(step.run["nodes"])))
+            # SLURM srun command
+            self._cmd_flags["cmd"],
+            # Nodes segment
+            self._cmd_flags["nodes"],
+            str(nodes),
+            # Processors segment
+            self._cmd_flags["ntasks"],
+            str(procs)
+        ]
 
         return " ".join(args)
 
