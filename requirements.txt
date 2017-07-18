@@ -16,6 +16,7 @@ nose
 flake8
 pydocstyle
 pylint
+tox
 
 ### Install this package in editable mode
 
