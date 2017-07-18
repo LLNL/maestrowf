@@ -58,7 +58,7 @@ class ScriptAdapter(object):
     # Allocation regex and compilation
     alloc_regex = re.compile(
         re.escape(launcher_var) +
-        r"(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)"
+        r"\[(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)\]"
     )
 
     def __init__(self):
