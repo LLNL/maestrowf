@@ -9,3 +9,4 @@ nose
 flake8
 pydocstyle
 pylint
+tox

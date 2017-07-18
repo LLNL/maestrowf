@@ -8,3 +8,6 @@ venv
 
 # Doxygen output
 docs/html/
+
+# Testing output
+.tox/
