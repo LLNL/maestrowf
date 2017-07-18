@@ -146,7 +146,7 @@ class ScriptAdapter(object):
         if search:
             LOGGER.debug("Launcher token set up found. cmd={}", step_cmd)
             if len(search) == 1:
-                cmd = step_cmd.replace(search[0].group())
+                cmd = step_cmd.replace(search[0].group(), parallel_cmd)
             else:
                 msg = "'{}' command has more than one instance of {}." \
                     .format(step_cmd, self.launcher_var)
