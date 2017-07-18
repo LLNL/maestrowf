@@ -78,7 +78,7 @@ class SlurmScriptAdapter(ScriptAdapter):
             "bank": "#SBATCH -A {bank}",
             "walltime": "#SBATCH -t {walltime}",
             "job-name": "#SBATCH -J {job-name}",
-            "comment": "#SBATCH --comment {comment}"
+            "comment": "#SBATCH --comment \"{comment}\""
         }
 
         self._cmd_flags = {
