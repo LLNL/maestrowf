@@ -132,10 +132,11 @@ class ScriptAdapter(object):
                 alloc_nodes = match.group("nodes")
                 alloc_procs = match.group("procs")
                 # Compute the number of nodes and procs used so far.
-                num_nodes += alloc_nodes
-                num_procs += alloc_procs
+                num_nodes += int(alloc_nodes)
+                num_procs += int(alloc_procs)
                 # Compute the parallel command.
-                parallel_cmd = self.get_parallelize_command(procs, nodes)
+                parallel_cmd = \
+                    self.get_parallelize_command(alloc_nodes, alloc_nodes)
                 # Substitute the match with the parallel command.
                 cmd = cmd.replace(match.group(), parallel_cmd)
             # Return the number of nodes, procs, and the new command.
