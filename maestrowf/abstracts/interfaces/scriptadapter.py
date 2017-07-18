@@ -121,7 +121,7 @@ class ScriptAdapter(object):
         search = list(re.finditer(self.alloc_regex, step_cmd))
         cmd = step_cmd
         if search:
-            LOGGER.debug("Allocation setup found. cmd={}", step_cmd)
+            LOGGER.debug("Allocation setup found. cmd=%s", step_cmd)
             # Need to check if the number of processors and nodes is less
             # than the total requested.
             num_procs = 0
@@ -144,7 +144,7 @@ class ScriptAdapter(object):
         parallel_cmd = self.get_parallelize_command(procs, nodes)
         search = list(re.finditer(re.escape(self.launcher_var), step_cmd))
         if search:
-            LOGGER.debug("Launcher token set up found. cmd={}", step_cmd)
+            LOGGER.debug("Launcher token set up found. cmd=%s", step_cmd)
             if len(search) == 1:
                 cmd = step_cmd.replace(search[0].group(), parallel_cmd)
             else:
@@ -154,6 +154,7 @@ class ScriptAdapter(object):
                 raise ValueError(msg)
             return nodes, procs, cmd
         # 3. Otherwise, just prepend the command to the front.
+        LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
         return nodes, procs, " ".join([parallel_cmd, step_cmd])
 
     def get_scheduler_command(self, step):
