@@ -31,10 +31,10 @@
 
 import logging
 
-from gitdependency import GitDependency
-from pathdependency import PathDependency
-from script import Script
-from variable import Variable
+from maestrowf.datastructures.environment.gitdependency import GitDependency
+from maestrowf.datastructures.environment.pathdependency import PathDependency
+from maestrowf.datastructures.environment.script import Script
+from maestrowf.datastructures.environment.variable import Variable
 
 logger = logging.getLogger(__name__)
 __all__ = ("GitDependency", "PathDependency", "Script", "Variable")
