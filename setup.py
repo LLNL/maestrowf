@@ -23,7 +23,7 @@ setup(name='maestrowf',
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
-        'Operating System :: OS Independent',
+        'Operating System :: Unix',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
