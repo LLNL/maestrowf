@@ -76,16 +76,16 @@ class SlurmScriptAdapter(ScriptAdapter):
             "nodes": "#SBATCH -N {nodes}",
             "queue": "#SBATCH -p {queue}",
             "bank": "#SBATCH -A {bank}",
-            "walltime": "#SBATCH -t {walltime}"
+            "walltime": "#SBATCH -t {walltime}",
+            "job-name": "#SBATCH -J {job-name}",
+            "comment": "#SBATCH --comment {comment}"
         }
 
         self._cmd_flags = {
             "cmd": "srun",
             "depends": "--dependency",
-            "job-name": "-J",
             "ntasks": "-n",
             "nodes": "-N",
-            "comment": "--comment"
         }
 
     def get_header(self, step):
@@ -100,6 +100,8 @@ class SlurmScriptAdapter(ScriptAdapter):
         batch_header = dict(self._batch)
         batch_header["walltime"] = run.pop("walltime")
         batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
+        batch_header["job-name"] = step.name
+        batch_header["comment"] = step.description
 
         modified_header = [self._exec]
         for key, value in self._header.items():
