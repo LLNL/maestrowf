@@ -40,8 +40,8 @@ wide concepts of a Study, Environment, and Parameter generation.
 
 import logging
 
-from dag import DAG
-from yamlspecification import YAMLSpecification
+from maestrowf.datastructures.dag import DAG
+from maestrowf.datastructures.yamlspecification import YAMLSpecification
 
 
 __all__ = ("DAG", "YAMLSpecification")
