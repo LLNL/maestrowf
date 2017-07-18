@@ -1,10 +1,3 @@
-# If on LC Cluster
--f /usr/gapps/python/wheelhouse
-
-# If on LLNL Network
---trusted-host www-lc.llnl.gov
--f http://www-lc.llnl.gov/python/wheelhouse/
-
 enum34
 fabric
 coverage
@@ -16,7 +9,4 @@ nose
 flake8
 pydocstyle
 pylint
-
-### Install this package in editable mode
-
--e .
+tox
