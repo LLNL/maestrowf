@@ -112,9 +112,11 @@ class ScriptAdapter(object):
         :param step_cmd: Command string to parallelize.
         :param nodes: Total number of requested nodes.
         :param prcos: Total number of requested processors.
-        :returns: A tuple containing the number of total nodes, total
-        processors, and the command with allocation substitutions.
+        :returns: The new command with all allocations substituted.
         """
+        err_msg = "{} attempting to allocate {} {} for a parallel call with" \
+                  " a maximum allocation of {}"
+
         # We have three things that can happen.
         # 1. We are partitioning the allocation into smaller chunks.
         # We need to check for the launcher tag with specified values.
@@ -122,25 +124,39 @@ class ScriptAdapter(object):
         cmd = step_cmd
         if search:
             LOGGER.debug("Allocation setup found. cmd=%s", step_cmd)
-            # Need to check if the number of processors and nodes is less
-            # than the total requested.
-            num_procs = 0
-            num_nodes = 0
             for match in search:
                 # For each regex match that we found do:
                 # Collect the nodes and procs in the launch allocation.
                 alloc_nodes = match.group("nodes")
                 alloc_procs = match.group("procs")
-                # Compute the number of nodes and procs used so far.
-                num_nodes += int(alloc_nodes)
-                num_procs += int(alloc_procs)
+                # Compare the allocation to step allocation.
+                if int(alloc_nodes) > nodes:
+                    msg = err_msg.format(
+                        match.group(),
+                        alloc_nodes,
+                        "nodes",
+                        nodes
+                    )
+                    LOGGER.error(msg)
+                    raise ValueError(msg)
+                if int(alloc_procs) > procs:
+                    msg = err_msg.format(
+                        match.group(),
+                        alloc_procs,
+                        "procs",
+                        procs
+                    )
+                    LOGGER.error(msg)
+                    raise ValueError(msg)
                 # Compute the parallel command.
-                parallel_cmd = \
-                    self.get_parallelize_command(alloc_nodes, alloc_nodes)
+                parallel_cmd = self.get_parallelize_command(
+                    alloc_procs,
+                    alloc_nodes
+                )
                 # Substitute the match with the parallel command.
                 cmd = cmd.replace(match.group(), parallel_cmd)
-            # Return the number of nodes, procs, and the new command.
-            return num_nodes, num_procs, cmd
+            # Return the new command.
+            return cmd
         # 2. If not allocating,then sub in for launcher if it exists.
         parallel_cmd = self.get_parallelize_command(procs, nodes)
         search = list(re.finditer(re.escape(self.launcher_var), step_cmd))
@@ -153,10 +169,10 @@ class ScriptAdapter(object):
                     .format(step_cmd, self.launcher_var)
                 LOGGER.error(msg)
                 raise ValueError(msg)
-            return nodes, procs, cmd
+            return cmd
         # 3. Otherwise, just prepend the command to the front.
         LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
-        return nodes, procs, " ".join([parallel_cmd, step_cmd])
+        return " ".join([parallel_cmd, step_cmd])
 
     def get_scheduler_command(self, step):
         """
@@ -184,63 +200,20 @@ class ScriptAdapter(object):
         step_procs = step.run.get("procs")
         if step_nodes or step_procs:
             to_be_scheduled = True
-            nodes, procs, cmd = \
-                self._substitute_parallel_command(
-                    step.run["cmd"],
-                    step_nodes,
-                    step_procs
-                )
-            # Sanity check the number of nodes and procs used.
-            # 1. If the step requires less than requested, correct.
-            if nodes < step_nodes:
-                step.run["nodes"] = nodes
-            if procs < step_procs:
-                step.run["procs"] = procs
-            # 2. If the command requests more than the step has allocated,
-            # throw an exception -- we can't correct for this because we
-            # don't know the cluster specifics.
-            msg = None
-            if nodes > step_nodes:
-                msg = "Step '{}' requests {} nodes, however attempts to " \
-                    "allocate {} nodes.".format(step.name, step_nodes, nodes)
-            if procs > step_procs:
-                msg = "Step '{}' requests {} procs, however attempts to " \
-                    "allocate {} procs.".format(step.name, step_procs, procs)
-            if msg:
-                LOGGER.error(msg)
-                raise ValueError(msg)
+            cmd = self._substitute_parallel_command(
+                step.run["cmd"],
+                step_nodes,
+                step_procs
+            )
 
             # Also check for the restart command and parallelize it too.
             restart = ""
             if step.run["restart"]:
-                nodes, procs, cmd = \
-                    self._substitute_parallel_command(
-                        step.run["restart"],
-                        step_nodes,
-                        step_procs
-                    )
-                # If the command requests more than the step has allocated,
-                # throw an exception -- we can't correct for this because we
-                # don't know the cluster specifics.
-                msg = None
-                if nodes > step_nodes:
-                    msg = "Step '{}' requests {} nodes, however attempts " \
-                        " to allocate {} nodes.".format(
-                            step.name,
-                            step_nodes,
-                            nodes
-                        )
-                if procs > step_procs:
-                    msg = "Step '{}' requests {} procs, however attempts " \
-                        " to allocate {} prcos.".format(
-                            step.name,
-                            step_procs,
-                            procs
-                        )
-                if msg:
-                    LOGGER.error(msg)
-                    raise ValueError(msg)
-
+                cmd = self._substitute_parallel_command(
+                    step.run["restart"],
+                    step_nodes,
+                    step_procs
+                )
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
         # Otherwise, just return the command. It doesn't need scheduling.
         else:
