@@ -38,6 +38,7 @@ from maestrowf.datastructures.core import ParameterGenerator, \
                                            StudyEnvironment, \
                                            StudyStep
 from maestrowf.datastructures import environment
+from maestrowf.utils import apply_function
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,30 @@ class YAMLSpecification(Specification):
         self.study = []
         self.globals = {}
 
+    def __add__(self, other):
+        """
+        Merge two YAMLSpecification instances.
+
+        :param other: Another YAMLSpecification to merge into this instance.
+        """
+        if not isinstance(other, YAMLSpecification):
+            msg = "Attempting to merge an object of type '{}' with an " \
+                  "instance of a YAMLSpecification class.".format(type(other))
+            logger.error(msg)
+            raise TypeError(msg)
+
+        tmp = YAMLSpecification()
+        tmp.__dict__.update(self.__dict__)
+        return tmp
+
+    def __radd__(self, other):
+        """
+        Merge two YAMLSpecification instances. (Reverse add)
+
+        :param other: Another YAMLSpecification to merge into this instance.
+        """
+        return self.__add__(other)
+
     @classmethod
     def load_specification(cls, path):
         """
@@ -112,9 +137,7 @@ class YAMLSpecification(Specification):
         specification.study = spec.pop("study", [])
         specification.globals = spec.pop("global.parameters", {})
 
-        logger.debug("Specification object created. Verifying...")
-        specification.verify()
-        logger.debug("Returning verified specification.")
+        logger.debug("Specification object created.")
         return specification
 
     def verify(self):
