@@ -38,7 +38,6 @@ from maestrowf.datastructures.core import ParameterGenerator, \
                                            StudyEnvironment, \
                                            StudyStep
 from maestrowf.datastructures import environment
-from maestrowf.utils import apply_function
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +75,18 @@ class YAMLSpecification(Specification):
         The Specification class contains all the information represented
         """
         self.path = ""
-        self.description = {}
-        self.environment = {}
+        self.description = {
+            "name": "",
+            "description": ""
+        }
+        self.environment = {
+            "variables": {},
+            "labels:": {},
+            "dependencies": {
+                "path": [],
+                "git": []
+            }
+        }
         self.batch = {}
         self.study = []
         self.globals = {}
@@ -127,15 +136,13 @@ class YAMLSpecification(Specification):
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
         specification.path = path
-        specification.description = spec.pop("description", {})
-        specification.environment = spec.pop("env",
-                                             {'variables': {},
-                                              'sources': [],
-                                              'labels': {},
-                                              'dependencies': {}})
-        specification.batch = spec.pop("batch", {})
-        specification.study = spec.pop("study", [])
-        specification.globals = spec.pop("global.parameters", {})
+        specification.description = spec.pop("description")
+        specification.environment = \
+            spec.pop("env", specification.environment)
+        specification.batch = spec.pop("batch", specification.batch)
+        specification.study = spec.pop("study", specification.study)
+        specification.globals = \
+            spec.pop("global.parameters", specification.globals)
 
         logger.debug("Specification object created.")
         return specification
