@@ -190,9 +190,28 @@ class YAMLSpecification(Specification):
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
         specification.path = path
-        specification.description = spec.pop("description")
-        specification.environment = \
-            spec.pop("env", specification.environment)
+        specification.description.update(spec.pop("description", {}))
+
+        env = spec.pop("env", specification.environment)
+        if "variables" in env:
+            specification.environment["variables"].update(env["variables"])
+        if "labels" in env:
+            specification.environment["labels"].update(env["labels"])
+        if "dependencies" in env:
+            if "paths" in env["dependencies"]:
+                env_dict = {
+                    item["name"]: item["path"]
+                    for item in env["dependencies"]["paths"]
+                }
+                spec_dict = {
+                    item["name"]: item["path"]
+                    for item in specification
+                    .environment["dependencies"]["paths"]
+                }
+                spec_dict.update(env_dict)
+                specification.environment["dependencies"]["paths"] = \
+                    [{"name": key, "path": value} for key, value in spec_dict]
+
         specification.batch = spec.pop("batch", specification.batch)
         specification.study = spec.pop("study", specification.study)
         specification.globals = \
