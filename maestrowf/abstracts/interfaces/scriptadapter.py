@@ -111,7 +111,7 @@ class ScriptAdapter(object):
 
         :param step_cmd: Command string to parallelize.
         :param nodes: Total number of requested nodes.
-        :param prcos: Total number of requested processors.
+        :param procs: Total number of requested processors.
         :returns: The new command with all allocations substituted.
         """
         err_msg = "{} attempting to allocate {} {} for a parallel call with" \
