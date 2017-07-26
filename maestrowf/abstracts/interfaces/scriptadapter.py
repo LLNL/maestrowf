@@ -31,6 +31,7 @@
 from abc import ABCMeta, abstractmethod
 import logging
 import os
+import re
 import six
 import stat
 
@@ -52,9 +53,13 @@ class ScriptAdapter(object):
         - Submitting a script using the proper command.
         - Checking job status.
     """
-
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
+    # Allocation regex and compilation
+    alloc_regex = re.compile(
+        re.escape(launcher_var) +
+        r"\[(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)\]"
+    )
 
     def __init__(self):
         """
@@ -88,14 +93,86 @@ class ScriptAdapter(object):
         pass
 
     @abstractmethod
-    def get_parallelize_command(self, step):
+    def get_parallelize_command(self, procs, nodes=1):
         """
         Generate the parallelization segement of the command line.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the parallelize command configured using step.
+        :param procs: Number of processors to allocate to the parallel call.
+        :param nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+        :returns: A string of the parallelize command configured using nodes
+        and procs.
         """
         pass
+
+    def _substitute_parallel_command(self, step_cmd, nodes, procs):
+        """
+        Substitute parallelized segements into a specified command.
+
+        :param step_cmd: Command string to parallelize.
+        :param nodes: Total number of requested nodes.
+        :param procs: Total number of requested processors.
+        :returns: The new command with all allocations substituted.
+        """
+        err_msg = "{} attempting to allocate {} {} for a parallel call with" \
+                  " a maximum allocation of {}"
+
+        # We have three things that can happen.
+        # 1. We are partitioning the allocation into smaller chunks.
+        # We need to check for the launcher tag with specified values.
+        search = list(re.finditer(self.alloc_regex, step_cmd))
+        cmd = step_cmd
+        if search:
+            LOGGER.debug("Allocation setup found. cmd=%s", step_cmd)
+            for match in search:
+                # For each regex match that we found do:
+                # Collect the nodes and procs in the launch allocation.
+                alloc_nodes = match.group("nodes")
+                alloc_procs = match.group("procs")
+                # Compare the allocation to step allocation.
+                if int(alloc_nodes) > nodes:
+                    msg = err_msg.format(
+                        match.group(),
+                        alloc_nodes,
+                        "nodes",
+                        nodes
+                    )
+                    LOGGER.error(msg)
+                    raise ValueError(msg)
+                if int(alloc_procs) > procs:
+                    msg = err_msg.format(
+                        match.group(),
+                        alloc_procs,
+                        "procs",
+                        procs
+                    )
+                    LOGGER.error(msg)
+                    raise ValueError(msg)
+                # Compute the parallel command.
+                parallel_cmd = self.get_parallelize_command(
+                    alloc_procs,
+                    alloc_nodes
+                )
+                # Substitute the match with the parallel command.
+                cmd = cmd.replace(match.group(), parallel_cmd)
+            # Return the new command.
+            return cmd
+        # 2. If not allocating,then sub in for launcher if it exists.
+        parallel_cmd = self.get_parallelize_command(procs, nodes)
+        search = list(re.finditer(re.escape(self.launcher_var), step_cmd))
+        if search:
+            LOGGER.debug("Launcher token set up found. cmd=%s", step_cmd)
+            if len(search) == 1:
+                cmd = step_cmd.replace(search[0].group(), parallel_cmd)
+            else:
+                msg = "'{}' command has more than one instance of {}." \
+                    .format(step_cmd, self.launcher_var)
+                LOGGER.error(msg)
+                raise ValueError(msg)
+            return cmd
+        # 3. Otherwise, just prepend the command to the front.
+        LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
+        return " ".join([parallel_cmd, step_cmd])
 
     def get_scheduler_command(self, step):
         """
@@ -119,28 +196,25 @@ class ScriptAdapter(object):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        step_nodes = step.run.get("nodes")
+        step_nodes = step.run.get("nodes", 1)
         step_procs = step.run.get("procs")
         if step_nodes or step_procs:
             to_be_scheduled = True
-            # Get the parallelized command.
-            parallel_cmd = self.get_parallelize_command(step)
-            # If we pick up the $(LAUNCHER) token, replace it.
-            if self.launcher_var in step.run["cmd"]:
-                cmd = step.run["cmd"].replace(self.launcher_var, parallel_cmd)
-            else:
-                cmd = " ".join([parallel_cmd, step.run["cmd"]])
+            cmd = self._substitute_parallel_command(
+                step.run["cmd"],
+                step_nodes,
+                step_procs
+            )
 
             # Also check for the restart command and parallelize it too.
             restart = ""
             if step.run["restart"]:
-                if self.launcher_var in step.run["restart"]:
-                    restart = step.run["restart"] \
-                            .replace(self.launcher_var, parallel_cmd)
-                else:
-                    restart = " ".join([parallel_cmd, step.run["restart"]])
-
-                    LOGGER.info("Scheduling workflow step '%s'.", step.name)
+                cmd = self._substitute_parallel_command(
+                    step.run["restart"],
+                    step_nodes,
+                    step_procs
+                )
+            LOGGER.info("Scheduling workflow step '%s'.", step.name)
         # Otherwise, just return the command. It doesn't need scheduling.
         else:
             LOGGER.info("Running workflow step '%s' locally.", step.name)
