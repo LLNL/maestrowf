@@ -83,7 +83,7 @@ class YAMLSpecification(Specification):
             "variables": {},
             "labels:": {},
             "dependencies": {
-                "path": [],
+                "paths": [],
                 "git": []
             }
         }
@@ -103,8 +103,62 @@ class YAMLSpecification(Specification):
             logger.error(msg)
             raise TypeError(msg)
 
-        tmp = YAMLSpecification()
-        tmp.__dict__.update(self.__dict__)
+        tmp = deepcopy(self)
+        # Handle the simpler environment case.
+        tmp.description.update(other.description)
+        tmp.batch.update(other.batch)
+        tmp.environment["variables"].update(other.environment["variables"])
+        tmp.environment["labels"].update(other.environment["labels"])
+
+        # Merge dependencies individually.
+        # Path dependencies
+        tmp_dict = {
+            item["name"]: item["path"]
+            for item in tmp.dependencies["paths"]
+        }
+        oth_dict = {
+            item["name"]: item["path"]
+            for item in other.dependencies["paths"]
+        }
+        # Update the paths.
+        tmp_dict.update(oth_dict)
+        tmp.dependencies["paths"] = \
+            [
+                {"name": key, "path": value}
+                for key, value in tmp_dict.items()
+            ]
+
+        # Merge git dependencies.
+        tmp_dict = {
+            item["name"]: (item["path"], item["url"])
+            for item in tmp.dependencies["git"]
+        }
+        oth_dict = {
+            item["name"]: (item["path"], item["url"])
+            for item in other.dependencies["git"]
+        }
+        tmp_dict.update(oth_dict)
+        tmp.dependencies["git"] = \
+            [
+                {"name": key, "path": value[0], "url": value[1]}
+                for key, value in tmp_dict.items()
+            ]
+
+        # Merge the study section
+        steps = {other.study[i].name: i for i in range(0, len(other.study))}
+        for i in range(0, len(tmp.study)):
+            step_name = tmp.study[i]["name"]
+            if step_name in steps:
+                tmp.study[i]["description"] = \
+                    steps[step_name]["description"]
+                tmp.study[i]["run"].update(steps[step_name]["run"])
+                steps.pop(step_name)
+        # Append any other steps that weren't accounted for.
+        tmp.study += steps.items()
+
+        # Merge the global parameters if they exist.
+        tmp.globals.update(other.globals)
+
         return tmp
 
     def __radd__(self, other):
