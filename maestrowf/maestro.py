@@ -65,7 +65,7 @@ def setup_argparser():
 
     parser.add_argument("specification", type=str, help="The path to a Study"
                         " YAML specification that will be loaded and "
-                        "executed.")
+                        "executed.", nargs="+")
     parser.add_argument("-s", "--status", action="store_true",
                         help="Check the status of the ExecutionGraph "
                         "located as specified by the 'directory' "
@@ -147,7 +147,16 @@ def main():
     args = parser.parse_args()
 
     # Load the Specification
-    spec = YAMLSpecification.load_specification(args.specification)
+    specs = \
+        [
+            YAMLSpecification.load_specification(path)
+            for path in args.specification
+        ]
+    spec = YAMLSpecification()
+    for item in specs:
+        spec += item
+
+    print spec.__dict__
     environment = spec.get_study_environment()
     parameters = spec.get_parameters()
     steps = spec.get_study_steps()
@@ -168,7 +177,7 @@ def main():
     exec_dag.set_adapter(adapter)
 
     # Copy the spec to the output directory
-    shutil.copy(args.specification, path)
+    #shutil.copy(args.specification, path)
 
     # Generate scripts
     exec_dag.generate_scripts()
