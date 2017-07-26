@@ -81,7 +81,7 @@ class YAMLSpecification(Specification):
         }
         self.environment = {
             "variables": {},
-            "labels:": {},
+            "labels": {},
             "dependencies": {
                 "paths": [],
                 "git": []
@@ -199,18 +199,11 @@ class YAMLSpecification(Specification):
             specification.environment["labels"].update(env["labels"])
         if "dependencies" in env:
             if "paths" in env["dependencies"]:
-                env_dict = {
-                    item["name"]: item["path"]
-                    for item in env["dependencies"]["paths"]
-                }
-                spec_dict = {
-                    item["name"]: item["path"]
-                    for item in specification
-                    .environment["dependencies"]["paths"]
-                }
-                spec_dict.update(env_dict)
                 specification.environment["dependencies"]["paths"] = \
-                    [{"name": key, "path": value} for key, value in spec_dict]
+                    env["dependencies"]["paths"]
+            if "git" in env["dependencies"]:
+                specification.environment["dependencies"]["git"] = \
+                    env["dependencies"]["git"]
 
         specification.batch = spec.pop("batch", specification.batch)
         specification.study = spec.pop("study", specification.study)
