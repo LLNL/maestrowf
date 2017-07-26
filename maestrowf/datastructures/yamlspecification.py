@@ -145,7 +145,7 @@ class YAMLSpecification(Specification):
             ]
 
         # Merge the study section
-        steps = {other.study[i].name: i for i in range(0, len(other.study))}
+        steps = {other.study[i]["name"]: i for i in range(0, len(other.study))}
         for i in range(0, len(tmp.study)):
             step_name = tmp.study[i]["name"]
             if step_name in steps:
@@ -154,7 +154,7 @@ class YAMLSpecification(Specification):
                 tmp.study[i]["run"].update(steps[step_name]["run"])
                 steps.pop(step_name)
         # Append any other steps that weren't accounted for.
-        tmp.study += steps.items()
+        tmp.study += [other.study[i] for i in steps.values()]
 
         # Merge the global parameters if they exist.
         tmp.globals.update(other.globals)
