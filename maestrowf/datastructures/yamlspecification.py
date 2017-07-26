@@ -179,7 +179,6 @@ class YAMLSpecification(Specification):
             logger.exception(e.message)
             raise
 
-        logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
         specification.path = path
         specification.description.update(spec.pop("description", {}))
