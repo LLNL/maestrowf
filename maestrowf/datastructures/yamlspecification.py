@@ -114,15 +114,15 @@ class YAMLSpecification(Specification):
         # Path dependencies
         tmp_dict = {
             item["name"]: item["path"]
-            for item in tmp.dependencies["paths"]
+            for item in tmp.environment["dependencies"]["paths"]
         }
         oth_dict = {
             item["name"]: item["path"]
-            for item in other.dependencies["paths"]
+            for item in other.environment["dependencies"]["paths"]
         }
         # Update the paths.
         tmp_dict.update(oth_dict)
-        tmp.dependencies["paths"] = \
+        tmp.environment["dependencies"]["paths"] = \
             [
                 {"name": key, "path": value}
                 for key, value in tmp_dict.items()
@@ -131,14 +131,14 @@ class YAMLSpecification(Specification):
         # Merge git dependencies.
         tmp_dict = {
             item["name"]: (item["path"], item["url"])
-            for item in tmp.dependencies["git"]
+            for item in tmp.environment["dependencies"]["git"]
         }
         oth_dict = {
             item["name"]: (item["path"], item["url"])
-            for item in other.dependencies["git"]
+            for item in other.environment["dependencies"]["git"]
         }
         tmp_dict.update(oth_dict)
-        tmp.dependencies["git"] = \
+        tmp.environment["dependencies"]["git"] = \
             [
                 {"name": key, "path": value[0], "url": value[1]}
                 for key, value in tmp_dict.items()
