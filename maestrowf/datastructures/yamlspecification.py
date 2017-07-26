@@ -161,14 +161,6 @@ class YAMLSpecification(Specification):
 
         return tmp
 
-    def __radd__(self, other):
-        """
-        Merge two YAMLSpecification instances. (Reverse add)
-
-        :param other: Another YAMLSpecification to merge into this instance.
-        """
-        return self.__add__(other)
-
     @classmethod
     def load_specification(cls, path):
         """
