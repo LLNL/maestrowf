@@ -156,7 +156,7 @@ def main():
     for item in specs:
         spec += item
 
-    print spec.__dict__
+    spec.verify()
     environment = spec.get_study_environment()
     parameters = spec.get_parameters()
     steps = spec.get_study_steps()
