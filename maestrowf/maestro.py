@@ -157,6 +157,10 @@ def main():
         spec += item
 
     spec.verify()
+
+    LOGGER.info("Running -- %s", spec.name)
+    LOGGER.info("Study Description --\n%s", spec.desc)
+
     environment = spec.get_study_environment()
     parameters = spec.get_parameters()
     steps = spec.get_study_steps()
