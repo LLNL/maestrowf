@@ -263,6 +263,17 @@ class ParameterGenerator(SimObject):
         """
         return self.get_combinations()
 
+    def __bool__(self):
+        """
+        Override for the __bool__ operator.
+
+        :returns: True if the ParameterGenerator instance has values, False
+        otherwise.
+        """
+        return bool(self.parameters)
+
+    __nonzero__ = __bool__
+
     def get_combinations(self):
         """
         Generate all combinations of parameters.
