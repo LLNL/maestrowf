@@ -60,6 +60,15 @@ class StudyEnvironment(SimObject):
 
         logger.debug("Initialized an empty StudyEnvironment.")
 
+    def __bool__(self):
+        """
+        Override for the __bool__ operator.
+
+        :returns: True if the StudyEnvironment instance has values, False
+        otherwise.
+        """
+        return bool(self._names)
+
     @property
     def is_set_up(self):
         """

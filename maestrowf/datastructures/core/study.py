@@ -455,6 +455,42 @@ class Study(DAG):
 
         return global_workspace, dag
 
+    def _setup_linear(self):
+        """
+        Execute a linear workflow without parameters.
+
+        :returns: The path to the study's global workspace and an
+        ExecutionGraph based on linear steps in the study.
+        """
+        # Construct ExecutionGraph
+        dag = ExecutionGraph()
+        dag.add_description(**self.description)
+        # Items to store that should be reset.
+        logger.info("==================================================")
+        logger.info("Constructing linear study '%s'", self.name)
+        logger.info("==================================================")
+
+        # For each step in the Study
+        # Walk the study and add the steps to the ExecutionGraph.
+        for parent, step, node in self.walk_study():
+            # If we find the source node, we can just add it and continue.
+            if step == SOURCE:
+                logger.debug("Source node found.")
+                dag.add_node(SOURCE, None)
+                continue
+
+            # If the step has a restart cmd, set the limit.
+            if node.run["restart"]:
+                rlimit = self._restart_limit
+            else:
+                rlimit = 0
+
+            # Add the step
+            dag.add_step(step, node, self.output.value, rlimit)
+            dag.add_edge(parent, step)
+
+        return self.output.value, dag
+
     def stage(self):
         """
         Method that produces the expanded DAG representing the Study.
@@ -499,7 +535,7 @@ class Study(DAG):
         if self.parameters:
             return self._setup_parameterized()
         else:
-            raise NotImplementedError()
+            return self._setup_linear()
 
 
 class _StepRecord(object):
