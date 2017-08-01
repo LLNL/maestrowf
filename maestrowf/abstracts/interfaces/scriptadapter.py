@@ -205,15 +205,17 @@ class ScriptAdapter(object):
                 step_nodes,
                 step_procs
             )
+            LOGGER.debug("Scheduling command: %s", cmd)
 
             # Also check for the restart command and parallelize it too.
             restart = ""
             if step.run["restart"]:
-                cmd = self._substitute_parallel_command(
+                restart = self._substitute_parallel_command(
                     step.run["restart"],
                     step_nodes,
                     step_procs
                 )
+                LOGGER.debug("Restart command: %s", cmd)
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
         # Otherwise, just return the command. It doesn't need scheduling.
         else:
