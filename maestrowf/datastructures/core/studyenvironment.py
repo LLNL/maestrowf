@@ -100,7 +100,9 @@ class StudyEnvironment(SimObject):
             logger.debug("Tokens: %s", self._tokens)
             name = item.name
             logger.debug("Adding %s of type %s.", item.name, type(item))
-            if any(token in item.value for token in self._tokens):
+            if (
+                    isinstance(item.value, str) and
+                    any(token in item.value for token in self._tokens)):
                 logger.debug("Label detected. Adding %s to labels", item.name)
                 self.labels[item.name] = item
             else:

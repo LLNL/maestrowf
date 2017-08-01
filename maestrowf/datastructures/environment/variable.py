@@ -86,8 +86,8 @@ class Variable(Substitution):
         self._verification("Attempting to substitute a variable that is not"
                            " complete.")
         logger.debug("%s: %s", self.get_var(),
-                     data.replace(self.get_var(), self.value))
-        return data.replace(self.get_var(), self.value)
+                     data.replace(self.get_var(), str(self.value)))
+        return data.replace(self.get_var(), str(self.value))
 
     def _verify(self):
         """
