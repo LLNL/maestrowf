@@ -898,7 +898,7 @@ class ExecutionGraph(DAG):
                     # If we're under the restart limit, attempt a restart.
                     if record.num_restarts < record.restart_limit:
                         logger.info("Step '%s' timedout. Restarting.", name)
-                        self._submit_record(name, record, restart=True)
+                        self._execute_record(name, record, restart=True)
                         record.num_restarts += 1
                     else:
                         logger.info("'%s' has been restarted %s of %s times. "
