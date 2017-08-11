@@ -32,7 +32,7 @@ study:
       run:
           cmd: |
             cd $(OUTPUT_PATH)/lulesh
-            sed -i 's/^CXX = $(MPICXX)/#CXX = $(MPICXX)/' ./Makefile
+            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
             sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
             sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
             sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
