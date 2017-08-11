@@ -38,7 +38,7 @@ import pickle
 from subprocess import PIPE, Popen
 import time
 
-from maestrowf.abstracts import SimObject, ScriptAdapter
+from maestrowf.abstracts import SimObject
 from maestrowf.abstracts.interfaces import JobStatusCode, SubmissionCode
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
@@ -625,18 +625,25 @@ class ExecutionGraph(DAG):
         record = _StepRecord(**data)
         super(ExecutionGraph, self).add_node(name, record)
 
-    def set_adapter(self, adapter):
+    def set_adapter(self, **kwargs):
         """
         Set the adapter used to interface for scheduling tasks.
 
         :param adapter: Instance of a ScriptAdapter interface.
         """
-        if not isinstance(adapter, ScriptAdapter):
-            msg = "ExecutionGraph adapters must be of type 'ScriptAdapter.'"
+        # If we don't see any adapter settings, then we won't use one.
+        if not kwargs:
+            self._adapter_settings = None
+
+        # Otherwise, "type" is not in the kwargs when specfied throw an error.
+        # If we plan to use an adapter, we need to know what type to get.
+        if "type" not in kwargs:
+            msg = "Adapter 'type' must be specified when using an adapter. " \
+                  "Check that 'type' is specified in the adapter settings."
             logger.error(msg)
             raise TypeError(msg)
 
-        self._adapter = adapter
+        self._adapter_settings = kwargs
 
     def add_description(self, name, description):
         """

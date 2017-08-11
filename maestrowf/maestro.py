@@ -164,8 +164,7 @@ def main():
     # TODO: fdinatal - A factory class for adapters needs to be written. For
     # now, assuming SLURM but that'll be changed in the future.
     # Get the adapter specified and add it to the ExecutionGraph.
-    adapter = SlurmScriptAdapter(**spec.batch)
-    exec_dag.set_adapter(adapter)
+    exec_dag.set_adapter(**spec.batch)
 
     # Copy the spec to the output directory
     shutil.copy(args.specification, path)
