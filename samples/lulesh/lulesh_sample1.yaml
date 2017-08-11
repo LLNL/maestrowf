@@ -31,12 +31,13 @@ study:
       description: Build the serial version of LULESH.
       run:
           cmd: |
-            cd lulesh
-            sed 's/^CXX = $(MPICXX)/#CXX = $(MPICXX)/' ./Makefile > ./Makefile
-            sed 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile > ./Makefile
-            sed 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile > ./Makefile
-            sed 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile > ./Makefile
-            sed 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile > ./Makefile
+            cd $(OUTPUT_PATH)/lulesh
+            sed -i 's/^CXX = $(MPICXX)/#CXX = $(MPICXX)/' ./Makefile
+            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
+            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
+            make clean
             make
           depends: [get-lulesh]
 
