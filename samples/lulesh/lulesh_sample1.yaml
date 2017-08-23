@@ -10,13 +10,6 @@ env:
     labels:
         outfile: $(SIZE.label).$(ITERATIONS.label).log
 
-batch:
-    type        : slurm
-    host        : quartz
-    bank        : baasic
-    queue       : pbatch
-    gres        : ignore
-
 study:
     - name: get-lulesh
       description: Download LULESH and extract it.
@@ -32,11 +25,11 @@ study:
       run:
           cmd: |
             cd $(OUTPUT_PATH)/lulesh
-            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
-            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
-            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
-            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
-            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
+            sed -i "" 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
+            sed -i "" 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i "" 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
+            sed -i "" 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i "" 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
             make clean
             make
           depends: [get-lulesh]
