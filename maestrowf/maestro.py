@@ -38,7 +38,6 @@ import sys
 
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
-from maestrowf.interfaces import SlurmScriptAdapter
 from maestrowf.utils import create_parentdir
 
 
@@ -164,7 +163,10 @@ def main():
     # TODO: fdinatal - A factory class for adapters needs to be written. For
     # now, assuming SLURM but that'll be changed in the future.
     # Get the adapter specified and add it to the ExecutionGraph.
-    exec_dag.set_adapter(**spec.batch)
+    if not spec.batch:
+        exec_dag.set_adapter({"type": "local"})
+    else:
+        exec_dag.set_adapter(spec.batch)
 
     # Copy the spec to the output directory
     shutil.copy(args.specification, path)
