@@ -31,6 +31,7 @@
 import logging
 import os
 
+from maestrowf.abstracts.enums import JobStatusCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
 
 LOGGER = logging.getLogger(__name__)
@@ -38,20 +39,20 @@ LOGGER = logging.getLogger(__name__)
 
 class LocalScriptAdapter(ScriptAdapter):
     """
-    A ScriptAdapter class for interfacing with the SLURM cluster scheduler.
+    A ScriptAdapter class for interfacing for local execution.
     """
     def __init__(self, **kwargs):
         """
         Initialize an instance of the LocalScriptAdapter.
 
-        The LocalScriptAdapter is the adapter that is used for
+        The LocalScriptAdapter is the adapter that is used for workflows that
+        will execute on the user's machine. The only configurable aspect to
+        this adapter is the shell that scripts are executed in.
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
         super(LocalScriptAdapter, self).__init__()
 
-        # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
-        # current host is where submission occurs.
         self._exec = kwargs.pop("shell", "#!/bin/bash")
 
     def _write_script(self, ws_path, step):
@@ -93,3 +94,13 @@ class LocalScriptAdapter(ScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    def check_jobs(self, joblist):
+        """
+        For the given job list, query execution status.
+
+        :param joblist: A list of job identifiers to be queried.
+        :returns: The return code of the status query, and a dictionary of job
+        identifiers to their status.
+        """
+        return JobStatusCode.NOJOBS, {}
