@@ -32,7 +32,7 @@ import logging
 
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
 
-__all__ = ("SlurmScriptAdapter")
+__all__ = ("SlurmScriptAdapter", "ScriptAdapterFactory")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -41,7 +41,7 @@ class ScriptAdapterFactory(object):
         "slurm": SlurmScriptAdapter,
     }
 
-    @staticmethod
+    @classmethod
     def get_adapter(cls, adapter_id):
         if adapter_id.lower() not in cls.factories:
             msg = "Adapter '{0}' not found. Specify an adapter that exists" \
@@ -50,3 +50,7 @@ class ScriptAdapterFactory(object):
             raise Exception(msg)
 
         return cls.factories[adapter_id]
+
+    @classmethod
+    def get_valid_adapters(cls):
+        return cls.factories.keys()
