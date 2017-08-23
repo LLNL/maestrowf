@@ -4,12 +4,12 @@ import logging
 import pickle
 from subprocess import PIPE, Popen
 
-from maestrowf.absabstracts import ScriptAdapter
 from maestrowf.abstracts.interfaces import \
     JobStatusCode, \
     SubmissionCode
 from maestrowf.datastructures.core import SOURCE
 from maestrowf.datastructures.dag import DAG
+from maestrowf.interfaces import ScriptAdapterFactory
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +124,16 @@ class ExecutionGraph(DAG):
         """
         Set the adapter used to interface for scheduling tasks.
 
-        :param adapter: Instance of a ScriptAdapter interface.
+        :param adapter: Adapter name to be used when launching the graph.
         """
-        if not isinstance(adapter, ScriptAdapter):
-            msg = "ExecutionGraph adapters must be of type 'ScriptAdapter.'"
+        if not adapter:
+            # If we have no adapter specified, assume sequential execution.
+            self._adapter = None
+            return
+
+        if adapter not in ScriptAdapterFactory.get_valid_adapters():
+            msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
+                  .format(adapter)
             logger.error(msg)
             raise TypeError(msg)
 
@@ -340,9 +346,6 @@ class ExecutionGraph(DAG):
                 self.failed_steps.add(node)
                 self.values[node].status = State.FAILED
 
-    def setup_execution_env(self, process_cnt=4):
-        self._process_pool = Pool(process)
-
     def execute_ready_steps(self):
         """
         Executes any steps whose dependencies are satisfied.
@@ -477,6 +480,11 @@ class ExecutionGraph(DAG):
         steps in the ExecutionGraph. Each ExecutionGraph stores the adapter
         used to generate and execute its scripts.
         """
+        # If the adapter is set to None, just return. Return JobStatusCode.OK
+        # because technically we don't have any jobs running.
+        if not self._adapter:
+            return JobStatusCode.OK, {}
+
         # Set up the job list and the map to get back to step names.
         joblist = []
         jobmap = {}
