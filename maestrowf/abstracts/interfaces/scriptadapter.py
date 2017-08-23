@@ -27,7 +27,7 @@
 # SOFTWARE.
 ###############################################################################
 
-"""Abstract Cluster Interfaces defining the API for interacting with queues."""
+"""Abstract Script Interfaces for generating scripts."""
 from abc import ABCMeta, abstractmethod
 import logging
 import os
@@ -41,7 +41,28 @@ LOGGER = logging.getLogger(__name__)
 class ScriptAdapter(object):
     """
     Abstract class representing the interface for constructing scripts.
+
+    The ScriptAdapter abstract class is meant to provide a consistent high
+    level interface to generate scripts automatically based on an ExecutionDAG.
+    Adapters as a whole should only interface with the ExecutionDAG because it
+    is ultimately the DAG that manages the state of tasks. Adapters attempt to
+    bridge the 'how' in an abstract way such that the interface is refined to
+    methods such as:
+        - Generating a script with the proper syntax to submit.
+        - Submitting a script using the proper command.
+        - Checking job status.
     """
+
+    @abstractmethod
+    def check_jobs(self, joblist):
+        """
+        For the given job list, query execution status.
+
+        :param joblist: A list of job identifiers to be queried.
+        :returns: The return code of the status query, and a dictionary of job
+        identifiers to their status.
+        """
+        pass
 
     @abstractmethod
     def _write_script(self, ws_path, step):
