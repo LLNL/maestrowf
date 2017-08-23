@@ -30,7 +30,6 @@
 """Class related to the construction of study campaigns."""
 
 import copy
-from enum import Enum
 import getpass
 import logging
 import os
@@ -39,30 +38,14 @@ from subprocess import PIPE, Popen
 import time
 
 from maestrowf.abstracts import SimObject
-from maestrowf.abstracts.interfaces import JobStatusCode, SubmissionCode
+from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
+from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import apply_function, create_parentdir
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
-
-
-class State(Enum):
-    """Workflow step state enumeration."""
-
-    INITIALIZED = 0
-    PENDING = 1
-    WAITING = 2
-    RUNNING = 3
-    FINISHING = 4
-    FINISHED = 5
-    QUEUED = 6
-    FAILED = 7
-    INCOMPLETE = 8
-    HWFAILURE = 9
-    TIMEDOUT = 10
-    UNKNOWN = 11
 
 
 class StudyStep(SimObject):
@@ -625,25 +608,30 @@ class ExecutionGraph(DAG):
         record = _StepRecord(**data)
         super(ExecutionGraph, self).add_node(name, record)
 
-    def set_adapter(self, **kwargs):
+    def set_adapter(self, adapter):
         """
         Set the adapter used to interface for scheduling tasks.
 
-        :param adapter: Instance of a ScriptAdapter interface.
+        :param adapter: Adapter name to be used when launching the graph.
         """
-        # If we don't see any adapter settings, then we won't use one.
-        if not kwargs:
-            self._adapter_settings = None
+        if not adapter:
+            # If we have no adapter specified, assume sequential execution.
+            self._adapter = None
+            return
 
-        # Otherwise, "type" is not in the kwargs when specfied throw an error.
-        # If we plan to use an adapter, we need to know what type to get.
-        if "type" not in kwargs:
-            msg = "Adapter 'type' must be specified when using an adapter. " \
-                  "Check that 'type' is specified in the adapter settings."
+        if not isinstance(adapter, dict):
+            msg = "Adapter settings must be contained in a dictionary."
             logger.error(msg)
             raise TypeError(msg)
 
-        self._adapter_settings = kwargs
+        # Check to see that the adapter type is something the
+        if adapter["type"] not in ScriptAdapterFactory.get_valid_adapters():
+            msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
+                  .format(adapter)
+            logger.error(msg)
+            raise TypeError(msg)
+
+        self._adapter = adapter
 
     def add_description(self, name, description):
         """
@@ -747,8 +735,10 @@ class ExecutionGraph(DAG):
                 continue
 
             logger.info("Generating scripts...")
+            adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+            adapter = adapter(**self._adapter)
             to_be_scheduled, cmd_script, restart_script = \
-                self._adapter.write_script(record.workspace, record.step)
+                adapter.write_script(record.workspace, record.step)
             logger.info("Step -- %s\nScript: %s\nRestart: %s\nScheduled?: %s",
                         record.step.name, cmd_script, restart_script,
                         to_be_scheduled)
@@ -779,7 +769,7 @@ class ExecutionGraph(DAG):
             logger.info("Execution returned status OK.")
             return SubmissionCode.OK, pid
         else:
-            logger.warning("Execution returned an error: {}", err)
+            logger.warning("Execution returned an error: {}", str(err))
             return SubmissionCode.ERROR, pid
 
     def _execute_record(self, name, record, restart=False):
@@ -905,7 +895,7 @@ class ExecutionGraph(DAG):
                     # If we're under the restart limit, attempt a restart.
                     if record.num_restarts < record.restart_limit:
                         logger.info("Step '%s' timedout. Restarting.", name)
-                        self._execute_record(name, record, restart=True)
+                        self._submit_record(name, record, restart=True)
                         record.num_restarts += 1
                     else:
                         logger.info("'%s' has been restarted %s of %s times. "
@@ -986,6 +976,11 @@ class ExecutionGraph(DAG):
         steps in the ExecutionGraph. Each ExecutionGraph stores the adapter
         used to generate and execute its scripts.
         """
+        # If the adapter is set to None, just return. Return JobStatusCode.OK
+        # because technically we don't have any jobs running.
+        if self._adapter["type"] == "local":
+            return JobStatusCode.OK, {}
+
         # Set up the job list and the map to get back to step names.
         joblist = []
         jobmap = {}
