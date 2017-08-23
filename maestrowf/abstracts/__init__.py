@@ -42,14 +42,14 @@ structures like a SimObject.
 
 from maestrowf.abstracts.abstractclassmethod import abstractclassmethod
 from maestrowf.abstracts.envobject import Dependency, Source, Substitution
-from maestrowf.abstracts.interfaces.scriptadapter import ScriptAdapter
 from maestrowf.abstracts.graph import Graph
 from maestrowf.abstracts.simobject import SimObject
 from maestrowf.abstracts.specification import Specification
 
 
-__all__ = ("abstractclassmethod", "Dependency", "Graph", "ScriptAdapter",
-           "SimObject", "Singleton", "Source", "Specification", "Substitution")
+__all__ = ("abstractclassmethod", "Dependency", "Graph", "SimObject",
+           "Singleton", "Source", "Specification", "Substitution")
+
 
 class _Singleton(type):
     _instances = {}
