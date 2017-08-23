@@ -26,3 +26,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
+from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+
+__all__ = ("LocalScriptAdapter", "SlurmScriptAdapter")
