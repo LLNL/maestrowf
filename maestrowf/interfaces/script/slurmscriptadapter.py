@@ -34,14 +34,13 @@ import os
 import re
 from subprocess import PIPE, Popen
 
-from maestrowf.abstracts import ScriptAdapter
-from maestrowf.datastructures.core import State
-from maestrowf.abstracts.interfaces import JobStatusCode, SubmissionCode
+from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
+from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
 
 LOGGER = logging.getLogger(__name__)
 
 
-class SlurmScriptAdapter(ScriptAdapter):
+class SlurmScriptAdapter(SchedulerScriptAdapter):
     """
     A ScriptAdapter class for interfacing with the SLURM cluster scheduler.
     """

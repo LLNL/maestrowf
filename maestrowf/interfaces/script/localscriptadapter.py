@@ -27,33 +27,75 @@
 # SOFTWARE.
 ###############################################################################
 
-"""Abstract Script Interfaces for generating scripts."""
-from abc import ABCMeta, abstractmethod
+"""Local interface implementation."""
 import logging
 import os
-import six
-import stat
+from subprocess import PIPE, Popen
+
+from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode
+from maestrowf.abstracts.interfaces import ScriptAdapter
 
 LOGGER = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class ScriptAdapter(object):
+class LocalScriptAdapter(ScriptAdapter):
     """
-    Abstract class representing the interface for constructing scripts.
-
-    The ScriptAdapter abstract class is meant to provide a consistent high
-    level interface to generate scripts automatically based on an ExecutionDAG.
-    Adapters as a whole should only interface with the ExecutionDAG because it
-    is ultimately the DAG that manages the state of tasks. Adapters attempt to
-    bridge the 'how' in an abstract way such that the interface is refined to
-    methods such as:
-        - Generating a script with the proper syntax to submit.
-        - Submitting a script using the proper command.
-        - Checking job status.
+    A ScriptAdapter class for interfacing for local execution.
     """
+    def __init__(self, **kwargs):
+        """
+        Initialize an instance of the LocalScriptAdapter.
 
-    @abstractmethod
+        The LocalScriptAdapter is the adapter that is used for workflows that
+        will execute on the user's machine. The only configurable aspect to
+        this adapter is the shell that scripts are executed in.
+
+        :param **kwargs: A dictionary with default settings for the adapter.
+        """
+        super(LocalScriptAdapter, self).__init__()
+
+        self._exec = kwargs.pop("shell", "#!/bin/bash")
+
+    def _write_script(self, ws_path, step):
+        """
+        Write a Slurm script to the workspace of a workflow step.
+
+        The job_map optional parameter is a map of workflow step names to job
+        identifiers. This parameter so far is only planned to be used when a
+        study is configured to be launched in one go (more or less a script
+        chain using a scheduler's dependency setting). The functionality of
+        the parameter may change depending on both future intended use.
+
+        :param ws_path: Path to the workspace directory of the step.
+        :param step: An instance of a StudyStep.
+        :returns: False (will not be scheduled), the path to the
+        written script for run["cmd"], and the path to the script written for
+        run["restart"] (if it exists).
+        """
+        cmd = step.run["cmd"]
+        restart = step.run["restart"]
+        to_be_scheduled = False
+
+        fname = "{}.sh".format(step.name)
+        script_path = os.path.join(ws_path, fname)
+        with open(script_path, "w") as script:
+            script.write(self._exec)
+            _ = "\n\n{}\n".format(cmd)
+            script.write(_)
+
+        if restart:
+            rname = "{}.restart.sh".format(step.name)
+            restart_path = os.path.join(ws_path, rname)
+
+            with open(restart_path, "w") as script:
+                script.write(self._exec)
+                _ = "\n\n{}\n".format(restart)
+                script.write(_)
+        else:
+            restart_path = None
+
+        return to_be_scheduled, script_path, restart_path
+
     def check_jobs(self, joblist):
         """
         For the given job list, query execution status.
@@ -62,52 +104,11 @@ class ScriptAdapter(object):
         :returns: The return code of the status query, and a dictionary of job
         identifiers to their status.
         """
-        pass
+        return JobStatusCode.NOJOBS, {}
 
-    @abstractmethod
-    def _write_script(self, ws_path, step):
-        """
-        Write a script to the workspace of a workflow step.
-
-        The job_map optional parameter is a map of workflow step names to job
-        identifiers. This parameter so far is only planned to be used when a
-        study is configured to be launched in one go (more or less a script
-        chain using a scheduler's dependency setting). The functionality of
-        the parameter may change depending on both future intended use and
-        derived classes.
-
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: Boolean value (True if the workflow step is to be scheduled,
-        False otherwise) and the path to the written script.
-        """
-        pass
-
-    def write_script(self, ws_path, step):
-        """
-        Generate the script for the specified StudyStep.
-
-        :param ws_path: Workspace path for the step.
-        :param step: An instance of a StudyStep class.
-        :returns: A tuple containing a boolean set to True if step should be
-        scheduled (False otherwise), path to the generate script, and path
-        to the generated restart script (None if step cannot be restarted).
-        """
-        to_be_scheduled, script_path, restart_path = \
-            self._write_script(ws_path, step)
-        st = os.stat(script_path)
-        os.chmod(script_path, st.st_mode | stat.S_IXUSR)
-
-        if restart_path:
-            st = os.stat(restart_path)
-            os.chmod(restart_path, st.st_mode | stat.S_IXUSR)
-
-        return to_be_scheduled, script_path, restart_path
-
-    @abstractmethod
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
-        Submit a script to the scheduler.
+        Execute the step locally.
 
         If cwd is specified, the submit method will operate outside of the path
         specified by the 'cwd' parameter.
@@ -122,4 +123,17 @@ class ScriptAdapter(object):
         :param env: A dict containing a modified environment for execution.
         :returns: The return code of the submission command and job identiifer.
         """
-        pass
+        LOGGER.debug("cwd = %s", cwd)
+        LOGGER.debug("Script to execute: %s", path)
+        p = Popen(path, shell=False, stdout=PIPE, stderr=PIPE, cwd=cwd,
+                  env=env)
+        pid = p.pid
+        output, err = p.communicate()
+        retcode = p.wait()
+
+        if retcode == 0:
+            LOGGER.info("Execution returned status OK.")
+            return SubmissionCode.OK, pid
+        else:
+            LOGGER.warning("Execution returned an error: {}", str(err))
+            return SubmissionCode.ERROR, pid

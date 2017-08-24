@@ -28,8 +28,31 @@
 ###############################################################################
 
 """Collection of custom adapters for interfacing with various systems."""
+import logging
 
-from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+from maestrowf.interfaces.script import LocalScriptAdapter, SlurmScriptAdapter
+
+__all__ = ("SlurmScriptAdapter", "ScriptAdapterFactory")
+LOGGER = logging.getLogger(__name__)
 
 
-__all__ = ("SlurmScriptAdapter")
+class ScriptAdapterFactory(object):
+    factories = {
+        "slurm": SlurmScriptAdapter,
+        "local": LocalScriptAdapter,
+    }
+
+    @classmethod
+    def get_adapter(cls, adapter_id):
+        if adapter_id.lower() not in cls.factories:
+            msg = "Adapter '{0}' not found. Specify an adapter that exists " \
+                  "or implement a new one mapping to the '{0}'" \
+                  .format(str(adapter_id))
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return cls.factories[adapter_id]
+
+    @classmethod
+    def get_valid_adapters(cls):
+        return cls.factories.keys()

@@ -27,41 +27,35 @@
 # SOFTWARE.
 ###############################################################################
 
-"""
-The core abstract APIs that define various class behaviors.
+"""Package for providing enumerations for interfaces"""
+from enum import Enum
 
-This module contains all of the abstract classes and APIs for defining objects.
-Abstracts include abstract data stuctures (like a graph), APIs for concepts
-such as queueing adapters and environment APIs, as well as fundamental data
-structures like a SimObject.
-"""
-# NOTE: Some of these abstracts will be moved in the future. The Graph abstract
-# class does not belong here, and should be moved to something more general.
-# NOTE: The SimObject base class may not be required, since it basically
-# just requires objects to be dictionaries.
-
-from maestrowf.abstracts.abstractclassmethod import abstractclassmethod
-from maestrowf.abstracts.envobject import Dependency, Source, Substitution
-from maestrowf.abstracts.graph import Graph
-from maestrowf.abstracts.simobject import SimObject
-from maestrowf.abstracts.specification import Specification
+__all__ = ("JobStatusCode", "State", "SubmissionCode")
 
 
-__all__ = ("abstractclassmethod", "Dependency", "Graph", "SimObject",
-           "Singleton", "Source", "Specification", "Substitution")
+class SubmissionCode(Enum):
+    OK = 0
+    ERROR = 1
 
 
-class _Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(_Singleton, cls).__call__(*args,
-                                                                  **kwargs)
-        return cls._instances[cls]
+class JobStatusCode(Enum):
+    OK = 0
+    NOJOBS = 1
+    ERROR = 2
 
 
-class Singleton(_Singleton('SingletonMeta', (object,), {})):
-    """Single type to allow for classes to be typed as a singleton."""
+class State(Enum):
+    """Workflow step state enumeration."""
 
-    pass
+    INITIALIZED = 0
+    PENDING = 1
+    WAITING = 2
+    RUNNING = 3
+    FINISHING = 4
+    FINISHED = 5
+    QUEUED = 6
+    FAILED = 7
+    INCOMPLETE = 8
+    HWFAILURE = 9
+    TIMEDOUT = 10
+    UNKNOWN = 11

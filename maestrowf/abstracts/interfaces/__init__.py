@@ -27,18 +27,13 @@
 # SOFTWARE.
 ###############################################################################
 
-"""Package for providing abstract classes for interfaces"""
-from enum import Enum
+"""
+Abstract classes for handling interfacing with various services.
+"""
 
-__all__ = ("JobStatusCode", "SubmissionCode")
-
-
-class SubmissionCode(Enum):
-    OK = 0
-    ERROR = 1
+from maestrowf.abstracts.interfaces.schedulerscriptadapter import \
+    SchedulerScriptAdapter
+from maestrowf.abstracts.interfaces.scriptadapter import ScriptAdapter
 
 
-class JobStatusCode(Enum):
-    OK = 0
-    NOJOBS = 1
-    ERROR = 2
+__all__ = ("SchedulerScriptAdapter", "ScriptAdapter")
