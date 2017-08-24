@@ -791,6 +791,7 @@ class ExecutionGraph(DAG):
                     record.restart_script,
                     record.workspace)
 
+            # Increment the number of restarts we've attempted.
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:

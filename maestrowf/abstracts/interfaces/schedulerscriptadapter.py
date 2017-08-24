@@ -41,7 +41,12 @@ LOGGER = logging.getLogger(__name__)
 @six.add_metaclass(ABCMeta)
 class SchedulerScriptAdapter(ScriptAdapter):
     """
+    Abstract class representing the interface for scheduling scripts.
 
+    This class handles both the construction of scripts (as required by the
+    ScriptAdapter base class) but also includes the necessary methods for
+    constructing parallel commands. The adapter will substitute parallelized
+    commands but also defines how to schedule and check job status.
     """
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
