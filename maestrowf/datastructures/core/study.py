@@ -34,7 +34,6 @@ import getpass
 import logging
 import os
 import pickle
-from subprocess import PIPE, Popen
 import time
 
 from maestrowf.abstracts import SimObject
@@ -746,32 +745,6 @@ class ExecutionGraph(DAG):
             record.script = cmd_script
             record.restart_script = restart_script
 
-    def _execute_local(self, step, path, cwd, env=None):
-        """
-        Execute a command locally.
-
-        :param step: The StudyStep instance this submission is based on.
-        :param path: Local path to the script to be executed.
-        :param cwd: Path to the current working directory.
-        :param env: A dict containing a modified set of environment variables
-        for execution.
-        :returns: The return status of the executed command and PID.
-        """
-        logger.debug("cwd = %s", cwd)
-        logger.debug("Script to execute: %s", path)
-        p = Popen(path, shell=False, stdout=PIPE, stderr=PIPE, cwd=cwd,
-                  env=env)
-        pid = p.pid
-        output, err = p.communicate()
-        retcode = p.wait()
-
-        if retcode == 0:
-            logger.info("Execution returned status OK.")
-            return SubmissionCode.OK, pid
-        else:
-            logger.warning("Execution returned an error: {}", str(err))
-            return SubmissionCode.ERROR, pid
-
     def _execute_record(self, name, record, restart=False):
         """
         Execute a StepRecord.
@@ -783,6 +756,19 @@ class ExecutionGraph(DAG):
         num_restarts = 0    # Times this step has temporally restarted.
         retcode = None      # Execution return code.
 
+        # If we want to schedule the execution of the record, grab the
+        # scheduler adapter from the ScriptAdapterFactory.
+        if record.to_be_scheduled:
+            adapter = \
+                ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        else:
+            # Otherwise, just use the local adapter.
+            adapter = \
+                ScriptAdapterFactory.get_adapter("local")
+
+        # Pass the adapter the settings we've stored.
+        adapter = adapter(**self._adapter)
+
         # While our submission needs to be submitted, keep trying:
         # 1. If the JobStatus is not OK.
         # 2. num_restarts is less than self._submission_attempts
@@ -791,30 +777,16 @@ class ExecutionGraph(DAG):
             logger.info("Attempting submission of '%s' (attempt %d of %d)...",
                         name, num_restarts + 1, self._submission_attempts)
 
-            # If the record needs scheduling, use self._adapter.
-            # If the restart is specified, use the record restart script.
-            if record.to_be_scheduled is True and restart is False:
-                retcode, jobid = self._adapter.submit(
+            # If not a restart, submit the cmd script.
+            if not restart:
+                retcode, jobid = adapter.submit(
                     record.step,
                     record.script,
                     record.workspace)
-
-            elif record.to_be_scheduled is True and restart is True:
-                retcode, jobid = self._adapter.submit(
-                    record.step,
-                    record.restart_script,
-                    record.workspace)
-
-            # If the record does not need scheduling, run locally.
-            # If the restart is specified, use the record restart script.
-            elif record.to_be_scheduled is False and restart is False:
-                retcode, jobid = self._execute_local(
-                    record.step,
-                    record.script,
-                    record.workspace)
-
-            elif record.to_be_scheduled is False and restart is True:
-                retcode, jobid = self._execute_local(
+            # Otherwise, it's a restart.
+            else:
+                # If the restart is specified, use the record restart script.
+                retcode, jobid = adapter.submit(
                     record.step,
                     record.restart_script,
                     record.workspace)
@@ -976,11 +948,6 @@ class ExecutionGraph(DAG):
         steps in the ExecutionGraph. Each ExecutionGraph stores the adapter
         used to generate and execute its scripts.
         """
-        # If the adapter is set to None, just return. Return JobStatusCode.OK
-        # because technically we don't have any jobs running.
-        if self._adapter["type"] == "local":
-            return JobStatusCode.OK, {}
-
         # Set up the job list and the map to get back to step names.
         joblist = []
         jobmap = {}
@@ -989,8 +956,11 @@ class ExecutionGraph(DAG):
             joblist.append(jobid)
             jobmap[jobid] = step
 
+        # Grab the adapter from the ScriptAdapterFactory.
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        adapter = adapter(**self._adapter)
         # Use the adapter to grab the job statuses.
-        retcode, job_status = self._adapter.check_jobs(joblist)
+        retcode, job_status = adapter.check_jobs(joblist)
         # Map the job identifiers back to step names.
         step_status = {jobmap[jobid]: status
                        for jobid, status in job_status.items()}
