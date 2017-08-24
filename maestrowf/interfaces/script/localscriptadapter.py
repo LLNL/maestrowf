@@ -30,8 +30,9 @@
 """Local interface implementation."""
 import logging
 import os
+from subprocess import PIPE, Popen
 
-from maestrowf.abstracts.enums import JobStatusCode
+from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
 
 LOGGER = logging.getLogger(__name__)
@@ -104,3 +105,35 @@ class LocalScriptAdapter(ScriptAdapter):
         identifiers to their status.
         """
         return JobStatusCode.NOJOBS, {}
+
+    def submit(self, step, path, cwd, job_map=None, env=None):
+        """
+        Execute the step locally.
+
+        If cwd is specified, the submit method will operate outside of the path
+        specified by the 'cwd' parameter.
+        If env is specified, the submit method will set the environment
+        variables for submission to the specified values. The 'env' parameter
+        should be a dictionary of environment variables.
+
+        :param step: An instance of a StudyStep.
+        :param path: Path to the script to be executed.
+        :param cwd: Path to the current working directory.
+        :param job_map: A map of workflow step names to their job identifiers.
+        :param env: A dict containing a modified environment for execution.
+        :returns: The return code of the submission command and job identiifer.
+        """
+        LOGGER.debug("cwd = %s", cwd)
+        LOGGER.debug("Script to execute: %s", path)
+        p = Popen(path, shell=False, stdout=PIPE, stderr=PIPE, cwd=cwd,
+                  env=env)
+        pid = p.pid
+        output, err = p.communicate()
+        retcode = p.wait()
+
+        if retcode == 0:
+            LOGGER.info("Execution returned status OK.")
+            return SubmissionCode.OK, pid
+        else:
+            LOGGER.warning("Execution returned an error: {}", str(err))
+            return SubmissionCode.ERROR, pid
