@@ -103,3 +103,23 @@ class ScriptAdapter(object):
             os.chmod(restart_path, st.st_mode | stat.S_IXUSR)
 
         return to_be_scheduled, script_path, restart_path
+
+    @abstractmethod
+    def submit(self, step, path, cwd, job_map=None, env=None):
+        """
+        Submit a script to the scheduler.
+
+        If cwd is specified, the submit method will operate outside of the path
+        specified by the 'cwd' parameter.
+        If env is specified, the submit method will set the environment
+        variables for submission to the specified values. The 'env' parameter
+        should be a dictionary of environment variables.
+
+        :param step: An instance of a StudyStep.
+        :param path: Path to the script to be executed.
+        :param cwd: Path to the current working directory.
+        :param job_map: A map of workflow step names to their job identifiers.
+        :param env: A dict containing a modified environment for execution.
+        :returns: The return code of the submission command and job identiifer.
+        """
+        pass
