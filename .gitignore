@@ -5,6 +5,7 @@ dist/
 *.DS_Store
 venv
 .output/
+sample_output/
 
 # Doxygen output
 docs/html/
