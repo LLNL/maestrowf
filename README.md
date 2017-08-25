@@ -77,7 +77,7 @@ sourcing scripts, and dependencies that the Study requires to run.
 * A ```ParameterGenerator``` class that contains all parameters, which
 yields ```Combination``` objects that represent a valid combination of parameters
 to be used in a single instance of a Study.
-* A ```Study``` class (derived from a DAG) which represents the high level
+* A ```Study``` class (derived from a ```DAG```) which represents the high level
 parameterized workflow and constructs the full study from parameters and
 environment objects that it stores.
 
@@ -141,32 +141,6 @@ as well. Those responsibilities include (but are not limited to):
 
 ----------------
 
-## Basic YAML Specification use
-
-    # Import MaestroWF core structures and Specification interface.
-    from maestrowf.datastructures.specification import YAMLSpecification
-
-    # Construct core data structures.
-    spec = YAMLSpecification.load_specification('some/path/to/spec.yaml')
-    env = spec.get_study_environment()
-    params = spec.get_parameters()
-    steps = spec.get_study_steps()
-
-    # Stage and setup the Study
-    study = Study(spec.name, spec.description, env=env, parameters= params, steps=steps)
-    study.setup()
-
-    # Generate the expanded ExecutionGraph
-    path, exec_dag = study.stage()
-
-----------------
-
-## Calling the CLI
-
-    % maestro <some path to a YAML specification>
-
-----------------
-
 ## Getting Started
 
 To get started, we recommend using virtual environments. If you do not have the
@@ -191,6 +165,30 @@ If you plan to develop on MaestroWF, install the repository directly using:
 
     $ pip install -r requirements.txt
     $ pip install -e .
+
+----------------
+
+## Quickstart Example
+
+MaestroWF comes packed with a basic example using LULESH, a proxy application provided
+by LLNL. Information and source code for LULESH can be found [here](https://codesign.llnl.gov/lulesh.php).
+
+The example performs the following workflow locally:
+- Download LULESH from the webpage linked above and decompress it.
+- Substitute all necessary variables with their serial compilers and make LULESH.
+- Execute a small parameter sweep of varying size and iterations (a simple sensitivity study)
+
+In order to execute the sample study simply execute from the root directory of the repository:
+
+    $ maestro ./samples/lulesh/lulesh_sample1.yaml
+
+When prompted, reply in the affirmative:
+
+    $ Would you like to launch the study?[yn] y
+
+Currently, there is no way to monitor the status of a running study. However, you can monitor the output path which is placed in the ```sample_output/lulesh/``` directory.
+
+NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```. 
 
 ----------------
 
