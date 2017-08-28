@@ -44,16 +44,11 @@ These moving parts include but are not limited to:
     parameters in a clean Pythonic way.
 """
 
-from maestrowf.datastructures.core.parameters import \
-    Combination, \
+from maestrowf.datastructures.core.executiongraph import ExecutionGraph
+from maestrowf.datastructures.core.parameters import Combination, \
     ParameterGenerator
-from maestrowf.datastructures.core.study import \
-    ExecutionGraph, \
-    State, \
-    Study, \
-    StudyStep
-from maestrowf.datastructures.core.studyenvironment import \
-    StudyEnvironment
+from maestrowf.datastructures.core.study import Study, StudyStep
+from maestrowf.datastructures.core.studyenvironment import StudyEnvironment
 
-__all__ = ("Combination", "ExecutionGraph", "ParameterGenerator", "State",
-           "Study", "StudyEnvironment", "StudyStep")
+__all__ = ("Combination", "ExecutionGraph", "ParameterGenerator", "Study",
+           "StudyEnvironment", "StudyStep")
