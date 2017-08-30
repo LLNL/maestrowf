@@ -288,7 +288,10 @@ class Study(DAG):
         # not the study set up is the place to handle the output path... it
         # feels like the determination of the output path should be at the
         # higher level.
-        out_name = "{}_{}".format(self.name, time.strftime("%Y%m%d-%H%M%S"))
+        out_name = "{}_{}".format(
+            self.name.replace(" ", "_"),
+            time.strftime("%Y%m%d-%H%M%S")
+        )
         self.output.value = os.path.join(self.output.value, out_name)
 
         # Set up the environment if it hasn't been already.
