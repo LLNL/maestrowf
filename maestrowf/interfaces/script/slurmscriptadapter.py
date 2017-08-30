@@ -99,8 +99,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         batch_header = dict(self._batch)
         batch_header["walltime"] = run.pop("walltime")
         batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
-        batch_header["job-name"] = step.name
-        batch_header["comment"] = step.description
+        batch_header["job-name"] = step.name.replace(" ", "_")
+        batch_header["comment"] = step.description.replace("\n", " ")
 
         modified_header = [self._exec]
         for key, value in self._header.items():
