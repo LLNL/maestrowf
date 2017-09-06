@@ -37,6 +37,7 @@ individual Combinations (the second object a user should ever see).
 """
 from collections import OrderedDict
 import logging
+import re
 
 from maestrowf.abstracts import SimObject
 
@@ -113,7 +114,21 @@ class Combination(object):
 
         :returns: A string representing the combination.
         """
-        return '.'.join(self._labels.values())
+        return ".".join(self._labels.values())
+
+    def get_param_string(self, params):
+        """
+        Get the combination string for the specified parameters.
+
+        :param params: A set of parameters to be used in the string.
+        :returns: A string containing the labels for the parameters in params.
+        """
+        combo_str = []
+        for item in sorted(params):
+            var = "{}({}.label)".format(self._token, item)
+            combo_str.append(self._labels[var])
+
+        return ".".join(combo_str)
 
     def apply(self, item):
         """
@@ -289,3 +304,43 @@ class ParameterGenerator(SimObject):
                 name = self.names[key]
                 combo.add(key, name, pvalue, tlabel)
             yield combo
+
+    def _get_used_parameters(self, item, params):
+        """
+        Find the parameters used by an item in a StudyStep.
+
+        :param item: The item to search for parameters.
+        :param params: The current set of found parameters.
+        """
+        if not item:
+            return
+        elif isinstance(item, int):
+            return
+        elif isinstance(item, str):
+            for key in self.parameters.keys():
+                _ = "\\{}\\({}\\.*\\w*\)".format(self.token, key)
+                matches = re.findall(_, item)
+                if matches:
+                    params.add(key)
+        elif isinstance(item, list):
+            for each in item:
+                self._get_used_parameters(each, params)
+        elif isinstance(item, dict):
+            for each in item.values():
+                self._get_used_parameters(each, params)
+        else:
+            msg = "Encountered an object of type '{}'. Expected a str, list," \
+                  " int, or dict.".format(type(item))
+            logger.error(msg)
+            raise ValueError(msg)
+
+    def get_used_parameters(self, step):
+        """
+        Return the parameters used by a StudyStep.
+
+        :param step: A StudyStep instance to be checked.
+        :returns: A set of the parameter names used within the step parameter.
+        """
+        params = set()
+        self._get_used_parameters(step.__dict__, params)
+        return params

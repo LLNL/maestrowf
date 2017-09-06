@@ -32,6 +32,7 @@
 import copy
 import logging
 import os
+import re
 import time
 
 from maestrowf.abstracts import SimObject
@@ -42,6 +43,9 @@ from maestrowf.utils import apply_function, create_parentdir
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
+WSREGEX = re.compile(
+    r"\$\(([-!\$%\^&\*\(\)_\+\|~=`{}\[\]:;<>\?,\.\/\w]+)\.workspace\)"
+)
 
 
 class StudyStep(SimObject):
@@ -332,6 +336,40 @@ class Study(DAG):
         # Items to store that should be reset.
         global_workspace = self.output.value  # Highest ouput dir
 
+        # Rework begins here:
+        # First step, we need to map each workflow step to the parameters that
+        # they actually use -- and only the parameters used. This setup will
+        # make it so that workflows can be constructed with implicit stages.
+        # That's to say that if a step only requires a subset of parameters,
+        # we only need to run the set of combinations dictated by that subset.
+        # NOTE: We're going to need to make a way for users to access the
+        # workspaces of other steps. With this rework we won't be able to
+        # assume that every directory has all parameters on it.
+        used_params = {}
+        workspaces = {}
+        for parent, step, node in self.walk_study():
+            # Source doesn't matter -- ignore it.
+            if step == SOURCE:
+                continue
+
+            # Otherwise, we have a valid key.
+            # We need to collect used parameters for two things:
+            # 1. Collect the used parameters for the current step.
+            # 2. Get the used parameters for the parent step.
+            # The logic here is that the used parameters are going to be the
+            # union of the used parameters for this step and ALL parent steps.
+            # If we keep including the step's parent parameters, we will simply
+            # carry parent parameters recursively.
+            step_params = self.parameters.get_used_parameters(node)
+            if parent != SOURCE:
+                step_params |= used_params[parent]
+            used_params[step] = step_params
+
+        logger.debug("Used Parameters - \n%s", used_params)
+
+        # Secondly, we need to now iterate over all combinations for each step
+        # and simply apply the combination. We can then add the name to the
+        # expanded map using only the parameters that we discovered above.
         for combo in self.parameters:
             # For each Combination in the parameters...
             logger.info("==================================================")
@@ -349,28 +387,58 @@ class Study(DAG):
                     continue
 
                 logger.debug("Processing step '%s'.", step)
-                # Apply the parameters to the step
-                modified, step_exp = node.apply_parameters(combo)
-
-                # Ok so, if we come back from apply_parameters and the step was
-                # in fact modified, we know that this step is a unique step
-                # due to the parameters being applied (so rename it).
-                # Otherwise, it can remain with its given name.
-                # If modified, that also affects the workspace path for the
-                # step.
-                if modified:
-                    # Rename the step to reflect that it is parameterized.
-                    step_name = "{}_{}".format(step_exp.name, str(combo))
+                # Due to the rework, we now can get the parameters used. We no
+                # longer have to blindly apply the parameters. In fact, better
+                # if we don't know. We have to see if the name exists in the
+                # DAG first. If it does we can skip the step. Otherwise, apply
+                # and add.
+                if used_params[step]:
+                    logger.debug("Used parameters %s", used_params[step])
+                    # Apply the used parameters to the step.
+                    modified, step_exp = node.apply_parameters(combo)
+                    # Name the step based on the parameters used.
+                    combo_str = combo.get_param_string(used_params[step])
+                    step_name = "{}_{}".format(step_exp.name, combo_str)
                     logger.debug("Step has been modified. Step '%s' renamed"
                                  " to '%s'", step_exp.name, step_name)
                     step_exp.name = step_name
+                    logger.debug("Resulting step name: %s", step_name)
 
                     # Set the workspace to the parameterized workspace
                     self.output.value = os.path.join(global_workspace,
-                                                     str(combo))
+                                                     combo_str)
+
+                    # We now should account for varying workspace locations.
+                    # Search for the use of workspaces in the command line so
+                    # that we can go ahead and fill in the appropriate space
+                    # for this combination.
+                    cmd = step_exp.run["cmd"]
+                    used_spaces = re.findall(WSREGEX, cmd)
+                    for match in used_spaces:
+                        logger.debug("Workspace found -- %s", match)
+                        # Append the parameters that the step uses matching the
+                        # current combo.
+                        combo_str = combo.get_param_string(used_params[match])
+                        logger.debug("Combo str -- %s", combo_str)
+                        if combo_str:
+                            _ = "{}_{}".format(match, combo_str)
+                        else:
+                            _ = match
+                        # Replace the workspace tag in the command.
+                        workspace_var = "$({}.workspace)".format(match)
+                        cmd = cmd.replace(workspace_var, workspaces[_])
+                        logger.debug("New cmd -- %s", cmd)
+                    step_exp.run["cmd"] = cmd
                 else:
                     # Otherwise, we know that this step is a joining node.
+                    step_exp = copy.deepcopy(node)
+                    modified = False
+                    logger.debug("No parameters found. Resulting name %s",
+                                 step_exp.name)
                     self.output.value = os.path.join(global_workspace)
+
+                # Add the workspace name to the map of workspaces.
+                workspaces[step_exp.name] = self.output.value
 
                 # Now we need to make sure we handle the dependencies.
                 # We know the parent and the step name (whether it's modified
@@ -387,8 +455,11 @@ class Study(DAG):
                 else:
                     rlimit = 0
 
-                param_name = "{}_{}".format(parent, str(combo))
                 if parent != SOURCE:
+                    # With the rework, we now need to check the parent's used
+                    # parmeters.
+                    combo_str = combo.get_param_string(used_params[parent])
+                    param_name = "{}_{}".format(parent, combo_str)
                     # If the parent node is not '_source', check.
                     if parent in dag.values:
                         # If the parent is in the dag, add the current step...
