@@ -38,6 +38,7 @@ import sys
 
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
+from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import create_parentdir
 
 
@@ -151,6 +152,11 @@ def main():
     parameters = spec.get_parameters()
     steps = spec.get_study_steps()
 
+    # Addition of the $(SPECROOT) to the environment.
+    spec_root = os.path.split(args.specification)[0]
+    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
+    environment.add(spec_root)
+
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
                   parameters=parameters, steps=steps)
@@ -160,9 +166,6 @@ def main():
     # Stage the study.
     path, exec_dag = study.stage()
 
-    # TODO: fdinatal - A factory class for adapters needs to be written. For
-    # now, assuming SLURM but that'll be changed in the future.
-    # Get the adapter specified and add it to the ExecutionGraph.
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
     else:
