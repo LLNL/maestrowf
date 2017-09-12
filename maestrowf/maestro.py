@@ -34,6 +34,7 @@ import logging
 import os
 import shutil
 from subprocess import Popen, PIPE
+import six
 import sys
 
 from maestrowf.datastructures import YAMLSpecification
@@ -182,7 +183,7 @@ def main():
     if args.autoyes:
         uinput = "y"
     else:
-        uinput = raw_input("Would you like to launch the study?[yn] ")
+        uinput = six.moves.input("Would you like to launch the study?[yn] ")
 
     if uinput.lower() in ACCEPTED_INPUT:
         # Launch manager with nohup
