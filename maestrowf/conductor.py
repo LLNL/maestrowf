@@ -159,6 +159,8 @@ def main():
         study_complete = dag.execute_ready_steps()
         # Re-pickle the ExecutionGraph.
         dag.pickle(study_pkl[0])
+        # Write out the state
+        dag.write_status(os.path.split(study_pkl[0])[0])
         # Sleep for SLEEPTIME in args
         sleep(args.sleeptime)
 

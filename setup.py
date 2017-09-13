@@ -19,6 +19,8 @@ setup(name='maestrowf',
         'PyYAML',
         'six',
         'enum34',
+        "filelock",
+        "tabulate",
         ],
       classifiers=[
         'Development Status :: 3 - Alpha',
