@@ -146,7 +146,7 @@ class YAMLSpecification(Specification):
                 if not (self.description["name"] and
                    self.description["description"]):
                     raise ValueError("Both 'name' and 'description' must be "
-                                     "provided for a valid study decription.")
+                                     "provided for a valid study description.")
         except Exception as e:
             logger.exception(e.message)
             raise
@@ -287,7 +287,7 @@ class YAMLSpecification(Specification):
         # Verify that each step has the minimum required information.
         # Each step in the 'study' section must at least specify three things.
         # 1. name
-        # 2. decription
+        # 2. description
         # 3. run
         try:
             req_study = set(["name", "description", "run"])
