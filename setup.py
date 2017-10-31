@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='maestrowf',
-      decription='A tool and library for specifying and conducting general '
+      description='A tool and library for specifying and conducting general '
       'workflows.',
       version='1.0.1',
       author='Francesco Di Natale',
