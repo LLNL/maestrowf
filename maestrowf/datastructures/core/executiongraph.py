@@ -1,5 +1,8 @@
+from datetime import datetime
+from filelock import FileLock, Timeout
 import getpass
 import logging
+import os
 import pickle
 
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
@@ -19,9 +22,10 @@ class _StepRecord(object):
     class to the ExecutionGraph and maintains all information for any given
     step in the DAG.
     """
+
     def __init__(self, **kwargs):
         """
-        Initializes a new instance of a StepRecord.
+        Initialize a new instance of a StepRecord.
 
         Used kwargs:
         workspace: The working directory of the record.
@@ -34,14 +38,165 @@ class _StepRecord(object):
         restart_limit: Upper limit on the number of restart attempts.
         """
         self.workspace = kwargs.pop("workspace", "")
-        self.status = kwargs.pop("status", State.INITIALIZED)
+
         self.jobid = kwargs.pop("jobid", [])
         self.script = kwargs.pop("script", "")
         self.restart_script = kwargs.pop("restart", "")
         self.to_be_scheduled = False
         self.step = kwargs.pop("step", None)
         self.restart_limit = kwargs.pop("restart_limit", 3)
-        self.num_restarts = 0
+
+        # Status Information
+        self._num_restarts = 0
+        self._submit_time = None
+        self._start_time = None
+        self._end_time = None
+        self.status = kwargs.pop("status", State.INITIALIZED)
+
+    def mark_submitted(self):
+        """Mark the submission time of the record."""
+        logger.debug(
+            "Marking %s as submitted (PENDING) -- previously %s",
+            self.name,
+            self.status)
+        self.status = State.PENDING
+        if not self._submit_time:
+            self._submit_time = datetime.now()
+        else:
+            logger.warning(
+                "Cannot set the submission time of '%s' because it has"
+                "already been set.", self.name
+            )
+
+    def mark_running(self):
+        """Mark the start time of the record."""
+        logger.debug(
+            "Marking %s as running (RUNNING) -- previously %s",
+            self.name,
+            self.status)
+        self.status = State.RUNNING
+        if not self._start_time:
+            self._start_time = datetime.now()
+
+    def mark_end(self, state):
+        """
+        Mark the end time of the record with associated termination state.
+
+        :param state: State enum corresponding to termination state.
+        """
+        logger.debug(
+            "Marking %s as finised (%s) -- previously %s",
+            self.name,
+            state,
+            self.status)
+        self.status = state
+        if not self._end_time:
+            self._end_time = datetime.now()
+
+    def mark_restart(self):
+        """Mark the end time of the record."""
+        logger.debug(
+            "Marking %s as restarting (TIMEOUT) -- previously %s",
+            self.name,
+            self.status)
+        self.status = State.TIMEDOUT
+        if self._num_restarts == self.restart_limit:
+            return False
+        else:
+            self._num_restarts += 1
+            return True
+
+    @property
+    def elapsed_time(self):
+        """Compute the elapsed time of the record (includes queue wait)."""
+        if self._submit_time and self._end_time:
+            # Return the total elapsed time.
+            return str(self._end_time - self._submit_time)
+        elif self._submit_time and self.status == State.RUNNING:
+            # Return the current elapsed time.
+            return str(datetime.now() - self._submit_time)
+        else:
+            return "--:--:--"
+
+    @property
+    def run_time(self):
+        """
+        Compute the run time of a record (includes restart queue time).
+
+        :returns: A string of the records's run time.
+        """
+        if self._start_time and self._end_time:
+            # If start and end time is set -- calculate run time.
+            return str(self._end_time - self._start_time)
+        elif self._start_time and not self.status == State.RUNNING:
+            # If start time but no end time, calculate current duration.
+            return str(datetime.now() - self._start_time)
+        else:
+            # Otherwise, return an uncalculated marker.
+            return "--:--:--"
+
+    @property
+    def name(self):
+        """
+        Get the name of the step represented by the record instance.
+
+        :returns: The name of the StudyStep contained within the record.
+        """
+        return self.step.name
+
+    @property
+    def walltime(self):
+        """
+        Get the requested wall time of the record instance.
+
+        :returns: A string representing the requested computing time.
+        """
+        return self.step.run["walltime"]
+
+    @property
+    def time_submitted(self):
+        """
+        Get the time the step started.
+
+        :returns: A formatted string of the date and time the step started.
+        """
+        if self._submit_time:
+            return str(self._submit_time)
+        else:
+            return "--"
+
+    @property
+    def time_start(self):
+        """
+        Get the time the step started.
+
+        :returns: A formatted string of the date and time the step started.
+        """
+        if self._start_time:
+            return str(self._start_time)
+        else:
+            return "--"
+
+    @property
+    def time_end(self):
+        """
+        Get the time the step ended.
+
+        :returns: A formatted string of the date and time the step ended.
+        """
+        if self._end_time:
+            return str(self._end_time)
+        else:
+            return "--"
+
+    @property
+    def restarts(self):
+        """
+        Get the number of restarts the step has executed.
+
+        :returns: An int representing the number of restarts.
+        """
+        return self._num_restarts
 
 
 class ExecutionGraph(DAG):
@@ -58,9 +213,10 @@ class ExecutionGraph(DAG):
     workflow in some fashion or additional monitoring is needed, this class is
     where that would go.
     """
+
     def __init__(self, submission_attempts=1):
         """
-        Initializes a new instance of an ExecutionGraph.
+        Initialize a new instance of an ExecutionGraph.
 
         :param submission_attempts: Number of attempted submissions before
         marking a step as failed.
@@ -205,7 +361,7 @@ class ExecutionGraph(DAG):
 
     def generate_scripts(self):
         """
-        Generates the scripts for all steps in the ExecutionGraph.
+        Generate the scripts for all steps in the ExecutionGraph.
 
         The generate_scripts method scans the ExecutionGraph instance and uses
         the stored adapter to write executable scripts for either local or
@@ -258,7 +414,6 @@ class ExecutionGraph(DAG):
 
         # Pass the adapter the settings we've stored.
         adapter = adapter(**self._adapter)
-
         # While our submission needs to be submitted, keep trying:
         # 1. If the JobStatus is not OK.
         # 2. num_restarts is less than self._submission_attempts
@@ -269,6 +424,26 @@ class ExecutionGraph(DAG):
 
             # If not a restart, submit the cmd script.
             if not restart:
+                logger.debug(
+                    "'%s' is not restarting -- Marking as SUBMITTED from %s "
+                    "at %s",
+                    name,
+                    record.status,
+                    str(datetime.now())
+                )
+                # Mark the start time.
+                record.mark_submitted()
+                # If local, we'll execute right away so mark as running.
+                if not record.to_be_scheduled:
+                    logger.debug(
+                        "'%s' running locally -- Marking as RUNNING from %s "
+                        "at %s",
+                        name,
+                        record.status,
+                        str(datetime.now())
+                    )
+                    record.mark_running()
+
                 retcode, jobid = adapter.submit(
                     record.step,
                     record.script,
@@ -276,6 +451,7 @@ class ExecutionGraph(DAG):
             # Otherwise, it's a restart.
             else:
                 # If the restart is specified, use the record restart script.
+                record.mark_running()
                 retcode, jobid = adapter.submit(
                     record.step,
                     record.restart_script,
@@ -286,15 +462,14 @@ class ExecutionGraph(DAG):
 
         if retcode == SubmissionCode.OK:
             logger.info("'%s' submitted with identifier '%s'", name, jobid)
-            record.status = State.PENDING
             record.jobid.append(jobid)
             self.in_progress.add(name)
 
             # Executed locally, so if we executed OK -- Finished.
             if record.to_be_scheduled is False:
+                record.mark_end(State.FINISHED)
                 self.completed_steps.add(name)
                 self.in_progress.remove(name)
-                record.state = State.FINISHED
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
@@ -303,11 +478,37 @@ class ExecutionGraph(DAG):
             path, parent = self.bfs_subtree(name)
             for node in path:
                 self.failed_steps.add(node)
-                self.values[node].status = State.FAILED
+                self.values[node].mark_end(State.FAILED)
+
+    def write_status(self, path):
+        header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
+                 ",Submit Time,End Time,Number Restarts"
+        status = [header]
+        keys = set(self.values.keys()) - set(["_source"])
+        for key in keys:
+            value = self.values[key]
+            _ = [
+                    value.name, os.path.split(value.workspace)[1],
+                    str(value.status), value.run_time, value.elapsed_time,
+                    value.time_start, value.time_submitted, value.time_end,
+                    str(value.restarts)
+                ]
+            _ = ",".join(_)
+            status.append(_)
+
+        stat_path = os.path.join(path, "status.csv")
+        lock_path = os.path.join(path, ".status.lock")
+        lock = FileLock(lock_path)
+        try:
+            with lock.acquire(timeout=10):
+                with open(stat_path, "w+") as stat_file:
+                    stat_file.write("\n".join(status))
+        except Timeout:
+            pass
 
     def execute_ready_steps(self):
         """
-        Executes any steps whose dependencies are satisfied.
+        Execute any steps whose dependencies are satisfied.
 
         The 'execute_ready_steps' method is the core of how the ExecutionGraph
         manages execution. This method does the following:
@@ -339,32 +540,43 @@ class ExecutionGraph(DAG):
         elif retcode == JobStatusCode.OK:
             # For the status of each currently in progress job, check its
             # state.
+            # TODO: We need to mark a record as running if it is detected
+            # to be.
             cleanup_steps = set()  # Steps that are in progress showing failed.
             for name, status in job_status.items():
                 logger.debug("Checking job '%s' with status %s.",
                              name, status)
                 record = self.values[name]
                 if status == State.FINISHED:
-                    # Mark the step complete.
+                    # Mark the step complete and notate its end time.
+                    record.mark_end()
                     logger.info("Step '%s' marked as finished. Adding to "
                                 "complete set.", name)
                     self.completed_steps.add(name)
                     record.state = State.FINISHED
                     self.in_progress.remove(name)
 
+                elif status == State.RUNNING:
+                    # When detect that a step is running, mark it.
+                    logger.info("Step '%s' found to be running.")
+                    record.mark_running()
+
                 elif status == State.TIMEDOUT:
                     # Execute the restart script.
                     # If a restart script doesn't exist, re-run the command.
                     # If we're under the restart limit, attempt a restart.
-                    if record.num_restarts < record.restart_limit:
-                        logger.info("Step '%s' timedout. Restarting.", name)
+                    if record.mark_restart():
+                        logger.info(
+                            "Step '%s' timed out. Restarting (%s of %s).",
+                            name, record.restarts, record.restart_limit
+                        )
                         self._submit_record(name, record, restart=True)
-                        record.num_restarts += 1
                     else:
                         logger.info("'%s' has been restarted %s of %s times. "
                                     "Marking step and all descendents as "
-                                    "failed.", name,
-                                    record.num_restarts,
+                                    "failed.",
+                                    name,
+                                    record.restarts,
                                     record.restart_limit)
                         self.in_progress.remove(name)
                         cleanup_steps.update(self.bfs_subtree(name)[0])
@@ -386,16 +598,22 @@ class ExecutionGraph(DAG):
                         name
                     )
                     self.in_progress.remove(name)
+                    record.mark_end(State.FAILED)
                     cleanup_steps.update(self.bfs_subtree(name)[0])
 
             # Let's handle all the failed steps in one go.
             for node in cleanup_steps:
                 self.failed_steps.add(node)
-                self.values[node].status = State.FAILED
+                self.values[node].mark_end(State.FAILED)
 
         # Now that we've checked the statuses of existing jobs we need to make
         # sure dependencies haven't been met.
-        for key, record in self.values.items():
+        for key in self.values.keys():
+            # We MUST dereference from the key. If we use values.items(), a
+            # generator gets produced which will give us a COPY of a record and
+            # not the actual record.
+            record = self.values[key]
+
             # A completed step by definition has had its dependencies met.
             # Skip it.
             if key in self.completed_steps:
@@ -426,8 +644,15 @@ class ExecutionGraph(DAG):
         for key, record in ready_steps.items():
             logger.info("Executing -- '%s'\nScript path = %s", key,
                         record.script)
-            logger.debug("Record: %s", record.__dict__)
+            logger.debug(
+                "Attempting to execute '%s' -- Current state is %s.",
+                record.name, record.status
+            )
             self._execute_record(key, record)
+            logger.debug(
+                "After execution of '%s' -- New state is %s.",
+                record.name, record.status
+            )
 
         return False
 

@@ -29,6 +29,7 @@
 
 """A collection of more general utility functions."""
 
+from collections import OrderedDict
 import logging
 import os
 import time
@@ -106,3 +107,40 @@ def apply_function(item, func):
               ", or dict.".format(type(item))
         LOGGER.error(msg)
         raise ValueError(msg)
+
+
+def csvtable_to_dict(fstream):
+    """
+    Convert a csv file stream into an in memory dictionary.
+
+    :param fstream: An open file stream to a csv table (with header)
+    :returns: A dictionary with a key for each column header and a list of
+    column values for each key.
+    """
+    # Read in the lines from the file stream.
+    lines = fstream.readlines()
+    # There are two pieces of information we need for the headers:
+    # 1. The actual header titles.
+    # 2. A map of index to header title
+    _ = lines.pop(0).strip("\n").split(",")
+    # Retain the order of the columns as they're added.
+    table = OrderedDict()
+    # A map of row index to the appropriate header.
+    indices = {}
+    i = 0
+    # For each item in the header, mark its index and initialize its column.
+    for item in _:
+        indices[i] = item
+        table[item] = []
+        i += 1
+
+    # Walk each line of the table, mapping the columns in the row to their key.
+    for line in lines:
+        # Split the csv row
+        _ = line.split(",")
+        # Walk each column and map it.
+        for i in range(len(_)):
+            table[indices[i]].append(_[i].strip("\n"))
+
+    # Return the completed table
+    return table

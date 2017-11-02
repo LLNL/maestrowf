@@ -1,6 +1,7 @@
 enum34
 fabric
 coverage
+filelock
 PyYAML
 six
 sphinx_rtd_theme
@@ -10,3 +11,4 @@ flake8
 pydocstyle
 pylint
 tox
+tabulate

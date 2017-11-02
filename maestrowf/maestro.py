@@ -29,6 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, RawTextHelpFormatter
+from filelock import FileLock, Timeout
 import inspect
 import logging
 import os
@@ -36,11 +37,12 @@ import shutil
 from subprocess import Popen, PIPE
 import six
 import sys
+import tabulate
 
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import create_parentdir
+from maestrowf.utils import create_parentdir, csvtable_to_dict
 
 
 # Program Globals
@@ -142,10 +144,25 @@ def main():
     It makes use of the maestrowf core data structures as a high level class
     inerface.
     """
-
     # Set up the necessary base data structures to begin study set up.
     parser = setup_argparser()
     args = parser.parse_args()
+
+    if args.status:
+        study_path = os.path.split(args.specification)[0]
+        stat_path = os.path.join(study_path, "status.csv")
+        lock_path = os.path.join(study_path, ".status.lock")
+        if os.path.exists(stat_path):
+            lock = FileLock(lock_path)
+            try:
+                with lock.acquire(timeout=10):
+                    with open(stat_path, "r") as stat_file:
+                        _ = csvtable_to_dict(stat_file)
+                        print(tabulate.tabulate(_, headers="keys"))
+            except Timeout:
+                pass
+
+        return
 
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
