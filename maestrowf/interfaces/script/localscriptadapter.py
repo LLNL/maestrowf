@@ -135,5 +135,5 @@ class LocalScriptAdapter(ScriptAdapter):
             LOGGER.info("Execution returned status OK.")
             return SubmissionCode.OK, pid
         else:
-            LOGGER.warning("Execution returned an error: {}", str(err))
+            LOGGER.warning("Execution returned an error: %s", str(err))
             return SubmissionCode.ERROR, pid
