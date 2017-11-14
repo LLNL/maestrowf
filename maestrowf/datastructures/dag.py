@@ -171,3 +171,40 @@ class DAG(Graph):
                 path.append(node)
 
         return path, parent
+
+    def _topological_sort(self, v, visited, stack):
+        """
+        Recur through the nodes to perform a toplogical sort.
+
+        :param v: The vertex previously visited.
+        :param visited: A dict of visited statuses.
+        :param stack: The current stack of vertices that have been sorted.
+        :returns: A list of the DAG's nodes in topologically sorted order.
+        """
+
+        # Mark the node as visited.
+        visited[v] = True
+
+        # Recur through the children, visiting children who have not yet been
+        # visited.
+        for e in self.adjacency_table[v]:
+            if not visited[e]:
+                self._topological_sort(e, visited, stack)
+
+        # Prepend v to the front of the list.
+        stack.appendleft(v)
+
+    def topological_sort(self):
+        """
+        Perform a topological ordering of the vertices in the DAG.
+
+        :returns: A list of the vertices sorted in topological order.
+        """
+        v_stack = deque()
+        v_visited = {key: False for key in self.values.keys()}
+
+        for v in self.values:
+            if not v_visited[v]:
+                self._topological_sort(v, v_visited, v_stack)
+
+        return list(v_stack)
