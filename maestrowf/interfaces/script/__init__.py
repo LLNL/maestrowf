@@ -27,6 +27,7 @@
 # SOFTWARE.
 ###############################################################################
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces.script.lsfscriptadapter import LSFScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
 
-__all__ = ("LocalScriptAdapter", "SlurmScriptAdapter")
+__all__ = ("LocalScriptAdapter", "LSFScriptAdapter", "SlurmScriptAdapter")
