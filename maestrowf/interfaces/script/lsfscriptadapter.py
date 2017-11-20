@@ -70,11 +70,16 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
-        self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self.add_batch_parameter("tasks", kwargs.pop("tasks", "1"))
+        self.add_batch_parameter("ptile", kwargs.pop("ptile", "1"))
+
+        # Static Header Elements
+        self.add_batch_parameter("parallel", "poe")
 
         self._exec = "#!/bin/bash"
         self._header = {
-            "nodes": "#BSUB -nnodes {nodes}",
+            "parallel": "#BSUB -a {parallel}",
+            "nodes": "#BSUB -n {tasks}",
             "queue": "#BSUB -q {queue}",
             "bank": "#BSUB -G {bank}",
             "walltime": "#BSUB -W {walltime}",
@@ -101,7 +106,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
+        batch_header["tasks"] = run.pop("nodes", self._batch["tasks"])
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["output"] = "{}.%J.out".format(batch_header["job-name"])
         batch_header["error"] = "{}.%J.err".format(batch_header["job-name"])
@@ -138,30 +143,16 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
-        args = [self._cmd_flags["cmd"]]
-
-        if nodes:
-            _nodes = nodes
-            args += [
-                self._cmd_flags["nodes"],
-                str(nodes)
-            ]
-        else:
-            _nodes = 1
-
-        _procs = int(procs/_nodes)  # Compute the number of CPUs per node (rs)
-        # Processors segment
-        args += [
-            self._cmd_flags["ntasks"].format(procs=_procs)
+        args = [
+            # SLURM srun command
+            self._cmd_flags["cmd"],
+            # Nodes segment
+            self._cmd_flags["nodes"],
+            str(nodes),
+            # Processors segment
+            self._cmd_flags["ntasks"],
+            str(procs)
         ]
-
-        # If we have GPUs being requested, add them to the command.
-        gpus = kwargs.get("gpus", 0)
-        if gpus:
-            args += [
-                self._cmd_flags["gpus"],
-                str(gpus)
-            ]
 
         return " ".join(args)
 
@@ -220,10 +211,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        # -o = status output formatting
-        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter=\"|\""
-        stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
-        cmd = stat_cmd.format(self._batch["queue"], o_format)
+        cmd = "bjobs -u $USER -q {}".format(self._batch["queue"])
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
@@ -233,32 +221,21 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             LOGGER.debug("Looking for jobid %s", jobid)
             status[jobid] = None
 
-        state_index = 1
-        jobid_index = 0
-        term_reason = 3
         if retcode == 0:
-            # It seems that LSF may still return 0 even if it found nothing.
-            # We'll explicitly check for a "^No " regex in the event that the
-            # system is configured to return 0.
-            no_jobs = re.search(self.NOJOB_REGEX, output)
-            if no_jobs:
-                LOGGER.warning("User '%s' has no jobs executing. Returning.",
-                               getpass.getuser())
-                return JobStatusCode.NOJOBS, {}
-
-            # Otherwise, we can just process as normal.
             for job in output.split("\n")[1:]:
                 LOGGER.debug("Job Entry: %s", job)
                 # The squeue command output is split with the following indices
                 # used for specific information:
                 # 0 - Job Identifier
-                # 1 - Status of the job
-                # 2 - Exit code application terminated with
-                # 3 - Reason for termination (if applicable)
-                job_split = re.split("|", job)
-                if len(job_split) < 4:
-                    continue
-
+                # 1 - User the job belongs to
+                # 2 - Status of the job
+                # 3 - Submission queue
+                # 4 - Host where execution was set for
+                # 5 - Job name
+                # 6 - Time of submission
+                job_split = re.split("\s+", job)
+                state_index = 2
+                jobid_index = 0
                 while job_split[0] == "":
                     LOGGER.debug("Removing blank entry from head of status.")
                     job_split = job_split[1:]
@@ -269,50 +246,20 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     continue
 
                 if job_split[jobid_index] in status:
-                    if "limit reached" in job_split[term_reason]:
-                        _j_state = "TIMEOUT"
-                    else:
-                        _j_state = job_split[state_index]
-                    _state = self._state(_j_state)
-                    LOGGER.debug("ID Found. %s -- %s",
-                                 job_split[state_index],
-                                 _state)
-                    status[job_split[jobid_index]] = _state
+                    LOGGER.debug("ID Found. %s -- %s", job_split[state_index],
+                                 self._state(job_split[state_index]))
+                    status[job_split[jobid_index]] = \
+                        self._state(job_split[state_index])
 
             return JobStatusCode.OK, status
-        # NOTE: We're keeping this here for now since we could see it in the
-        # future...
-        elif retcode == 255:
+        elif retcode == 1:
             LOGGER.warning("User '%s' has no jobs executing. Returning.",
                            getpass.getuser())
             return JobStatusCode.NOJOBS, status
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.", retcode)
-            return JobStatusCode.ERROR, status
-
-    def cancel_jobs(self, joblist):
-        """
-        For the given job list, cancel each job.
-
-        :param joblist: A list of job identifiers to be cancelled.
-        :returns: The return code to indicate if jobs were cancelled.
-        """
-        # If we don't have any jobs to check, just return status OK.
-        if not joblist:
-            return CancelCode.OK
-
-        cmd = "bkill {}".format(" ".join(joblist))
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
-        output, err = p.communicate()
-        retcode = p.wait()
-
-        if retcode == 0:
-            return CancelCode.OK
-        else:
-            LOGGER.error("Error code '%s' seen. Unexpected behavior "
                          "encountered.")
-            return CancelCode.ERROR
+            return JobStatusCode.ERROR, status
 
     def _state(self, lsf_state):
         """
@@ -335,8 +282,6 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             return State.FINISHED
         elif lsf_state == "EXIT":
             return State.FAILED
-        elif lsf_state == "TIMEOUT":
-            return State.TIMEDOUT
         elif lsf_state == "WAIT" or lsf_state == "PROV":
             return State.WAITING
         elif lsf_state == "UNKWN":
