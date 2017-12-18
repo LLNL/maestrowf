@@ -32,7 +32,8 @@ import logging
 import os
 from subprocess import PIPE, Popen
 
-from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode
+from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
+    CancelCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
 
 LOGGER = logging.getLogger(__name__)
@@ -105,6 +106,15 @@ class LocalScriptAdapter(ScriptAdapter):
         identifiers to their status.
         """
         return JobStatusCode.NOJOBS, {}
+
+    def cancel_jobs(self, joblist):
+        """
+        For the given job list, cancel each job.
+
+        :param joblist: A list of job identifiers to be cancelled.
+        :returns: The return code to indicate if jobs were cancelled.
+        """
+        return CancelCode.OK
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """

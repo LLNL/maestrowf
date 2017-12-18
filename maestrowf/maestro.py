@@ -73,6 +73,8 @@ def setup_argparser():
                         help="Check the status of the ExecutionGraph "
                         "located as specified by the 'directory' "
                         "argument.")
+    parser.add_argument("-C", "--cancel", action="store_true",
+                        help="Cancel all running jobs.")
     parser.add_argument("-l", "--logpath", type=str,
                         help="Alternate path to store program logging.")
     parser.add_argument("-d", "--debug_lvl", type=int, default=2,
@@ -163,6 +165,13 @@ def main():
                 pass
 
         return
+
+    if args.cancel:
+        study_path = os.path.split(args.specification)[0]
+        lock_path = os.path.join(study_path, ".cancel.lock")
+        with open(lock_path, 'a'):
+            os.utime(lock_path, None)
+        sys.exit(0)
 
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)

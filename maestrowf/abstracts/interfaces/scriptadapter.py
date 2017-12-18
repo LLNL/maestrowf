@@ -65,6 +65,16 @@ class ScriptAdapter(object):
         pass
 
     @abstractmethod
+    def cancel_jobs(self, joblist):
+        """
+        For the given job list, cancel each job.
+
+        :param joblist: A list of job identifiers to be cancelled.
+        :returns: The return code to indicate if jobs were cancelled.
+        """
+        pass
+
+    @abstractmethod
     def _write_script(self, ws_path, step):
         """
         Write a script to the workspace of a workflow step.

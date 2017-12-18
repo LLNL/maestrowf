@@ -5,7 +5,8 @@ import logging
 import os
 import pickle
 
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
+from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
+    CancelCode
 from maestrowf.datastructures.dag import DAG
 from maestrowf.interfaces import ScriptAdapterFactory
 
@@ -601,6 +602,11 @@ class ExecutionGraph(DAG):
                     record.mark_end(State.FAILED)
                     cleanup_steps.update(self.bfs_subtree(name)[0])
 
+                elif status == State.CANCELLED:
+                    logger.info("Step '%s' was cancelled.", name)
+                    self.in_progress.remove(name)
+                    record.mark_end(State.CANCELLED)
+
             # Let's handle all the failed steps in one go.
             for node in cleanup_steps:
                 self.failed_steps.add(node)
@@ -692,3 +698,30 @@ class ExecutionGraph(DAG):
             msg = "Unknown Error (Code = {retcode})".format(retcode)
             logger.error(msg)
             return retcode, step_status
+
+    def cancel_study(self):
+        """
+        Cancel the study.
+        """
+        joblist = []
+        for step in self.in_progress:
+            jobid = self.values[step].jobid[-1]
+            joblist.append(jobid)
+
+        # Grab the adapter from the ScriptAdapterFactory.
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        adapter = adapter(**self._adapter)
+
+        # cancel our jobs
+        retcode = adapter.cancel_jobs(joblist)
+
+        if retcode == CancelCode.OK:
+            logger.info("Successfully requested to cancel all jobs.")
+            return retcode
+        elif retcode == CancelCode.ERROR:
+            logger.error("Failed to cancel jobs.")
+            return retcode
+        else:
+            msg = "Unknown Error (Code = {retcode})".format(retcode)
+            logger.error(msg)
+            return retcode

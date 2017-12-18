@@ -38,6 +38,11 @@ class SubmissionCode(Enum):
     ERROR = 1
 
 
+class CancelCode(Enum):
+    OK = 0
+    ERROR = 1
+
+
 class JobStatusCode(Enum):
     OK = 0
     NOJOBS = 1
@@ -59,3 +64,4 @@ class State(Enum):
     HWFAILURE = 9
     TIMEDOUT = 10
     UNKNOWN = 11
+    CANCELLED = 12

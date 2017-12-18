@@ -35,7 +35,8 @@ import re
 from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
+from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
+    CancelCode
 
 LOGGER = logging.getLogger(__name__)
 
@@ -228,6 +229,25 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                          "encountered.")
             return JobStatusCode.ERROR, status
 
+    def cancel_jobs(self, joblist):
+        """
+        For the given job list, cancel each job.
+
+        :param joblist: A list of job identifiers to be cancelled.
+        :returns: The return code to indicate if jobs were cancelled.
+        """
+        cmd = "scancel --quiet {}".format(" ".join(joblist))
+        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        output, err = p.communicate()
+        retcode = p.wait()
+
+        if retcode == 0:
+            return CancelCode.OK
+        else:
+            LOGGER.error("Error code '%s' seen. Unexpected behavior "
+                         "encountered.")
+            return CancelCode.ERROR
+
     def _state(self, slurm_state):
         """
         Map a scheduler specific job state to a Study.State enum.
@@ -248,8 +268,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             return State.HWFAILURE
         elif slurm_state == "TO":
             return State.TIMEDOUT
-        elif slurm_state == "ST" or slurm_state == "CA" or slurm_state == "F":
+        elif slurm_state == "ST" or slurm_state == "F":
             return State.FAILED
+        elif slurm_state == "CA":
+            return State.CANCELLED
         else:
             return State.UNKNOWN
 
