@@ -549,11 +549,10 @@ class ExecutionGraph(DAG):
                 record = self.values[name]
                 if status == State.FINISHED:
                     # Mark the step complete and notate its end time.
-                    record.mark_end()
+                    record.mark_end(State.FINISHED)
                     logger.info("Step '%s' marked as finished. Adding to "
                                 "complete set.", name)
                     self.completed_steps.add(name)
-                    record.state = State.FINISHED
                     self.in_progress.remove(name)
 
                 elif status == State.RUNNING:
