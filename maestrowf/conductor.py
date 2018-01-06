@@ -28,6 +28,7 @@
 ###############################################################################
 
 from argparse import ArgumentParser, RawTextHelpFormatter
+from filelock import FileLock, Timeout
 from datetime import datetime
 import glob
 import inspect
@@ -152,8 +153,23 @@ def main():
                 "%s...", dag.name, study_pkl[0])
     logger.info("Study Description: %s", dag.description)
 
+    cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
+
     study_complete = False
     while not study_complete:
+        if os.path.exists(cancel_lock_path):
+            # cancel the study if a cancel lock file is found
+            cancel_lock = FileLock(cancel_lock_path)
+            try:
+                with cancel_lock.acquire(timeout=10):
+                    # we have the lock
+                    dag.cancel_study()
+                os.remove(cancel_lock_path)
+                logger.info("Study '%s' has been cancelled.", dag.name)
+            except Timeout:
+                logger.error("Failed to acquire cancellation lock.")
+                pass
+
         logger.info("Checking DAG status at %s", str(datetime.now()))
         # Execute steps that are ready
         study_complete = dag.execute_ready_steps()
