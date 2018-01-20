@@ -75,11 +75,91 @@ class YAMLSpecification(Specification):
         The Specification class contains all the information represented
         """
         self.path = ""
-        self.description = {}
-        self.environment = {}
+        self.description = {
+            "name": "",
+            "description": ""
+        }
+        self.environment = {
+            "variables": {},
+            "labels": {},
+            "dependencies": {
+                "paths": [],
+                "git": []
+            }
+        }
         self.batch = {}
         self.study = []
         self.globals = {}
+
+    def __add__(self, other):
+        """
+        Merge two YAMLSpecification instances.
+
+        :param other: Another YAMLSpecification to merge into this instance.
+        """
+        if not isinstance(other, YAMLSpecification):
+            msg = "Attempting to merge an object of type '{}' with an " \
+                  "instance of a YAMLSpecification class.".format(type(other))
+            logger.error(msg)
+            raise TypeError(msg)
+
+        tmp = deepcopy(self)
+        # Handle the simpler environment case.
+        tmp.description.update(other.description)
+        tmp.batch.update(other.batch)
+        tmp.environment["variables"].update(other.environment["variables"])
+        tmp.environment["labels"].update(other.environment["labels"])
+
+        # Merge dependencies individually.
+        # Path dependencies
+        tmp_dict = {
+            item["name"]: item["path"]
+            for item in tmp.environment["dependencies"]["paths"]
+        }
+        oth_dict = {
+            item["name"]: item["path"]
+            for item in other.environment["dependencies"]["paths"]
+        }
+        # Update the paths.
+        tmp_dict.update(oth_dict)
+        tmp.environment["dependencies"]["paths"] = \
+            [
+                {"name": key, "path": value}
+                for key, value in tmp_dict.items()
+            ]
+
+        # Merge git dependencies.
+        tmp_dict = {
+            item["name"]: (item["path"], item["url"])
+            for item in tmp.environment["dependencies"]["git"]
+        }
+        oth_dict = {
+            item["name"]: (item["path"], item["url"])
+            for item in other.environment["dependencies"]["git"]
+        }
+        tmp_dict.update(oth_dict)
+        tmp.environment["dependencies"]["git"] = \
+            [
+                {"name": key, "path": value[0], "url": value[1]}
+                for key, value in tmp_dict.items()
+            ]
+
+        # Merge the study section
+        steps = {other.study[i]["name"]: i for i in range(0, len(other.study))}
+        for i in range(0, len(tmp.study)):
+            step_name = tmp.study[i]["name"]
+            if step_name in steps:
+                tmp.study[i]["description"] = \
+                    steps[step_name]["description"]
+                tmp.study[i]["run"].update(steps[step_name]["run"])
+                steps.pop(step_name)
+        # Append any other steps that weren't accounted for.
+        tmp.study += [other.study[i] for i in steps.values()]
+
+        # Merge the global parameters if they exist.
+        tmp.globals.update(other.globals)
+
+        return tmp
 
     @classmethod
     def load_specification(cls, path):
@@ -99,22 +179,29 @@ class YAMLSpecification(Specification):
             logger.exception(e.message)
             raise
 
-        logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
         specification.path = path
-        specification.description = spec.pop("description", {})
-        specification.environment = spec.pop("env",
-                                             {'variables': {},
-                                              'sources': [],
-                                              'labels': {},
-                                              'dependencies': {}})
-        specification.batch = spec.pop("batch", {})
-        specification.study = spec.pop("study", [])
-        specification.globals = spec.pop("global.parameters", {})
+        specification.description.update(spec.pop("description", {}))
 
-        logger.debug("Specification object created. Verifying...")
-        specification.verify()
-        logger.debug("Returning verified specification.")
+        env = spec.pop("env", specification.environment)
+        if "variables" in env:
+            specification.environment["variables"].update(env["variables"])
+        if "labels" in env:
+            specification.environment["labels"].update(env["labels"])
+        if "dependencies" in env:
+            if "paths" in env["dependencies"]:
+                specification.environment["dependencies"]["paths"] = \
+                    env["dependencies"]["paths"]
+            if "git" in env["dependencies"]:
+                specification.environment["dependencies"]["git"] = \
+                    env["dependencies"]["git"]
+
+        specification.batch = spec.pop("batch", specification.batch)
+        specification.study = spec.pop("study", specification.study)
+        specification.globals = \
+            spec.pop("global.parameters", specification.globals)
+
+        logger.debug("Specification object created.")
         return specification
 
     def verify(self):
