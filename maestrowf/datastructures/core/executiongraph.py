@@ -4,6 +4,7 @@ import getpass
 import logging
 import os
 import pickle
+from collections import deque
 
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
@@ -215,12 +216,14 @@ class ExecutionGraph(DAG):
     where that would go.
     """
 
-    def __init__(self, submission_attempts=1):
+    def __init__(self, submission_attempts=1, submission_throttle=0):
         """
         Initialize a new instance of an ExecutionGraph.
 
         :param submission_attempts: Number of attempted submissions before
         marking a step as failed.
+        :param submission_throttle: Maximum number of scheduled in progress
+        submissions.
         """
         super(ExecutionGraph, self).__init__()
         # Member variables for execution.
@@ -231,10 +234,26 @@ class ExecutionGraph(DAG):
         self.completed_steps = set([SOURCE])
         self.in_progress = set()
         self.failed_steps = set()
+        self.ready_steps = deque()
 
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
+        self._submission_throttle = submission_throttle
+
+        # Error check that the submission values are valid.
+        if self._submission_attempts < 1:
+            _msg = "Submission attempts should always be greater than 0. " \
+                   "Received a value of {}.".format(self._submission_attempts)
+            logger.error(_msg)
+            raise ValueError(_msg)
+
+        if self._submission_throttle < 0:
+            _msg = "Throttling should be 0 for unthrottled or a positive " \
+                   "integer for the number of allowed inflight jobs. " \
+                   "Received a value of {}.".format(self._submission_throttle)
+            logger.error(_msg)
+            raise ValueError(_msg)
 
     def add_step(self, name, step, workspace, restart_limit):
         """
@@ -392,7 +411,7 @@ class ExecutionGraph(DAG):
             record.script = cmd_script
             record.restart_script = restart_script
 
-    def _execute_record(self, name, record, restart=False):
+    def _execute_record(self, record, restart=False):
         """
         Execute a StepRecord.
 
@@ -400,6 +419,14 @@ class ExecutionGraph(DAG):
         :param record: An instance of a _StepRecord class.
         :param restart: True if the record needs restarting, False otherwise.
         """
+        # Logging for debugging.
+        logger.info("Executing -- '%s'\nScript path = %s", record.name,
+                    record.script)
+        logger.debug(
+            "Attempting to execute '%s' -- Current state is %s.",
+            record.name, record.status
+        )
+
         num_restarts = 0    # Times this step has temporally restarted.
         retcode = None      # Execution return code.
 
@@ -421,14 +448,15 @@ class ExecutionGraph(DAG):
         while retcode != SubmissionCode.OK and \
                 num_restarts < self._submission_attempts:
             logger.info("Attempting submission of '%s' (attempt %d of %d)...",
-                        name, num_restarts + 1, self._submission_attempts)
+                        record.name, num_restarts + 1,
+                        self._submission_attempts)
 
             # If not a restart, submit the cmd script.
             if not restart:
                 logger.debug(
                     "'%s' is not restarting -- Marking as SUBMITTED from %s "
                     "at %s",
-                    name,
+                    record.name,
                     record.status,
                     str(datetime.now())
                 )
@@ -439,7 +467,7 @@ class ExecutionGraph(DAG):
                     logger.debug(
                         "'%s' running locally -- Marking as RUNNING from %s "
                         "at %s",
-                        name,
+                        record.name,
                         record.status,
                         str(datetime.now())
                     )
@@ -462,24 +490,31 @@ class ExecutionGraph(DAG):
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:
-            logger.info("'%s' submitted with identifier '%s'", name, jobid)
+            logger.info("'%s' submitted with identifier '%s'",
+                        record.name, jobid)
             record.jobid.append(jobid)
-            self.in_progress.add(name)
+            self.in_progress.add(record.name)
 
             # Executed locally, so if we executed OK -- Finished.
             if record.to_be_scheduled is False:
                 record.mark_end(State.FINISHED)
-                self.completed_steps.add(name)
-                self.in_progress.remove(name)
+                self.completed_steps.add(record.name)
+                self.in_progress.remove(record.name)
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
             logger.warning("'%s' failed to properly submit properly. "
-                           "Step failed.", name)
-            path, parent = self.bfs_subtree(name)
+                           "Step failed.", record.name)
+            path, parent = self.bfs_subtree(record.name)
             for node in path:
                 self.failed_steps.add(node)
                 self.values[node].mark_end(State.FAILED)
+
+        # After execution state debug logging.
+        logger.debug(
+            "After execution of '%s' -- New state is %s.",
+            record.name, record.status
+        )
 
     def write_status(self, path):
         header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
@@ -642,22 +677,30 @@ class ExecutionGraph(DAG):
                 # as the number of dependencies the step has, it's ready to
                 # be executed. Add it to the map.
                 if num_finished == len(record.step.run["depends"]):
-                    logger.debug("All dependencies completed. Staging.")
-                    ready_steps[key] = record
+                    if key not in self.ready_steps:
+                        logger.debug("All dependencies completed. Staging.")
+                        self.ready_steps.append(record)
+                    else:
+                        logger.debug("Already staged. Passing.")
+                        continue
 
         # We now have a collection of ready steps. Execute.
-        for key, record in ready_steps.items():
-            logger.info("Executing -- '%s'\nScript path = %s", key,
-                        record.script)
-            logger.debug(
-                "Attempting to execute '%s' -- Current state is %s.",
-                record.name, record.status
-            )
-            self._execute_record(key, record)
-            logger.debug(
-                "After execution of '%s' -- New state is %s.",
-                record.name, record.status
-            )
+        # If we don't have a submission limit, go ahead and submit all.
+        if self._submission_throttle == 0:
+                logger.info("Launching all ready steps...")
+                _available = len(self.ready_steps)
+        # Else, we have a limit -- adhere to it.
+        else:
+            # Compute the number of available slots we have for execution.
+            _available = self._submission_throttle - len(self.in_progress)
+            _available = max(0, _available)
+            logger.info("Found %d available slots...", _available)
+
+        for i in range(0, _available):
+            # Pop the record and execute using the helper method.
+            _record = self.ready_steps.popleft()
+            logger.debug("Launching job %d -- %s", i, _record.name)
+            self._execute_record(_record)
 
         return False
 
