@@ -99,7 +99,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         run = dict(step.run)
         batch_header = dict(self._batch)
         batch_header["walltime"] = run.pop("walltime")
-        batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
+        if run["nodes"]:
+            batch_header["nodes"] = run.pop("nodes")
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["comment"] = step.description.replace("\n", " ")
 
