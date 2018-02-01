@@ -264,7 +264,7 @@ class Study(DAG):
         for node in path:
             yield parents[node], node, self.values[node]
 
-    def setup(self, submission_attempts=1, restart_limit=1):
+    def setup(self, submission_attempts=1, restart_limit=1, throttle=0):
         """
         Method for executing initial setup of a Study.
 
@@ -285,6 +285,7 @@ class Study(DAG):
 
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
+        self._submission_throttle = throttle
 
         # Set up the directory structure.
         # TODO: fdinatal - As I implement the high level program (manager and
@@ -326,12 +327,13 @@ class Study(DAG):
         """
         Set up the ExecutionGraph of a parameterized study.
 
+        :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an expanded
         ExecutionGraph based on the parameters and parameterized workflow
         steps.
         """
         # Construct ExecutionGraph
-        dag = ExecutionGraph()
+        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
         dag.add_description(**self.description)
         # Items to store that should be reset.
         global_workspace = self.output.value  # Highest ouput dir
@@ -512,11 +514,12 @@ class Study(DAG):
         """
         Execute a linear workflow without parameters.
 
+        :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an
         ExecutionGraph based on linear steps in the study.
         """
         # Construct ExecutionGraph
-        dag = ExecutionGraph()
+        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
         dag.add_description(**self.description)
         # Items to store that should be reset.
         logger.info("==================================================")
@@ -553,6 +556,7 @@ class Study(DAG):
         The stage method also sets up individual working directories (or
         workspaces) for each node in the workflow that requires it.
 
+        :param throttle: Maximum number of in progress jobs allowed.
         :returns: An ExecutionGraph object with the expanded workflow.
         """
         # If not set up, return None.

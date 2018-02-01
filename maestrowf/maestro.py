@@ -28,7 +28,7 @@
 ###############################################################################
 
 """A script for launching a YAML study specification."""
-from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
 from filelock import FileLock, Timeout
 import inspect
 import logging
@@ -105,7 +105,15 @@ def run_study(args):
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
                   parameters=parameters, steps=steps)
-    study.setup()
+
+    # Check if the throttle is zero or greater:
+    if args.throttle < 0:
+        _msg = "Submission throttle must be a value of zero or greater. " \
+               "'{}' provided.".format(args.throttle)
+        LOGGER.error(_msg)
+        raise ArgumentError(_msg)
+
+    study.setup(throttle=args.throttle)
     setup_logging(args, study.output_path, study.name)
 
     # Stage the study.
@@ -164,7 +172,10 @@ def setup_argparser():
     # subparser for a run subcommand
     run = subparsers.add_parser('run',
                                 help="Launch a study based on a specification")
-    run.add_argument("-t", "--sleeptime", type=int, default=60,
+    run.add_argument("-t", "--throttle", type=int, default=0,
+                     help="Maximum number of inflight jobs allowed to execute "
+                     "simultaneously (0 denotes not throttling).")
+    run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks.")
     run.add_argument("-y", "--autoyes", action="store_true", default=False,
