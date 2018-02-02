@@ -106,6 +106,13 @@ def run_study(args):
     study = Study(spec.name, spec.description, studyenv=environment,
                   parameters=parameters, steps=steps)
 
+    # Check if the submission attempts is greater than 0:
+    if args.attempts < 1:
+        _msg = "Submission attempts must be greater than 0. " \
+               "'{}' provided.".format(args.attempts)
+        LOGGER.error(_msg)
+        raise ArgumentError(_msg)
+
     # Check if the throttle is zero or greater:
     if args.throttle < 0:
         _msg = "Submission throttle must be a value of zero or greater. " \
@@ -113,7 +120,7 @@ def run_study(args):
         LOGGER.error(_msg)
         raise ArgumentError(_msg)
 
-    study.setup(throttle=args.throttle)
+    study.setup(throttle=args.throttle, submission_attempts=args.attempts)
     setup_logging(args, study.output_path, study.name)
 
     # Stage the study.
@@ -172,6 +179,9 @@ def setup_argparser():
     # subparser for a run subcommand
     run = subparsers.add_parser('run',
                                 help="Launch a study based on a specification")
+    run.add_argument("-a", "--attempts", type=int, default=1,
+                     help="Maximum number of submission attempts before a "
+                     "step is marked as failed.")
     run.add_argument("-t", "--throttle", type=int, default=0,
                      help="Maximum number of inflight jobs allowed to execute "
                      "simultaneously (0 denotes not throttling).")
