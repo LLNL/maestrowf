@@ -134,6 +134,8 @@ def run_study(args):
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
         uinput = "y"
+    elif args.autono:
+        uinput = "n"
     else:
         uinput = six.moves.input("Would you like to launch the study?[yn] ")
 
@@ -178,8 +180,13 @@ def setup_argparser():
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks.")
-    run.add_argument("-y", "--autoyes", action="store_true", default=False,
-                     help="Automatically answer yes to input prompts.")
+    prompt_opts = run.add_mutually_exclusive_group()
+    prompt_opts.add_argument("-n", "--autono", action="store_true",
+                             default=False,
+                             help="Automatically answer no to input prompts.")
+    prompt_opts.add_argument("-y", "--autoyes", action="store_true",
+                             default=False,
+                             help="Automatically answer yes to input prompts.")
     run.add_argument("specification", type=str, help="The path to a Study "
                      "YAML specification that will be loaded and "
                      "executed.")
