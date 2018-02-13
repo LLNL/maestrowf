@@ -1,0 +1,78 @@
+description:
+    name: launcher_examples
+    description: Examples of how to launch cluster workflows.
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/documentation
+
+batch:
+    type: slurm
+    queue: queue_name
+    bank: bank_name
+    host: hostname
+    nodes: 1
+
+study:
+    - name: legacy-token
+      description:
+          The legacy format for specifying node and task breakdown. Both nodes
+          and procs are required for this format.
+      run:
+          cmd: |
+            $(LAUNCHER)[1,1] echo "Test print #1"
+            $(LAUNCHER)[1,1] echo "Test print #2"
+          nodes: 2
+          procs: 2
+          depends: []
+
+    - name: legacy-token-prepend
+      description:
+          The legacy format for simply appending all of the step's resources to
+          a single command. Procs is the only resource required for this format.
+      run:
+          cmd: |
+            $(LAUNCHER) echo "Test print #1"
+          nodes: 1
+          procs: 1
+          depends: []
+
+    - name: legacy-token-prepend-procs
+      description:
+          The legacy format for simply appending all of the step's resources to
+          a single command. Procs is the only resource required for this format.
+      run:
+          cmd: |
+            $(LAUNCHER) echo "Test print #1"
+          procs: 1
+          depends: []
+
+    - name: command-prepend
+      description:
+          This format automatically prepends the scheduler appropriate MPI
+          command. Procs is the only required resource.
+      run:
+          cmd: |
+            echo "Test print #1"
+          nodes: 1
+          procs: 1
+          depends: []
+
+    - name: full-new-format
+      description:
+          Newest format for specifying resource allocation. Only requires procs.
+      run:
+          cmd: |
+            $(LAUNCHER)[1p, 1n] echo "Test print #1"
+            $(LAUNCHER)[1n, 1p] echo "Test print #2"
+          nodes: 2
+          procs: 2
+          depends: []
+
+    - name: procs-new-format
+      description:
+          Newest format for specifying resource allocation. Only requires procs.
+      run:
+          cmd: |
+            $(LAUNCHER)[1p] echo "Test print #1"
+          procs: 1
+          depends: []

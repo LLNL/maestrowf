@@ -110,7 +110,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         return "\n".join(modified_header)
 
-    def get_parallelize_command(self, procs, nodes=1):
+    def get_parallelize_command(self, procs, nodes=None):
         """
         Generate the SLURM parallelization segement of the command line.
 
@@ -123,13 +123,16 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         args = [
             # SLURM srun command
             self._cmd_flags["cmd"],
-            # Nodes segment
-            self._cmd_flags["nodes"],
-            str(nodes),
             # Processors segment
             self._cmd_flags["ntasks"],
             str(procs)
         ]
+
+        if nodes:
+            args += [
+                self._cmd_flags["nodes"],
+                str(nodes),
+            ]
 
         return " ".join(args)
 

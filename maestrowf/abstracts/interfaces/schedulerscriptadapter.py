@@ -51,10 +51,17 @@ class SchedulerScriptAdapter(ScriptAdapter):
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
     # Allocation regex and compilation
-    alloc_regex = re.compile(
-        re.escape(launcher_var) +
-        r"\[(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)\]"
-    )
+    # Keeping this one here for legacy.
+    launcher_regex = re.compile(
+        re.escape(launcher_var) + r"\[(?P<alloc>.*)\]")
+
+    # We can have multiple requested submission properties.
+    # Legacy allocation of nodes and procs.
+    legacy_alloc = r"(?P<nodes>[0-9]+),\s*(?P<procs>[0-9]+)"
+    # Just allocate based on tasks.
+    task_alloc = r"(?P<procs>[0-9]+)p"
+    # Just allocate based on nodes.
+    node_alloc = r"(?P<nodes>[0-9]+)n"
 
     def __init__(self):
         """
@@ -88,7 +95,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         pass
 
     @abstractmethod
-    def get_parallelize_command(self, procs, nodes=1):
+    def get_parallelize_command(self, procs, nodes=None):
         """
         Generate the parallelization segement of the command line.
 
@@ -112,62 +119,119 @@ class SchedulerScriptAdapter(ScriptAdapter):
         err_msg = "{} attempting to allocate {} {} for a parallel call with" \
                   " a maximum allocation of {}"
 
-        # We have three things that can happen.
-        # 1. We are partitioning the allocation into smaller chunks.
-        # We need to check for the launcher tag with specified values.
-        search = list(re.finditer(self.alloc_regex, step_cmd))
-        cmd = step_cmd
-        if search:
-            LOGGER.debug("Allocation setup found. cmd=%s", step_cmd)
-            for match in search:
-                # For each regex match that we found do:
-                # Collect the nodes and procs in the launch allocation.
-                alloc_nodes = match.group("nodes")
-                alloc_procs = match.group("procs")
-                # Compare the allocation to step allocation.
-                if int(alloc_nodes) > nodes:
-                    msg = err_msg.format(
-                        match.group(),
-                        alloc_nodes,
-                        "nodes",
-                        nodes
+        LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
+        LOGGER.debug("step_cmd=%s", step_cmd)
+        # See if the command contains a launcher token in it.
+        alloc_search = list(re.finditer(self.launcher_regex, step_cmd))
+        if alloc_search:
+            # If we find that launcher nomenclature.
+            total_nodes = 0     # Total nodes we've allocated so far.
+            total_procs = 0     # Total processors we've allocated so far.
+            cmd = step_cmd      # The step command we'll substitute into.
+            for match in alloc_search:
+                LOGGER.debug("Found a match: %s", match.group())
+                _nodes = None
+                _procs = None
+                # Look for the allocation information in the match.
+                _alloc = match.group("alloc")
+                # Search for the legacy format.
+                _legacy = re.search(self.legacy_alloc, _alloc)
+                if _legacy:
+                    # nodes, procs legacy notation.
+                    _ = _alloc.split(",")
+                    _nodes = _[0]
+                    _procs = _[1]
+                    LOGGER.debug(
+                        "Legacy setup detected. (nodes=%s, procs=%s)",
+                        _nodes,
+                        _procs
                     )
+                else:
+                    # We're dealing with the new style.
+                    # Make sure we only have at most one proc and node
+                    # allocation specified.
+                    if _alloc.count("p") > 1 or _alloc.count("n") > 1:
+                        msg = "cmd: {}\n Invalid allocations specified ({})." \
+                              " Number of nodes and/or procs must only be " \
+                              "specified once." \
+                              .format(step_cmd, _alloc)
+                        LOGGER.error(msg)
+                        raise ValueError(msg)
+
+                    if _alloc.count("p") < 1:
+                        msg = "cmd: {}\n Invalid allocations specified ({})." \
+                              " Processors/tasks must be specified." \
+                              .format(step_cmd, _alloc)
+                        LOGGER.error(msg)
+                        raise ValueError(msg)
+
+                    _nodes = re.search(self.node_alloc, _alloc)
+                    if _nodes:
+                        _nodes = _nodes.group("nodes")
+                    _procs = re.search(self.task_alloc, _alloc)
+                    if _procs:
+                        _procs = _procs.group("procs")
+
+                    LOGGER.debug(
+                        "New setup detected. (nodes=%s, procs=%s)",
+                        _nodes,
+                        _procs
+                    )
+
+                msg = []
+                # Check that the requested nodes are within range.
+                if _nodes:
+                    _ = int(_nodes)
+                    total_nodes += _
+                    if _ > nodes:
+                        msg.append(
+                            err_msg.format(
+                                match.group(), _nodes, "nodes", nodes
+                            )
+                        )
+                # Check that the requested processors is within range.
+                if _procs:
+                    _ = int(_procs)
+                    total_procs += _
+                    if _ > procs:
+                        msg.append(
+                            err_msg.format(
+                                match.group(), _procs, "procs", procs
+                            )
+                        )
+                # If we have constructed a message, raise an exception.
+                if msg:
                     LOGGER.error(msg)
                     raise ValueError(msg)
-                if int(alloc_procs) > procs:
-                    msg = err_msg.format(
-                        match.group(),
-                        alloc_procs,
-                        "procs",
-                        procs
-                    )
-                    LOGGER.error(msg)
-                    raise ValueError(msg)
-                # Compute the parallel command.
-                parallel_cmd = self.get_parallelize_command(
-                    alloc_procs,
-                    alloc_nodes
-                )
-                # Substitute the match with the parallel command.
-                cmd = cmd.replace(match.group(), parallel_cmd)
-            # Return the new command.
-            return cmd
-        # 2. If not allocating,then sub in for launcher if it exists.
-        parallel_cmd = self.get_parallelize_command(procs, nodes)
-        search = list(re.finditer(re.escape(self.launcher_var), step_cmd))
-        if search:
-            LOGGER.debug("Launcher token set up found. cmd=%s", step_cmd)
-            if len(search) == 1:
-                cmd = step_cmd.replace(search[0].group(), parallel_cmd)
-            else:
-                msg = "'{}' command has more than one instance of {}." \
-                    .format(step_cmd, self.launcher_var)
+
+                pcmd = self.get_parallelize_command(_procs, _nodes)
+                cmd = cmd.replace(match.group(), pcmd)
+
+            # Verify that the total nodes/procs used is within maximum.
+            if total_procs > procs:
+                msg = "Total processors ({}) requested exceeds the " \
+                      "maximum requested ({})".format(total_procs, procs)
                 LOGGER.error(msg)
                 raise ValueError(msg)
+
+            if total_nodes > nodes:
+                msg = "Total nodes ({}) requested exceeds the " \
+                      "maximum requested ({})".format(total_nodes, nodes)
+                LOGGER.error(msg)
+                raise ValueError(msg)
+
             return cmd
-        # 3. Otherwise, just prepend the command to the front.
-        LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
-        return " ".join([parallel_cmd, step_cmd])
+        else:
+            # 3. If not using launcher token,then just prepend.
+            pcmd = self.get_parallelize_command(procs, nodes)
+            # Catch the case where the launcher token appears on its own
+            if self.launcher_var in step_cmd:
+                LOGGER.debug("'%s' found in cmd -- %s",
+                             self.launcher_var, step_cmd)
+                return step_cmd.replace(self.launcher_var, pcmd)
+            else:
+                LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
+                return " ".join([pcmd, step_cmd])
 
     def get_scheduler_command(self, step):
         """
@@ -191,7 +255,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        step_nodes = step.run.get("nodes", 1)
+        step_nodes = step.run.get("nodes")
         step_procs = step.run.get("procs")
         if step_nodes or step_procs:
             to_be_scheduled = True
