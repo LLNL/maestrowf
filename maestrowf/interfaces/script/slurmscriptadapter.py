@@ -42,9 +42,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SlurmScriptAdapter(SchedulerScriptAdapter):
-    """
-    A ScriptAdapter class for interfacing with the SLURM cluster scheduler.
-    """
+    """A ScriptAdapter class for interfacing with the SLURM scheduler."""
+
     def __init__(self, **kwargs):
         """
         Initialize an instance of the SlurmScriptAdapter.
