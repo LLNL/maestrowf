@@ -69,6 +69,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
         self._exec = "#!/bin/bash"
         self._header = {
@@ -85,6 +86,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "depends": "--dependency",
             "ntasks": "-n",
             "nodes": "-N",
+            "reservation": "--reservation",
         }
 
     def get_header(self, step):
@@ -148,7 +150,18 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
         identiifer.
         """
-        cmd = " ".join(["sbatch", path, "-D", cwd])
+        # Check and see if we should be submitting into a reservation.
+        if self._batch["reservation"]:
+            cmd = " ".join(
+                [
+                    "sbatch",
+                    "--reservation", self._batch["reservation"],
+                    "-D", cwd, path
+                ]
+            )
+        else:
+            cmd = " ".join(["sbatch", path, "-D", cwd])
+
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
