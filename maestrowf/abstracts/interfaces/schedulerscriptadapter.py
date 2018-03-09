@@ -48,6 +48,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
     constructing parallel commands. The adapter will substitute parallelized
     commands but also defines how to schedule and check job status.
     """
+
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
     # Allocation regex and compilation
@@ -64,9 +65,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
     node_alloc = r"(?P<nodes>[0-9]+)n"
 
     def __init__(self):
-        """
-        Initialize an empty ScriptAdapter object.
-        """
+        """Initialize an empty ScriptAdapter object."""
         # NOTE: The _batch member should be used to store persistent batching
         # parameters. The entries in this dictionary are meant to capture the
         # the base settings for submission to a batch. This member variables
@@ -95,7 +94,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         pass
 
     @abstractmethod
-    def get_parallelize_command(self, procs, nodes=None):
+    def get_parallelize_command(self, **kwargs):
         """
         Generate the parallelization segement of the command line.
 
@@ -107,7 +106,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         """
         pass
 
-    def _substitute_parallel_command(self, step_cmd, nodes, procs):
+    def _substitute_parallel_command(self, step_cmd, **kwargs):
         """
         Substitute parallelized segements into a specified command.
 
@@ -255,14 +254,11 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        step_nodes = step.run.get("nodes")
-        step_procs = step.run.get("procs")
-        if step_nodes or step_procs:
+        if "nodes" in step.run or "procs" in step.run:
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
-                step_nodes,
-                step_procs
+                **step.run
             )
             LOGGER.debug("Scheduling command: %s", cmd)
 
@@ -271,8 +267,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             if step.run["restart"]:
                 restart = self._substitute_parallel_command(
                     step.run["restart"],
-                    step_nodes,
-                    step_procs
+                    **step.run
                 )
                 LOGGER.debug("Restart command: %s", cmd)
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
