@@ -240,6 +240,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param joblist: A list of job identifiers to be cancelled.
         :returns: The return code to indicate if jobs were cancelled.
         """
+        # If we don't have any jobs to check, just return status OK.
+        if not joblist:
+            return CancelCode.OK
+
         cmd = "scancel --quiet {}".format(" ".join(joblist))
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
