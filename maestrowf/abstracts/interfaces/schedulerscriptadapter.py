@@ -94,7 +94,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         pass
 
     @abstractmethod
-    def get_parallelize_command(self, **kwargs):
+    def get_parallelize_command(self, nodes, proc, **kwargs):
         """
         Generate the parallelization segement of the command line.
 
@@ -118,6 +118,8 @@ class SchedulerScriptAdapter(ScriptAdapter):
         err_msg = "{} attempting to allocate {} {} for a parallel call with" \
                   " a maximum allocation of {}"
 
+        nodes = kwargs.pop("nodes")
+        procs = kwargs.pop("procs")
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
         LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
@@ -203,7 +205,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     LOGGER.error(msg)
                     raise ValueError(msg)
 
-                pcmd = self.get_parallelize_command(_procs, _nodes)
+                pcmd = self.get_parallelize_command(_procs, _nodes, **kwargs)
                 cmd = cmd.replace(match.group(), pcmd)
 
             # Verify that the total nodes/procs used is within maximum.
@@ -222,7 +224,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             return cmd
         else:
             # 3. If not using launcher token,then just prepend.
-            pcmd = self.get_parallelize_command(procs, nodes)
+            pcmd = self.get_parallelize_command(procs, nodes, **kwargs)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
                 LOGGER.debug("'%s' found in cmd -- %s",
