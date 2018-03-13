@@ -157,17 +157,16 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
         identiifer.
         """
+        # Leading command is 'sbatch'
+        cmd = ["sbatch"]
         # Check and see if we should be submitting into a reservation.
-        if self._batch["reservation"]:
-            cmd = " ".join(
-                [
-                    "sbatch",
-                    "--reservation", self._batch["reservation"],
-                    "-D", cwd, path
-                ]
-            )
-        else:
-            cmd = " ".join(["sbatch", path, "-D", cwd])
+        rsvp = self._batch.pop("reservation", "")
+        if rsvp:
+            cmd += ["--reservation", rsvp]
+
+        # Append the script path and working directory.
+        cmd += [path, "-D", cwd]
+        cmd = " ".join(cmd)
 
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
