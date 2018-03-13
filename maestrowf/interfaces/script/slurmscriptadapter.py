@@ -111,7 +111,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         return "\n".join(modified_header)
 
-    def get_parallelize_command(self, procs, nodes=None):
+    def get_parallelize_command(self, procs, nodes=None, **kwargs):
         """
         Generate the SLURM parallelization segement of the command line.
 
@@ -133,6 +133,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             args += [
                 self._cmd_flags["nodes"],
                 str(nodes),
+            ]
+
+        rsvp = kwargs.pop("reservation", "")
+        if rsvp:
+            args += [
+                self._cmd_flags["reservation"],
+                "\"{}\"".format(str(rsvp))
             ]
 
         return " ".join(args)
