@@ -164,9 +164,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # Leading command is 'sbatch'
         cmd = ["sbatch"]
         # Check and see if we should be submitting into a reservation.
-        rsvp = self._batch.pop("reservation", "")
-        if rsvp:
-            cmd += ["--reservation", rsvp]
+        if "reservation" in self._batch:
+            cmd += ["--reservation", self._batch["reservation"]]
 
         # Append the script path and working directory.
         cmd += [path, "-D", cwd]
