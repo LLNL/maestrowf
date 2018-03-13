@@ -42,9 +42,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SlurmScriptAdapter(SchedulerScriptAdapter):
-    """
-    A ScriptAdapter class for interfacing with the SLURM cluster scheduler.
-    """
+    """A ScriptAdapter class for interfacing with the SLURM scheduler."""
+
     def __init__(self, **kwargs):
         """
         Initialize an instance of the SlurmScriptAdapter.
@@ -70,6 +69,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
         self._exec = "#!/bin/bash"
         self._header = {
@@ -86,6 +86,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "depends": "--dependency",
             "ntasks": "-n",
             "nodes": "-N",
+            "reservation": "--reservation",
         }
 
     def get_header(self, step):
@@ -106,11 +107,15 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         modified_header = [self._exec]
         for key, value in self._header.items():
+            # If we're looking at the bank and the reservation header exists,
+            # skip the bank to prefer the reservation.
+            if key == "bank" and "reservation" in self._batch:
+                continue
             modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
 
-    def get_parallelize_command(self, procs, nodes=None):
+    def get_parallelize_command(self, procs, nodes=None, **kwargs):
         """
         Generate the SLURM parallelization segement of the command line.
 
@@ -134,6 +139,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 str(nodes),
             ]
 
+        rsvp = kwargs.pop("reservation", "")
+        if rsvp:
+            args += [
+                self._cmd_flags["reservation"],
+                "\"{}\"".format(str(rsvp))
+            ]
+
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
@@ -149,7 +161,17 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
         identiifer.
         """
-        cmd = " ".join(["sbatch", path, "-D", cwd])
+        # Leading command is 'sbatch'
+        cmd = ["sbatch"]
+        # Check and see if we should be submitting into a reservation.
+        rsvp = self._batch.pop("reservation", "")
+        if rsvp:
+            cmd += ["--reservation", rsvp]
+
+        # Append the script path and working directory.
+        cmd += [path, "-D", cwd]
+        cmd = " ".join(cmd)
+
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)

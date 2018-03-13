@@ -72,7 +72,8 @@ class StudyStep(SimObject):
                         "restart": "",
                         "nodes": "",
                         "procs": "",
-                        "walltime": ""
+                        "walltime": "",
+                        "reservation": ""
                     }
 
     def apply_parameters(self, combo):
