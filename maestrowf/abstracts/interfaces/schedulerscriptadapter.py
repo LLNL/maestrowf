@@ -94,7 +94,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         pass
 
     @abstractmethod
-    def get_parallelize_command(self, nodes, proc, **kwargs):
+    def get_parallelize_command(self, procs, nodes, **kwargs):
         """
         Generate the parallelization segement of the command line.
 
