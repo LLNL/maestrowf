@@ -89,9 +89,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._cmd_flags = {
-            "cmd": "jsrun",
-            "ntasks": "-np",
-            "nodes": "--rs_per_host 1 --nrs",
+            "cmd":      "jsrun",
+            "ntasks":   "-np",
+            "nodes":    "--rs_per_host 1 --nrs",
+            "gpus":     "-g",
         }
 
     def get_header(self, step):
@@ -131,7 +132,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         return "\n".join(modified_header)
 
-    def get_parallelize_command(self, procs, nodes=1):
+    def get_parallelize_command(self, procs, nodes=None, **kwargs):
         """
         Generate the LSF parallelization segement of the command line.
 
@@ -151,6 +152,14 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             self._cmd_flags["ntasks"],
             str(procs)
         ]
+
+        # If we have GPUs being requested, add them to the command.
+        gpus = kwargs.pop("gpus", 0)
+        if gpus:
+            args += [
+                self._cmd_flags["gpus"],
+                gpus
+            ]
 
         return " ".join(args)
 
@@ -200,7 +209,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        cmd = "bjobs -u $USER -q {}".format(self._batch["queue"])
+        cmd = "bjobs -l -u $USER -q {}".format(self._batch["queue"])
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
