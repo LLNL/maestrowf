@@ -36,7 +36,8 @@ import re
 from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
+from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
+    SubmissionCode
 
 LOGGER = logging.getLogger(__name__)
 
@@ -89,10 +90,11 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._cmd_flags = {
-            "cmd":      "jsrun",
-            "ntasks":   "-np",
-            "nodes":    "--rs_per_host 1 --nrs",
-            "gpus":     "-g",
+            "cmd":          "jsrun",
+            "ntasks":       "-np",
+            "nodes":        "--rs_per_host 1 --nrs",
+            "gpus":         "-g",
+            "reservation":  "-J",
         }
 
     def get_header(self, step):
@@ -158,7 +160,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         if gpus:
             args += [
                 self._cmd_flags["gpus"],
-                gpus
+                str(gpus)
             ]
 
         return " ".join(args)
@@ -258,6 +260,33 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
                          "encountered.")
             return JobStatusCode.ERROR, status
+
+    def cancel_jobs(self, joblist):
+        """
+        For the given job list, cancel each job.
+
+        :param joblist: A list of job identifiers to be cancelled.
+        :returns: The return code to indicate if jobs were cancelled.
+        """
+        # If we don't have any jobs to check, just return status OK.
+        if not joblist:
+            return CancelCode.OK
+
+        kill_cmd = "bkill {} || EXIT_STATUS=$?"
+        cmd = ["EXIT_STATUS=0"]
+        cmd += [kill_cmd.format(jobid) for jobid in joblist]
+        cmd.append("exit $EXIT_STATUS")
+        cmd = ";".join(cmd)
+        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        output, err = p.communicate()
+        retcode = p.wait()
+
+        if retcode == 0:
+            return CancelCode.OK
+        else:
+            LOGGER.error("Error code '%s' seen. Unexpected behavior "
+                         "encountered.")
+            return CancelCode.ERROR
 
     def _state(self, lsf_state):
         """
