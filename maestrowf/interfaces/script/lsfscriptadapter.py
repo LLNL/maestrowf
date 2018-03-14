@@ -154,6 +154,14 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             str(procs)
         ]
 
+        # If we have GPUs being requested, add them to the command.
+        gpus = kwargs.pop("gpus", 0)
+        if gpus:
+            args += [
+                self._cmd_flags["gpus"],
+                gpus
+            ]
+
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
@@ -211,7 +219,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        cmd = "bjobs -u $USER -q {}".format(self._batch["queue"])
+        cmd = "bjobs -l -u $USER -q {}".format(self._batch["queue"])
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
