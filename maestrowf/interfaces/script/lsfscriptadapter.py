@@ -178,7 +178,16 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
         identiifer.
         """
-        cmd = " ".join(["bsub", "-cwd", cwd, "<", path])
+        args = ["bsub"]
+
+        if "reservation" in self._batch:
+            args += [
+                "-U",
+                self._batch["reservation"]
+            ]
+
+        args += ["-cwd", cwd, "<", path]
+        cmd = " ".join(args)
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
