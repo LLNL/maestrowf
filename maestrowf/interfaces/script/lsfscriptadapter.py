@@ -90,9 +90,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._cmd_flags = {
-            "cmd":          "jsrun",
-            "ntasks":       "-nrs",
-            "nodes":        "--rs_per_host 1 --nrs",
+            "cmd":          "jsrun --bind rs",
+            "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
+            "nodes":        "-nrs",
             "gpus":         "-g",
             "reservation":  "-J",
         }
@@ -151,8 +151,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             self._cmd_flags["nodes"],
             str(nodes),
             # Processors segment
-            self._cmd_flags["ntasks"],
-            str(procs)
+            self._cmd_flags["ntasks"].format(procs=procs),
         ]
 
         # If we have GPUs being requested, add them to the command.
