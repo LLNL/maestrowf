@@ -91,7 +91,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         self._cmd_flags = {
             "cmd":          "jsrun",
-            "ntasks":       "-np",
+            "ntasks":       "-nrs",
             "nodes":        "--rs_per_host 1 --nrs",
             "gpus":         "-g",
             "reservation":  "-J",
@@ -220,7 +220,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        cmd = "bjobs -l -u $USER -q {}".format(self._batch["queue"])
+        cmd = "bhist -a -l -u $USER -q {}".format(self._batch["queue"])
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
