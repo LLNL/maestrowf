@@ -213,7 +213,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        cmd = "bhist -a -l -u $USER -q {}".format(self._batch["queue"])
+        cmd = "bjobs -a -u $USER -q {}".format(self._batch["queue"])
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
@@ -223,6 +223,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             LOGGER.debug("Looking for jobid %s", jobid)
             status[jobid] = None
 
+        state_index = 2
+        jobid_index = 0
         if retcode == 0:
             for job in output.split("\n")[1:]:
                 LOGGER.debug("Job Entry: %s", job)
@@ -233,11 +235,13 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 2 - Status of the job
                 # 3 - Submission queue
                 # 4 - Host where execution was set for
-                # 5 - Job name
-                # 6 - Time of submission
+                # 5 - Execution host?
+                # 6 - Job name
+                # 7 - Time of submission
                 job_split = re.split("\s+", job)
-                state_index = 2
-                jobid_index = 0
+                if len(job_split) < 8:
+                    continue
+
                 while job_split[0] == "":
                     LOGGER.debug("Removing blank entry from head of status.")
                     job_split = job_split[1:]
