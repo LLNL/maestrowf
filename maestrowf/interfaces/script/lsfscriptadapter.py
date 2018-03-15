@@ -150,8 +150,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             self._cmd_flags["nodes"],
             str(nodes),
             # Processors segment
-            self._cmd_flags["ntasks"],
-            str(procs)
+            self._cmd_flags["ntasks"].format(procs=procs),
         ]
 
         # If we have GPUs being requested, add them to the command.
