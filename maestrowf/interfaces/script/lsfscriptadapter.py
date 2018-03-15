@@ -86,7 +86,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self._cmd_flags = {
             "cmd":          "jsrun --bind rs",
             "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "nodes":        "-nrs",
+            "nodes":        "--nrs",
             "gpus":         "-g",
             "reservation":  "-J",
         }
