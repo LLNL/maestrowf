@@ -71,22 +71,16 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("tasks", kwargs.pop("tasks", "1"))
-        self.add_batch_parameter("ptile", kwargs.pop("ptile", "1"))
-
-        # Static Header Elements
-        self.add_batch_parameter("parallel", "poe")
 
         self._exec = "#!/bin/bash"
         self._header = {
-            "parallel": "#BSUB -a {parallel}",
-            "nodes": "#BSUB -n {tasks}",
+            "nodes": "#BSUB -nnodes {tasks}",
             "queue": "#BSUB -q {queue}",
             "bank": "#BSUB -G {bank}",
             "walltime": "#BSUB -W {walltime}",
             "job-name": "#BSUB -J {job-name}",
             "output": "#BSUB -o {output}",
             "error": "#BSUB -e {error}",
-            "ptile": "#BSUB -R \"span[ptile={ptile}]\"",
         }
 
         self._cmd_flags = {
