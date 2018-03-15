@@ -254,13 +254,13 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                         self._state(job_split[state_index])
 
             return JobStatusCode.OK, status
-        elif retcode == 1:
+        elif retcode == 255:
             LOGGER.warning("User '%s' has no jobs executing. Returning.",
                            getpass.getuser())
             return JobStatusCode.NOJOBS, status
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.")
+                         "encountered.", retcode)
             return JobStatusCode.ERROR, status
 
     def cancel_jobs(self, joblist):
