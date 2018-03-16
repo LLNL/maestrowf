@@ -70,11 +70,11 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
-        self.add_batch_parameter("tasks", kwargs.pop("tasks", "1"))
+        self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
 
         self._exec = "#!/bin/bash"
         self._header = {
-            "nodes": "#BSUB -nnodes {tasks}",
+            "nodes": "#BSUB -nnodes {nodes}",
             "queue": "#BSUB -q {queue}",
             "bank": "#BSUB -G {bank}",
             "walltime": "#BSUB -W {walltime}",
@@ -101,7 +101,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["tasks"] = run.pop("nodes", self._batch["tasks"])
+        batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["output"] = "{}.%J.out".format(batch_header["job-name"])
         batch_header["error"] = "{}.%J.err".format(batch_header["job-name"])
