@@ -138,12 +138,18 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
+
+        if not nodes:
+            _nodes = str(kwargs.pop("snodes"))
+        else:
+            _nodes = str(nodes)
+
         args = [
             # SLURM srun command
             self._cmd_flags["cmd"],
             # Nodes segment
             self._cmd_flags["nodes"],
-            str(nodes),
+            _nodes,
             # Processors segment
             self._cmd_flags["ntasks"].format(procs=procs),
         ]
