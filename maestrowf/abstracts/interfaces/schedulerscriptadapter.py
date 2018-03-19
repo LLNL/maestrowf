@@ -283,7 +283,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
-                **step.run
+                **dict(step.run)
             )
             LOGGER.debug("Scheduling command: %s", cmd)
 
@@ -292,7 +292,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             if step.run["restart"]:
                 restart = self._substitute_parallel_command(
                     step.run["restart"],
-                    **step.run
+                    **dict(step.run)
                 )
                 LOGGER.debug("Restart command: %s", cmd)
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
