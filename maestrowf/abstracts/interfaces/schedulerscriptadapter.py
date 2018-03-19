@@ -120,6 +120,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         nodes = kwargs.pop("nodes")
         procs = kwargs.pop("procs")
+        kwargs["snodes"] = nodes
+        kwargs["sprocs"] = procs
+
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
         LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
@@ -260,7 +263,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
-                **step.run
+                **dict(step.run)
             )
             LOGGER.debug("Scheduling command: %s", cmd)
 
@@ -269,7 +272,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             if step.run["restart"]:
                 restart = self._substitute_parallel_command(
                     step.run["restart"],
-                    **step.run
+                    **dict(step.run)
                 )
                 LOGGER.debug("Restart command: %s", cmd)
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
