@@ -219,7 +219,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        cmd = "bjobs -a -u $USER -q {}".format(self._batch["queue"])
+        # -o = status output formatting
+        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50"
+        stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
+        cmd = stat_cmd.format(self._batch["queue"], o_format)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
@@ -229,21 +232,18 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             LOGGER.debug("Looking for jobid %s", jobid)
             status[jobid] = None
 
-        state_index = 2
+        state_index = 1
         jobid_index = 0
+        term_reason = 3
         if retcode == 0:
             for job in output.split("\n")[1:]:
                 LOGGER.debug("Job Entry: %s", job)
                 # The squeue command output is split with the following indices
                 # used for specific information:
                 # 0 - Job Identifier
-                # 1 - User the job belongs to
-                # 2 - Status of the job
-                # 3 - Submission queue
-                # 4 - Host where execution was set for
-                # 5 - Execution host?
-                # 6 - Job name
-                # 7 - Time of submission
+                # 1 - Status of the job
+                # 2 - Exit code application terminated with
+                # 3 - Reason for termination (if applicable)
                 job_split = re.split("\s+", job)
                 if len(job_split) < 8:
                     continue
@@ -258,10 +258,15 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     continue
 
                 if job_split[jobid_index] in status:
-                    LOGGER.debug("ID Found. %s -- %s", job_split[state_index],
-                                 self._state(job_split[state_index]))
-                    status[job_split[jobid_index]] = \
-                        self._state(job_split[state_index])
+                    if "limit reached" in job_split[term_reason]:
+                        _j_state = "TIMEOUT"
+                    else:
+                        _j_state = job_split[state_index]
+                    _state = self._state(_j_state)
+                    LOGGER.debug("ID Found. %s -- %s",
+                                 job_split[state_index],
+                                 _state)
+                    status[job_split[jobid_index]] = _state
 
             return JobStatusCode.OK, status
         elif retcode == 255:
@@ -321,6 +326,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             return State.FINISHED
         elif lsf_state == "EXIT":
             return State.FAILED
+        elif lsf_state == "TIMEOUT":
+            return State.TIMEDOUT
         elif lsf_state == "WAIT" or lsf_state == "PROV":
             return State.WAITING
         elif lsf_state == "UNKWN":
