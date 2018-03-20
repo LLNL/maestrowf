@@ -795,7 +795,7 @@ class ExecutionGraph(DAG):
             logger.info("No jobs found.")
             return retcode, step_status
         else:
-            msg = "Unknown Error (Code = {retcode})".format(retcode)
+            msg = "Unknown Error (Code = {})".format(retcode)
             logger.error(msg)
             return retcode, step_status
 

@@ -65,15 +65,17 @@ class StudyStep(SimObject):
         self.name = ""
         self.description = ""
         self.run = {
-                        "cmd": "",
-                        "depends": "",
-                        "pre": "",
-                        "post": "",
-                        "restart": "",
-                        "nodes": "",
-                        "procs": "",
-                        "walltime": "",
-                        "reservation": ""
+                        "cmd"           : "",
+                        "depends"       : "",
+                        "pre"           : "",
+                        "post"          : "",
+                        "restart"       : "",
+                        "nodes"         : "",
+                        "procs"         : "",
+                        "gpus"          : "",
+                        "cores per task": 1, 
+                        "walltime"      : "",
+                        "reservation"   : ""
                     }
 
     def apply_parameters(self, combo):

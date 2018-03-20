@@ -30,7 +30,7 @@
 """Collection of custom adapters for interfacing with various systems."""
 import logging
 
-from maestrowf.interfaces.script import LocalScriptAdapter, SlurmScriptAdapter
+from maestrowf.interfaces.script import LocalScriptAdapter, SlurmScriptAdapter, FluxScriptAdapter
 
 __all__ = ("SlurmScriptAdapter", "ScriptAdapterFactory")
 LOGGER = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class ScriptAdapterFactory(object):
     factories = {
         "slurm": SlurmScriptAdapter,
         "local": LocalScriptAdapter,
+        "flux": FluxScriptAdapter,
     }
 
     @classmethod

@@ -28,5 +28,6 @@
 ###############################################################################
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter
 
-__all__ = ("LocalScriptAdapter", "SlurmScriptAdapter")
+__all__ = ("LocalScriptAdapter", "SlurmScriptAdapter", "FluxScriptAdapter")
