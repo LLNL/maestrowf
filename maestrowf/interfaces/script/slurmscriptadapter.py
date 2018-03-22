@@ -110,7 +110,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             # If we're looking at the bank and the reservation header exists,
             # skip the bank to prefer the reservation.
             if key == "bank" and "reservation" in self._batch:
-                continue
+                if self._batch["reservation"]:
+                    continue
             modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
