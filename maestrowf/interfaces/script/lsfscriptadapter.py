@@ -138,24 +138,25 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
+        args = [self._cmd_flags["cmd"]]
 
-        if not nodes:
-            _nodes = str(kwargs.pop("snodes"))
+        if nodes:
+            _nodes = nodes
+            args += [
+                self._cmd_flags["nodes"],
+                str(nodes)
+            ]
         else:
-            _nodes = str(nodes)
+            _nodes = 1
 
-        args = [
-            # SLURM srun command
-            self._cmd_flags["cmd"],
-            # Nodes segment
-            self._cmd_flags["nodes"],
-            _nodes,
-            # Processors segment
-            self._cmd_flags["ntasks"].format(procs=procs),
+        _procs = int(procs/_nodes)  # Compute the number of CPUs per node (rs)
+        # Processors segment
+        args += [
+            self._cmd_flags["ntasks"].format(procs=_procs)
         ]
 
         # If we have GPUs being requested, add them to the command.
-        gpus = kwargs.pop("gpus", 0)
+        gpus = kwargs.get("gpus", 0)
         if gpus:
             args += [
                 self._cmd_flags["gpus"],
@@ -302,11 +303,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         if not joblist:
             return CancelCode.OK
 
-        kill_cmd = "bkill {} || EXIT_STATUS=$?"
-        cmd = ["EXIT_STATUS=0"]
-        cmd += [kill_cmd.format(jobid) for jobid in joblist]
-        cmd.append("exit $EXIT_STATUS")
-        cmd = ";".join(cmd)
+        cmd = "bkill {}".format(" ".join(joblist))
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
