@@ -220,7 +220,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
         # -o = status output formatting
-        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50"
+        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter=\"|\""
         stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
         cmd = stat_cmd.format(self._batch["queue"], o_format)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
@@ -236,7 +236,18 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         jobid_index = 0
         term_reason = 3
         if retcode == 0:
+            # It seems that LSF may still return 0 even if it found nothing.
+            # We'll explicitly check for a "^No " regex in the event that the
+            # system is configured to return 0.
+            no_jobs = re.search(self.NOJOB_REGEX, output)
+            if no_jobs:
+                LOGGER.warning("User '%s' has no jobs executing. Returning.",
+                               getpass.getuser())
+                return JobStatusCode.NOJOBS, {}
+
+            # Otherwise, we can just process as normal.
             for job in output.split("\n")[1:]:
+                no_jobs = re.search()
                 LOGGER.debug("Job Entry: %s", job)
                 # The squeue command output is split with the following indices
                 # used for specific information:
@@ -244,7 +255,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 1 - Status of the job
                 # 2 - Exit code application terminated with
                 # 3 - Reason for termination (if applicable)
-                job_split = re.split("\s+", job)
+                job_split = re.split("|", job)
                 if len(job_split) < 8:
                     continue
 
@@ -269,6 +280,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     status[job_split[jobid_index]] = _state
 
             return JobStatusCode.OK, status
+        # NOTE: We're keeping this here for now since we could see it in the
+        # future...
         elif retcode == 255:
             LOGGER.warning("User '%s' has no jobs executing. Returning.",
                            getpass.getuser())
