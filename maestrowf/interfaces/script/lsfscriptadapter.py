@@ -248,7 +248,6 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
             # Otherwise, we can just process as normal.
             for job in output.split("\n")[1:]:
-                no_jobs = re.search()
                 LOGGER.debug("Job Entry: %s", job)
                 # The squeue command output is split with the following indices
                 # used for specific information:
@@ -257,7 +256,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 2 - Exit code application terminated with
                 # 3 - Reason for termination (if applicable)
                 job_split = re.split("|", job)
-                if len(job_split) < 8:
+                if len(job_split) < 4:
                     continue
 
                 while job_split[0] == "":
