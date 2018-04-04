@@ -300,10 +300,10 @@ class ParameterGenerator(SimObject):
             for key in self.parameters.keys():
                 pvalue = self.parameters[key][i]
                 try:
-                    tlabel = self.labels[key][i]
-                except:
                     tlabel = self.labels[key].replace(self.label_token,
                                                   str(pvalue))
+                except AttributeError:
+                    tlabel = self.labels[key][i]
                 name = self.names[key]
                 combo.add(key, name, pvalue, tlabel)
             yield combo
