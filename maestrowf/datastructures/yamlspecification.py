@@ -325,7 +325,7 @@ class YAMLSpecification(Specification):
         Conditions that must be satisfied for a collection of globals:
             1. All global names must be unique.
             2. Each list of values must be the same length.
-            3. If the label is a list, its length must match 
+            3. If the label is a list, its length must match
                the value length
         """
         try:
@@ -349,14 +349,16 @@ class YAMLSpecification(Specification):
                     # If label is a list, check its length against values.
                     values = value["values"]
                     label = value["label"]
-                    if isinstance(label,list):
+                    if isinstance(label, list):
                         if len(values) != len(label):
-                            raise ValueError("Global parameter '{}' the values length "
-                                             "does not match the label list length."
+                            raise ValueError("Global parameter '{}' the "
+                                             "values length doesn not "
+                                             "match the label list length."
                                              .format(name))
                         if len(label) != len(set(label)):
-                            raise ValueError("Global parameter '{}' the label "
-                                             "does not contain unnique labels."
+                            raise ValueError("Global parameter '{}' the "
+                                             "label does not contain "
+                                             "unique labels."
                                              .format(name))
                     # Add the name to global parameters encountered, check if
                     # length of values is the same as previously encountered.

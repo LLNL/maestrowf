@@ -301,7 +301,7 @@ class ParameterGenerator(SimObject):
                 pvalue = self.parameters[key][i]
                 try:
                     tlabel = self.labels[key].replace(self.label_token,
-                                                  str(pvalue))
+                                                      str(pvalue))
                 except AttributeError:
                     tlabel = self.labels[key][i]
                 name = self.names[key]
