@@ -223,7 +223,10 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
             return cmd
         else:
-            # 3. If not using launcher token,then just prepend.
+            # 3. Two smaller cases here. If we see the launcher token WITHOUT
+            # any parameters, replace it there with full nodes and procs.
+            # Otherwise, just return the command. A user may simply want to run
+            # an unparallelized code in a submission.
             pcmd = self.get_parallelize_command(procs, nodes, **kwargs)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
@@ -231,8 +234,11 @@ class SchedulerScriptAdapter(ScriptAdapter):
                              self.launcher_var, step_cmd)
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
-                LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
-                return " ".join([pcmd, step_cmd])
+                LOGGER.debug(
+                    "The command did not specify an MPI command. cmd=%s",
+                    step_cmd
+                )
+                return step_cmd
 
     def get_scheduler_command(self, step):
         """
