@@ -352,7 +352,7 @@ class YAMLSpecification(Specification):
                     if isinstance(label, list):
                         if len(values) != len(label):
                             raise ValueError("Global parameter '{}' the "
-                                             "values length doesn not "
+                                             "values length does not "
                                              "match the label list length."
                                              .format(name))
                         if len(label) != len(set(label)):
