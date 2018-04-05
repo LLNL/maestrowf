@@ -225,10 +225,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             'environ': get_environment(), # TODO: revisit
             'options': { 'stdio-delay-commit' : 1 },
             "opts": {
-              "nnodes" = step.run["nodes"],
-              "ntasks"  = step.run["nodes"],
-              "cores-per-task" = step.run["cores per task"],
-              "tasks-per-node" = 1,
+              "nnodes": step.run["nodes"],
+              "ntasks": step.run["nodes"],
+              "cores-per-task": step.run["cores per task"],
+              "tasks-per-node": 1,
             },
             # 'environ': {'PATH' : os.environ['PATH']},
             'cwd': cwd,
