@@ -321,16 +321,18 @@ class YAMLSpecification(Specification):
         Verify that (if globals exist) they conform to the following:
         Each parameter must have:
             1. values
-            2. label
-        Conditions that must be satisfied for a collection fo globals:
+            2. label(s)
+        Conditions that must be satisfied for a collection of globals:
             1. All global names must be unique.
             2. Each list of values must be the same length.
+            3. If the label is a list, its length must match
+               the value length
         """
         try:
             if self.globals:
                 req_global = set(["values", "label"])
                 global_names = set()
-                value_len = -1
+                values_len = -1
                 for name, value in self.globals.items():
                     # Check if the name is in the set
                     if name in global_names:
@@ -344,16 +346,30 @@ class YAMLSpecification(Specification):
                         raise ValueError("Missing {} keys in the global "
                                          "parameter named {}"
                                          .format(missing_attrs, name))
+                    # If label is a list, check its length against values.
+                    values = value["values"]
+                    label = value["label"]
+                    if isinstance(label, list):
+                        if len(values) != len(label):
+                            raise ValueError("Global parameter '{}' the "
+                                             "values length does not "
+                                             "match the label list length."
+                                             .format(name))
+                        if len(label) != len(set(label)):
+                            raise ValueError("Global parameter '{}' the "
+                                             "label does not contain "
+                                             "unique labels."
+                                             .format(name))
                     # Add the name to global parameters encountered, check if
                     # length of values is the same as previously encountered.
                     global_names.add(name)
                     # If length not set, set it and continue
-                    if value_len == -1:
-                        value_len = len(value)
+                    if values_len == -1:
+                        values_len = len(values)
                         continue
 
                     # Check length. Exception if doesn't match.
-                    if len(value) != value_len:
+                    if len(values) != values_len:
                         raise ValueError("Global parameter '{}' is not the "
                                          "same length as other parameters."
                                          .format(name))
