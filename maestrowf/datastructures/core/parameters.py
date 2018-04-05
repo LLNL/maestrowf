@@ -299,11 +299,11 @@ class ParameterGenerator(SimObject):
             combo = Combination()
             for key in self.parameters.keys():
                 pvalue = self.parameters[key][i]
-                try:
+                if isinstance(self.labels[key], list):
+                    tlabel = self.labels[key][i]
+                else:
                     tlabel = self.labels[key].replace(self.label_token,
                                                       str(pvalue))
-                except AttributeError:
-                    tlabel = self.labels[key][i]
                 name = self.names[key]
                 combo.add(key, name, pvalue, tlabel)
             yield combo
