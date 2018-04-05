@@ -102,11 +102,14 @@ class _StepRecord(object):
             self.name,
             self.status)
         self.status = State.TIMEDOUT
-        if self._num_restarts == self.restart_limit:
-            return False
-        else:
+        # Designating a restart limit of zero as an unlimited restart setting.
+        # Otherwise, if we're less than restart limit, attempt another restart.
+        if self._restart_limit == 0 or \
+                self._num_restarts < self._restart_limit:
             self._num_restarts += 1
             return True
+        else:
+            return False
 
     @property
     def elapsed_time(self):
