@@ -120,7 +120,18 @@ def run_study(args):
         LOGGER.error(_msg)
         raise ArgumentError(_msg)
 
-    study.setup(throttle=args.throttle, submission_attempts=args.attempts)
+    # Check if the restart limit is zero or greater:
+    if args.rlimit < 0:
+        _msg = "Restart limit must be a value of zero or greater. " \
+               "'{}' provided.".format(args.rlimit)
+        LOGGER.error(_msg)
+        raise ArgumentError(_msg)
+
+    study.setup(
+        throttle=args.throttle,
+        submission_attempts=args.attempts,
+        restart_limit=args.rlimit
+    )
     setup_logging(args, study.output_path, study.name)
 
     # Stage the study.
@@ -183,13 +194,18 @@ def setup_argparser():
                                 help="Launch a study based on a specification")
     run.add_argument("-a", "--attempts", type=int, default=1,
                      help="Maximum number of submission attempts before a "
-                     "step is marked as failed.")
+                     "step is marked as failed. [Default: %(default)d]")
+    run.add_argument("-r", "--rlimit", type=int, default=1,
+                     help="Maximum number of restarts allowed when steps."
+                     "specify a restart command (0 denotes no limit). "
+                     "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
                      help="Maximum number of inflight jobs allowed to execute "
-                     "simultaneously (0 denotes not throttling).")
+                     "simultaneously (0 denotes not throttling)."
+                     "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
-                     "wait between job status checks.")
+                     "wait between job status checks. [Default: %(default)d]")
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument("-n", "--autono", action="store_true",
                              default=False,
