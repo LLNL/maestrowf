@@ -26,7 +26,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-
+"""A script for launching the Maestro conductor for study monitoring."""
 from argparse import ArgumentParser, RawTextHelpFormatter
 from filelock import FileLock, Timeout
 from datetime import datetime
@@ -50,9 +50,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 
 
 def setup_argparser():
-    """
-    Method for setting up the program's argument parser.
-    """
+    """Method for setting up the program's argument parser."""
     parser = ArgumentParser(prog="ExecutionManager",
                             description="An application for checking and "
                             "managing an ExecutionDAG within an executing"
@@ -126,6 +124,7 @@ def setup_logging(args, name):
 
 
 def main():
+    """Run the main segment of the conductor."""
     # Set up and parse the ArgumentParser
     parser = setup_argparser()
     args = parser.parse_args()
@@ -179,6 +178,10 @@ def main():
         dag.write_status(os.path.split(study_pkl[0])[0])
         # Sleep for SLEEPTIME in args
         sleep(args.sleeptime)
+
+    logger.info("Cleaning up...")
+    dag.cleanup()
+    logger.info("Squeaky clean!")
 
     # Explicitly return a 0 status.
     sys.exit(0)

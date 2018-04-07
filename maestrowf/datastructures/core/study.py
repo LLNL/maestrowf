@@ -208,6 +208,7 @@ class Study(DAG):
         # Settings for handling restarts and submission attempts.
         self._restart_limit = 0
         self._submission_attempts = 0
+        self._use_tmp = False
 
         # If the user specified a flow in the form of steps, copy those into
         # into the Study object.
@@ -265,7 +266,8 @@ class Study(DAG):
         for node in path:
             yield parents[node], node, self.values[node]
 
-    def setup(self, submission_attempts=1, restart_limit=1, throttle=0):
+    def setup(self, submission_attempts=1, restart_limit=1, throttle=0,
+              use_tmp=False):
         """
         Method for executing initial setup of a Study.
 
@@ -276,8 +278,11 @@ class Study(DAG):
         :param submission_attempts: Number of attempted submissions before
             marking a step as failed.
         :param restart_limit: Upper limit on the number of times a step with
-            a restart command can be resubmitted before it is considered
-            failed.
+        a restart command can be resubmitted before it is considered failed.
+        :param throttle: The maximum number of in-progress jobs allowed. [0
+        denotes no cap].
+        :param use_tmp: Boolean value specifying if the generated
+        ExecutionGraph dumps its information into a temporary directory.
         :returns: True if the Study is successfully setup, False otherwise.
         """
         # If the study has been set up, just return.
@@ -288,7 +293,17 @@ class Study(DAG):
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
+        self._use_tmp = use_tmp
 
+        logger.info(
+            "\n------------------------------------------\n"
+            "Submission attempts =       %d\n"
+            "Submission restart limit =  %d\n"
+            "Submission throttle limit = %d\n"
+            "Use temporary directory =   %s\n"
+            "------------------------------------------",
+            submission_attempts, restart_limit, throttle, use_tmp
+        )
         # Set up the directory structure.
         # TODO: fdinatal - As I implement the high level program (manager and
         # launcher in bin), I'm starting to have questions about whether or
@@ -335,7 +350,10 @@ class Study(DAG):
             steps.
         """
         # Construct ExecutionGraph
-        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
+        dag = ExecutionGraph(
+            submission_attempts=self._submission_attempts,
+            submission_throttle=self._submission_throttle,
+            use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         # Items to store that should be reset.
         global_workspace = self.output.value  # Highest ouput dir
@@ -493,9 +511,6 @@ class Study(DAG):
                                  rlimit)
                     dag.add_edge(SOURCE, step_exp.name)
 
-                # Go ahead and substitute in the output path and create the
-                # workspace in the ExecutionGraph.
-                create_parentdir(self.output.value)
                 step_exp.__dict__ = apply_function(step_exp.__dict__,
                                                    self.output.substitute)
 
@@ -521,7 +536,10 @@ class Study(DAG):
             ExecutionGraph based on linear steps in the study.
         """
         # Construct ExecutionGraph
-        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
+        dag = ExecutionGraph(
+            submission_attempts=self._submission_attempts,
+            submission_throttle=self._submission_throttle,
+            use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         # Items to store that should be reset.
         logger.info("==================================================")
