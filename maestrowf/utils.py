@@ -89,7 +89,7 @@ def apply_function(item, func):
 
     :param item: A Python primitive to apply a function to.
     :param func: Function that returns takes item as a parameter and returns
-    item modified in some way.
+        item modified in some way.
     """
     if not item:
         return item
@@ -115,7 +115,7 @@ def csvtable_to_dict(fstream):
 
     :param fstream: An open file stream to a csv table (with header)
     :returns: A dictionary with a key for each column header and a list of
-    column values for each key.
+        column values for each key.
     """
     # Read in the lines from the file stream.
     lines = fstream.readlines()
