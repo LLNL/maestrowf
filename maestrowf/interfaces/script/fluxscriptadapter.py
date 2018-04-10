@@ -28,6 +28,7 @@
 ###############################################################################
 
 """Flux Scheduler interface implementation."""
+from datetime import datetime
 import getpass
 import logging
 import os
@@ -117,7 +118,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["walltime"] = run.pop("walltime")
+
+        # Convert walltime to seconds.
+        walltime = run.pop("walltime")
+        walltime = (datetime.strptime(walltime) - datetime(1900, 1, 1))
+        walltime = int(walltime.total_seconds())
+        batch_header["walltime"] = str(walltime)
+
         if run["nodes"]:
             batch_header["nodes"] = run.pop("nodes")
         batch_header["job-name"] = step.name.replace(" ", "_")
@@ -133,9 +140,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         modified_header.append("HOSTF_SINGLE=$(mktemp /tmp/hostls-XXXXX)")
         modified_header.append("HOSTF=$(mktemp /tmp/hostl-XXXXX)")
         if step.run["nodes"] > 1:
-          modified_header.append("instance-nodes > $HOSTF_SINGLE")
+            modified_header.append("instance-nodes > $HOSTF_SINGLE")
         else:
-          modified_header.append("echo localhost > $HOSTF_SINGLE")
+            modified_header.append("echo localhost > $HOSTF_SINGLE")
         modified_header.append("""sed -e "s/$/:44/" $HOSTF_SINGLE > $HOSTF """)
         modified_header.append("""ulimit -s 10240""")
 
