@@ -112,7 +112,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # Convert walltime to seconds.
         wt = \
             (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
-        return int(walltime.total_seconds())
+        return int(wt.total_seconds())
 
     def get_header(self, step):
         """
