@@ -108,6 +108,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         }
         self.h = None
 
+    def _convert_walltime_to_seconds(self, walltime):
+        # Convert walltime to seconds.
+        wt = \
+            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
+        return int(walltime.total_seconds())
+
     def get_header(self, step):
         """
         Generate the header present at the top of Flux execution scripts.
@@ -118,13 +124,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-
-        # Convert walltime to seconds.
-        walltime = run.pop("walltime")
-        walltime = \
-            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
-        walltime = int(walltime.total_seconds())
-        batch_header["walltime"] = str(walltime)
+        batch_header["walltime"] = \
+            str(self._convert_walltime_to_seconds(step.run["walltime"]))
 
         if run["nodes"]:
             batch_header["nodes"] = run.pop("nodes")
@@ -225,6 +226,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         #     LOGGER.warning("Submission returned an error.")
         #     return SubmissionCode.ERROR, -1
 
+        walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         jobspec = {
             'nnodes': step.run["nodes"],
             'ntasks': step.run["nodes"], #interface doesn't allow multiple here yet
@@ -239,7 +241,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             },
             # 'environ': {'PATH' : os.environ['PATH']},
             'cwd': cwd,
-            'walltime': step.run["walltime"],
+            'walltime': walltime,
             # 'output' : {
             #   'files' : {
             #     'stdout' : os.path.join(cwd,step.name + '-{{id}}.out'),
@@ -252,7 +254,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         else:
             jobspec['cmdline'] = [path]
         if self.h is None:
-          self.h = flux.Flux()
+            self.h = flux.Flux()
         resp = self.h.rpc_send('job.submit', json.dumps(jobspec))
         if resp is None:
             LOGGER.warning("RPC response invalid")
