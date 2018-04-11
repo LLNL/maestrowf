@@ -391,7 +391,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         LOGGER.debug("Received FLUX State -- %s", flux_state)
         if flux_state == "running":
             return State.RUNNING
-        elif flux_state == "pending":
+        elif flux_state == "pending" or flux_state == "runrequest":
             return State.PENDING
         elif flux_state == "submitted":
             return State.PENDING
