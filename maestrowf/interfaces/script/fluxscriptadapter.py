@@ -159,7 +159,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
-
         # args = [
         #     'env',
         #     '-u', 'FLUX_JOB_ID',
@@ -178,7 +177,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         #     # '/usr/gapps/kras/install/bin/autobind', # bind cores and GPUs
         #     ])
         args = ['mpiexec.hydra']
-        args.extend(['-f','$HOSTF'])
+        args.extend(['-f', '$HOSTF'])
         args.extend([
             '-n',
             str(procs),
@@ -302,13 +301,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.debug("Checking jobid %s", jobid)
             try:
                 flux_state = str(kvs.get(self.h, path + '.state'))
-                flux_status = str(kvs.get(self.h, path + '.exit_status'))
                 # "complete" covers three cases:
                 # 1. Normal exit
                 # 2. Killed via signal
                 # 3. Failure in execution
                 LOGGER.debug("Encountered %d with state '%s'", i, flux_state)
                 if flux_state == "complete":
+                    flux_status = kvs.get(self.h, path + '.exit_status')
                     # Use kvs to grab the max error code encountered.
                     rcode = flux_status["max"]
                     # If retcode is not 0, not normal execution
