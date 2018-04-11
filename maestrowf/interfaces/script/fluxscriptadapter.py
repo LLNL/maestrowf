@@ -29,7 +29,6 @@
 
 """Flux Scheduler interface implementation."""
 from datetime import datetime
-import getpass
 import logging
 import os
 import re
@@ -43,23 +42,24 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
 
 LOGGER = logging.getLogger(__name__)
-
 status_re = re.compile(r"Job \d+ status: (.*)$")
-
 # env_filter = re.compile(r"^(SSH_|LSF)")
 env_filter = re.compile(r"^SSH_")
 
+
 def get_environment():
+    """Filter environment variables based on a naming filter."""
     env = dict()
     for key in os.environ:
         if env_filter.match(key):
-           continue
+            continue
         env[key] = os.environ[key]
     env.pop('HOSTNAME', None)
     env.pop('ENVIRONMENT', None)
     # Make MVAPICH behave...
     env['MPIRUN_RSH_LAUNCH'] = '1'
     return env
+
 
 class FluxScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing with the flux scheduler."""
@@ -289,8 +289,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 return JobStatusCode.ERROR, {}
 
         if self.h is None:
-          self.h = flux.Flux()
-        resp = self.h.rpc_send('job.kvspath', json.dumps({'ids' : joblist}))
+            self.h = flux.Flux()
+
+        resp = self.h.rpc_send('job.kvspath', json.dumps({'ids': joblist}))
         paths = resp['paths']
         status = {}
         for jobid in joblist:
@@ -300,10 +301,48 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             path = paths[i]
             LOGGER.debug("Checking jobid %s", jobid)
             try:
-              status[jobid] = self._state(kvs.get(self.h, path + '.state'))
+                flux_state = str(kvs.get(self.h, path + '.state'))
+                flux_status = str(kvs.get(self.h, path + '.exit_status'))
+                # "complete" covers three cases:
+                # 1. Normal exit
+                # 2. Killed via signal
+                # 3. Failure in execution
+                LOGGER.debug("Encountered %d with state '%s'", i, flux_state)
+                if flux_state == "complete":
+                    # Use kvs to grab the max error code encountered.
+                    rcode = flux_status["max"]
+                    # If retcode is not 0, not normal execution
+                    if rcode != 0:
+                        # If retcode is in the signaled set, we cancelled.
+                        if os.WIFSIGNALED(rcode):
+                            LOGGER.debug(
+                                "Return code -- %d (WIFSIGNALED)", rcode
+                            )
+                            flux_state = "killed"
+                        # Otherwise, something abnormal happened.
+                        else:
+                            LOGGER.debug(
+                                "Return code -- %d (failed)", rcode
+                            )
+                            flux_state = "failed"
+                    # Otherwise, completed normally.
+                    else:
+                        LOGGER.debug(
+                            "Return code -- %d (complete)", rcode
+                        )
+                        flux_state = "complete"
+
+                status[jobid] = self._state(flux_state)
+                LOGGER.debug(
+                    "Returned code for state (%s) -- %s",
+                    flux_state, status[jobid]
+                )
             except IOError:
-              LOGGER.error("Error seen on path {} Unexpected behavior encountered.".format(path))
-              return JobStatusCode.ERROR, status
+                LOGGER.error(
+                    "Error seen on path {} Unexpected behavior encountered."
+                    .format(path)
+                )
+                return JobStatusCode.ERROR, status
 
         if not status:
             return JobStatusCode.NOJOBS, status
@@ -358,7 +397,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             return State.PENDING
         elif flux_state == "failed":
             return State.FAILED
-        elif flux_state == "cancelled":
+        elif flux_state == "cancelled" or flux_state == "killed":
             return State.CANCELLED
         elif flux_state == "complete":
             return State.FINISHED
