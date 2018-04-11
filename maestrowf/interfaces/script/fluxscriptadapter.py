@@ -121,7 +121,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # Convert walltime to seconds.
         walltime = run.pop("walltime")
-        walltime = (datetime.strptime(walltime) - datetime(1900, 1, 1))
+        walltime = \
+            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
         walltime = int(walltime.total_seconds())
         batch_header["walltime"] = str(walltime)
 
