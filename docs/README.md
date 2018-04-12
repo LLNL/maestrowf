@@ -19,5 +19,5 @@ If the structure of the modules changes, then the documentation will have to be 
 This can be done easily with:
 
 ``` shell
-sphinx-apidoc -f -M -H 'SimManager' -o ./source/ ../../maestrowf
+sphinx-apidoc -f -M -H 'Maestro Workflow Conductor' -o ./source/ ../../maestrowf
 ```
