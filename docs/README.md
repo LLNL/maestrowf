@@ -1,4 +1,4 @@
-# SimManager Documentation
+# Maestro Workflow Conductor Documentation
 
 [maestrowf.rtfd.io](http://maestrowf.readthedocs.io/en/latest/)
 
