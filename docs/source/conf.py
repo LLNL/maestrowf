@@ -21,9 +21,9 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 # -- General configuration ------------------------------------------------
 
-# If your documentation needs a minimal Sphinx version, state it here.
+# 1.3 needed for autodoc_mock_imports
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -31,6 +31,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage']
+
+autodoc_mock_imports=['filelock', 'tabulate']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
