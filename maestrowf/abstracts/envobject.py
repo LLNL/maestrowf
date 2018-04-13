@@ -92,7 +92,7 @@ class Substitution(EnvObject):
 
         :param data: A string to perform a replacement on.
         :returns: A string equal to the original string data with substitutions
-        made (if any were performed).
+            made (if any were performed).
         """
         pass
 

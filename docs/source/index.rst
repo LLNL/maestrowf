@@ -3,14 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SimMananger's documentation!
-=======================================
+Welcome to Maestro Workflow Conductor Documentation
+===================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
-
+   modules
 
 Indices and tables
 ==================

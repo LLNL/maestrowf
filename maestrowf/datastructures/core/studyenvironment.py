@@ -65,7 +65,7 @@ class StudyEnvironment(SimObject):
         Override for the __bool__ operator.
 
         :returns: True if the StudyEnvironment instance has values, False
-        otherwise.
+            otherwise.
         """
         return bool(self._names)
 
@@ -134,7 +134,7 @@ class StudyEnvironment(SimObject):
 
         :param key: Name of the environment object to find.
         :returns: The environment object labeled by key, None if key is not
-        found.
+            found.
         """
         logger.debug("Looking for '%s'...", key)
         if key in self.dependencies:

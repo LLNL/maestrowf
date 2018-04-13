@@ -248,7 +248,7 @@ def setup_logging(args, path, name):
 
     :param args: A Namespace object created by a parsed ArgumentParser.
     :param path: A default path to be used if a log path is not specified by
-    user command line arguments.
+        user command line arguments.
     :param name: The name of the log file.
     """
     # If the user has specified a path, use that.

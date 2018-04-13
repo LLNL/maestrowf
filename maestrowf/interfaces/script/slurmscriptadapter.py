@@ -95,7 +95,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+            the parameter step.
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -122,9 +122,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+            (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+            and procs.
         """
         args = [
             # SLURM srun command
@@ -157,10 +157,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+            identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+            identiifer.
         """
         # Leading command is 'sbatch'
         cmd = ["sbatch"]
@@ -199,7 +199,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+            identifiers to their status.
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
@@ -319,8 +319,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if to be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+            written script for run["cmd"], and the path to the script written
+            for run["restart"] (if it exists).
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 

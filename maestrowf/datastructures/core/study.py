@@ -140,20 +140,20 @@ class Study(DAG):
 
     Future functionality that makes sense to add here:
         - Metadata collection. If we're setting things up here, collect the
-        general information. We might even want to venture to say that a set of
-        directives may be useful so that they could be placed into Dependency
-        classes as hooks for dumping that data automatically.
+          general information. We might even want to venture to say that a set
+          of directives may be useful so that they could be placed into
+          Dependency classes as hooks for dumping that data automatically.
         - A way of packaging an instance of the class up into something that is
-        easy to store in the ExecutionDAG class so that an API can be designed
-        in whatever class ends up managing all of this to have machine learning
-        applications pipe messages to spin up new studies using the same
-        environment.
+          easy to store in the ExecutionDAG class so that an API can be
+          designed in whatever class ends up managing all of this to have
+          machine learning applications pipe messages to spin up new studies
+          using the same environment.
             - The current solution to this is VERY basic. Currently the plan is
-            to write a parameterized specification (not unlike the method of
-            using parameterized .dat files for simulators) and just have the ML
-            engine string replace those. It's crude because currently we'd have
-            to just construct a new environment, with no way to manage
-            injecting the new set into an existing workspace.
+              to write a parameterized specification (not unlike the method of
+              using parameterized .dat files for simulators) and just have the
+              ML engine string replace those. It's crude because currently we'd
+              have to just construct a new environment, with no way to manage
+              injecting the new set into an existing workspace.
     """
 
     def __init__(self, name, description,
@@ -274,9 +274,10 @@ class Study(DAG):
         the folder structure for the study.
 
         :param submission_attempts: Number of attempted submissions before
-        marking a step as failed.
+            marking a step as failed.
         :param restart_limit: Upper limit on the number of times a step with
-        a restart command can be resubmitted before it is considered failed.
+            a restart command can be resubmitted before it is considered
+            failed.
         :returns: True if the Study is successfully setup, False otherwise.
         """
         # If the study has been set up, just return.
@@ -330,8 +331,8 @@ class Study(DAG):
 
         :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an expanded
-        ExecutionGraph based on the parameters and parameterized workflow
-        steps.
+            ExecutionGraph based on the parameters and parameterized workflow
+            steps.
         """
         # Construct ExecutionGraph
         dag = ExecutionGraph(submission_throttle=self._submission_throttle)
@@ -517,7 +518,7 @@ class Study(DAG):
 
         :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an
-        ExecutionGraph based on linear steps in the study.
+            ExecutionGraph based on linear steps in the study.
         """
         # Construct ExecutionGraph
         dag = ExecutionGraph(submission_throttle=self._submission_throttle)

@@ -78,7 +78,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param name: String name of the parameter that's being added.
         :param value: Value associated with the parameter name (should have a
-        str method).
+            str method).
         """
         self._batch[name] = value
 
@@ -89,7 +89,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+            the parameter step.
         """
         pass
 
@@ -100,9 +100,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+            (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+            and procs.
         """
         pass
 
@@ -303,7 +303,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if the workflow step is to be scheduled,
-        False otherwise) and the path to the written script.
+            False otherwise) and the path to the written script.
         """
         pass
 

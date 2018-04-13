@@ -185,18 +185,18 @@ class ParameterGenerator(SimObject):
     ParameterGenerator that performs completely differently. All of a sudden,
     you can get the following for simply deriving from this class:
         - Uncertainty Quantification (UQ): Add the ability to statistically
-        sample parameters behind the scenes. Let the ParameterGenerator
-        constraint solve behind the scenes and return the Combination
-        objects it was going to return in the first place. If you can't
-        find a valid sampling, just return nothing and the study won't run.
+          sample parameters behind the scenes. Let the ParameterGenerator
+          constraint solve behind the scenes and return the Combination
+          objects it was going to return in the first place. If you can't
+          find a valid sampling, just return nothing and the study won't run.
         - Boundary and constraint testing: Like UQ above, hide the solving
-        from the user. Simply add parameters to be constraint solved on behind
-        the API and all the user sees is combinations on the frontend.
+          from the user. Simply add parameters to be constraint solved on
+          behind the API and all the user sees is combinations on the frontend.
 
     Ideally, all parameter generation schemes should boil down as follows:
         1. Derive from this class, add constraint solving.
         2. Construct a study how you would otherwise do so, just use
-        the new ParameterGenerator and add parameters.
+           the new ParameterGenerator and add parameters.
         3. Setup, stage, and execute your study.
         4. Profit.
     """
@@ -221,7 +221,7 @@ class ParameterGenerator(SimObject):
 
         :param token: Leading token that denotes a parameter (Default: '$').
         :param ltoken: Token that represents where to place a value in a label
-        (Default: '%%').
+            (Default: '%%').
         """
         self.parameters = OrderedDict()
         self.labels = {}
@@ -283,7 +283,7 @@ class ParameterGenerator(SimObject):
         Override for the __bool__ operator.
 
         :returns: True if the ParameterGenerator instance has values, False
-        otherwise.
+            otherwise.
         """
         return bool(self.parameters)
 

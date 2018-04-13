@@ -70,8 +70,8 @@ class LocalScriptAdapter(ScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: False (will not be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+            written script for run["cmd"], and the path to the script written
+            for run["restart"] (if it exists).
         """
         cmd = step.run["cmd"]
         restart = step.run["restart"]
@@ -103,7 +103,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+            identifiers to their status.
         """
         return JobStatusCode.NOJOBS, {}
 

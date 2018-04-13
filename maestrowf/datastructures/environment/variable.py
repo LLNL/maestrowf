@@ -56,7 +56,7 @@ class Variable(Substitution):
         :params name: String name that refers to a Variable instance.
         :params value: The value to substitute for the Variable instance.
         :params token: String of expected character(s) that appear at the
-        beginning of a substring representing the variable.
+            beginning of a substring representing the variable.
         """
         self.name = name
         self.value = value
