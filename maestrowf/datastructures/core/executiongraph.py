@@ -221,9 +221,9 @@ class ExecutionGraph(DAG):
         Initialize a new instance of an ExecutionGraph.
 
         :param submission_attempts: Number of attempted submissions before
-        marking a step as failed.
+            marking a step as failed.
         :param submission_throttle: Maximum number of scheduled in progress
-        submissions.
+            submissions.
         """
         super(ExecutionGraph, self).__init__()
         # Member variables for execution.

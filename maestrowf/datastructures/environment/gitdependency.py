@@ -65,11 +65,11 @@ class GitDependency(Dependency):
         :params name: String name that refers to a GitDependency instance.
         :params value: The URL (SSH or FTP) to the remote git repository.
         :params path: The local path where the copy of the repository is
-        cloned to.
+            cloned to.
         :params token: String of expected character(s) that appear at the
-        beginning of a substring representing the dependency variable.
+            beginning of a substring representing the dependency variable.
         :params kwargs: Optional keyword arguments - Only valid optionals are
-        "branch", "hash", and "tag".
+            "branch", "hash", and "tag".
         """
         # Required base information
         self.name = name

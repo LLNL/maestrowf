@@ -53,19 +53,19 @@ class YAMLSpecification(Specification):
     presented in the maestrowf.datastructure.core package. The objectives for
     such a structure are three-fold:
         1. Present users who do not want a coding interface with a means to
-        execute their studies without having to know the underlying details of
-        the package itself. If the user learns the core concepts as presented
-        by the YAML specification, the study should be able to be parsed and
-        executed by the underlying data structures.
+           execute their studies without having to know the underlying details of
+           the package itself. If the user learns the core concepts as presented
+           by the YAML specification, the study should be able to be parsed and
+           executed by the underlying data structures.
         2. Providing an abstract specification aids in presentation to users
-        because it provides a concrete example of not only how to use the
-        MaestroWF package as a whole, but as a very useful way to discuss the
-        core concepts without actually having to dive into the code.
+           because it provides a concrete example of not only how to use the
+           MaestroWF package as a whole, but as a very useful way to discuss the
+           core concepts without actually having to dive into the code.
         3. Provides a "living and breathing" example of how to use the core
-        structures to make a presentable interface for users. The YAML
-        specification just so happens to be a textual representation, but it
-        is an example of how you would use an interface (of whatever type) to
-        construct the core structures and make use of them to run a study.
+           structures to make a presentable interface for users. The YAML
+           specification just so happens to be a textual representation, but it
+           is an example of how you would use an interface (of whatever type) to
+           construct the core structures and make use of them to run a study.
     """
 
     def __init__(self):
@@ -201,7 +201,7 @@ class YAMLSpecification(Specification):
         required keys are entirely dependent on the type of dependency.
 
         :param keys_seen: A set of the keys seen in other parts of the
-        specification.
+            specification.
         :returns: A set of variable names seen.
         """
         dep_types = ["path", "git", "spack"]
@@ -322,6 +322,7 @@ class YAMLSpecification(Specification):
         Each parameter must have:
             1. values
             2. label(s)
+
         Conditions that must be satisfied for a collection of globals:
             1. All global names must be unique.
             2. Each list of values must be the same length.
@@ -417,7 +418,7 @@ class YAMLSpecification(Specification):
         Getter for the description of a study specification.
 
         :returns: A string containing the description of the study
-        specification.
+            specification.
         """
         return self.description["description"]
 

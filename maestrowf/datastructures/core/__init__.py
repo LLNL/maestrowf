@@ -34,14 +34,14 @@ This module contains all of the core data structures that are needed for
 constructing and representing studies and the moving parts that they require.
 These moving parts include but are not limited to:
     - Classes for representing the abstract flow of a study. These objects at
-    their core are the Study and StudyStep classes that are used to construct
-    a DAG for the flow.
+      their core are the Study and StudyStep classes that are used to construct
+      a DAG for the flow.
     - Classes that represent the items in a study's environment such as
-    variables, scripts, and dependencies (paths, git repos, etc.)
+      variables, scripts, and dependencies (paths, git repos, etc.)
     - Classes for managing the environment and that know how to apply the
-    environment to an abstract flow.
+      environment to an abstract flow.
     - A set of classes for managing parameters and generating combinations of
-    parameters in a clean Pythonic way.
+      parameters in a clean Pythonic way.
 """
 
 from maestrowf.datastructures.core.executiongraph import ExecutionGraph
