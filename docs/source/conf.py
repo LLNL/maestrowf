@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'SimMananger'
+project = u'Maestro Workflow Conductor'
 copyright = u'2017, Francesco Di Natale'
 author = u'Francesco Di Natale'
 
@@ -101,7 +101,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SimManangerdoc'
+htmlhelp_basename = 'MaestroWFdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -128,7 +128,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'SimMananger.tex', u'SimMananger Documentation',
+    (master_doc, 'SimMananger.tex', u'MaestroWF Documentation',
      u'Francesco Di Natale', 'manual'),
 ]
 
