@@ -190,8 +190,8 @@ class ParameterGenerator(SimObject):
           objects it was going to return in the first place. If you can't
           find a valid sampling, just return nothing and the study won't run.
         - Boundary and constraint testing: Like UQ above, hide the solving
-          from the user. Simply add parameters to be constraint solved on behind
-          the API and all the user sees is combinations on the frontend.
+          from the user. Simply add parameters to be constraint solved on
+          behind the API and all the user sees is combinations on the frontend.
 
     Ideally, all parameter generation schemes should boil down as follows:
         1. Derive from this class, add constraint solving.
