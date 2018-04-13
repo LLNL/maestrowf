@@ -32,7 +32,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage']
 
-autodoc_mock_imports=['filelock', 'tabulate', 'setup']
+autodoc_mock_imports = ['filelock', 'tabulate', 'setup']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
