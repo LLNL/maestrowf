@@ -56,9 +56,7 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 
 def status_study(args):
-    """
-    Method for maestro status subcommand.
-    """
+    """Method for maestro status subcommand."""
     study_path = args.directory
     stat_path = os.path.join(study_path, "status.csv")
     lock_path = os.path.join(study_path, ".status.lock")
@@ -76,6 +74,7 @@ def status_study(args):
 
 
 def cancel_study(args):
+    """Flag a study to be cancelled."""
     if not os.path.isdir(args.directory):
         return 1
 
@@ -88,9 +87,7 @@ def cancel_study(args):
 
 
 def run_study(args):
-    """
-    Method for maestro run subcommand.
-    """
+    """Method for maestro run subcommand."""
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
     environment = spec.get_study_environment()
@@ -130,7 +127,8 @@ def run_study(args):
     study.setup(
         throttle=args.throttle,
         submission_attempts=args.attempts,
-        restart_limit=args.rlimit
+        restart_limit=args.rlimit,
+        use_tmp=args.usetmp
     )
     setup_logging(args, study.output_path, study.name)
 
@@ -145,8 +143,11 @@ def run_study(args):
     # Copy the spec to the output directory
     shutil.copy(args.specification, path)
 
-    # Generate scripts
-    exec_dag.generate_scripts()
+    # Check for a dry run
+    if args.dryrun:
+        raise NotImplementedError("The 'dryrun' mode is in development.")
+
+    # Pickle up the DAG
     exec_dag.pickle(os.path.join(path, "{}.pkl".format(study.name)))
 
     # If we are automatically launching, just set the input as yes.
@@ -172,21 +173,21 @@ def run_study(args):
 
 
 def setup_argparser():
-    """
-    Method for setting up the program's argument parser.
-    """
-    parser = ArgumentParser(prog="maestro",
-                            description="The Maestro Workflow Conductor for "
-                            "specifiying, launching, and managing general "
-                            "workflows.",
-                            formatter_class=RawTextHelpFormatter)
+    """Method for setting up the program's argument parser."""
+    parser = ArgumentParser(
+        prog="maestro",
+        description="The Maestro Workflow Conductor for specifiying, launching"
+        ", and managing general workflows.",
+        formatter_class=RawTextHelpFormatter)
     subparsers = parser.add_subparsers(dest='subparser')
 
     # subparser for a cancel subcommand
-    cancel = subparsers.add_parser('cancel',
-                                   help="Cancel all running jobs.")
-    cancel.add_argument("directory", type=str,
-                        help="Directory containing a launched study.")
+    cancel = subparsers.add_parser(
+        'cancel',
+        help="Cancel all running jobs.")
+    cancel.add_argument(
+        "directory", type=str,
+        help="Directory containing a launched study.")
     cancel.set_defaults(func=cancel_study)
 
     # subparser for a run subcommand
@@ -206,38 +207,53 @@ def setup_argparser():
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
+    run.add_argument("-d", "--dryrun", action="store_true", default=False,
+                     help="Generate the directory structure and scripts for a "
+                     "study but do not launch it. [Default: %(default)s]")
+
     prompt_opts = run.add_mutually_exclusive_group()
-    prompt_opts.add_argument("-n", "--autono", action="store_true",
-                             default=False,
-                             help="Automatically answer no to input prompts.")
-    prompt_opts.add_argument("-y", "--autoyes", action="store_true",
-                             default=False,
-                             help="Automatically answer yes to input prompts.")
-    run.add_argument("specification", type=str, help="The path to a Study "
-                     "YAML specification that will be loaded and "
-                     "executed.")
+    prompt_opts.add_argument(
+        "-n", "--autono", action="store_true", default=False,
+        help="Automatically answer no to input prompts.")
+    prompt_opts.add_argument(
+        "-y", "--autoyes", action="store_true", default=False,
+        help="Automatically answer yes to input prompts.")
+
+    # The only required positional argument for 'run' is a specification path.
+    run.add_argument(
+        "specification", type=str,
+        help="The path to a Study YAML specification that will be loaded and "
+        "executed.")
+    run.add_argument(
+        "--usetmp", action="store_true", default=False,
+        help="Make use of a temporary directory for dumping scripts and other "
+        "Maestro related files.")
     run.set_defaults(func=run_study)
 
     # subparser for a status subcommand
-    status = subparsers.add_parser('status',
-                                   help="Check the status of a "
-                                   "running study.")
-    status.add_argument("directory", type=str,
-                        help="Directory containing a launched study.")
+    status = subparsers.add_parser(
+        'status',
+        help="Check the status of a running study.")
+    status.add_argument(
+        "directory", type=str,
+        help="Directory containing a launched study.")
     status.set_defaults(func=status_study)
 
     # global options
-    parser.add_argument("-l", "--logpath", type=str,
-                        help="Alternate path to store program logging.")
-    parser.add_argument("-d", "--debug_lvl", type=int, default=2,
-                        help="Level of logging messages to be output:\n"
-                             "5 - Critical\n"
-                             "4 - Error\n"
-                             "3 - Warning\n"
-                             "2 - Info (Default)\n"
-                             "1 - Debug")
-    parser.add_argument("-c", "--logstdout", action="store_true",
-                        help="Log to stdout in addition to a file.")
+    parser.add_argument(
+        "-l", "--logpath", type=str,
+        help="Alternate path to store program logging.")
+    parser.add_argument(
+        "-d", "--debug_lvl", type=int, default=2,
+        help="Level of logging messages to be output:\n"
+        "5 - Critical\n"
+        "4 - Error\n"
+        "3 - Warning\n"
+        "2 - Info (Default)\n"
+        "1 - Debug")
+    parser.add_argument(
+        "-c", "--logstdout", action="store_true",
+        help="Log to stdout in addition to a file.")
 
     return parser
 
