@@ -87,6 +87,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "ntasks": "-n",
             "nodes": "-N",
             "reservation": "--reservation",
+            "cores per task": "-c",
         }
 
     def get_header(self, step):
