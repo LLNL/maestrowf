@@ -54,10 +54,10 @@ def get_environment():
         if env_filter.match(key):
             continue
         env[key] = os.environ[key]
-    env.pop('HOSTNAME', None)
-    env.pop('ENVIRONMENT', None)
+    env.pop("HOSTNAME", None)
+    env.pop("ENVIRONMENT", None)
     # Make MVAPICH behave...
-    env['MPIRUN_RSH_LAUNCH'] = '1'
+    env["MPIRUN_RSH_LAUNCH"] = "1"
     return env
 
 
@@ -68,7 +68,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         Initialize an instance of the FluxScriptAdapter.
 
-        The FluxScriptAdapter is this package's interface to the Flux
+        The FluxScriptAdapter is this package interface to the Flux
         scheduler. This adapter constructs Flux scripts for a StudyStep based
         on user set defaults and local settings present in each step.
 
@@ -83,22 +83,15 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         super(FluxScriptAdapter, self).__init__()
 
-        # NOTE: Host doesn't seem to matter for FLUX. sbatch assumes that the
+        # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
-        # self.add_batch_parameter("host", kwargs.pop("host"))
-        # self.add_batch_parameter("bank", kwargs.pop("bank"))
-        # self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
-        # self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
         self._exec = "#!/bin/bash"
+        # Header is only for informational purposes.
         self._header = {
             "nodes": "#SBATCH -N {nodes}",
-            # "queue": "#SBATCH -p {queue}",
-            # "bank": "#SBATCH -A {bank}",
             "walltime": "#SBATCH -t {walltime}",
-            # "job-name": "#SBATCH -J {job-name}",
-            # "comment": "#SBATCH --comment \"{comment}\""
         }
 
         self._cmd_flags = {
@@ -134,7 +127,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         modified_header = [self._exec]
         for key, value in self._header.items():
-            # If we're looking at the bank and the reservation header exists,
+            # If we"re looking at the bank and the reservation header exists,
             # skip the bank to prefer the reservation.
             if key == "bank" and "reservation" in self._batch:
                 continue
@@ -161,26 +154,26 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         and procs.
         """
         # args = [
-        #     'env',
-        #     '-u', 'FLUX_JOB_ID',
-        #     '-u', 'PMI_FD',
-        #     '-u', 'PMI_RANK',
-        #     '-u', 'PMI_SIZE',
-        #     'mpirun',
-        #     '-gpu',
-        #     '-mca', 'plm', 'rsh',
-        #     # '-mca', 'plm_rsh_agent', 'rsh',
-        #     '--map-by', 'node']
-        # args.extend(['-hostfile','$HOSTF'])
+        #     "env",
+        #     "-u", "FLUX_JOB_ID",
+        #     "-u", "PMI_FD",
+        #     "-u", "PMI_RANK",
+        #     "-u", "PMI_SIZE",
+        #     "mpirun",
+        #     "-gpu",
+        #     "-mca", "plm", "rsh",
+        #     # "-mca", "plm_rsh_agent", "rsh",
+        #     "--map-by", "node"]
+        # args.extend(["-hostfile","$HOSTF"])
         # args.extend([
-        #     '-n',
+        #     "-n",
         #     str(procs),
-        #     # '/usr/gapps/kras/install/bin/autobind', # bind cores and GPUs
+        #     # "/usr/gapps/kras/install/bin/autobind", # bind cores and GPUs
         #     ])
-        args = ['mpiexec.hydra']
-        args.extend(['-f', '$HOSTF'])
+        args = ["mpiexec.hydra"]
+        args.extend(["-f", "$HOSTF"])
         args.extend([
-            '-n',
+            "-n",
             str(procs),
             ])
         return " ".join(args)
@@ -198,14 +191,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
         identiifer.
         """
-        # # Leading command is 'sbatch'
+        # # Leading command is "sbatch"
         # cmd = ["flux", "submit"]
 
         # # Append the script path and working directory.
-        # cmd += ["-N", str(step.run['nodes'])]
-        # cmd += ["-n", '1']
-        # cmd += ["-T", step.run['walltime']]
-        # cmd += ["-O", os.path.join(cwd,'job-{{id}}.out')
+        # cmd += ["-N", str(step.run["nodes"])]
+        # cmd += ["-n", "1"]
+        # cmd += ["-T", step.run["walltime"]]
+        # cmd += ["-O", os.path.join(cwd,"job-{{id}}.out")
         # cmd += [path]
         # cmd = " ".join(cmd)
 
@@ -216,60 +209,61 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # retcode = p.wait()
 
         # # TODO: We need to check for dependencies here. The sbatch is where
-        # # dependent batch jobs are specified. If we're trying to launch
+        # # dependent batch jobs are specified. If we"re trying to launch
         # # everything at once then that should happen here.
 
         # if retcode == 0:
         #     LOGGER.info("Submission returned status OK.")
-        #     return SubmissionCode.OK, re.search('[0-9]+', output).group(0)
+        #     return SubmissionCode.OK, re.search("[0-9]+", output).group(0)
         # else:
         #     LOGGER.warning("Submission returned an error.")
         #     return SubmissionCode.ERROR, -1
 
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         jobspec = {
-            'nnodes': step.run["nodes"],
-            'ntasks': step.run["nodes"], #interface doesn't allow multiple here yet
-            'ncores': step.run["cores per task"] * step.run['procs'],
-            'gpus'  : step.run.get("gpus", 0),
-            'environ': get_environment(), # TODO: revisit
-            'options': { 'stdio-delay-commit' : 1 },
+            "nnodes": step.run["nodes"],
+            # NOTE: interface doesn"t allow multiple here yet
+            "ntasks":   step.run["nodes"],
+            "ncores":   step.run["cores per task"] * step.run["procs"],
+            "gpus":     step.run.get("gpus", 0),
+            "environ":  get_environment(),          # TODO: revisit
+            "options":  {"stdio-delay-commit": 1},
             "opts": {
-              "nnodes": step.run["nodes"],
-              "ntasks": step.run["nodes"],
-              "cores-per-task": step.run["cores per task"],
-              "tasks-per-node": 1,
+                "nnodes": step.run["nodes"],
+                "ntasks": step.run["nodes"],
+                "cores-per-task": step.run["cores per task"],
+                "tasks-per-node": 1,
             },
-            # 'environ': {'PATH' : os.environ['PATH']},
-            'cwd': cwd,
-            'walltime': walltime,
-            # 'output' : {
-            #   'files' : {
-            #     'stdout' : os.path.join(cwd,step.name + '-{{id}}.out'),
-            #     'stderr' : os.path.join(cwd,step.name + '-{{id}}.err'),
+            # "environ": {"PATH" : os.environ["PATH"]},
+            "cwd": cwd,
+            "walltime": walltime,
+            # "output" : {
+            #   "files" : {
+            #     "stdout" : os.path.join(cwd,step.name + "-{{id}}.out"),
+            #     "stderr" : os.path.join(cwd,step.name + "-{{id}}.err"),
             #     },
             #   },
         }
         if step.run["nodes"] > 1:
-            jobspec['cmdline'] = ['flux', 'broker', path]
+            jobspec["cmdline"] = ["flux", "broker", path]
         else:
-            jobspec['cmdline'] = [path]
+            jobspec["cmdline"] = [path]
         if self.h is None:
             self.h = flux.Flux()
-        resp = self.h.rpc_send('job.submit', json.dumps(jobspec))
+        resp = self.h.rpc_send("job.submit", json.dumps(jobspec))
         if resp is None:
             LOGGER.warning("RPC response invalid")
             return SubmissionCode.ERROR, -1
-        if resp.get('errnum', None) is not None:
+        if resp.get("errnum", None) is not None:
             LOGGER.warning("Job creation failed with error code {}".format(
-                resp['errnum']))
+                resp["errnum"]))
             return SubmissionCode.ERROR, -1
-        if resp.get('state', None) != "submitted":
+        if resp.get("state", None) != "submitted":
             LOGGER.warning("Job creation failed")
             return SubmissionCode.ERROR, -1
 
         LOGGER.info("Submission returned status OK.")
-        return SubmissionCode.OK, resp['jobid']
+        return SubmissionCode.OK, resp["jobid"]
 
     def check_jobs(self, joblist):
         """
@@ -293,8 +287,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             self.h = flux.Flux()
 
-        resp = self.h.rpc_send('job.kvspath', json.dumps({'ids': joblist}))
-        paths = resp['paths']
+        resp = self.h.rpc_send("job.kvspath", json.dumps({"ids": joblist}))
+        paths = resp["paths"]
         status = {}
         for jobid in joblist:
             status[jobid] = None
@@ -303,14 +297,15 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             path = paths[i]
             LOGGER.debug("Checking jobid %s", jobid)
             try:
-                flux_state = str(kvs.get(self.h, path + '.state'))
+                flux_state = str(kvs.get(self.h, path + ".state"))
                 # "complete" covers three cases:
                 # 1. Normal exit
                 # 2. Killed via signal
                 # 3. Failure in execution
-                LOGGER.debug("Encountered %d with state '%s'", i, flux_state)
+                LOGGER.debug("Encountered '%d' with state '%s'",
+                             i, flux_state)
                 if flux_state == "complete":
-                    flux_status = kvs.get(self.h, path + '.exit_status')
+                    flux_status = kvs.get(self.h, path + ".exit_status")
                     # Use kvs to grab the max error code encountered.
                     rcode = flux_status["max"]
                     # If retcode is not 0, not normal execution
@@ -358,29 +353,36 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param joblist: A list of job identifiers to be cancelled.
         :returns: The return code to indicate if jobs were cancelled.
         """
-        # If we don't have any jobs to check, just return status OK.
+        # If we don"t have any jobs to check, just return status OK.
         if not joblist:
             return CancelCode.OK
 
         cancelcode = CancelCode.OK
 
-        with open(os.devnull, 'w') as FNULL:
-          for job in joblist:
-            cmd = "flux wreck cancel {}".format(job)
-            retcode = sp.call(['flux', 'wreck', 'cancel', str(job)], stdout=FNULL, stderr=FNULL)
+        term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
+        with open(os.devnull, "w") as FNULL:
+            for job in joblist:
+                cmd = "flux wreck cancel {}".format(job)
+                retcode = sp.call(
+                    ["flux", "wreck", "cancel", str(job)],
+                    stdout=FNULL, stderr=FNULL
+                )
 
-            if retcode != 0:
-              retcode = sp.call(['flux', 'wreck', 'kill', str(job)], stdout=FNULL, stderr=FNULL)
+                if retcode != 0:
+                    retcode = sp.call(
+                        ["flux", "wreck", "kill", str(job)],
+                        stdout=FNULL, stderr=FNULL
+                    )
 
-            if retcode != 0:
-              status = self.check_jobs([job])
-              if status and status.get(job, None) in [State.FINISHED,State.CANCELLED,State.FAILED]:
-                retcode = 0
+                if retcode != 0:
+                    status = self.check_jobs([job])
+                    if status and status.get(job, None) in term_status:
+                        retcode = 0
 
-            if retcode != 0:
-              LOGGER.warning("Error code '{}' seen. Unexpected behavior "
-                           "encountered.".format(retcode))
-              cancelcode = CancelCode.ERROR
+                if retcode != 0:
+                    LOGGER.warning("Error code '{}' seen. Unexpected behavior "
+                                   "encountered.".format(retcode))
+                    cancelcode = CancelCode.ERROR
         return cancelcode
 
     def _state(self, flux_state):
@@ -413,7 +415,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
         study is configured to be launched in one go (more or less a script
-        chain using a scheduler's dependency setting). The functionality of
+        chain using a scheduler dependency setting). The functionality of
         the parameter may change depending on both future intended use.
 
         :param ws_path: Path to the workspace directory of the step.
