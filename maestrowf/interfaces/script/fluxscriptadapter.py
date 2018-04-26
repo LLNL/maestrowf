@@ -204,7 +204,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # # LOGGER.debug("cwd = %s", cwd)
         # LOGGER.debug("Command to execute: %s", cmd)
-        # p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
+        # p = Popen(
+        #       cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
         # output, err = p.communicate()
         # retcode = p.wait()
 
@@ -362,7 +363,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
             for job in joblist:
-                cmd = "flux wreck cancel {}".format(job)
                 retcode = sp.call(
                     ["flux", "wreck", "cancel", str(job)],
                     stdout=FNULL, stderr=FNULL
