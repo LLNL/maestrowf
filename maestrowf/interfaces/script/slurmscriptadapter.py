@@ -140,12 +140,15 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 str(nodes),
             ]
 
-        rsvp = kwargs.pop("reservation", "")
-        if rsvp:
-            args += [
-                self._cmd_flags["reservation"],
-                "\"{}\"".format(str(rsvp))
-            ]
+        for key, value in kwargs.items():
+            if key not in self._cmd_flags:
+                LOGGER.warning("'%s' is not supported -- ommitted.")
+                continue
+            if value:
+                args += [
+                    self._cmd_flags[key],
+                    "\"{}\"".format(str(value))
+                ]
 
         return " ".join(args)
 
