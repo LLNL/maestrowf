@@ -32,8 +32,6 @@ from datetime import datetime
 import logging
 import os
 import re
-import flux
-import flux.kvs as kvs
 import json
 import subprocess as sp
 
@@ -82,6 +80,11 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         :param **kwargs: A dictionary with default settings for the adapter.
         """
         super(SpectrumFluxScriptAdapter, self).__init__()
+
+        # NOTE: These libraries are compiled at runtime when an allocation
+        # is spun up.
+        self.flux = __import__("flux")
+        self.kvs = __import__("flux.kvs")
 
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
@@ -250,7 +253,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         else:
             jobspec["cmdline"] = [path]
         if self.h is None:
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
         resp = self.h.rpc_send("job.submit", json.dumps(jobspec))
         if resp is None:
             LOGGER.warning("RPC response invalid")
@@ -286,7 +289,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                 return JobStatusCode.ERROR, {}
 
         if self.h is None:
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
         resp = self.h.rpc_send("job.kvspath", json.dumps({"ids": joblist}))
         paths = resp["paths"]
@@ -298,7 +301,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             path = paths[i]
             LOGGER.debug("Checking jobid %s", jobid)
             try:
-                flux_state = str(kvs.get(self.h, path + ".state"))
+                flux_state = str(self.kvs.get(self.h, path + ".state"))
                 # "complete" covers three cases:
                 # 1. Normal exit
                 # 2. Killed via signal
@@ -306,7 +309,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Encountered '%d' with state '%s'",
                              i, flux_state)
                 if flux_state == "complete":
-                    flux_status = kvs.get(self.h, path + ".exit_status")
+                    flux_status = self.kvs.get(self.h, path + ".exit_status")
                     # Use kvs to grab the max error code encountered.
                     rcode = flux_status["max"]
                     # If retcode is not 0, not normal execution
