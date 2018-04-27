@@ -61,7 +61,7 @@ def get_environment():
     return env
 
 
-class FluxScriptAdapter(SchedulerScriptAdapter):
+class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing with the flux scheduler."""
 
     def __init__(self, **kwargs):
@@ -81,7 +81,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(FluxScriptAdapter, self).__init__()
+        super(SpectrumFluxScriptAdapter, self).__init__()
 
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.

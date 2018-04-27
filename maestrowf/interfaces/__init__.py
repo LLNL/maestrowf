@@ -31,19 +31,22 @@
 import logging
 
 from maestrowf.interfaces.script import \
-    FluxScriptAdapter, \
     LocalScriptAdapter, \
-    SlurmScriptAdapter
+    SlurmScriptAdapter, \
+    SpectrumFluxScriptAdapter
 
-__all__ = ("SlurmScriptAdapter", "ScriptAdapterFactory")
+__all__ = (
+    "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter",
+    "ScriptAdapterFactory"
+)
 LOGGER = logging.getLogger(__name__)
 
 
 class ScriptAdapterFactory(object):
     factories = {
-        "slurm": SlurmScriptAdapter,
-        "local": LocalScriptAdapter,
-        "flux": FluxScriptAdapter,
+        "slurm":            SlurmScriptAdapter,
+        "local":            LocalScriptAdapter,
+        "flux-spectrum":    SpectrumFluxScriptAdapter,
     }
 
     @classmethod
