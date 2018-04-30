@@ -550,13 +550,15 @@ class Study(DAG):
 
         # For each step in the Study
         # Walk the study and add the steps to the ExecutionGraph.
-        for parent, step, node in self.walk_study():
+        t_sorted = self.topological_sort()
+        for step in t_sorted:
             # If we find the source node, we can just add it and continue.
             if step == SOURCE:
                 logger.debug("Source node found.")
                 dag.add_node(SOURCE, None)
                 continue
 
+            node = self.values[step]
             # If the step has a restart cmd, set the limit.
             if node.run["restart"]:
                 rlimit = self._restart_limit
@@ -565,7 +567,16 @@ class Study(DAG):
 
             # Add the step
             dag.add_step(step, node, self.output.value, rlimit)
-            dag.add_edge(parent, step)
+            # If the node does not depend on any other steps, make it so that
+            # if connects to SOURCE.
+            if not node.run["depends"]:
+                dag.add_edge(SOURCE, step)
+            else:
+                # In this case, since our step names are not parameterized,
+                # and due to topological sort, we can guarantee that our
+                # dependencies have been added. Go through and add each edge.
+                for parent in node.run["depends"]:
+                    dag.add_edge(parent, step)
 
         return self.output.value, dag
 
