@@ -268,9 +268,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        _procs = step.run.get("procs")
-        _nodes = step.run.get("nodes")
-        if _procs or _nodes:
+        _nodes = step.run.get("nodes", 0)
+        _procs = step.run.get("procs", 0)
+        if _nodes or _procs:
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
