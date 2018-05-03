@@ -89,6 +89,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "reservation": "--reservation",
             "cores per task": "-c",
         }
+        self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
         """
@@ -141,9 +142,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 str(nodes),
             ]
 
-        for key, value in kwargs.items():
+        supported = set(kwargs.keys()) - self._unsupported
+        for key in supported:
+            value = kwargs.get(key)
             if key not in self._cmd_flags:
-                LOGGER.warning("'%s' is not supported -- ommitted.")
+                LOGGER.warning("'%s' is not supported -- ommitted.", key)
                 continue
             if value:
                 args += [
