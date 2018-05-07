@@ -166,7 +166,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-gpu",
             "-mca", "plm", "rsh",
             "--map-by", "node"]
-        args.extend(["-hostfile","$HOSTF"])
+        args.extend(["-hostfile", "$HOSTF"])
         args.extend([
             "-n",
             str(procs),
