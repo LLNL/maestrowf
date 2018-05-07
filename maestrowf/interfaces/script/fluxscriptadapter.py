@@ -156,25 +156,17 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
-        # args = [
-        #     "env",
-        #     "-u", "FLUX_JOB_ID",
-        #     "-u", "PMI_FD",
-        #     "-u", "PMI_RANK",
-        #     "-u", "PMI_SIZE",
-        #     "mpirun",
-        #     "-gpu",
-        #     "-mca", "plm", "rsh",
-        #     # "-mca", "plm_rsh_agent", "rsh",
-        #     "--map-by", "node"]
-        # args.extend(["-hostfile","$HOSTF"])
-        # args.extend([
-        #     "-n",
-        #     str(procs),
-        #     # "/usr/gapps/kras/install/bin/autobind", # bind cores and GPUs
-        #     ])
-        args = ["mpiexec.hydra"]
-        args.extend(["-f", "$HOSTF"])
+        args = [
+            "env",
+            "-u", "FLUX_JOB_ID",
+            "-u", "PMI_FD",
+            "-u", "PMI_RANK",
+            "-u", "PMI_SIZE",
+            "mpirun",
+            "-gpu",
+            "-mca", "plm", "rsh",
+            "--map-by", "node"]
+        args.extend(["-hostfile","$HOSTF"])
         args.extend([
             "-n",
             str(procs),
