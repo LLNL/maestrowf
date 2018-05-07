@@ -118,8 +118,12 @@ class SchedulerScriptAdapter(ScriptAdapter):
         err_msg = "{} attempting to allocate {} {} for a parallel call with" \
                   " a maximum allocation of {}"
 
-        nodes = kwargs.pop("nodes")
-        procs = kwargs.pop("procs")
+        nodes = kwargs.get("nodes")
+        procs = kwargs.get("procs")
+        addl_args = dict(kwargs)
+        addl_args.pop("nodes")
+        addl_args.pop("procs")
+
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
         LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
@@ -205,7 +209,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     LOGGER.error(msg)
                     raise ValueError(msg)
 
-                pcmd = self.get_parallelize_command(_procs, _nodes, **kwargs)
+                pcmd = self.get_parallelize_command(
+                    _procs, _nodes, **addl_args
+                )
                 cmd = cmd.replace(match.group(), pcmd)
 
             # Verify that the total nodes/procs used is within maximum.
@@ -227,7 +233,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             # any parameters, replace it there with full nodes and procs.
             # Otherwise, just return the command. A user may simply want to run
             # an unparallelized code in a submission.
-            pcmd = self.get_parallelize_command(procs, nodes, **kwargs)
+            pcmd = self.get_parallelize_command(procs, nodes, **addl_args)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
                 LOGGER.debug("'%s' found in cmd -- %s",
@@ -262,7 +268,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        if "nodes" in step.run or "procs" in step.run:
+        _procs = step.run.get("procs")
+        _nodes = step.run.get("nodes")
+        if _procs or _nodes:
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
