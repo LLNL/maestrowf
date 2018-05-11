@@ -33,6 +33,7 @@ import copy
 import logging
 import os
 import re
+import string
 import time
 
 from maestrowf.abstracts import SimObject
@@ -702,3 +703,10 @@ class Study(DAG):
             return self._setup_parameterized()
         else:
             return self._setup_linear()
+
+    def _make_safe_path(*args):
+        valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+        for arg in args:
+            arg = "".join(c for c in arg if c in valid)
+            arg = arg.replace(" ", "_")
+        return os.path.join(*args)
