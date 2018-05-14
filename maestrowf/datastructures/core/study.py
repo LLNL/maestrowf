@@ -251,7 +251,13 @@ class Study(DAG):
             for dependency in step.run["depends"]:
                 logger.info("{0} is dependent on {1}. Creating edge ("
                             "{1}, {0})...".format(step.name, dependency))
-                self.add_edge(dependency, step.name)
+                if "*" not in dependency:
+                    self.add_edge(dependency, step.name)
+                else:
+                    self.add_edge(
+                        re.sub(ALL_COMBOS, "", dependency),
+                        step.name
+                    )
         else:
             # Otherwise, if no other dependency, just execute the step.
             self.add_edge(SOURCE, step.name)
@@ -395,16 +401,17 @@ class Study(DAG):
                 # produced combinations as dependencies.
                 if "*" in parent:
                     hub_node = True
-                    parent = re.sub(ALL_COMBOS, "")  # If NOTE, continue here.
+                    parent = re.sub(ALL_COMBOS, "", parent)  # If NOTE, continue here.
                 p_params |= used_params[parent]
             # Total parameters used for this step are the union of each parent
             # and the union of the parameters used by this step.
             used_params[step] = p_params | s_params
             parent_params[step] = p_params
 
-            # TODO: Search for workspace matches. We'll have to handle these
+            # Search for workspace matches. We'll have to handle these
             # per case, because how workspaces work will vary based on node
             # type.
+            used_spaces = re.findall(WSREGEX, node.run["cmd"])
 
             # Check for a restart and set the rlimit accordingly.
             if node.run["restart"]:
@@ -414,28 +421,46 @@ class Study(DAG):
 
             # 1. The step and all its preceding parents use no parameters.
             if not used_params[step]:
+                logger.info(
+                    "==================================================\n"
+                    "Adding step '%s' (No parameters used)\n"
+                    "==================================================\n",
+                    self.name
+                )
                 # If we're not using any parameters at all, we do:
                 # Copy the step and set to not modified.
-                logger.debug("No parameters for '%s'. Adding once.", step)
                 step_combos[step] = set([step])
 
                 workspace = self._make_safe_path(global_workspace, step.name)
                 workspaces[step] = workspace
-                dag.add_step(step, node, workspace, rlimit)
-
-                if node.run["depends"]:
-                    # So, because we don't have used parameters, we can just
-                    # loop over the dependencies and add them.
-                    for parent in node.run["depends"]:
-                        dag.add_edge(parent, step)
-                else:
-                    # Otherwise, just add source since we're not dependent.
-                    dag.add_edge(step, SOURCE)
 
                 # NOTE: I don't think it's valid to have a specific workspace
                 # since a step with no parameters operates at the global level.
                 # TODO: Need to handle workspaces here since we don't have
                 # parameters.
+                cmd = node.run["cmd"]
+                logger.info("Searching for workspaces...\ncmd = %s", cmd)
+                for match in used_spaces:
+                    logger.info("Workspace found -- %s", match)
+                    workspace_var = "$({}.workspace)".format(match)
+                    cmd = cmd.replace(workspace_var, workspaces[match])
+                logger.info("New cmd = %s", cmd)
+                node.run["cmd"] = cmd
+
+                dag.add_step(step, node, workspace, rlimit)
+                step_combos[step] = {step}
+
+                if node.run["depends"]:
+                    # So, because we don't have used parameters, we can just
+                    # loop over the dependencies and add them.
+                    for parent in node.run["depends"]:
+                        logger.debug("Adding edge (%s, %s)...", parent, step)
+                        dag.add_edge(parent, step)
+                else:
+                    # Otherwise, just add source since we're not dependent.
+                    logger.debug("Adding edge (%s, %s)...", SOURCE, step)
+                    dag.add_edge(SOURCE, step)
+
             # 2. The step has used parameters.
             else:
                 logger.info(
@@ -462,21 +487,68 @@ class Study(DAG):
                         else:
                             depends.append(parent)
 
-                        if depends:
-                            logger.info("Node type: Parameterized Hub")
-                            # In this case, we now have a hub node that relies
-                            # on all combinations of a particular step and each
-                            #
-                        else:
-                            logger.info("Node type: Unparameterized Hub")
+                    if depends:
+                        logger.info("Node type: Parameterized Hub")
+                        # In this case, we now have a hub node that relies
+                        # on all combinations of a particular step and each
+                        # specific combination of its parents (minus the _*
+                        # included nodes).
+                        # Initialize the set for our step.
+                        step_combos[step] = set()
+                        cmd = node.run["cmd"]
+                        for combo in self.parameters:
+                            # Compute the combination of the step.
+                            combo_str = \
+                                combo.get_param_string(used_params[step])
+                            # Get the workspace directory.
+                            workspaces[combo_str] = self._make_safe_path(
+                                global_workspace, step, combo_str
+                            )
+                            combo_str = "{}_{}".format(step, combo_str)
+                            # If we've already found this combination, skip.
+                            if combo_str in step_combos[step]:
+                                continue
+                            # Otherwise, we just add the step.
+                            step_combos[step].add(combo_str)
+
+                            # Now we need to check for workspaces and sub
+                            # their parameterized strings.
+                            n_cmd = cmd
+                            for match in used_spaces:
+                                logger.info("Workspace found -- %s", match)
+                                tmp = \
+                                    combo.get_param_string(used_params[match])
+                                tmp = "{}_{}".format(
+                                    match, tmp)
+                                ws_var = "$({}.workspace)".format(match, tmp)
+                                n_cmd = cmd.replace(ws_var, workspaces[tmp])
+                            # Add the appropriate combinations for parents.
+                            node.run["cmd"] = n_cmd
+                            dag.add(step, node, workspaces[combo_str], rlimit)
+
+                            # Add all parameterized steps.
+                            for item in depends:
+                                parent = "{}_{}".format(
+                                    item,
+                                    combo.get_param_string(used_params[item])
+                                )
+                                logger.debug("Adding edge (%s, %s)...",
+                                             parent, combo_str)
+                                dag.add_edge(parent, combo_str)
+
+                            # Add all "hub dependencies".
+                            for item in hub_depends:
+                                logger.debug("Adding edge (%s, %s)...",
+                                             item, combo_str)
+                                dag.add_edge(item, combo_str)
+
+                    else:
+                        logger.info("Node type: Unparameterized Hub")
 
                 else:
                     # We do not have a hub node, treat it like a normal one.
-                    if not used_params[step]:
-                        workspace = \
-                            self._make_safe_path(global_workspace, step)
-                        dag.add_step(step, self.values[step], workspace, )
-
+                    # We are also guaranteed to only have a parameterized node
+                    # at this point. So we will have used parameters.
                     for combo in self.parameters:
                         # For each Combination in the parameters...
                         combo_str = combo.get_param_string(used_params[step])
