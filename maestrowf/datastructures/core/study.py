@@ -31,14 +31,11 @@
 
 import copy
 import logging
-import os
 import re
-import time
 
 from maestrowf.abstracts import SimObject
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.datastructures.dag import DAG
-from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import apply_function, create_parentdir, make_safe_path
 
 logger = logging.getLogger(__name__)
@@ -163,7 +160,7 @@ class Study(DAG):
     """
 
     def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None):
+                 studyenv=None, parameters=None, steps=None, out_path="./"):
         """
         Study object used to represent the full workflow of a study.
 
@@ -190,23 +187,9 @@ class Study(DAG):
         # the Sudy data structure.
         self.environment = copy.deepcopy(studyenv)
         self.parameters = copy.deepcopy(parameters)
+        self._out_path = out_path
 
-        # Isolate the OUTPUT_PATH variable. Even though it should be contained
-        # in the environment, it needs to be tweaked for each combination of
-        # parameters to isolate their workspaces.
-        if self.environment:
-            # Attempt to remove the OUTPUT_PATH from the environment.
-            self.output = self.environment.find('OUTPUT_PATH')
-
-            # If it doesn't exist, assume the current directory is our output
-            # path.
-            if self.output is None:
-                out_path = os.path.abspath('./')
-                self.output = Variable('OUTPUT_PATH', out_path, '$')
-                self.environment.add(self.output)
-            else:
-                self.output.value = os.path.abspath(self.output.value)
-
+        logger.info("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
         self.add_node(SOURCE, None)
@@ -230,7 +213,7 @@ class Study(DAG):
 
         :returns: The string path stored in the OUTPUT_PATH variable.
         """
-        return self.output.value
+        return self._out_path
 
     def add_step(self, step):
         """
@@ -309,24 +292,15 @@ class Study(DAG):
 
         logger.info(
             "\n------------------------------------------\n"
+            "Output path =               %s\n"
             "Submission attempts =       %d\n"
             "Submission restart limit =  %d\n"
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
             "------------------------------------------",
-            submission_attempts, restart_limit, throttle, use_tmp
+            self._out_path, submission_attempts, restart_limit, throttle,
+            use_tmp
         )
-        # Set up the directory structure.
-        # TODO: fdinatal - As I implement the high level program (manager and
-        # launcher in bin), I'm starting to have questions about whether or
-        # not the study set up is the place to handle the output path... it
-        # feels like the determination of the output path should be at the
-        # higher level.
-        out_name = "{}_{}".format(
-            self.name.replace(" ", "_"),
-            time.strftime("%Y%m%d-%H%M%S")
-        )
-        self.output.value = os.path.join(self.output.value, out_name)
 
         # Set up the environment if it hasn't been already.
         if not self.environment.is_set_up:
@@ -334,7 +308,8 @@ class Study(DAG):
             self.environment.acquire_environment()
 
         try:
-            create_parentdir(self.output.value)
+            logger.info("Environment is setting up.")
+            create_parentdir(self._out_path)
         except Exception as e:
             logger.error(e.message)
             return False
@@ -362,10 +337,12 @@ class Study(DAG):
             steps.
         """
         # Construct ExecutionGraph
-        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
+        dag = ExecutionGraph(
+            submission_attempts=self._submission_attempts,
+            submission_throttle=self._submission_throttle,
+            use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         # Items to store that should be reset.
-        global_workspace = self.output.value  # Highest ouput dir
         logger.info(
             "\n==================================================\n"
             "Constructing parameter study '%s'\n"
@@ -375,7 +352,7 @@ class Study(DAG):
 
         # Management structures
         # The workspace used by each step.
-        workspaces = {SOURCE: global_workspace}
+        workspaces = {SOURCE: self._out_path}
         # Parameter independent dependencies by step.
         hub_depends = {SOURCE: set()}
         # Other dependencies per step.
@@ -476,7 +453,7 @@ class Study(DAG):
                 # Copy the step and set to not modified.
                 step_combos[step].add(step)
 
-                workspace = make_safe_path(global_workspace, step)
+                workspace = make_safe_path(self._out_path, step)
                 workspaces[step] = workspace
                 logger.debug("Workspace: %s", workspace)
 
@@ -538,7 +515,7 @@ class Study(DAG):
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(used_params[step])
                     workspace = \
-                        make_safe_path(global_workspace, step, combo_str)
+                        make_safe_path(self._out_path, step, combo_str)
                     workspaces[step] = workspace
                     logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
@@ -601,7 +578,7 @@ class Study(DAG):
                         )
                         dag.add_edge(SOURCE, combo_str)
 
-        return global_workspace, dag
+        return self._out_path, dag
 
     def _setup_linear(self):
         """
@@ -642,7 +619,7 @@ class Study(DAG):
                 rlimit = 0
 
             # Add the step
-            dag.add_step(step, node, self.output.value, rlimit)
+            dag.add_step(step, node, self._out_path, rlimit)
             # If the node does not depend on any other steps, make it so that
             # if connects to SOURCE.
             if not node.run["depends"]:
@@ -654,7 +631,7 @@ class Study(DAG):
                 for parent in node.run["depends"]:
                     dag.add_edge(parent, step)
 
-        return self.output.value, dag
+        return self._out_path, dag
 
     def stage(self):
         """

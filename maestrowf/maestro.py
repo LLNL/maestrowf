@@ -38,11 +38,12 @@ from subprocess import Popen, PIPE
 import six
 import sys
 import tabulate
+import time
 
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import create_parentdir, csvtable_to_dict
+from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
 
 
 # Program Globals
@@ -94,6 +95,24 @@ def run_study(args):
     parameters = spec.get_parameters()
     steps = spec.get_study_steps()
 
+    # Set up the output directory.
+    out_dir = environment.remove("OUTPUT_PATH")
+    if out_dir is None:
+        # If we don't find OUTPUT_PATH in the environment, assume pwd.
+        out_dir = os.path.abspath("./")
+    else:
+        # We just take the value from the environment.
+        out_dir = os.path.abspath(out_dir.value)
+
+    out_name = "{}_{}".format(
+        spec.name.replace(" ", "_"),
+        time.strftime("%Y%m%d-%H%M%S")
+    )
+    output_path = make_safe_path(out_dir, out_name)
+
+    # Now that we know outpath, set up logging.
+    setup_logging(args, output_path, spec.name)
+
     # Addition of the $(SPECROOT) to the environment.
     spec_root = os.path.split(args.specification)[0]
     spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
@@ -101,7 +120,7 @@ def run_study(args):
 
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
-                  parameters=parameters, steps=steps)
+                  parameters=parameters, steps=steps, out_path=output_path)
 
     # Check if the submission attempts is greater than 0:
     if args.attempts < 1:
@@ -130,7 +149,6 @@ def run_study(args):
         restart_limit=args.rlimit,
         use_tmp=args.usetmp
     )
-    setup_logging(args, study.output_path, study.name)
 
     # Stage the study.
     path, exec_dag = study.stage()
@@ -252,8 +270,8 @@ def setup_argparser():
         "2 - Info (Default)\n"
         "1 - Debug")
     parser.add_argument(
-        "-c", "--logstdout", action="store_true",
-        help="Log to stdout in addition to a file.")
+        "-c", "--logstdout", action="store_true", default=True,
+        help="Log to stdout in addition to a file. [Default: %(default)s]")
 
     return parser
 
@@ -272,7 +290,7 @@ def setup_logging(args, path, name):
         logpath = args.logpath
     # Otherwise, we should just output to the OUTPUT_PATH.
     else:
-        logpath = os.path.join(path, "logs")
+        logpath = make_safe_path(path, "logs")
 
     loglevel = args.debug_lvl * 10
 
@@ -281,7 +299,7 @@ def setup_logging(args, path, name):
     formatter = logging.Formatter(LFORMAT)
     ROOTLOGGER.setLevel(loglevel)
 
-    logname = "{}.log".format(name)
+    logname = make_safe_path("{}.log".format(name))
     fh = logging.FileHandler(os.path.join(logpath, logname))
     fh.setLevel(loglevel)
     fh.setFormatter(formatter)
