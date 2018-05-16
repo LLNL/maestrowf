@@ -32,6 +32,7 @@
 from collections import OrderedDict
 import logging
 import os
+import string
 import time
 
 LOGGER = logging.getLogger(__name__)
@@ -144,3 +145,11 @@ def csvtable_to_dict(fstream):
 
     # Return the completed table
     return table
+
+
+def make_safe_path(*args):
+    valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    for arg in args:
+        arg = "".join(c for c in arg if c in valid)
+        arg = arg.replace(" ", "_")
+    return os.path.join(*args)
