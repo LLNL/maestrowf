@@ -33,14 +33,13 @@ import copy
 import logging
 import os
 import re
-import string
 import time
 
 from maestrowf.abstracts import SimObject
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import apply_function, create_parentdir
+from maestrowf.utils import apply_function, create_parentdir, make_safe_path
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -366,9 +365,9 @@ class Study(DAG):
         # Items to store that should be reset.
         global_workspace = self.output.value  # Highest ouput dir
         logger.info(
-            "=================================================="
-            "Constructing parameter study '%s'"
-            "==================================================",
+            "\n==================================================\n"
+            "Constructing parameter study '%s'\n"
+            "==================================================\n",
             self.name
         )
 
@@ -402,6 +401,12 @@ class Study(DAG):
         # used parameters of the step, and then adding all parameterized
         # combinations of funneled steps.
         for step in t_sorted:
+            logger.info(
+                "\n==================================================\n"
+                "Adding step '%s'\n"
+                "==================================================\n",
+                step
+            )
             # If we encounter SOURCE, just add it and continue.
             if step == SOURCE:
                 logger.info("Encountered '%s'. Adding and continuing.", SOURCE)
@@ -413,11 +418,12 @@ class Study(DAG):
             node = self.values[step]
             hub_depends[step] = set()
             depends[step] = set()
+            step_combos[step] = set()
 
             s_params = self.parameters.get_used_parameters(node)
             p_params = set()    # Used parameters excluding the current step.
             # Iterate through dependencies to update the p_params
-            logger.debug("*** Processing dependencies ***")
+            logger.debug("\n*** Processing dependencies ***")
             for parent in node.run["depends"]:
                 # If we have a dependency that is parameter independent, add
                 # it to the hub dependency set.
@@ -427,7 +433,7 @@ class Study(DAG):
                 else:
                     logger.debug("Found dependency -- %s", parent)
                     # Otherwise, just note the parameters used by the step.
-                    depends[step] |= parent
+                    depends[step].add(parent)
                     p_params |= used_params[parent]
 
             # Search for workspace matches. These affect the expansion of a
@@ -459,16 +465,16 @@ class Study(DAG):
             # 1. The step and all its preceding parents use no parameters.
             if not used_params[step]:
                 logger.info(
-                    "==================================================\n"
+                    "\n-------------------------------------------------\n"
                     "Adding step '%s' (No parameters used)\n"
-                    "==================================================\n",
-                    self.name
+                    "-------------------------------------------------\n",
+                    step
                 )
                 # If we're not using any parameters at all, we do:
                 # Copy the step and set to not modified.
-                step_combos[step] = {step}
+                step_combos[step].add(step)
 
-                workspace = self._make_safe_path(global_workspace, step)
+                workspace = make_safe_path(global_workspace, step)
                 workspaces[step] = workspace
                 logger.debug("Workspace: %s", workspace)
 
@@ -513,26 +519,27 @@ class Study(DAG):
             # 2. The step has used parameters.
             else:
                 logger.info(
-                    "==================================================\n"
+                    "\n==================================================\n"
                     "Expanding step '%s'\n"
                     "==================================================\n"
                     "-------- Used Parameters --------\n"
                     "%s\n"
                     "---------------------------------",
-                    self.name, str(used_params[step])
+                    step, used_params[step]
                 )
                 # Now we iterate over the combinations and expand the step.
                 for combo in self.parameters:
+                    logger.info("\n****** Combo [%s] *****", str(combo))
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(used_params[step])
                     workspace = \
-                        self._make_safe_path(global_workspace, step, combo_str)
+                        make_safe_path(global_workspace, step, combo_str)
                     workspaces[step] = workspace
                     logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
 
                     # Check if the step combination has been processed.
-                    if combo_str in step_combos[step]:
+                    if combo_str in step_combos:
                         continue
                     # Add this step to the combinations seen.
                     step_combos[step].add(combo_str)
@@ -690,10 +697,3 @@ class Study(DAG):
             return self._setup_parameterized()
         else:
             return self._setup_linear()
-
-    def _make_safe_path(*args):
-        valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
-        for arg in args:
-            arg = "".join(c for c in arg if c in valid)
-            arg = arg.replace(" ", "_")
-        return os.path.join(*args)
