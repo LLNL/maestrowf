@@ -510,7 +510,7 @@ class Study(DAG):
                     # is not parameterized.
                     logger.debug("Processing hub dependencies.")
                     for parent in hub_depends[step]:
-                        for item in step_combos["parent"]:
+                        for item in step_combos[parent]:
                             logger.info("Adding edge (%s, %s)...", item, step)
                             hub_depends.append(item)
                 else:
@@ -531,7 +531,10 @@ class Study(DAG):
                 )
                 # Now we iterate over the combinations and expand the step.
                 for combo in self.parameters:
-                    logger.info("\n****** Combo [%s] *****", str(combo))
+                    logger.info("\n**********************************\n"
+                                "Combo [%s]\n"
+                                "**********************************",
+                                str(combo))
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(used_params[step])
                     workspace = \
@@ -561,7 +564,7 @@ class Study(DAG):
                         )
                         logger.info("Workspace found -- %s", ws)
                         cmd = cmd.replace(workspace_var, ws)
-                    logger.info("New cmd = %s", ncmd)
+                    logger.info("New cmd = %s", cmd)
 
                     step_exp.run["cmd"] = cmd
                     # Add to the step to the DAG.
@@ -570,14 +573,14 @@ class Study(DAG):
                     if depends[step] or hub_depends[step]:
                         # So, because we don't have used parameters, we can
                         # just loop over the dependencies and add them.
-                        logger.debug("Processing regular dependencies.")
+                        logger.info("Processing regular dependencies.")
                         for p in depends[step]:
                             if used_params[p]:
                                 p = "{}_{}".format(
                                     p, combo.get_param_string(used_params[p])
                                 )
                             logger.info(
-                                "Adding edge (%s, %s)...", p, step
+                                "Adding edge (%s, %s)...", p, combo_str
                             )
                             dag.add_edge(p, combo_str)
 
@@ -586,7 +589,7 @@ class Study(DAG):
                         # is not parameterized.
                         logger.debug("Processing hub dependencies.")
                         for parent in hub_depends[step]:
-                            for item in step_combos["parent"]:
+                            for item in step_combos[parent]:
                                 logger.info(
                                     "Adding edge (%s, %s)...", item, combo_str
                                 )
