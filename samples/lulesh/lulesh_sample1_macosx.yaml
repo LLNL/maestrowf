@@ -24,7 +24,7 @@ study:
       description: Build the serial version of LULESH.
       run:
           cmd: |
-            cd $(OUTPUT_PATH)/lulesh
+            cd $(get-lulesh.workspace)/lulesh
             sed -i "" 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
             sed -i "" 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
             sed -i "" 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
@@ -38,7 +38,7 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            ../lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(get-lulesh.workspace)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
 global.parameters:
