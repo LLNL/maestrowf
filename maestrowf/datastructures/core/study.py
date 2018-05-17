@@ -559,7 +559,6 @@ class Study(DAG):
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
                             ws = make_safe_path(self._out_path, match)
-                            print self._out_dir
                             logger.info("Found funnel workspace -- %s", ws)
                         elif not used_params[match]:
                             # If it's not a funneled dependency and the match
