@@ -318,6 +318,12 @@ class ExecutionGraph(DAG):
         self._submission_attempts = submission_attempts
         self._submission_throttle = submission_throttle
 
+        # A map that tracks the dependencies of a step.
+        # NOTE: I don't know how performant the Python dict structure is, but
+        # we'll use it for now. I think this may want to be changed to an AVL
+        # tree or something of that nature to guarantee worst case performance.
+        self._dependencies = {}
+
         logger.info(
             "\n------------------------------------------\n"
             "Submission attempts =       %d\n"
@@ -365,7 +371,18 @@ class ExecutionGraph(DAG):
                     "restart_limit": restart_limit
                 }
         record = _StepRecord(**data)
+        self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
+
+    def add_connection(self, parent, step):
+        """
+        Add a connection between two steps in the ExecutionGraph.
+
+        :param parent: The parent step that is required to execute 'step'
+        :param step: The dependent step that relies on parent.
+        """
+        self.add_edge(parent, step)
+        self._dependencies[step].add(parent)
 
     def set_adapter(self, adapter):
         """
@@ -729,15 +746,17 @@ class ExecutionGraph(DAG):
                              "dependencies...", key)
                 # Count the number of its dependencies have finised.
                 num_finished = 0
-                for dependency in record.step.run["depends"]:
+                for dependency in self._dependencies[record.name]:
                     logger.debug("Checking '%s'...", dependency)
                     if dependency in self.completed_steps:
-                        logger.debug("Found in completed steps.")
+                        logger.debug(
+                            "Found in completed steps. Removing from "
+                            "dependency gate.")
                         num_finished += 1
                 # If the total number of dependencies finished is the same
                 # as the number of dependencies the step has, it's ready to
                 # be executed. Add it to the map.
-                if num_finished == len(record.step.run["depends"]):
+                if num_finished == len(self._dependencies[record.name]):
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
                         self.ready_steps.append(record)

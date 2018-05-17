@@ -498,7 +498,7 @@ class Study(DAG):
                     logger.debug("Processing regular dependencies.")
                     for parent in depends[step]:
                         logger.info("Adding edge (%s, %s)...", parent, step)
-                        dag.add_edge(parent, step)
+                        dag.add_connection(parent, step)
 
                     # We can still have a case where we have steps that do
                     # funnel into this one even though this particular step
@@ -507,11 +507,11 @@ class Study(DAG):
                     for parent in hub_depends[step]:
                         for item in step_combos[parent]:
                             logger.info("Adding edge (%s, %s)...", item, step)
-                            dag.add_edge(item, step)
+                            dag.add_connection(item, step)
                 else:
                     # Otherwise, just add source since we're not dependent.
                     logger.debug("Adding edge (%s, %s)...", SOURCE, step)
-                    dag.add_edge(SOURCE, step)
+                    dag.add_connection(SOURCE, step)
 
             # 2. The step has used parameters.
             else:
@@ -596,7 +596,7 @@ class Study(DAG):
                             logger.info(
                                 "Adding edge (%s, %s)...", p, combo_str
                             )
-                            dag.add_edge(p, combo_str)
+                            dag.add_connection(p, combo_str)
 
                         # We can still have a case where we have steps that do
                         # funnel into this one even though this particular step
@@ -607,13 +607,13 @@ class Study(DAG):
                                 logger.info(
                                     "Adding edge (%s, %s)...", item, combo_str
                                 )
-                                dag.add_edge(item, combo_str)
+                                dag.add_connection(item, combo_str)
                     else:
                         # Otherwise, just add source since we're not dependent.
                         logger.debug(
                             "Adding edge (%s, %s)...", SOURCE, combo_str
                         )
-                        dag.add_edge(SOURCE, combo_str)
+                        dag.add_connection(SOURCE, combo_str)
 
         return self._out_path, dag
 
@@ -660,13 +660,13 @@ class Study(DAG):
             # If the node does not depend on any other steps, make it so that
             # if connects to SOURCE.
             if not node.run["depends"]:
-                dag.add_edge(SOURCE, step)
+                dag.add_connection(SOURCE, step)
             else:
                 # In this case, since our step names are not parameterized,
                 # and due to topological sort, we can guarantee that our
                 # dependencies have been added. Go through and add each edge.
                 for parent in node.run["depends"]:
-                    dag.add_edge(parent, step)
+                    dag.add_connection(parent, step)
 
         return self._out_path, dag
 
