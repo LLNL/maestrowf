@@ -41,6 +41,14 @@ study:
             $(get-lulesh)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
+    - name: post-process-lulesh
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) > ls.log
+          depends: [run-lulesh_*]
+
 global.parameters:
     SIZE:
         values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
