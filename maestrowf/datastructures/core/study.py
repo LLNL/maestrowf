@@ -28,7 +28,6 @@
 ###############################################################################
 
 """Class related to the construction of study campaigns."""
-
 import copy
 import logging
 import re
@@ -185,8 +184,8 @@ class Study(DAG):
 
         # We want deep copies so that properties don't change out from under
         # the Sudy data structure.
-        self.environment = copy.deepcopy(studyenv)
-        self.parameters = copy.deepcopy(parameters)
+        self.environment = studyenv
+        self.parameters = parameters
         self._out_path = out_path
 
         logger.info("OUTPUT_PATH = %s", out_path)
@@ -204,7 +203,7 @@ class Study(DAG):
         if steps:
             for step in steps:
                 # Deep copy because it prevents modifications after the fact.
-                self.add_step(copy.deepcopy(step))
+                self.add_step(step)
 
     @property
     def output_path(self):
@@ -382,7 +381,7 @@ class Study(DAG):
         for step in t_sorted:
             logger.info(
                 "\n==================================================\n"
-                "Adding step '%s'\n"
+                "Processing step '%s'\n"
                 "==================================================\n",
                 step
             )
@@ -426,6 +425,15 @@ class Study(DAG):
                     logger.error(msg)
                     raise Exception(msg)
 
+                # We have the case that if we're using a workspace of a step
+                # that is a parameter independent dependency, we can skip it.
+                # The parameters don't affect the combinations.
+                if ws in hub_depends[step]:
+                    logger.info(
+                        "'%s' parameter independent association found. "
+                        "Skipping.", ws)
+                    continue
+
                 logger.debug(
                     "Found workspace '%s' using parameters %s",
                     ws, used_params[ws])
@@ -463,17 +471,26 @@ class Study(DAG):
                 # parameters.
                 # NOTE: Opting to save the old command for provenence reasons.
                 cmd = node.run["cmd"]
-                ncmd = cmd
                 logger.info("Searching for workspaces...\ncmd = %s", cmd)
                 for match in used_spaces:
                     logger.info("Workspace found -- %s", match)
                     workspace_var = "$({}.workspace)".format(match)
-                    ncmd = ncmd.replace(workspace_var, workspaces[match])
-                node.run["cmd"] = ncmd
-                logger.info("New cmd = %s", ncmd)
+                    if match in hub_depends[step]:
+                        # If we're looking at a parameter independent match
+                        # the workspace is the folder that contains all of
+                        # the outputs of all combinations for the step.
+                        ws = make_safe_path(self._out_path, match)
+                        logger.info("Found funnel workspace -- %s", ws)
+                    else:
+                        ws = workspaces[match]
+                    cmd = cmd.replace(workspace_var, ws)
+                # We have to deepcopy the node, otherwise when we modify it
+                # here, it's reflected in the ExecutionGraph.
+                node = copy.deepcopy(node)
+                node.run["cmd"] = cmd
+                logger.info("New cmd = %s", cmd)
 
                 dag.add_step(step, node, workspace, rlimit)
-                node.run["cmd"] = cmd
 
                 if depends[step] or hub_depends[step]:
                     # So, because we don't have used parameters, we can just
@@ -490,7 +507,7 @@ class Study(DAG):
                     for parent in hub_depends[step]:
                         for item in step_combos[parent]:
                             logger.info("Adding edge (%s, %s)...", item, step)
-                            hub_depends.append(item)
+                            dag.add_edge(item, step)
                 else:
                     # Otherwise, just add source since we're not dependent.
                     logger.debug("Adding edge (%s, %s)...", SOURCE, step)
@@ -535,17 +552,33 @@ class Study(DAG):
                     logger.info("Searching for workspaces...\ncmd = %s", cmd)
                     for match in used_spaces:
                         # Construct the workspace variable.
+                        logger.info("Workspace found -- %s", ws)
                         workspace_var = "$({}.workspace)".format(match)
-                        # Construct the parameterized workspace.
-                        if not used_params[match]:
-                            ws = match
+                        if match in hub_depends[step]:
+                            # If we're looking at a parameter independent match
+                            # the workspace is the folder that contains all of
+                            # the outputs of all combinations for the step.
+                            ws = make_safe_path(self._out_path, match)
+                            print self._out_dir
+                            logger.info("Found funnel workspace -- %s", ws)
+                        elif not used_params[match]:
+                            # If it's not a funneled dependency and the match
+                            # is not parameterized, then the workspace is just
+                            # the unparameterized match.
+                            ws = workspaces[match]
+                            logger.info(
+                                "Found unparameterized workspace -- %s", match)
                         else:
+                            # Otherwise, we're dealing with a combination.
                             ws = "{}_{}".format(
                                 match,
                                 combo.get_param_string(used_params[match])
                             )
-                        logger.info("Workspace found -- %s", ws)
-                        cmd = cmd.replace(workspace_var, workspaces[ws])
+                            logger.info(
+                                "Found parameterized workspace -- %s", ws)
+                            ws = workspaces[ws]
+
+                        cmd = cmd.replace(workspace_var, ws)
                     logger.info("New cmd = %s", cmd)
 
                     step_exp.run["cmd"] = cmd
@@ -575,7 +608,7 @@ class Study(DAG):
                                 logger.info(
                                     "Adding edge (%s, %s)...", item, combo_str
                                 )
-                                hub_depends.append(item)
+                                dag.add_edge(item, combo_str)
                     else:
                         # Otherwise, just add source since we're not dependent.
                         logger.debug(

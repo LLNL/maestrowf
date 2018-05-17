@@ -1,6 +1,5 @@
 """Module for the execution of DAG workflows."""
 from collections import deque
-import copy
 from datetime import datetime
 from filelock import FileLock, Timeout
 import getpass
@@ -360,7 +359,7 @@ class ExecutionGraph(DAG):
         :param restart_limit: Upper limit on the number of restart attempts.
         """
         data = {
-                    "step": copy.deepcopy(step),
+                    "step": step,
                     "state": State.INITIALIZED,
                     "workspace": workspace,
                     "restart_limit": restart_limit
