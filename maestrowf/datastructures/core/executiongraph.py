@@ -564,7 +564,7 @@ class ExecutionGraph(DAG):
                 retcode = record.restart(adapter)
 
             # Increment the number of restarts we've attempted.
-            logger.debug("Completed submission attempt %d")
+            logger.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:
@@ -743,20 +743,24 @@ class ExecutionGraph(DAG):
             # that needs consideration.
             if record.status == State.INITIALIZED:
                 logger.debug("'%s' found to be initialized. Checking "
-                             "dependencies...", key)
-                # Count the number of its dependencies have finised.
-                num_finished = 0
-                for dependency in self._dependencies[record.name]:
-                    logger.debug("Checking '%s'...", dependency)
-                    if dependency in self.completed_steps:
-                        logger.debug(
-                            "Found in completed steps. Removing from "
-                            "dependency gate.")
-                        num_finished += 1
-                # If the total number of dependencies finished is the same
-                # as the number of dependencies the step has, it's ready to
-                # be executed. Add it to the map.
-                if num_finished == len(self._dependencies[record.name]):
+                             "dependencies. ", key)
+
+                logger.info(
+                    "Unfulfilled dependencies: %s",
+                    self._dependencies[record.name])
+
+                s_completed = filter(
+                    lambda x: x in self.completed_steps,
+                    self._dependencies[record.name])
+                self._dependencies[record.name] = \
+                    self._dependencies[record.name] - set(s_completed)
+                logger.info(
+                    "Completed dependencies: %s\n"
+                    "Remaining dependencies: %s",
+                    s_completed, self._dependencies[record.name])
+
+                # If the gating dependencies set is empty, we can execute.
+                if not self._dependencies[record.name]:
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
                         self.ready_steps.append(record)
