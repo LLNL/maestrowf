@@ -1,5 +1,6 @@
 """Module for the execution of DAG workflows."""
 from collections import deque
+import copy
 from datetime import datetime
 from filelock import FileLock, Timeout
 import getpass
@@ -12,6 +13,7 @@ import tempfile
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
 from maestrowf.datastructures.dag import DAG
+from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import create_parentdir
 
@@ -29,7 +31,7 @@ class _StepRecord(object):
     step in the DAG.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, workspace, step, **kwargs):
         """
         Initialize a new instance of a StepRecord.
 
@@ -45,13 +47,13 @@ class _StepRecord(object):
         tmp_dir: A provided temp directory to write scripts to instead of step
         workspace.
         """
-        self.workspace = kwargs.get("workspace", "")
+        self.workspace = Variable("OUTPUT_PATH", workspace)
 
         self.jobid = kwargs.get("jobid", [])
         self.script = kwargs.get("script", "")
         self.restart_script = kwargs.get("restart", "")
         self.to_be_scheduled = False
-        self.step = kwargs.get("step", None)
+        self.step = step
         self.restart_limit = kwargs.get("restart_limit", 3)
 
         # Status Information
@@ -63,7 +65,7 @@ class _StepRecord(object):
 
     def setup_workspace(self):
         """Initialize the record's workspace."""
-        create_parentdir(self.workspace)
+        create_parentdir(self.workspace.value)
 
     def generate_script(self, adapter, tmp_dir=""):
         """
@@ -76,7 +78,9 @@ class _StepRecord(object):
         if tmp_dir:
             scr_dir = tmp_dir
         else:
-            scr_dir = self.workspace
+            scr_dir = self.workspace.value
+
+        self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
 
         logger.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
@@ -103,12 +107,12 @@ class _StepRecord(object):
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
             retcode, jobid = adapter.submit(
-                self.step, script, self.workspace)
+                self.step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
             retcode, jobid = ladapter.submit(
-                self.step, script, self.workspace)
+                self.step, script, self.workspace.value)
 
         return retcode, jobid
 
@@ -356,7 +360,7 @@ class ExecutionGraph(DAG):
         :param restart_limit: Upper limit on the number of restart attempts.
         """
         data = {
-                    "step": step,
+                    "step": copy.deepcopy(step),
                     "state": State.INITIALIZED,
                     "workspace": workspace,
                     "restart_limit": restart_limit
@@ -579,7 +583,7 @@ class ExecutionGraph(DAG):
         for key in keys:
             value = self.values[key]
             _ = [
-                    value.name, os.path.split(value.workspace)[1],
+                    value.name, os.path.split(value.workspace.value)[1],
                     str(value.status), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)

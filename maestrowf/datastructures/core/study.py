@@ -469,6 +469,7 @@ class Study(DAG):
                     logger.info("Workspace found -- %s", match)
                     workspace_var = "$({}.workspace)".format(match)
                     ncmd = ncmd.replace(workspace_var, workspaces[match])
+                node.run["cmd"] = ncmd
                 logger.info("New cmd = %s", ncmd)
 
                 dag.add_step(step, node, workspace, rlimit)
@@ -536,11 +537,15 @@ class Study(DAG):
                         # Construct the workspace variable.
                         workspace_var = "$({}.workspace)".format(match)
                         # Construct the parameterized workspace.
-                        ws = "{}_{}".format(
-                            match, combo.get_param_string(used_params[match])
-                        )
+                        if not used_params[match]:
+                            ws = match
+                        else:
+                            ws = "{}_{}".format(
+                                match,
+                                combo.get_param_string(used_params[match])
+                            )
                         logger.info("Workspace found -- %s", ws)
-                        cmd = cmd.replace(workspace_var, ws)
+                        cmd = cmd.replace(workspace_var, workspaces[ws])
                     logger.info("New cmd = %s", cmd)
 
                     step_exp.run["cmd"] = cmd
