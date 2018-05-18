@@ -45,6 +45,7 @@ study:
       description: Post process all LULESH results.
       run:
           cmd: |
+            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
             echo $(run-lulesh.workspace) > out.log
             ls $(run-lulesh.workspace) > ls.log
           depends: [run-lulesh_*]
@@ -53,6 +54,7 @@ study:
       description: Post process all LULESH results.
       run:
           cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
             echo "TRIAL = $(TRIAL)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
             ls $(run-lulesh.workspace) > out.log
@@ -62,6 +64,7 @@ study:
       description: Post process all LULESH results.
       run:
           cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
             echo "SIZE = $(SIZE)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
             ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
