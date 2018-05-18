@@ -656,7 +656,8 @@ class Study(DAG):
                 rlimit = 0
 
             # Add the step
-            dag.add_step(step, node, self._out_path, rlimit)
+            ws = make_safe_path(self._out_path, step)
+            dag.add_step(step, node, ws, rlimit)
             # If the node does not depend on any other steps, make it so that
             # if connects to SOURCE.
             if not node.run["depends"]:
