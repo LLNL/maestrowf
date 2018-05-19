@@ -79,7 +79,6 @@ class DAG(Graph):
             msg = "Cannot add self referring cycle edge ({}, {})" \
                   .format(src, dest)
             logger.error(msg)
-
             return
 
         # Disallow adding edges to the graph before nodes are added.
@@ -94,20 +93,19 @@ class DAG(Graph):
             logger.error(error, src, dest, dest)
             return
 
-        # If the edge would create a loop, don't add the edge.
-        if src in self.adjacency_table[dest]:
-            error = error.format(src=src, dest=dest, node=dest)
-            logger.error(error)
-            raise ValueError(error)
-
-        # If dest is not already and edge from src, add it.
-        if dest not in self.adjacency_table[src]:
-            self.adjacency_table[src].append(dest)
-            logging.info("Edge (%s, %s) added.", src, dest)
+        if dest in self.adjacency_table[src]:
+            logger.info("Edge (%s, %s) already in DAG. Returning.", src, dest)
             return
 
-        # Otherwise, we already have the edge.
-        logging.info("Edge (%s, %s) already in DAG.", src, dest)
+        # If dest is not already and edge from src, add it.
+        self.adjacency_table[src].append(dest)
+        logging.info("Edge (%s, %s) added.", src, dest)
+
+        # Check to make sure we've not created a cycle.
+        if self.detect_cycle():
+            msg = "Adding edge ({}, {}) crates a cycle.".format(src, dest)
+            logger.error(msg)
+            raise Exception(msg)
 
     def remove_edge(self, src, dest):
         """
@@ -181,7 +179,6 @@ class DAG(Graph):
         :param stack: The current stack of vertices that have been sorted.
         :returns: A list of the DAG's nodes in topologically sorted order.
         """
-
         # Mark the node as visited.
         visited[v] = True
 
@@ -208,3 +205,46 @@ class DAG(Graph):
                 self._topological_sort(v, v_visited, v_stack)
 
         return list(v_stack)
+
+    def detect_cycle(self):
+        """Detect if the DAG contains a cycle."""
+        visited = set()
+        rstack = set()
+        for v in self.values:
+            if v not in visited:
+                logging.debug("Visting '%s'...", v)
+                if self._detect_cycle(v, visited, rstack):
+                    logging.debug("Cycle detected. Origin = '%s'", v)
+                    return True
+        logger.debug("No cycles found -- returning.")
+        return False
+
+    def _detect_cycle(self, v, visited, rstack):
+        """
+        Recurse through nodes testing for loops.
+
+        :param v: Name of source vertex to search from.
+        :param visited: Set of the nodes we've visited so far.
+        :param rstack: Set of nodes currently on the path.
+        """
+        visited.add(v)
+        rstack.add(v)
+
+        for c in self.adjacency_table[v]:
+            if c not in visited:
+                logging.debug("Visting node '%s' from '%s'.", c, v)
+                if self._detect_cycle(c, visited, rstack):
+                    logger.debug("Cycle detected --\n"
+                                 "rstack = %s\n"
+                                 "visited = %s",
+                                 rstack, visited)
+                    return True
+            elif c in rstack:
+                logger.debug("Cycle detected ('%s' in rstack)--\n"
+                             "rstack = %s\n"
+                             "visited = %s",
+                             c, rstack, visited)
+                return True
+        rstack.remove(v)
+        logger.debug("No cycle originating from '%s'", v)
+        return False
