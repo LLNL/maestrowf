@@ -38,7 +38,7 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(get-lulesh)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(get-lulesh.workspace)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
     - name: post-process-lulesh
