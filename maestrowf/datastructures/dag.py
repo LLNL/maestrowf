@@ -32,7 +32,7 @@
 from collections import deque, OrderedDict
 import logging
 
-from ..abstracts import Graph
+from maestrowf.abstracts.graph import Graph
 
 logger = logging.getLogger(__name__)
 
@@ -94,12 +94,12 @@ class DAG(Graph):
             return
 
         if dest in self.adjacency_table[src]:
-            logger.info("Edge (%s, %s) already in DAG. Returning.", src, dest)
+            logger.debug("Edge (%s, %s) already in DAG. Returning.", src, dest)
             return
 
         # If dest is not already and edge from src, add it.
         self.adjacency_table[src].append(dest)
-        logging.info("Edge (%s, %s) added.", src, dest)
+        logging.debug("Edge (%s, %s) added.", src, dest)
 
         # Check to make sure we've not created a cycle.
         if self.detect_cycle():
