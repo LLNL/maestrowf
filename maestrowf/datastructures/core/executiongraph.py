@@ -12,6 +12,7 @@ import tempfile
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
 from maestrowf.datastructures.dag import DAG
+from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import create_parentdir
 
@@ -29,7 +30,7 @@ class _StepRecord(object):
     step in the DAG.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, workspace, step, **kwargs):
         """
         Initialize a new instance of a StepRecord.
 
@@ -45,13 +46,13 @@ class _StepRecord(object):
         tmp_dir: A provided temp directory to write scripts to instead of step
         workspace.
         """
-        self.workspace = kwargs.get("workspace", "")
+        self.workspace = Variable("OUTPUT_PATH", workspace)
 
         self.jobid = kwargs.get("jobid", [])
         self.script = kwargs.get("script", "")
         self.restart_script = kwargs.get("restart", "")
         self.to_be_scheduled = False
-        self.step = kwargs.get("step", None)
+        self.step = step
         self.restart_limit = kwargs.get("restart_limit", 3)
 
         # Status Information
@@ -63,7 +64,7 @@ class _StepRecord(object):
 
     def setup_workspace(self):
         """Initialize the record's workspace."""
-        create_parentdir(self.workspace)
+        create_parentdir(self.workspace.value)
 
     def generate_script(self, adapter, tmp_dir=""):
         """
@@ -76,7 +77,9 @@ class _StepRecord(object):
         if tmp_dir:
             scr_dir = tmp_dir
         else:
-            scr_dir = self.workspace
+            scr_dir = self.workspace.value
+
+        self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
 
         logger.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
@@ -103,12 +106,12 @@ class _StepRecord(object):
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
             retcode, jobid = adapter.submit(
-                self.step, script, self.workspace)
+                self.step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
             retcode, jobid = ladapter.submit(
-                self.step, script, self.workspace)
+                self.step, script, self.workspace.value)
 
         return retcode, jobid
 
@@ -315,6 +318,12 @@ class ExecutionGraph(DAG):
         self._submission_attempts = submission_attempts
         self._submission_throttle = submission_throttle
 
+        # A map that tracks the dependencies of a step.
+        # NOTE: I don't know how performant the Python dict structure is, but
+        # we'll use it for now. I think this may want to be changed to an AVL
+        # tree or something of that nature to guarantee worst case performance.
+        self._dependencies = {}
+
         logger.info(
             "\n------------------------------------------\n"
             "Submission attempts =       %d\n"
@@ -362,7 +371,18 @@ class ExecutionGraph(DAG):
                     "restart_limit": restart_limit
                 }
         record = _StepRecord(**data)
+        self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
+
+    def add_connection(self, parent, step):
+        """
+        Add a connection between two steps in the ExecutionGraph.
+
+        :param parent: The parent step that is required to execute 'step'
+        :param step: The dependent step that relies on parent.
+        """
+        self.add_edge(parent, step)
+        self._dependencies[step].add(parent)
 
     def set_adapter(self, adapter):
         """
@@ -544,7 +564,7 @@ class ExecutionGraph(DAG):
                 retcode = record.restart(adapter)
 
             # Increment the number of restarts we've attempted.
-            logger.debug("Completed submission attempt %d")
+            logger.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:
@@ -579,7 +599,7 @@ class ExecutionGraph(DAG):
         for key in keys:
             value = self.values[key]
             _ = [
-                    value.name, os.path.split(value.workspace)[1],
+                    value.name, os.path.split(value.workspace.value)[1],
                     str(value.status), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)
@@ -723,18 +743,24 @@ class ExecutionGraph(DAG):
             # that needs consideration.
             if record.status == State.INITIALIZED:
                 logger.debug("'%s' found to be initialized. Checking "
-                             "dependencies...", key)
-                # Count the number of its dependencies have finised.
-                num_finished = 0
-                for dependency in record.step.run["depends"]:
-                    logger.debug("Checking '%s'...", dependency)
-                    if dependency in self.completed_steps:
-                        logger.debug("Found in completed steps.")
-                        num_finished += 1
-                # If the total number of dependencies finished is the same
-                # as the number of dependencies the step has, it's ready to
-                # be executed. Add it to the map.
-                if num_finished == len(record.step.run["depends"]):
+                             "dependencies. ", key)
+
+                logger.info(
+                    "Unfulfilled dependencies: %s",
+                    self._dependencies[record.name])
+
+                s_completed = filter(
+                    lambda x: x in self.completed_steps,
+                    self._dependencies[record.name])
+                self._dependencies[record.name] = \
+                    self._dependencies[record.name] - set(s_completed)
+                logger.info(
+                    "Completed dependencies: %s\n"
+                    "Remaining dependencies: %s",
+                    s_completed, self._dependencies[record.name])
+
+                # If the gating dependencies set is empty, we can execute.
+                if not self._dependencies[record.name]:
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
                         self.ready_steps.append(record)

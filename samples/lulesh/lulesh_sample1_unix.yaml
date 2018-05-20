@@ -24,7 +24,7 @@ study:
       description: Build the serial version of LULESH.
       run:
           cmd: |
-            cd $(OUTPUT_PATH)/lulesh
+            cd $(get-lulesh.workspace)/lulesh
             sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
             sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
             sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
@@ -38,10 +38,42 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            ../lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(get-lulesh)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
+    - name: post-process-lulesh
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
+            echo $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) > ls.log
+          depends: [run-lulesh_*]
+
+    - name: post-process-lulesh-trials
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "TRIAL = $(TRIAL)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) > out.log
+          depends: [run-lulesh_*]
+
+    - name: post-process-lulesh-size
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "SIZE = $(SIZE)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
+          depends: [run-lulesh_*]
+
 global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
     SIZE:
         values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
         label   : SIZE.%%
