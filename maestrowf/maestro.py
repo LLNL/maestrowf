@@ -57,7 +57,7 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 
 def status_study(args):
-    """Method for maestro status subcommand."""
+    """Check and print the status of an executing study."""
     study_path = args.directory
     stat_path = os.path.join(study_path, "status.csv")
     lock_path = os.path.join(study_path, ".status.lock")
@@ -88,7 +88,7 @@ def cancel_study(args):
 
 
 def run_study(args):
-    """Method for maestro run subcommand."""
+    """Run a Maestro study."""
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
     environment = spec.get_study_environment()
@@ -191,7 +191,7 @@ def run_study(args):
 
 
 def setup_argparser():
-    """Method for setting up the program's argument parser."""
+    """Set up the program's argument parser."""
     parser = ArgumentParser(
         prog="maestro",
         description="The Maestro Workflow Conductor for specifiying, launching"
@@ -278,7 +278,7 @@ def setup_argparser():
 
 def setup_logging(args, path, name):
     """
-    Utility method to set up logging based on the ArgumentParser.
+    Set up logging based on the ArgumentParser.
 
     :param args: A Namespace object created by a parsed ArgumentParser.
     :param path: A default path to be used if a log path is not specified by
@@ -321,7 +321,7 @@ def setup_logging(args, path, name):
 
 def main():
     """
-    The launcher main function.
+    Execute the main program's functionality.
 
     This function uses command line arguments to locate the study description.
     It makes use of the maestrowf core data structures as a high level class

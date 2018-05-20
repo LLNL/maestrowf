@@ -50,7 +50,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 
 
 def setup_argparser():
-    """Method for setting up the program's argument parser."""
+    """Set up the program's argument parser."""
     parser = ArgumentParser(prog="ExecutionManager",
                             description="An application for checking and "
                             "managing an ExecutionDAG within an executing"
@@ -84,7 +84,7 @@ def setup_argparser():
 
 def setup_logging(args, name):
     """
-    Method for setting up logging in the Main class.
+    Set up logging in the Main class.
 
     :param args: A Namespace object created by a parsed ArgumentParser.
     :param name: The name of the log file.
