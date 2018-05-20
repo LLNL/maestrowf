@@ -123,36 +123,13 @@ def setup_logging(args, name):
     logger.debug("DEBUG Logging Level -- Enabled")
 
 
-def main():
-    """Run the main segment of the conductor."""
-    # Set up and parse the ArgumentParser
-    parser = setup_argparser()
-    args = parser.parse_args()
-
-    # Unpickle the ExecutionGraph
-    study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
-    # We expect only a single pickle file.
-    if len(study_pkl) == 1:
-        dag = ExecutionGraph.unpickle(study_pkl[0])
-    else:
-        if len(study_pkl) > 1:
-            msg = "More than one pickle found. Expected only one. Aborting."
-            status = 2
-        else:
-            msg = "No pickle found. Aborting."
-            status = 1
-
-        sys.stderr.write(msg)
-        sys.exit(status)
-
-    # Set up logging
-    setup_logging(args, dag.name)
-    # Use ExecutionGraph API to determine next jobs to be launched.
-    logger.info("Checking the ExecutionGraph for study '%s' located in "
-                "%s...", dag.name, study_pkl[0])
-    logger.info("Study Description: %s", dag.description)
-
-    cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
+def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
+    """Monitor a running study."""
+    logger.debug("\n -------- Calling monitor study -------\n"
+                 "pkl path    = %s"
+                 "cancel path = %s"
+                 "sleep time  = %s",
+                 pickle_path, cancel_lock_path, sleep_time)
 
     study_complete = False
     while not study_complete:
@@ -173,18 +150,56 @@ def main():
         # Execute steps that are ready
         study_complete = dag.execute_ready_steps()
         # Re-pickle the ExecutionGraph.
-        dag.pickle(study_pkl[0])
+        dag.pickle(pickle_path)
         # Write out the state
-        dag.write_status(os.path.split(study_pkl[0])[0])
+        dag.write_status(os.path.split(pickle_path)[0])
         # Sleep for SLEEPTIME in args
-        sleep(args.sleeptime)
+        sleep(sleep_time)
 
-    logger.info("Cleaning up...")
-    dag.cleanup()
-    logger.info("Squeaky clean!")
 
-    # Explicitly return a 0 status.
-    sys.exit(0)
+def main():
+    """Run the main segment of the conductor."""
+    try:
+        # Set up and parse the ArgumentParser
+        parser = setup_argparser()
+        args = parser.parse_args()
+
+        # Unpickle the ExecutionGraph
+        study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
+        # We expect only a single pickle file.
+        if len(study_pkl) == 1:
+            dag = ExecutionGraph.unpickle(study_pkl[0])
+        else:
+            if len(study_pkl) > 1:
+                msg = "More than one pickle found. Expected one. Aborting."
+                status = 2
+            else:
+                msg = "No pickle found. Aborting."
+                status = 1
+
+            sys.stderr.write(msg)
+            sys.exit(status)
+
+        # Set up logging
+        setup_logging(args, dag.name)
+        # Use ExecutionGraph API to determine next jobs to be launched.
+        logger.info("Checking the ExecutionGraph for study '%s' located in "
+                    "%s...", dag.name, study_pkl[0])
+        logger.info("Study Description: %s", dag.description)
+
+        cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
+        logger.info("Starting to monitor '%s'", dag.name)
+        monitor_study(dag, study_pkl[0], cancel_lock_path, args.sleeptime)
+
+        logger.info("Cleaning up...")
+        dag.cleanup()
+        logger.info("Squeaky clean!")
+
+        # Explicitly return a 0 status.
+        sys.exit(0)
+    except Exception as e:
+        logger.error(e.message, exc_info=True)
+        raise e
 
 
 if __name__ == "__main__":

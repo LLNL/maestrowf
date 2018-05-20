@@ -40,6 +40,7 @@ import sys
 import tabulate
 import time
 
+from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
@@ -166,7 +167,8 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    exec_dag.pickle(os.path.join(path, "{}.pkl".format(study.name)))
+    pkl_path = os.path.join(path, "{}.pkl".format(study.name))
+    exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -177,15 +179,21 @@ def run_study(args):
         uinput = six.moves.input("Would you like to launch the study?[yn] ")
 
     if uinput.lower() in ACCEPTED_INPUT:
-        # Launch manager with nohup
-        cmd = ["nohup", "conductor",
-               "-t", str(args.sleeptime),
-               "-d", str(args.debug_lvl),
-               path,
-               "&>", "{}.txt".format(os.path.join(
-                study.output_path, exec_dag.name))]
-        LOGGER.debug(" ".join(cmd))
-        Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
+        if args.fg:
+            # Launch in the foreground.
+            LOGGER.info("Running Maestro Conductor in the foreground.")
+            cancel_path = os.path.join(path, ".cancel.lock")
+            monitor_study(exec_dag, pkl_path, cancel_path, args.sleeptime)
+        else:
+            # Launch manager with nohup
+            cmd = ["nohup", "conductor",
+                   "-t", str(args.sleeptime),
+                   "-d", str(args.debug_lvl),
+                   path,
+                   "&>", "{}.txt".format(os.path.join(
+                    study.output_path, exec_dag.name))]
+            LOGGER.debug(" ".join(cmd))
+            Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
 
     return 0
 
@@ -228,6 +236,9 @@ def setup_argparser():
     run.add_argument("-d", "--dryrun", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("-fg", action="store_true", default=False,
+                     help="Runs the backend conductor in the foreground "
+                     "instead of using nohup. [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
