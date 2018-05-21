@@ -745,7 +745,7 @@ class ExecutionGraph(DAG):
                 logger.debug("'%s' found to be initialized. Checking "
                              "dependencies. ", key)
 
-                logger.info(
+                logger.debug(
                     "Unfulfilled dependencies: %s",
                     self._dependencies[record.name])
 
@@ -754,7 +754,7 @@ class ExecutionGraph(DAG):
                     self._dependencies[record.name])
                 self._dependencies[record.name] = \
                     self._dependencies[record.name] - set(s_completed)
-                logger.info(
+                logger.debug(
                     "Completed dependencies: %s\n"
                     "Remaining dependencies: %s",
                     s_completed, self._dependencies[record.name])
