@@ -40,6 +40,7 @@ import sys
 import tabulate
 import time
 
+from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
@@ -97,18 +98,41 @@ def run_study(args):
 
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
-    if out_dir is None:
-        # If we don't find OUTPUT_PATH in the environment, assume pwd.
-        out_dir = os.path.abspath("./")
-    else:
-        # We just take the value from the environment.
-        out_dir = os.path.abspath(out_dir.value)
+    if args.out:
+        # If out is specified in the args, ignore OUTPUT_PATH.
+        output_path = os.path.abspath(make_safe_path(args.out))
 
-    out_name = "{}_{}".format(
-        spec.name.replace(" ", "_"),
-        time.strftime("%Y%m%d-%H%M%S")
-    )
-    output_path = make_safe_path(out_dir, out_name)
+        # If we are automatically launching, just set the input as yes.
+        if os.path.exists(output_path):
+            if args.autoyes:
+                uinput = "y"
+            elif args.autono:
+                uinput = "n"
+            else:
+                uinput = six.moves.input(
+                    "Output path already exists. Would you like to overwrite "
+                    "it? [yn] ")
+
+            if uinput.lower() in ACCEPTED_INPUT:
+                print("Cleaning up existing out path...")
+                shutil.rmtree(output_path)
+            else:
+                print("Opting to quit -- not cleaning up old out path.")
+                sys.exit(0)
+
+    else:
+        if out_dir is None:
+            # If we don't find OUTPUT_PATH in the environment, assume pwd.
+            out_dir = os.path.abspath("./")
+        else:
+            # We just take the value from the environment.
+            out_dir = os.path.abspath(out_dir.value)
+
+        out_name = "{}_{}".format(
+            spec.name.replace(" ", "_"),
+            time.strftime("%Y%m%d-%H%M%S")
+        )
+        output_path = make_safe_path(out_dir, out_name)
 
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name)
@@ -166,7 +190,8 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    exec_dag.pickle(os.path.join(path, "{}.pkl".format(study.name)))
+    pkl_path = os.path.join(path, "{}.pkl".format(study.name))
+    exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -174,18 +199,24 @@ def run_study(args):
     elif args.autono:
         uinput = "n"
     else:
-        uinput = six.moves.input("Would you like to launch the study?[yn] ")
+        uinput = six.moves.input("Would you like to launch the study? [yn] ")
 
     if uinput.lower() in ACCEPTED_INPUT:
-        # Launch manager with nohup
-        cmd = ["nohup", "conductor",
-               "-t", str(args.sleeptime),
-               "-d", str(args.debug_lvl),
-               path,
-               "&>", "{}.txt".format(os.path.join(
-                study.output_path, exec_dag.name))]
-        LOGGER.debug(" ".join(cmd))
-        Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
+        if args.fg:
+            # Launch in the foreground.
+            LOGGER.info("Running Maestro Conductor in the foreground.")
+            cancel_path = os.path.join(path, ".cancel.lock")
+            monitor_study(exec_dag, pkl_path, cancel_path, args.sleeptime)
+        else:
+            # Launch manager with nohup
+            cmd = ["nohup", "conductor",
+                   "-t", str(args.sleeptime),
+                   "-d", str(args.debug_lvl),
+                   path,
+                   "&>", "{}.txt".format(os.path.join(
+                    study.output_path, exec_dag.name))]
+            LOGGER.debug(" ".join(cmd))
+            Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
 
     return 0
 
@@ -228,6 +259,12 @@ def setup_argparser():
     run.add_argument("-d", "--dryrun", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("-o", "--out", type=str,
+                     help="Output path to place study in. [NOTE: overrides "
+                     "OUTPUT_PATH in the specified specification]")
+    run.add_argument("-fg", action="store_true", default=False,
+                     help="Runs the backend conductor in the foreground "
+                     "instead of using nohup. [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
