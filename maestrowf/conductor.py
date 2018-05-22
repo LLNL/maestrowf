@@ -153,8 +153,9 @@ def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
         dag.pickle(pickle_path)
         # Write out the state
         dag.write_status(os.path.split(pickle_path)[0])
-        # Sleep for SLEEPTIME in args
-        sleep(sleep_time)
+        # Sleep for SLEEPTIME in args if study not complete.
+        if not study_complete:
+            sleep(sleep_time)
 
 
 def main():
