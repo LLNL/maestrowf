@@ -312,7 +312,9 @@ class ExecutionGraph(DAG):
         self.completed_steps = set([SOURCE])
         self.in_progress = set()
         self.failed_steps = set()
+        self.cancelled_steps = set()
         self.ready_steps = deque()
+        self.is_canceled = False
 
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
@@ -637,7 +639,8 @@ class ExecutionGraph(DAG):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        resolved_set = self.completed_steps | self.failed_steps
+        resolved_set = \
+            self.completed_steps | self.failed_steps | self.cancelled_steps
         if not set(self.values.keys()) - resolved_set:
             # Just return for now, but we'll need a way to signal that there
             # are no more things to run.
@@ -784,8 +787,29 @@ class ExecutionGraph(DAG):
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
             _record = self.ready_steps.popleft()
+
+            # If we get to this point and we've cancelled, cancel the record.
+            if self.is_canceled:
+                logger.info("Cancelling '%s' -- continuing.", _record.name)
+                _record.mark_end(State.CANCELLED)
+                self.cancelled_steps.add(_record.name)
+                continue
+
             logger.debug("Launching job %d -- %s", i, _record.name)
             self._execute_record(_record, adapter)
+
+        # We cancelled, return True marking study as complete.
+        if self.is_canceled:
+            logger.info("Cancelled -- completing study.")
+            return True
+
+        resolved_set = \
+            self.completed_steps | self.failed_steps | self.cancelled_steps
+        if not set(self.values.keys()) - resolved_set:
+            # Just return for now, but we'll need a way to signal that there
+            # are no more things to run.
+            logging.info("'%s' is complete. Returning.", self.name)
+            return True
 
         return False
 
@@ -839,6 +863,7 @@ class ExecutionGraph(DAG):
 
         # cancel our jobs
         retcode = adapter.cancel_jobs(joblist)
+        self.is_canceled = True
 
         if retcode == CancelCode.OK:
             logger.info("Successfully requested to cancel all jobs.")
