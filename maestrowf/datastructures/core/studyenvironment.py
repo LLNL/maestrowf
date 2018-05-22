@@ -160,16 +160,23 @@ class StudyEnvironment(SimObject):
         :returns: The environment object labeled by key.
         """
         logger.debug("Looking to remove '%s'...", key)
+
+        if key not in self._names:
+            return None
+
         _ = self.dependencies.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         _ = self.substitutions.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         _ = self.labels.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         logger.debug("'%s' not found -- \n%s", key, self)
