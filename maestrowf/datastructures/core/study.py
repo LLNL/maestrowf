@@ -421,7 +421,7 @@ class Study(DAG):
             for ws in used_spaces:
                 if ws not in used_params:
                     msg = "Workspace for '{}' is being used before it would" \
-                          "be generated.".format(ws)
+                          " be generated.".format(ws)
                     logger.error(msg)
                     raise Exception(msg)
 
