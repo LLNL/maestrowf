@@ -46,7 +46,8 @@ class _StepRecord(object):
         tmp_dir: A provided temp directory to write scripts to instead of step
         workspace.
         """
-        self.workspace = Variable("OUTPUT_PATH", workspace)
+        self.workspace = Variable("WORKSPACE", workspace)
+        step.run["cmd"] = self.workspace.substitute(step.run["cmd"])
 
         self.jobid = kwargs.get("jobid", [])
         self.script = kwargs.get("script", "")
