@@ -16,8 +16,8 @@ study:
       run:
           cmd: |
             curl -L -o lulesh.tar $(LULESH_URL)
-            mkdir $(OUTPUT_PATH)/lulesh
-            tar -xf lulesh.tar -C $(OUTPUT_PATH)/lulesh
+            mkdir $(WORKSPACE)/lulesh
+            tar -xf lulesh.tar -C $(WORKSPACE)/lulesh
           depends: []
 
     - name: make-lulesh
