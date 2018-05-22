@@ -133,6 +133,7 @@ def run_study(args):
             time.strftime("%Y%m%d-%H%M%S")
         )
         output_path = make_safe_path(out_dir, out_name)
+    environment.add(Variable("OUTPUT_PATH", output_path))
 
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name)
