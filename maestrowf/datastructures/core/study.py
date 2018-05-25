@@ -534,9 +534,9 @@ class Study(DAG):
                     combo_str = combo.get_param_string(used_params[step])
                     workspace = \
                         make_safe_path(self._out_path, step, combo_str)
-                    workspaces[step] = workspace
                     logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
+                    workspaces[combo_str] = workspace
 
                     # Check if the step combination has been processed.
                     if combo_str in step_combos:
