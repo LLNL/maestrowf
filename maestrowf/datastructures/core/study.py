@@ -216,7 +216,7 @@ class Study(DAG):
 
     def add_step(self, step):
         """
-        Helper method for adding steps to a Study instance.
+        Add a step to a study.
 
         For this helper to be most effective, it recommended to apply steps in
         the order that they will be encountered. The method attempts to be
@@ -263,7 +263,7 @@ class Study(DAG):
     def setup(self, submission_attempts=1, restart_limit=1, throttle=0,
               use_tmp=False):
         """
-        Method for executing initial setup of a Study.
+        Perform initial setup of a study.
 
         The method is used for going through and actually acquiring each
         dependency, substituting variables, sources and labels. Also sets up
@@ -673,7 +673,7 @@ class Study(DAG):
 
     def stage(self):
         """
-        Method that produces the expanded DAG representing the Study.
+        Generate the execution graph for a Study.
 
         Staging creates an ExecutionGraph based on the combinations generated
         by the ParameterGeneration object stored in an instance of a Study.
