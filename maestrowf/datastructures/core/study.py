@@ -467,10 +467,9 @@ class Study(DAG):
 
                 # NOTE: I don't think it's valid to have a specific workspace
                 # since a step with no parameters operates at the global level.
-                # TODO: Need to handle workspaces here since we don't have
-                # parameters.
                 # NOTE: Opting to save the old command for provenence reasons.
                 cmd = node.run["cmd"]
+                r_cmd = node.run["restart"]
                 logger.info("Searching for workspaces...\ncmd = %s", cmd)
                 for match in used_spaces:
                     logger.info("Workspace found -- %s", match)
@@ -484,11 +483,13 @@ class Study(DAG):
                     else:
                         ws = workspaces[match]
                     cmd = cmd.replace(workspace_var, ws)
+                    r_cmd = r_cmd.replace(workspace_var, ws)
                 # We have to deepcopy the node, otherwise when we modify it
                 # here, it's reflected in the ExecutionGraph.
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
-                logger.info("New cmd = %s", cmd)
+                logger.debug("New cmd = %s", cmd)
+                logger.debug("New restart = %s", r_cmd)
 
                 dag.add_step(step, node, workspace, rlimit)
 
@@ -549,6 +550,7 @@ class Study(DAG):
 
                     # Substitute workspaces into the combination.
                     cmd = step_exp.run["cmd"]
+                    r_cmd = step_exp.run["restart"]
                     logger.info("Searching for workspaces...\ncmd = %s", cmd)
                     for match in used_spaces:
                         # Construct the workspace variable.
@@ -577,10 +579,13 @@ class Study(DAG):
                                 "Found parameterized workspace -- %s", ws)
                             ws = workspaces[ws]
 
+                        # Replace in both the command and restart command.
                         cmd = cmd.replace(workspace_var, ws)
+                        r_cmd = r_cmd.replace(workspace_var, ws)
                     logger.info("New cmd = %s", cmd)
 
                     step_exp.run["cmd"] = cmd
+                    step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
                     dag.add_step(step_exp.name, step_exp, workspace, rlimit)
 
@@ -660,6 +665,7 @@ class Study(DAG):
                 rlimit = 0
 
             cmd = node.run["cmd"]
+            r_cmd = node.run["restart"]
             logger.info("Searching for workspaces...\ncmd = %s", cmd)
             used_spaces = re.findall(WSREGEX, cmd)
             for match in used_spaces:
@@ -669,6 +675,7 @@ class Study(DAG):
                 workspace_var = "$({}.workspace)".format(match)
                 ws = workspaces[match]
                 cmd = cmd.replace(workspace_var, ws)
+                r_cmd = r_cmd.replace(workspace_var, ws)
             node.run["cmd"] = cmd
 
             # Add the step
