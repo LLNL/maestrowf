@@ -72,7 +72,7 @@ class StudyStep(SimObject):
                         "nodes":            "",
                         "procs":            "",
                         "gpus":             "",
-                        "cores per task":   1,
+                        "cores per task":   "",
                         "walltime":         "",
                         "reservation":      ""
                     }
