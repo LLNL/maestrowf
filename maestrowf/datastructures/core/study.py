@@ -677,6 +677,7 @@ class Study(DAG):
                 cmd = cmd.replace(workspace_var, ws)
                 r_cmd = r_cmd.replace(workspace_var, ws)
             node.run["cmd"] = cmd
+            node.run["restart"] = r_cmd
 
             # Add the step
             ws = make_safe_path(self._out_path, step)
