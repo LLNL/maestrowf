@@ -85,7 +85,7 @@ class YAMLSpecification(Specification):
     @classmethod
     def load_specification(cls, path):
         """
-        Method for loading a study specification.
+        Load a study specification.
 
         :param path: Path to a study specification.
         :returns: A specification object containing the information from path.

@@ -216,11 +216,12 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         #     return SubmissionCode.ERROR, -1
 
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
+        cores_per_task = step.run.get("cores per task", 1)
         jobspec = {
             "nnodes": step.run["nodes"],
             # NOTE: interface doesn"t allow multiple here yet
             "ntasks":   step.run["nodes"],
-            "ncores":   step.run["cores per task"] * step.run["procs"],
+            "ncores":   cores_per_task * step.run["procs"],
             "gpus":     step.run.get("gpus", 0),
             "environ":  get_environment(),          # TODO: revisit
             "options":  {"stdio-delay-commit": 1},

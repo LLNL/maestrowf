@@ -151,7 +151,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             if value:
                 args += [
                     self._cmd_flags[key],
-                    "\"{}\"".format(str(value))
+                    "{}".format(str(value))
                 ]
 
         return " ".join(args)

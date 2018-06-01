@@ -165,8 +165,8 @@ class _StepRecord(object):
         self.status = State.TIMEDOUT
         # Designating a restart limit of zero as an unlimited restart setting.
         # Otherwise, if we're less than restart limit, attempt another restart.
-        if self._restart_limit == 0 or \
-                self._num_restarts < self._restart_limit:
+        if self.restart_limit == 0 or \
+                self._num_restarts < self.restart_limit:
             self._num_restarts += 1
             return True
         else:
