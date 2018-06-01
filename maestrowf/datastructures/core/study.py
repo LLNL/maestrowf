@@ -625,6 +625,10 @@ class Study(DAG):
         :returns: The path to the study's global workspace and an
             ExecutionGraph based on linear steps in the study.
         """
+        # Management structures
+        # The workspace used by each step.
+        workspaces = {SOURCE: self._out_path}
+
         # Construct ExecutionGraph
         dag = ExecutionGraph(
             submission_attempts=self._submission_attempts,
@@ -632,7 +636,7 @@ class Study(DAG):
             use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         # Items to store that should be reset.
-        logger.info("==================================================\n"
+        logger.info("\n==================================================\n"
                     "Constructing linear study '%s'\n"
                     "==================================================\n",
                     self.name
@@ -655,8 +659,21 @@ class Study(DAG):
             else:
                 rlimit = 0
 
+            cmd = node.run["cmd"]
+            logger.info("Searching for workspaces...\ncmd = %s", cmd)
+            used_spaces = re.findall(WSREGEX, cmd)
+            for match in used_spaces:
+                # In this case we don't need to look for any parameters, or
+                # combination depdendent ("funnel") steps. It's a simple sub.
+                logger.info("Workspace found -- %s", match)
+                workspace_var = "$({}.workspace)".format(match)
+                ws = workspaces[match]
+                cmd = cmd.replace(workspace_var, ws)
+            node.run["cmd"] = cmd
+
             # Add the step
             ws = make_safe_path(self._out_path, step)
+            workspaces[step] = ws
             dag.add_step(step, node, ws, rlimit)
             # If the node does not depend on any other steps, make it so that
             # if connects to SOURCE.
