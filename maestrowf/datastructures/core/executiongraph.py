@@ -687,7 +687,7 @@ class ExecutionGraph(DAG):
                             "Step '%s' timed out. Restarting (%s of %s).",
                             name, record.restarts, record.restart_limit
                         )
-                        self._execute_record(record, restart=True)
+                        self._execute_record(record, adapter, restart=True)
                     else:
                         logger.info("'%s' has been restarted %s of %s times. "
                                     "Marking step and all descendents as "
