@@ -51,14 +51,11 @@ def get_environment():
     for key in os.environ:
         if env_filter.match(key):
             continue
-        if key.startswith("OMPI"):
-            if "tmpdir_base" not in key:
-                continue
         env[key] = os.environ[key]
     env.pop("HOSTNAME", None)
     env.pop("ENVIRONMENT", None)
     # Make MVAPICH behave...
-    # env["MPIRUN_RSH_LAUNCH"] = "1"
+    env["MPIRUN_RSH_LAUNCH"] = "1"
     return env
 
 
