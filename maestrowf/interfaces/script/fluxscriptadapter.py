@@ -167,7 +167,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-gpu"]
 
         for item in self._addl_args:
-            args.extend(item)
+            args.append(item)
 
         args.extend(["-hostfile", "$HOSTF"])
         args.extend([
