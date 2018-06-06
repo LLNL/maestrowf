@@ -164,8 +164,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-u", "PMI_FD",
             "-u", "PMI_RANK",
             "-u", "PMI_SIZE",
-            self._mpi_exe,
-            "-gpu"]
+            self._mpi_exe]
 
         for item in self._addl_args:
             args.append(item)
