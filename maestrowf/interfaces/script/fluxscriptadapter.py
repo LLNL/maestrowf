@@ -89,6 +89,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self._mpi_exe = kwargs.pop("mpi")
         self._addl_args = kwargs.pop("args", [])
 
         self._exec = "#!/bin/bash"
@@ -163,7 +164,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-u", "PMI_FD",
             "-u", "PMI_RANK",
             "-u", "PMI_SIZE",
-            "mpirun",
+            self._mpi_exe,
             "-gpu"]
 
         for item in self._addl_args:
