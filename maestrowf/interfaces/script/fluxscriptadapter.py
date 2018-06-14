@@ -374,7 +374,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     )
 
                 if retcode != 0:
-                    status = self.check_jobs([job])
+                    retcode, status = self.check_jobs([job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
 
