@@ -396,7 +396,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             return State.RUNNING
         elif flux_state == "pending" or flux_state == "runrequest":
             return State.PENDING
-        elif flux_state == "submitted":
+        elif flux_state == "submitted" or flux_state == "allocated":
             return State.PENDING
         elif flux_state == "failed":
             return State.FAILED
