@@ -84,7 +84,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: These libraries are compiled at runtime when an allocation
         # is spun up.
         self.flux = __import__("flux")
-        self.kvs = __import__("flux.kvs")
+        self.kvs = __import__("flux.kvs", globals(), locals(), ["kvs"])
 
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
