@@ -262,7 +262,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.warning("Job creation failed")
             return SubmissionCode.ERROR, -1
 
-        LOGGER.info("Submission returned status OK.")
+        LOGGER.info("Submission returned status OK. -- "
+                    "Assigned identifier (%s)", resp["jobid"])
         return SubmissionCode.OK, resp["jobid"]
 
     def check_jobs(self, joblist):
