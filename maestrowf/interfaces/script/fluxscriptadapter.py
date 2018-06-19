@@ -339,7 +339,13 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     "Error seen on path {} Unexpected behavior encountered."
                     .format(path)
                 )
+                # NOTE: I don't know if we should actually be returning here.
+                # It feels like we may not want to.
                 return JobStatusCode.ERROR, status
+            except EnvironmentError:
+                LOGGER.warning("Job ID (%s) not found in kvs. Setting state"
+                               "to UNKNOWN.", jobid)
+                status[jobid] = self._state("unknown")
 
         if not status:
             return JobStatusCode.NOJOBS, status
@@ -404,6 +410,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             return State.CANCELLED
         elif flux_state == "complete":
             return State.FINISHED
+        elif flux_state == "unknown":
+            return State.UNKNOWN
         else:
             return State.UNKNOWN
 
