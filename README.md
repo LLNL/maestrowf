@@ -163,7 +163,43 @@ If you plan to develop on Maestro, install the repository directly using:
     pip install -r requirements.txt
     pip install -e .
 
-Once set up, test the environment. The paths should point to a virtual environment folder.
+----------------
+
+<<<<<<< HEAD
+### Quickstart Example
+
+MaestroWF comes packed with a basic example using LULESH, a proxy application provided by LLNL. You can find the Quick Start guide [here](https://maestrowf.readthedocs.io/en/latest/quick_start.html#).
+=======
+## Quickstart Example
+
+MaestroWF comes packed with a basic example using LULESH, a proxy application provided
+by LLNL. Information and source code for LULESH can be found [here](https://codesign.llnl.gov/lulesh.php).
+
+The example performs the following workflow locally:
+- Download LULESH from the webpage linked above and decompress it.
+- Substitute all necessary variables with their serial compilers and make LULESH.
+- Execute a small parameter sweep of varying size and iterations (a simple sensitivity study)
+
+In order to execute the sample study simply execute from the root directory of the repository:
+
+    $ maestro run ./samples/lulesh/lulesh_sample1.yaml
+
+When prompted, reply in the affirmative:
+
+    $ Would you like to launch the study?[yn] y
+
+NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```.
+
+Maestro will create a timestamped directory in ```sample_output/lulesh```.
+
+To monitor the study run:
+
+    $ maestro status sample_output/lulesh/<study_dir>
+
+To cancel the study:
+
+    $ maestro cancel sample_output/lulesh/<study_dir>
+>>>>>>> fe3b1ec... Updated the getting started documentation
 
     which python
     which pip
