@@ -180,22 +180,30 @@ The example performs the following workflow locally:
 
 In order to execute the sample study simply execute from the root directory of the repository:
 
-    $ maestro ./samples/lulesh/lulesh_sample1.yaml
+    $ maestro run ./samples/lulesh/lulesh_sample1.yaml
 
 When prompted, reply in the affirmative:
 
     $ Would you like to launch the study?[yn] y
 
-Currently, there is no way to monitor the status of a running study. However, you can monitor the output path which is placed in the ```sample_output/lulesh/``` directory.
+NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```.
 
-NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```. 
+Maestro will create a timestamped directory in ```sample_output/lulesh```.
+
+To monitor the study run:
+
+    $ maestro status sample_output/lulesh/<study_dir>
+
+To cancel the study:
+
+    $ maestro cancel sample_output/lulesh/<study_dir>
 
 ----------------
 
 ## Contributors
 Many thanks go to MaestroWF's [contributors](https://github.com/LLNL/maestrowf/graphs/contributors).
 
-If you have any questions, please [open a ticket](https://github.com/llnl/maestrowf/issues).
+If you have any questions or to submit feature requests please [open a ticket](https://github.com/llnl/maestrowf/issues).
 
 ----------------
 
