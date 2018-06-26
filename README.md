@@ -180,15 +180,21 @@ The example performs the following workflow locally:
 - Substitute all necessary variables with their serial compilers and make LULESH.
 - Execute a small parameter sweep of varying size and iterations (a simple sensitivity study)
 
-In order to execute the sample study simply execute from the root directory of the repository:
+Two copies of the workflow are in the ```samples/lulesh``` directory for unix and macosx.
+This is due to differences with ```sed```. In order to execute the sample study simply
+execute from the root directory of the repository:
 
-    $ maestro run ./samples/lulesh/lulesh_sample1.yaml
+Unix:
+
+    $ maestro run ./samples/lulesh/lulesh_sample1_unix.yaml
+
+MacOSX:
+
+    $ maestro run ./samples/lulesh/lulesh_sample1_macosx.yaml
 
 When prompted, reply in the affirmative:
 
     $ Would you like to launch the study?[yn] y
-
-NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```.
 
 Maestro will create a timestamped directory in ```sample_output/lulesh```.
 
