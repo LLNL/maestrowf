@@ -10,6 +10,8 @@ Welcome to Maestro Workflow Conductor Documentation
    :maxdepth: 4
    :caption: Contents:
 
+   getting_started
+
    modules
 
 Indices and tables
