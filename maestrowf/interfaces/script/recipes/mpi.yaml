@@ -1,0 +1,15 @@
+srun:
+    required:
+        ntasks: -n
+        reservation: --reservation
+        cores per task: -c
+    optional:
+        nodes: -N
+
+mpirun:
+    required:
+        ntasks: -n
+        nodes: -N
+        reservation: --reservation
+        cores per task: -c
+    optional:
