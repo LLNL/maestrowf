@@ -26,11 +26,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
+from os.path import abspath, dirname, join
+
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
 from maestrowf.interfaces.script.fluxscriptadapter import \
     SpectrumFluxScriptAdapter
 
+RECIPEDIR = abspath(join(dirname(__file__), "recipes"))
 __all__ = (
-    "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter"
+    "LocalScriptAdapter", "SlurmScriptAdapter",
+    "SpectrumFluxScriptAdapter"
 )
