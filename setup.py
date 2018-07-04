@@ -9,6 +9,7 @@ setup(name='maestrowf',
       url='https://github.com/llnl/maestrowf',
       license='MIT License',
       packages=find_packages(),
+      include_package_data=True,
       entry_points={
         'console_scripts': [
             'maestro = maestrowf.maestro:main',
