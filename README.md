@@ -178,24 +178,38 @@ The example performs the following workflow locally:
 - Substitute all necessary variables with their serial compilers and make LULESH.
 - Execute a small parameter sweep of varying size and iterations (a simple sensitivity study)
 
-In order to execute the sample study simply execute from the root directory of the repository:
+Two copies of the workflow are in the ```samples/lulesh``` directory for unix and macosx.
+This is due to differences with ```sed```. In order to execute the sample study simply
+execute from the root directory of the repository:
 
-    $ maestro ./samples/lulesh/lulesh_sample1.yaml
+Unix:
+
+    $ maestro run ./samples/lulesh/lulesh_sample1_unix.yaml
+
+MacOSX:
+
+    $ maestro run ./samples/lulesh/lulesh_sample1_macosx.yaml
 
 When prompted, reply in the affirmative:
 
     $ Would you like to launch the study?[yn] y
 
-Currently, there is no way to monitor the status of a running study. However, you can monitor the output path which is placed in the ```sample_output/lulesh/``` directory.
+Maestro will create a timestamped directory in ```sample_output/lulesh```.
 
-NOTE: This example can only be executed on Unix systems currently because it makes use of ```sed``` and ```curl```. 
+To monitor the study run:
+
+    $ maestro status sample_output/lulesh/<study_dir>
+
+To cancel the study:
+
+    $ maestro cancel sample_output/lulesh/<study_dir>
 
 ----------------
 
 ## Contributors
 Many thanks go to MaestroWF's [contributors](https://github.com/LLNL/maestrowf/graphs/contributors).
 
-If you have any questions, please [open a ticket](https://github.com/llnl/maestrowf/issues).
+If you have any questions or to submit feature requests please [open a ticket](https://github.com/llnl/maestrowf/issues).
 
 ----------------
 
