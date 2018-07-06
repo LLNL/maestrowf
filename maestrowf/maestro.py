@@ -136,7 +136,7 @@ def run_study(args):
     environment.add(Variable("OUTPUT_PATH", output_path))
 
     # Now that we know outpath, set up logging.
-    setup_logging(args, output_path, spec.name)
+    setup_logging(args, output_path, spec.name.replace(" ", "_"))
 
     # Addition of the $(SPECROOT) to the environment.
     spec_root = os.path.split(args.specification)[0]
@@ -191,7 +191,7 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    pkl_path = os.path.join(path, "{}.pkl".format(study.name))
+    pkl_path = os.path.join(path, "{}.pkl".format(study.name.replace(" ", "_")))
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
