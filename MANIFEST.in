@@ -1,1 +1,2 @@
-include maestrowf/interfaces/mpi/*.yaml
+include maestrowf/interfaces/mpi/recipes/*.yaml
+include maestrowf/interfaces/script/recipes/*.yaml
