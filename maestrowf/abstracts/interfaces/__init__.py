@@ -26,10 +26,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-
-"""
-Abstract classes for handling interfacing with various services.
-"""
+"""Abstract classes for handling interfacing with various services."""
 
 from maestrowf.abstracts.interfaces.schedulerscriptadapter import \
     SchedulerScriptAdapter
