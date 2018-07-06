@@ -75,7 +75,7 @@ class ParallelizerFactory(object):
     __recipes__ = None
 
     _factories = {
-        "srun": GeneralParallelizer(__recipes__.get("srun")),
+        "srun": GeneralParallelizer,
     }
 
     @classmethod
@@ -94,11 +94,34 @@ class ParallelizerFactory(object):
             LOGGER.error(msg)
             raise Exception(msg)
 
-        # If we've not loaded the recipes, do so.
-        if cls.__recipes__ is None:
-            cls.__recipes__ = yaml.load(cls.__recipefile__)
+        # Check out factory for the object we need.
+        parallelizer = cls._factories[mpi_type]
 
-        return cls._factories[mpi_type]
+        # If we see the general case that uses recipes, do the following:
+        if isinstance(parallelizer, GeneralParallelizer):
+            # If we've not loaded the recipes, do so.
+            if cls.__recipes__ is None:
+                cls.__recipes__ = yaml.load(cls.__recipefile__)
+
+            # We also need to have the recipe for the MPI flavor we requested.
+            # If it's not in our recipes, we can continue -- abort.
+            if mpi_type not in cls.__recipes__:
+                msg = "'{0}' uses a generalized recipe but the recipe does " \
+                      "exist! Please make sure that your recipes are up to" \
+                      "date. Recipe file location = {1}" \
+                      .format(mpi_type, cls.__recipefile__)
+                LOGGER.exception(msg)
+                raise KeyError(msg)
+
+            # Otherwise, construct and return the general parallizer.
+            return parallelizer(cls.__recipes__[mpi_type])
+        else:
+            # Otherwise, we should just return the instance of the specific
+            # Parallelizer.
+            # NOTE: There is a glass jaw here. If a specific Parallelizer needs
+            # informattion for construction, we'll end up needing a case tree
+            # here to check for types.
+            return parallelizer()
 
     @classmethod
     def get_valid_parallelizers(cls):
