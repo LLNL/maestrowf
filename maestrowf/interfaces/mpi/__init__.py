@@ -28,8 +28,6 @@
 ###############################################################################
 """A module that provides interfaces to multiple MPI launchers."""
 import logging
-from os.path import abspath, dirname, join
-import yaml
 
 from maestrowf.abstracts.interfaces import Parallelizer
 
