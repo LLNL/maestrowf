@@ -39,8 +39,8 @@ from maestrowf.interfaces.script import \
     SpectrumFluxScriptAdapter
 
 __all__ = (
-    "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter",
-    "ScriptAdapterFactory"
+    "LocalScriptAdapter", "ParallelizerFactory", "SlurmScriptAdapter",
+    "SpectrumFluxScriptAdapter", "ScriptAdapterFactory"
 )
 LOGGER = logging.getLogger(__name__)
 
