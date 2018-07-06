@@ -40,14 +40,13 @@ class Parallelizer(object):
     """Abstract class representing the interface for command parallelizing."""
 
     @abstractmethod
-    def parallelize(self, procs, nodes, **kwargs):
+    def parallelize(self, cmd, resources):
         """
         Generate the parallelization segement of the command line.
 
-        :param procs: Number of processors to allocate to the parallel call.
-        :param nodes: Number of nodes to allocate to the parallel call
-            (default = 1).
-        :returns: A string of the parallelize command configured using nodes
-            and procs.
+        :param cmd: Command string to substitute parallel command into.
+        :param resources: Dict of resources to be used by parallel commands.
+        :returns: A string of the parallelize command configured using the
+        specified resources.
         """
         pass
