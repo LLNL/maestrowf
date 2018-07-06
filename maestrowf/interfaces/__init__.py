@@ -29,7 +29,10 @@
 
 """Collection of custom adapters for interfacing with various systems."""
 import logging
+from os.path import abspath, dirname, join
+import yaml
 
+from maestrowf.interfaces.mpi import GeneralParallelizer
 from maestrowf.interfaces.script import \
     LocalScriptAdapter, \
     SlurmScriptAdapter, \
@@ -63,3 +66,45 @@ class ScriptAdapterFactory(object):
     @classmethod
     def get_valid_adapters(cls):
         return cls.factories.keys()
+
+
+class ParallelizerFactory(object):
+    """ A factory for finding MPI parallelizers."""
+
+    __recipefile__ = abspath(join(dirname(__file__), "mpi.yaml"))
+    __recipes__ = None
+
+    _factories = {
+        "srun": GeneralParallelizer(__recipes__.get("srun")),
+    }
+
+    @classmethod
+    def get_parallelizer(cls, mpi_type):
+        """
+        Get the Parallelizer for the specfied MPI type.
+
+        :param mpi_type: The MPI binary to parallelize with.
+        :returns: A Parallelizer object for the specified MPI type.
+        """
+        # Check that the requested parallel command is one we support.
+        if mpi_type.lower() not in cls.factories:
+            msg = "Parallelizer '{0}' not found. Specify an adapter that " \
+                  "exists or implement a new one mapping to the '{0}'" \
+                  .format(str(mpi_type))
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        # If we've not loaded the recipes, do so.
+        if cls.__recipes__ is None:
+            cls.__recipes__ = yaml.load(cls.__recipefile__)
+
+        return cls._factories[mpi_type]
+
+    @classmethod
+    def get_valid_parallelizers(cls):
+        """
+        Get the available MPI launchers.
+
+        :returns: A list of available MPI launchers.
+        """
+        return cls._factories.keys()
