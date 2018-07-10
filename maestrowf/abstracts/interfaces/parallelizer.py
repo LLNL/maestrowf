@@ -40,5 +40,5 @@ class Parallelizer(object):
     """Abstract class representing the interface for command parallelizing."""
 
     @abstractmethod
-    def get_parallelize_command(self, allocation, resources):
+    def get_parallelize_command(self, suballoc, resources):
         pass
