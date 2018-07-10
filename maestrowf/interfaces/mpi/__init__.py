@@ -31,9 +31,10 @@ import logging
 from os.path import abspath, dirname, join
 import yaml
 
+from maestrowf.interfaces.mpi.commandparallelizer import CommandParallelizer
 from maestrowf.abstracts.interfaces import Parallelizer
 
-__all__ = ("GeneralParallelizer")
+__all__ = ("CommandParallelizer", "GeneralParallelizer", "ParallelizerFactory")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -50,7 +51,7 @@ class GeneralParallelizer(Parallelizer):
         self._cmd = cmd
         self._recipe = recipe
 
-    def parallelize(self, cmd, resources):
+    def get_parallelize_command(self, cmd, resources):
         """
         Generate the parallelization segement of the command line.
 
@@ -93,8 +94,11 @@ class ParallelizerFactory(object):
 
         # If we see the general case that uses recipes, do the following:
         if isinstance(parallelizer, GeneralParallelizer):
+            LOGGER.debug("'%s' uses the GeneralParallelizer.", mpi_type)
             # If we've not loaded the recipes, do so.
             if cls.__recipes__ is None:
+                LOGGER.info("Recipes not loaded. Loading from '%s'",
+                            cls.__recipefile__)
                 cls.__recipes__ = yaml.load(cls.__recipefile__)
 
             # We also need to have the recipe for the MPI flavor we requested.
@@ -115,6 +119,7 @@ class ParallelizerFactory(object):
             # NOTE: There is a glass jaw here. If a specific Parallelizer needs
             # informattion for construction, we'll end up needing a case tree
             # here to check for types.
+            LOGGER.debug("'%s' uses a custom Parallelizer.", mpi_type)
             return parallelizer()
 
     @classmethod
