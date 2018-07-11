@@ -32,6 +32,8 @@ import re
 
 from maestrowf.interfaces.mpi import ParallelizerFactory
 
+LOGGER = logging.getLogger(__name__)
+
 
 class CommandParallelizer(object):
     """Abstract class representing the interface for command parallelizing."""
@@ -50,6 +52,7 @@ class CommandParallelizer(object):
     # Find the an mpi specification.
     mpi_spec = re.compile(r"(?P<mpi>[aA-zZ]{2,})")
 
+    @classmethod
     def parallelize(self, cmd, resources, default_mpi):
         """
         Generate the parallelization segement of the command line.
@@ -62,14 +65,18 @@ class CommandParallelizer(object):
         """
         # Find all matches for the launcher pattern in the command.
         matches = re.finditer(self.launcher_regex, cmd)
+        LOGGER.debug("Found %d matches:\n%s", len(matches), cmd)
         # We need to keep track of specific resources each match uses.
         cmd_per_mpi = {default_mpi: {}}
+
         for match in matches:
+            LOGGER.debug("Parallel command: %s", match.group())
             # For each match,
             # Find the allocation group if it exists.
             _alloc = match.group("alloc")
             # If we find alloc, then we need to parse further.
             if _alloc:
+                LOGGER.debug("Sub-allocation detected (%s)", _alloc)
                 # Break down the allocation if one is specified.
                 mpi = re.search(self.mpi_spec, _alloc)
                 task = re.search(self.task_alloc, _alloc)
@@ -82,11 +89,14 @@ class CommandParallelizer(object):
                 # If a custom MPI is specified, mark it under the specified
                 # version.
                 if mpi:
+                    LOGGER.debug("Custom MPI specified (%s)", mpi.group("mpi"))
                     cmd_per_mpi[mpi.group("mpi")][match.group()] = _
                 else:
+                    LOGGER.debug("Default MPI used (%s)", default_mpi)
                     # Otherwise, just the default.
                     cmd_per_mpi[default_mpi][match.group()] = _
             else:
+                LOGGER.debug("No allocation detected. Using %s", default_mpi)
                 _ = {
                     "nodes": resources.get("nodes", None),
                     "tasks": resources.get("tasks"),
@@ -94,4 +104,6 @@ class CommandParallelizer(object):
                 cmd_per_mpi[default_mpi][match.group()] = _
 
         for key, cmds in cmd_per_mpi.items():
-            parallelizer = ParallelizerFactory.get_parallelizer(key)
+            # parallelizer = ParallelizerFactory.get_parallelizer(key)
+            # TODO: We need to use the parallelizer here to sub into our cmd.
+            pass
