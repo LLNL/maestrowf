@@ -40,9 +40,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LocalScriptAdapter(ScriptAdapter):
-    """
-    A ScriptAdapter class for interfacing for local execution.
-    """
+    """A ScriptAdapter class for interfacing for local execution."""
+
     def __init__(self, **kwargs):
         """
         Initialize an instance of the LocalScriptAdapter.
