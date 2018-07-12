@@ -63,7 +63,7 @@ class ScriptAdapterFactory(object):
 
         module = cls._classes[adapter_id]
         return getattr(
-            import_module(module[0], package=MAESTRO_INTERFACES),
+            import_module("{}{}".format(MAESTRO_INTERFACES, module[0])),
             module[1])
 
     @classmethod
