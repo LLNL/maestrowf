@@ -1,15 +1,12 @@
 srun:
-    required:
+    parameters:
         ntasks: -n
+        nodes: -N
         reservation: --reservation
         cores per task: -c
-    optional:
-        nodes: -N
 
 mpirun:
-    required:
+    parameters:
         ntasks: -n
         nodes: -N
-        reservation: --reservation
         cores per task: -c
-    optional:
