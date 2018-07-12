@@ -28,27 +28,22 @@
 ###############################################################################
 
 """Collection of custom adapters for interfacing with various systems."""
+from importlib import import_module
 import logging
 
-from maestrowf.interfaces.script import \
-    LocalScriptAdapter, \
-    SlurmScriptAdapter, \
-    SpectrumFluxScriptAdapter
 
-__all__ = (
-    "LocalScriptAdapter", "ParallelizerFactory", "SlurmScriptAdapter",
-    "SpectrumFluxScriptAdapter", "ScriptAdapterFactory"
-)
+__all__ = ("ParallelizerFactory", "ScriptAdapterFactory")
 LOGGER = logging.getLogger(__name__)
+MAESTRO_INTERFACES = "maestrowf.interfaces.script"
 
 
 class ScriptAdapterFactory(object):
     """A factory class for retrieve different types of ScriptAdapters."""
 
-    factories = {
-        "slurm":            SlurmScriptAdapter,
-        "local":            LocalScriptAdapter,
-        "flux-spectrum":    SpectrumFluxScriptAdapter,
+    _classes = {
+        "slurm":           (".slurmscriptadapter", "SlurmScriptAdapter"),
+        "local":           (".localscriptadapter", "LocalScriptAdapter"),
+        "flux-spectrum":   (".fluxscriptadapter", "SpectrumFluxScriptAdapter"),
     }
 
     @classmethod
@@ -59,14 +54,17 @@ class ScriptAdapterFactory(object):
         :param adapter_id: Name of the ScriptAdapter to find.
         :returns: A ScriptAdapter class matching the specifed adapter_id.
         """
-        if adapter_id.lower() not in cls.factories:
+        if adapter_id.lower() not in cls._classes:
             msg = "Adapter '{0}' not found. Specify an adapter that exists " \
                   "or implement a new one mapping to the '{0}'" \
                   .format(str(adapter_id))
             LOGGER.error(msg)
             raise Exception(msg)
 
-        return cls.factories[adapter_id]
+        module = cls._classes[adapter_id]
+        return getattr(
+            import_module(module[0], package=MAESTRO_INTERFACES),
+            module[1])
 
     @classmethod
     def get_valid_adapters(cls):
@@ -75,4 +73,4 @@ class ScriptAdapterFactory(object):
 
         :returns: A list of all available keys in the ScriptAdapterFactory.
         """
-        return cls.factories.keys()
+        return cls._classes.keys()
