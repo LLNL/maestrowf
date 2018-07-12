@@ -30,7 +30,7 @@
 import logging
 import re
 
-from maestrowf.interfaces.mpi import ParallelizerFactory
+# from maestrowf.interfaces.mpi import ParallelizerFactory
 
 LOGGER = logging.getLogger(__name__)
 
