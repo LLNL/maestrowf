@@ -32,7 +32,7 @@ from abc import ABCMeta, abstractmethod
 import logging
 import six
 
-from maestrowf.interfaces import CommandParallelizer
+from maestrowf.interfaces.mpi import CommandParallelizer
 from maestrowf.abstracts.interfaces.scriptadapter import ScriptAdapter
 
 LOGGER = logging.getLogger(__name__)
