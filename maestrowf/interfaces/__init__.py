@@ -43,6 +43,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ScriptAdapterFactory(object):
+    """A factory class for retrieve different types of ScriptAdapters."""
+
     factories = {
         "slurm":            SlurmScriptAdapter,
         "local":            LocalScriptAdapter,
@@ -51,6 +53,12 @@ class ScriptAdapterFactory(object):
 
     @classmethod
     def get_adapter(cls, adapter_id):
+        """
+        Look up and retrieve a ScripttAdapter by name.
+
+        :param adapter_id: Name of the ScriptAdapter to find.
+        :returns: A ScriptAdapter class matching the specifed adapter_id.
+        """
         if adapter_id.lower() not in cls.factories:
             msg = "Adapter '{0}' not found. Specify an adapter that exists " \
                   "or implement a new one mapping to the '{0}'" \
@@ -62,4 +70,9 @@ class ScriptAdapterFactory(object):
 
     @classmethod
     def get_valid_adapters(cls):
+        """
+        Get all valid ScriptAdapter names.
+
+        :returns: A list of all available keys in the ScriptAdapterFactory.
+        """
         return cls.factories.keys()
