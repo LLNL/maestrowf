@@ -269,10 +269,10 @@ class Study(DAG):
             logger.error(e.message)
             return False
 
-    def setup(self, submission_attempts=1, restart_limit=1, throttle=0,
-              use_tmp=False):
+    def configure_study(self, submission_attempts=1, restart_limit=1, throttle=0,
+                        use_tmp=False):
         """
-        Perform initial setup of a study.
+        Perform initial configuration of a study.
 
         The method is used for going through and actually acquiring each
         dependency, substituting variables, sources and labels.
