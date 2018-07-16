@@ -32,6 +32,5 @@ from maestrowf.interfaces.script.fluxscriptadapter import \
     SpectrumFluxScriptAdapter
 
 __all__ = (
-    "LocalScriptAdapter", "SlurmScriptAdapter",
-    "SpectrumFluxScriptAdapter"
+    "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter"
 )
