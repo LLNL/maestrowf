@@ -260,14 +260,22 @@ class Study(DAG):
         for node in path:
             yield parents[node], node, self.values[node]
 
+    def setup_workspace(self):
+        """Set up the study's main workspace directory."""
+        try:
+            logger.info("Setting up study workspace in '%s'", self._out_path)
+            create_parentdir(self._out_path)
+        except Exception as e:
+            logger.error(e.message)
+            return False
+
     def setup(self, submission_attempts=1, restart_limit=1, throttle=0,
               use_tmp=False):
         """
         Perform initial setup of a study.
 
         The method is used for going through and actually acquiring each
-        dependency, substituting variables, sources and labels. Also sets up
-        the folder structure for the study.
+        dependency, substituting variables, sources and labels.
 
         :param submission_attempts: Number of attempted submissions before
             marking a step as failed.
@@ -305,13 +313,6 @@ class Study(DAG):
         if not self.environment.is_set_up:
             logger.info("Environment is setting up.")
             self.environment.acquire_environment()
-
-        try:
-            logger.info("Environment is setting up.")
-            create_parentdir(self._out_path)
-        except Exception as e:
-            logger.error(e.message)
-            return False
 
         # Apply all environment artifcacts and acquire everything.
         for key, node in self.values.items():
