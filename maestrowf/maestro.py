@@ -168,12 +168,9 @@ def run_study(args):
         LOGGER.error(_msg)
         raise ArgumentError(_msg)
 
-    study.setup(
-        throttle=args.throttle,
-        submission_attempts=args.attempts,
-        restart_limit=args.rlimit,
-        use_tmp=args.usetmp
-    )
+    study.setup_workspace()
+    study.setup(throttle=args.throttle, submission_attempts=args.attempts,
+                restart_limit=args.rlimit, use_tmp=args.usetmp)
 
     # Stage the study.
     path, exec_dag = study.stage()
