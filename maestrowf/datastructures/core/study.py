@@ -274,6 +274,13 @@ class Study(DAG):
             logger.error(e.message)
             return False
 
+    def setup_environment(self):
+        """Set up the environment by acquiring outside dependencies."""
+        # Set up the environment if it hasn't been already.
+        if not self.environment.is_set_up:
+            logger.info("Environment is setting up.")
+            self.environment.acquire_environment()
+
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False):
         """
@@ -292,11 +299,6 @@ class Study(DAG):
         ExecutionGraph dumps its information into a temporary directory.
         :returns: True if the Study is successfully setup, False otherwise.
         """
-        # If the study has been set up, just return.
-        if self._issetup:
-            logger.info("%s is already set up, returning.")
-            return True
-
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
@@ -313,24 +315,6 @@ class Study(DAG):
             self._out_path, submission_attempts, restart_limit, throttle,
             use_tmp
         )
-
-        # Set up the environment if it hasn't been already.
-        if not self.environment.is_set_up:
-            logger.info("Environment is setting up.")
-            self.environment.acquire_environment()
-
-        # Apply all environment artifcacts and acquire everything.
-        for key, node in self.values.items():
-            logger.info("Applying to step '%s' of the study '%s'...",
-                        key, node)
-            if node:
-                node.__dict__ = apply_function(
-                                    node.__dict__,
-                                    self.environment.apply_environment)
-
-        # Flag the study as set up.
-        self._issetup = True
-        return True
 
     def _setup_parameterized(self):
         """

@@ -170,6 +170,7 @@ def run_study(args):
 
     # Set up the study workspace and configure it for execution.
     study.setup_workspace()
+    study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp)
