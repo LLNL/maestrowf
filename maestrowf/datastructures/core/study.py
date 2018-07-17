@@ -30,6 +30,7 @@
 """Class related to the construction of study campaigns."""
 import copy
 import logging
+import os
 import re
 
 from maestrowf.abstracts import SimObject
@@ -698,10 +699,17 @@ class Study(DAG):
         :param throttle: Maximum number of in progress jobs allowed.
         :returns: An ExecutionGraph object with the expanded workflow.
         """
-        # If not set up, return None.
-        if not self._issetup:
-            msg = "Study {} is not set up for staging. Run setup before " \
-                  "attempting to stage.".format(self.name)
+        # If the workspace doesn't exist, raise an exception.
+        if not os.path.exists(self._out_path):
+            msg = "Study {} is not set up for staging. Workspace does not " \
+                  "exists (Output Dir = {}).".format(self.name, self._out_path)
+            logger.error(msg)
+            raise Exception(msg)
+
+        # If the environment isn't set up, raise an exception.
+        if not self.environment.is_set_up:
+            msg = "Study {} is not set up for staging. Environment is not " \
+                  "set up. Aborting.".format(self.name)
             logger.error(msg)
             raise Exception(msg)
 
