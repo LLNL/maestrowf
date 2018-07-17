@@ -228,6 +228,11 @@ class Study(DAG):
         """
         # Add the node to the DAG.
         self.add_node(step.name, step)
+        logger.info(
+            "Adding step '%s' to study '%s'...", step.name, self.name)
+        # Apply the environment to the incoming step.
+        step.__dict__ = \
+            apply_function(step.__dict__, self.environment.apply_environment)
 
         # If the step depends on a prior step, create an edge.
         if "depends" in step.run and step.run["depends"]:
