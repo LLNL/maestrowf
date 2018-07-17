@@ -317,7 +317,7 @@ class Study(DAG):
             use_tmp
         )
 
-    def _setup_parameterized(self):
+    def _stage_parameterized(self):
         """
         Set up the ExecutionGraph of a parameterized study.
 
@@ -613,7 +613,7 @@ class Study(DAG):
 
         return self._out_path, dag
 
-    def _setup_linear(self):
+    def _stage_linear(self):
         """
         Execute a linear workflow without parameters.
 
@@ -737,6 +737,6 @@ class Study(DAG):
         # 2. A linear, execute as specified workflow
         # NOTE: This scheme could be how we handle derived use cases.
         if self.parameters:
-            return self._setup_parameterized()
+            return self._stage_parameterized()
         else:
-            return self._setup_linear()
+            return self._stage_linear()
