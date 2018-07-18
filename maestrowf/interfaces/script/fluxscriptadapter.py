@@ -84,11 +84,13 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: These libraries are compiled at runtime when an allocation
         # is spun up.
         self.flux = __import__("flux")
-        self.kvs = __import__("flux.kvs")
+        self.kvs = __import__("flux.kvs", globals(), locals(), ["kvs"])
 
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self._mpi_exe = kwargs.pop("mpi")
+        self._addl_args = kwargs.pop("args", [])
 
         self._exec = "#!/bin/bash"
         # Header is only for informational purposes.
@@ -162,10 +164,11 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-u", "PMI_FD",
             "-u", "PMI_RANK",
             "-u", "PMI_SIZE",
-            "mpirun",
-            "-gpu",
-            "-mca", "plm", "rsh",
-            "--map-by", "node"]
+            self._mpi_exe]
+
+        for item in self._addl_args:
+            args.append(item)
+
         args.extend(["-hostfile", "$HOSTF"])
         args.extend([
             "-n",
@@ -259,7 +262,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.warning("Job creation failed")
             return SubmissionCode.ERROR, -1
 
-        LOGGER.info("Submission returned status OK.")
+        LOGGER.info("Submission returned status OK. -- "
+                    "Assigned identifier (%s)", resp["jobid"])
         return SubmissionCode.OK, resp["jobid"]
 
     def check_jobs(self, joblist):
@@ -336,7 +340,13 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     "Error seen on path {} Unexpected behavior encountered."
                     .format(path)
                 )
+                # NOTE: I don't know if we should actually be returning here.
+                # It feels like we may not want to.
                 return JobStatusCode.ERROR, status
+            except EnvironmentError:
+                LOGGER.warning("Job ID (%s) not found in kvs. Setting state"
+                               "to UNKNOWN.", jobid)
+                status[jobid] = self._state("unknown")
 
         if not status:
             return JobStatusCode.NOJOBS, status
@@ -371,7 +381,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     )
 
                 if retcode != 0:
-                    status = self.check_jobs([job])
+                    retcode, status = self.check_jobs([job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
 
@@ -393,7 +403,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             return State.RUNNING
         elif flux_state == "pending" or flux_state == "runrequest":
             return State.PENDING
-        elif flux_state == "submitted":
+        elif flux_state == "submitted" or flux_state == "allocated":
             return State.PENDING
         elif flux_state == "failed":
             return State.FAILED
@@ -401,6 +411,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             return State.CANCELLED
         elif flux_state == "complete":
             return State.FINISHED
+        elif flux_state == "unknown":
+            return State.UNKNOWN
         else:
             return State.UNKNOWN
 
