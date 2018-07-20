@@ -32,7 +32,10 @@ import copy
 from hashlib import md5
 import logging
 import os
+<<<<<<< HEAD
 import pickle
+=======
+>>>>>>> a08cf6e... Refactor of the Study class to breakdown complex APIs (#118)
 import re
 import yaml
 

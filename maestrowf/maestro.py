@@ -259,12 +259,7 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-<<<<<<< HEAD
     pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-=======
-    pkl_path = os.path.join(path, "{}.pkl".format(
-        study.name.replace(" ", "_").lower()))
->>>>>>> b05d4c8... Workflow setup fix (#117)
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
