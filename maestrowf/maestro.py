@@ -266,6 +266,10 @@ def setup_argparser():
     run.add_argument("-d", "--dryrun", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("-p", "--pgen", type=str,
+                     help="Path to a Python code file containing a function "
+                     "that returns a custom filled ParameterGenerator"
+                     "instance.")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
