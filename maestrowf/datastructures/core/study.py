@@ -252,7 +252,7 @@ class Study(DAG):
         }
         path = os.path.join(self._meta_path, "metadata.yaml")
         with open(path, "wb") as metafile:
-            metafile.write(yaml.dump(metadata))
+            metafile.write(bytes(yaml.dump(metadata), "UTF-8"))
 
     def add_step(self, step):
         """
@@ -730,7 +730,6 @@ class Study(DAG):
         The stage method also sets up individual working directories (or
         workspaces) for each node in the workflow that requires it.
 
-        :param throttle: Maximum number of in progress jobs allowed.
         :returns: An ExecutionGraph object with the expanded workflow.
         """
         # If the workspace doesn't exist, raise an exception.
