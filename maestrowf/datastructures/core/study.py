@@ -252,7 +252,7 @@ class Study(DAG):
         }
         path = os.path.join(self._meta_path, "metadata.yaml")
         with open(path, "wb") as metafile:
-            metafile.write(bytes(yaml.dump(metadata), "UTF-8"))
+            metafile.write(yaml.dump(metadata).encode("utf-8"))
 
     def add_step(self, step):
         """
