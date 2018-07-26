@@ -5,26 +5,22 @@ description:
 env:
     variables:
         OUTPUT_PATH: ./sample_output/lulesh
-        LULESH_URL: https://codesign.llnl.gov/lulesh/lulesh2.0.3.tgz
 
     labels:
         outfile: $(SIZE.label).$(ITERATIONS.label).log
 
-study:
-    - name: get-lulesh
-      description: Download LULESH and extract it.
-      run:
-          cmd: |
-            curl -L -o lulesh.tar $(LULESH_URL)
-            mkdir $(WORKSPACE)/lulesh
-            tar -xf lulesh.tar -C $(WORKSPACE)/lulesh
-          depends: []
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
 
+study:
     - name: make-lulesh
       description: Build the serial version of LULESH.
       run:
           cmd: |
-            cd $(get-lulesh.workspace)/lulesh
+            cd $(LULESH)
             sed -i "" 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
             sed -i "" 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
             sed -i "" 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
@@ -32,13 +28,13 @@ study:
             sed -i "" 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
             make clean
             make
-          depends: [get-lulesh]
+          depends: []
 
     - name: run-lulesh
       description: Run LULESH.
       run:
           cmd: |
-            $(get-lulesh.workspace)/lulesh/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
     - name: post-process-lulesh
