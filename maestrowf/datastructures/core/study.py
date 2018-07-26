@@ -254,6 +254,32 @@ class Study(DAG):
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(metadata).encode("utf-8"))
 
+    def load_metadata(self):
+        """Load metadata for the study."""
+        if not os.path.exists(self._meta_path):
+            return
+
+        path = os.path.join(self._meta_path, "study", "env.pkl")
+        with open(path, 'rb') as pkl:
+            env = pickle.load(pkl)
+
+        if not isinstance(env, type(self)):
+            msg = "Object loaded from {path} is of type {type}. Expected an" \
+                  " object of type '{cls}.'".format(path=path, type=type(env),
+                                                    cls=type(self))
+            logger.error(msg)
+            raise TypeError(msg)
+
+        metapath = os.path.join(self._meta_path, "metadata.yaml")
+        with open(metapath, "rb") as metafile:
+            metadata = yaml.load(metafile)
+
+        self.depends = metadata["dependencies"]
+        self.hub_depends = metadata["hub_dependencies"]
+        self.workspaces = metadata["workspaces"]
+        self.used_params = metadata["used_parameters"]
+        self.step_combos = metadata["step_combinations"]
+
     def add_step(self, step):
         """
         Add a step to a study.
