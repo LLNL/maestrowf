@@ -177,6 +177,8 @@ def run_study(args):
 
     # Stage the study.
     path, exec_dag = study.stage()
+    # Write metadata
+    study.store_metadata()
 
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
