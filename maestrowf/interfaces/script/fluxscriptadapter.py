@@ -380,18 +380,21 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
             for job in joblist:
+                LOGGER.debug("Cancelling JobID = %s", job)
                 retcode = sp.call(
                     ["flux", "wreck", "cancel", str(job)],
                     stdout=FNULL, stderr=FNULL
                 )
 
                 if retcode != 0:
+                    LOGGER.debug("'flux wreck cancel' failed, trying kill.")
                     retcode = sp.call(
                         ["flux", "wreck", "kill", str(job)],
                         stdout=FNULL, stderr=FNULL
                     )
 
                 if retcode != 0:
+                    LOGGER.debug("'flux wreck kill' failed, checking status.")
                     retcode, status = self.check_jobs([job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
