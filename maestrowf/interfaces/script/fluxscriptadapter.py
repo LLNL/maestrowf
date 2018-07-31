@@ -244,6 +244,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             #     },
             #   },
         }
+        LOGGER.debug("Submission Spec -- \n%s", jobspec)
         if step.run["nodes"] > 1:
             jobspec["cmdline"] = ["flux", "broker", path]
         else:
@@ -277,15 +278,23 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return code of the status query, and a dictionary of job
         identifiers to their status.
         """
+        LOGGER.debug("Joblist type -- %s", type(joblist))
+        LOGGER.debug("Joblist contents -- %s", joblist)
         if not joblist:
+            LOGGER.debug("Empty job list specified.")
             return JobStatusCode.OK, {}
         if not isinstance(joblist, list):
+            LOGGER.debug("Specified parameter is not a list.")
             if isinstance(joblist, int):
+                LOGGER.debug("Integer found.")
                 joblist = [joblist]
             else:
+                LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
         if self.h is None:
+            LOGGER.debug("Class instance is None. Initializing a new Flux "
+                         "instance.")
             self.h = self.flux.Flux()
 
         resp = self.h.rpc_send("job.kvspath", json.dumps({"ids": joblist}))
@@ -309,6 +318,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     flux_status = self.kvs.get(self.h, path + ".exit_status")
                     # Use kvs to grab the max error code encountered.
                     rcode = flux_status["max"]
+                    LOGGER.debug("State 'complete' found. Exit code -- %s",
+                                 rcode)
                     # If retcode is not 0, not normal execution
                     if rcode != 0:
                         # If retcode is in the signaled set, we cancelled.
@@ -369,18 +380,21 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
             for job in joblist:
+                LOGGER.debug("Cancelling JobID = %s", job)
                 retcode = sp.call(
                     ["flux", "wreck", "cancel", str(job)],
                     stdout=FNULL, stderr=FNULL
                 )
 
                 if retcode != 0:
+                    LOGGER.debug("'flux wreck cancel' failed, trying kill.")
                     retcode = sp.call(
                         ["flux", "wreck", "kill", str(job)],
                         stdout=FNULL, stderr=FNULL
                     )
 
                 if retcode != 0:
+                    LOGGER.debug("'flux wreck kill' failed, checking status.")
                     retcode, status = self.check_jobs([job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
