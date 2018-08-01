@@ -119,7 +119,7 @@ def load_parameter_generator(path):
             LOGGER.debug("Using Python 2 imp library...")
             f = imp.load_source("custom_gen", path)
             return f.get_custom_generator()
-    except Exception, e:
+    except Exception as e:
         LOGGER.exception(str(e))
         raise e
 
