@@ -129,8 +129,13 @@ def run_study(args):
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
     environment = spec.get_study_environment()
-    parameters = spec.get_parameters()
     steps = spec.get_study_steps()
+
+    # Handle loading a custom ParameterGenerator if specified.
+    if args.pgen:
+        parameters = load_parameter_generator(args.pgen)
+    else:
+        parameters = spec.get_parameters()
 
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
