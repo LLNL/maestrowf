@@ -88,6 +88,42 @@ def cancel_study(args):
     return 0
 
 
+def load_parameter_generator(path):
+    """
+    Import and load custom parameter Python files.
+
+    :param path: Path to a Python file containing the function
+    'get_custom_generator()'
+    :returns: A populated ParameterGenerator instance.
+    """
+    path = os.path.abspath(path)
+    LOGGER.info("Loading custom parameter generator from '%s'", path)
+    try:
+        # Python 3.5
+        import importlib.util
+        LOGGER.debug("Using Python 3.5 importlib...")
+        spec = importlib.util.spec_from_file_location("custom_gen", path)
+        f = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(f)
+        return f.get_custom_generator()
+    except ImportError:
+        try:
+            # Python 3.3
+            from importlib.machinery import SourceFileLoader
+            LOGGER.debug("Using Python 3.4 SourceFileLoader...")
+            f = SourceFileLoader("custom_gen", path).load_module()
+            return f.get_custom_generator()
+        except ImportError:
+            # Python 2
+            import imp
+            LOGGER.debug("Using Python 2 imp library...")
+            f = imp.load_source("custom_gen", path)
+            return f.get_custom_generator()
+    except Exception, e:
+        LOGGER.exception(str(e))
+        raise e
+
+
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
