@@ -1,4 +1,4 @@
-"""An example file that produces a custom ParameterGenerator"""
+"""An example file that produces a custom ParameterGenerator."""
 
 from maestrowf.datastructures.core import ParameterGenerator
 
