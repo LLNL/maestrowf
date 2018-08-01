@@ -337,7 +337,7 @@ class Study(DAG):
             logger.info("Setting up study workspace in '%s'", self._out_path)
             create_parentdir(self._out_path)
         except Exception as e:
-            logger.error(e.message)
+            logger.error(e.args)
             return False
 
     def setup_environment(self):
