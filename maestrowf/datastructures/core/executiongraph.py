@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
-    CancelCode
+    CancelCode, StudyStatus
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
@@ -620,6 +620,33 @@ class ExecutionGraph(DAG):
         except Timeout:
             pass
 
+    def _check_study_completion(self):
+        # We cancelled, return True marking study as complete.
+        if self.is_canceled:
+            logger.info("Cancelled -- completing study.")
+            return StudyStatus.CANCELLED
+
+        # check for completion of all steps
+        resolved_set = \
+            self.completed_steps | self.failed_steps | self.cancelled_steps
+        if not set(self.values.keys()) - resolved_set:
+            # some steps were cancelled and is_canceled wasn't set
+            if len(self.cancelled_steps) > 0:
+                logging.info("'%s' was cancelled. Returning.", self.name)
+                return StudyStatus.CANCELLED
+
+            # some steps were failures indicating failure
+            if len(self.failed_steps) > 0:
+                logging.info("'%s' is complete with failures. Returning.",
+                             self.name)
+                return StudyStatus.FAILURE
+
+            # everything completed were are done
+            logging.info("'%s' is complete. Returning.", self.name)
+            return StudyStatus.FINISHED
+
+        return StudyStatus.RUNNING
+
     def execute_ready_steps(self):
         """
         Execute any steps whose dependencies are satisfied.
@@ -639,13 +666,11 @@ class ExecutionGraph(DAG):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        resolved_set = \
-            self.completed_steps | self.failed_steps | self.cancelled_steps
-        if not set(self.values.keys()) - resolved_set:
-            # Just return for now, but we'll need a way to signal that there
-            # are no more things to run.
-            logging.info("'%s' is complete. Returning.", self.name)
-            return True
+        # check the status of the study to
+        # avoid trying to execute when everything is done
+        completion_status = self._check_study_completion()
+        if completion_status != StudyStatus.RUNNING:
+            return completion_status
 
         retcode, job_status = self.check_study_status()
         logger.debug("Checked status (retcode %s)-- %s", retcode, job_status)
@@ -798,20 +823,9 @@ class ExecutionGraph(DAG):
             logger.debug("Launching job %d -- %s", i, _record.name)
             self._execute_record(_record, adapter)
 
-        # We cancelled, return True marking study as complete.
-        if self.is_canceled:
-            logger.info("Cancelled -- completing study.")
-            return True
-
-        resolved_set = \
-            self.completed_steps | self.failed_steps | self.cancelled_steps
-        if not set(self.values.keys()) - resolved_set:
-            # Just return for now, but we'll need a way to signal that there
-            # are no more things to run.
-            logging.info("'%s' is complete. Returning.", self.name)
-            return True
-
-        return False
+        # check the status of the study upon finishing this round of execution
+        completion_status = self._check_study_completion()
+        return completion_status
 
     def check_study_status(self):
         """

@@ -37,6 +37,7 @@ import os
 import sys
 from time import sleep
 
+from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.utils import create_parentdir
 
@@ -131,8 +132,8 @@ def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
                  "sleep time  = %s",
                  pickle_path, cancel_lock_path, sleep_time)
 
-    study_complete = False
-    while not study_complete:
+    completion_status = StudyStatus.RUNNING
+    while completion_status == StudyStatus.RUNNING:
         if os.path.exists(cancel_lock_path):
             # cancel the study if a cancel lock file is found
             cancel_lock = FileLock(cancel_lock_path)
@@ -148,14 +149,17 @@ def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
 
         logger.info("Checking DAG status at %s", str(datetime.now()))
         # Execute steps that are ready
-        study_complete = dag.execute_ready_steps()
+        # Recieves StudyStatus enum
+        completion_status = dag.execute_ready_steps()
         # Re-pickle the ExecutionGraph.
         dag.pickle(pickle_path)
         # Write out the state
         dag.write_status(os.path.split(pickle_path)[0])
         # Sleep for SLEEPTIME in args if study not complete.
-        if not study_complete:
+        if completion_status == StudyStatus.RUNNING:
             sleep(sleep_time)
+
+    return completion_status
 
 
 def main():
@@ -190,14 +194,15 @@ def main():
 
         cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
         logger.info("Starting to monitor '%s'", dag.name)
-        monitor_study(dag, study_pkl[0], cancel_lock_path, args.sleeptime)
+        completion_status = monitor_study(dag, study_pkl[0],
+                                          cancel_lock_path, args.sleeptime)
 
         logger.info("Cleaning up...")
         dag.cleanup()
         logger.info("Squeaky clean!")
 
         # Explicitly return a 0 status.
-        sys.exit(0)
+        sys.exit(completion_status.value)
     except Exception as e:
         logger.error(e.args, exc_info=True)
         raise e
