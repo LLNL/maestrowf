@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
-    CancelCode
+    CancelCode, StudyStatus
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
@@ -645,7 +645,7 @@ class ExecutionGraph(DAG):
             # Just return for now, but we'll need a way to signal that there
             # are no more things to run.
             logging.info("'%s' is complete. Returning.", self.name)
-            return True
+            return StudyStatus.FINISHED
 
         retcode, job_status = self.check_study_status()
         logger.debug("Checked status (retcode %s)-- %s", retcode, job_status)
@@ -801,17 +801,25 @@ class ExecutionGraph(DAG):
         # We cancelled, return True marking study as complete.
         if self.is_canceled:
             logger.info("Cancelled -- completing study.")
-            return True
+            return StudyStatus.CANCELLED
 
         resolved_set = \
             self.completed_steps | self.failed_steps | self.cancelled_steps
         if not set(self.values.keys()) - resolved_set:
+            if len(self.cancelled_steps) > 0:
+                logging.info("'%s' was cancelled. Returning.", self.name)
+                return StudyStatus.CANCELLED
+
+            if len(self.failed_steps) > 0:
+                logging.info("'%s' is complete with failures. Returning.", self.name)
+                return StudyStatus.FAILURE
+
             # Just return for now, but we'll need a way to signal that there
             # are no more things to run.
             logging.info("'%s' is complete. Returning.", self.name)
-            return True
+            return StudyStatus.FINISHED
 
-        return False
+        return StudyStatus.RUNNING
 
     def check_study_status(self):
         """
