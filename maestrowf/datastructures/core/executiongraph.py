@@ -603,7 +603,7 @@ class ExecutionGraph(DAG):
             value = self.values[key]
             _ = [
                     value.name, os.path.split(value.workspace.value)[1],
-                    str(value.status), value.run_time, value.elapsed_time,
+                    str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)
                 ]

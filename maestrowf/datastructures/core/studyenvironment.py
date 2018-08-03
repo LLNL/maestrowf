@@ -183,9 +183,7 @@ class StudyEnvironment(SimObject):
         return None
 
     def acquire_environment(self):
-        """
-        Acquire any environment items that may be stored remotely.
-        """
+        """Acquire any environment items that may be stored remotely."""
         if self._is_set_up:
             logger.info("Environment already set up. Returning.")
             return
