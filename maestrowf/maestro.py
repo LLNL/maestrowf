@@ -209,8 +209,9 @@ def run_study(args):
             LOGGER.info("Running Maestro Conductor in the foreground.")
             cancel_path = os.path.join(path, ".cancel.lock")
             # capture the StudyStatus enum to return
-            study_status = monitor_study(exec_dag, pkl_path, cancel_path, args.sleeptime)
-            return study_status.value
+            completion_status = monitor_study(exec_dag, pkl_path,
+                                              cancel_path, args.sleeptime)
+            return completion_status.value
         else:
             # Launch manager with nohup
             cmd = ["nohup", "conductor",

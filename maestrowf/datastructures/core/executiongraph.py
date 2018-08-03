@@ -811,7 +811,8 @@ class ExecutionGraph(DAG):
                 return StudyStatus.CANCELLED
 
             if len(self.failed_steps) > 0:
-                logging.info("'%s' is complete with failures. Returning.", self.name)
+                logging.info("'%s' is complete with failures. Returning.",
+                             self.name)
                 return StudyStatus.FAILURE
 
             # Just return for now, but we'll need a way to signal that there
