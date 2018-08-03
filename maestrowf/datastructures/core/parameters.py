@@ -272,7 +272,7 @@ class ParameterGenerator(SimObject):
 
     def __iter__(self):
         """
-        Iterator for the ParameterGenerator.
+        Return the iterator for the ParameterGenerator.
 
         :returns: Iterator for walking parameter combinations.
         """
