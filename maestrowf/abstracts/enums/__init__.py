@@ -69,7 +69,7 @@ class State(Enum):
 
 class StudyStatus(Enum):
     """Workflow status enumeration"""
-    FINISHED = 0
-    RUNNING = 1
-    FAILURE = 2
-    CANCELLED = 3
+    FINISHED = 0   # The Study has finished successfully, all steps ran
+    RUNNING = 1    # The Study is currently running
+    FAILURE = 2    # The Study has finished, but 1 or more steps failed
+    CANCELLED = 3  # The Study has finished, but was cancelled
