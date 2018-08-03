@@ -204,7 +204,7 @@ def main():
         # Explicitly return a 0 status.
         sys.exit(completion_status.value)
     except Exception as e:
-        logger.error(e.message, exc_info=True)
+        logger.error(e.args, exc_info=True)
         raise e
 
 

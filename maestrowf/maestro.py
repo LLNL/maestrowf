@@ -168,15 +168,17 @@ def run_study(args):
         LOGGER.error(_msg)
         raise ArgumentError(_msg)
 
-    study.setup(
-        throttle=args.throttle,
-        submission_attempts=args.attempts,
-        restart_limit=args.rlimit,
-        use_tmp=args.usetmp
-    )
+    # Set up the study workspace and configure it for execution.
+    study.setup_workspace()
+    study.setup_environment()
+    study.configure_study(
+        throttle=args.throttle, submission_attempts=args.attempts,
+        restart_limit=args.rlimit, use_tmp=args.usetmp)
 
     # Stage the study.
     path, exec_dag = study.stage()
+    # Write metadata
+    study.store_metadata()
 
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
