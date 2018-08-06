@@ -347,3 +347,17 @@ class ParameterGenerator(SimObject):
         params = set()
         self._get_used_parameters(step.__dict__, params)
         return params
+
+    def get_metadata(self):
+        """
+        Produce metadata for the parameters in a generator instance.
+
+        :returns: A dictionary containing metadata about the instance.
+        """
+        meta = {}
+        for combo in self.get_combinations():
+            meta[str(combo)] = {}
+            meta[str(combo)]["params"] = combo._params
+            meta[str(combo)]["labels"] = combo._labels
+
+        return meta
