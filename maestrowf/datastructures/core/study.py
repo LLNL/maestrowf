@@ -250,7 +250,14 @@ class Study(DAG):
             "used_parameters": self.used_params,
             "step_combinations": self.step_combos,
         }
+        # Write out the study construction metadata.
         path = os.path.join(self._meta_path, "metadata.yaml")
+        with open(path, "wb") as metafile:
+            metafile.write(yaml.dump(metadata).encode("utf-8"))
+
+        # Write out parameter metadata.
+        metadata = self.parameters.get_metadata()
+        path = os.path.join(self._meta_path, "parameters.yaml")
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(metadata).encode("utf-8"))
 
