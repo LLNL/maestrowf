@@ -1,7 +1,7 @@
 Quick Start Guide
 ==================
 
-If you haven't already done so, see installation instructions in :doc:`Getting Started <./getting_started>`. For this guide, you will need to checkout Maestro via GitHub in order to use the provided samples.
+If you haven't already done so, see installation instructions in :doc:`Getting Started <./getting_started>`. For this guide, you will need to checkout `Maestro via GitHub <https://github.com/LLNL/maestrowf>`_ in order to use the provided samples.
 
 Running the LULESH Study
 *************************
@@ -14,7 +14,9 @@ The LULESH study comes in two flavors: one for Unix systems and one for MacOSX s
 
     $ maestro run ./samples/lulesh/lulesh_sample1_unix.yaml -o ./tests/lulesh
 
-Maestro begins by loading the specification and checks out a copy of LULESH from GitHub.::
+.. note:: The ``-o`` flag is used for specifying a custom output path. Normally, Maestro creates a timestamped folder each time it is executed. The use of the ``-o`` is used here for consistency with provided logging.
+
+Maestro begins by loading the specification and checks out a copy of LULESH from GitHub::
 
     2018-08-07 00:58:56,887 - maestrowf.maestro:setup_logging:360 - INFO - INFO Logging Level -- Enabled
     2018-08-07 00:58:56,887 - maestrowf.maestro:setup_logging:361 - WARNING - WARNING Logging Level -- Enabled
@@ -55,9 +57,9 @@ Maestro begins by loading the specification and checks out a copy of LULESH from
     Tmp Dir =
     ------------------------------------------
 
-Once set up is complete, Maestro will begin expanding the Study's graph into an ``ExecutionGraph``. The ``ExecutionGraph`` represents the complete execution plan for a study. The snippets below show some of the expected output which will be a mix of single steps and parameterized steps.
+Once set up is complete, Maestro will begin expanding the `Study` graph into an ``ExecutionGraph``. The ``ExecutionGraph`` represents the complete execution plan for a study. The snippets below show some of the expected output which will be a mix of single steps and parameterized steps.
 
-Singular steps (such as "build-lulesh") appear in the log as follows::
+Singular steps (such as "make-lulesh") appear in the log as follows::
 
    2018-08-07 00:58:57,307 - maestrowf.datastructures.core.study:_stage_parameterized:431 - INFO -
     ==================================================
@@ -119,7 +121,7 @@ Maestro will launch a conductor in the background using ``nohup`` in order to mo
 Monitoring a Running Study
 ***************************
 
-Once the conductor is spun up, you will be retuned to the command line prompt. There should now be a the ``.tests/lulesh`` within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the documentation about :doc:`Study Workspaces <./maestro_organization>`.
+Once the conductor is spun up, you will be returned to the command line prompt. There should now be a ``.tests/lulesh`` directory within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the documentation about :doc:`Study Workspaces <./maestro_core>`.
 
 In order to check the status of a running study, use the ``maestro status`` subcommand. The only required parameter to the status command is the path to the running study's workspace. In this case, to find the status of the running study (from the root of the repository) is::
 

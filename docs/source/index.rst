@@ -13,6 +13,7 @@ Welcome to Maestro Workflow Conductor Documentation
    getting_started
    quick_start
    lulesh_breakdown
+   maestro_core
 
    modules
 
