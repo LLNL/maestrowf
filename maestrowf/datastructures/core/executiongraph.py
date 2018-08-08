@@ -666,12 +666,6 @@ class ExecutionGraph(DAG):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        # check the status of the study to
-        # avoid trying to execute when everything is done
-        completion_status = self._check_study_completion()
-        if completion_status != StudyStatus.RUNNING:
-            return completion_status
-
         retcode, job_status = self.check_study_status()
         logger.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
