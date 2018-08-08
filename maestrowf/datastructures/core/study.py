@@ -32,14 +32,7 @@ import copy
 from hashlib import md5
 import logging
 import os
-<<<<<<< HEAD
-<<<<<<< HEAD
 import pickle
-=======
->>>>>>> a08cf6e... Refactor of the Study class to breakdown complex APIs (#118)
-=======
-import pickle
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
 import re
 import yaml
 
@@ -253,7 +246,6 @@ class Study(DAG):
             pickle.dump(self, pkl)
 
         # Construct other metadata related to study construction.
-<<<<<<< HEAD
         _workspaces = {}
         for key, value in self.workspaces.items():
             if key == "_source":
@@ -288,20 +280,10 @@ class Study(DAG):
             "step_combinations": _step_combos,
         }
         # Write out the study construction metadata.
-=======
-        metadata = {
-            "dependencies": self.depends,
-            "hub_dependencies": self.hub_depends,
-            "workspaces": self.workspaces,
-            "used_parameters": self.used_params,
-            "step_combinations": self.step_combos,
-        }
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
         path = os.path.join(self._meta_path, "metadata.yaml")
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(metadata).encode("utf-8"))
 
-<<<<<<< HEAD
         # Write out parameter metadata.
         metadata = self.parameters.get_metadata()
         path = os.path.join(self._meta_path, "parameters.yaml")
@@ -313,8 +295,6 @@ class Study(DAG):
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(os.environ.copy()).encode("utf-8"))
 
-=======
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
     def load_metadata(self):
         """Load metadata for the study."""
         if not os.path.exists(self._meta_path):
@@ -565,11 +545,7 @@ class Study(DAG):
                 # Copy the step and set to not modified.
                 self.step_combos[step].add(step)
 
-<<<<<<< HEAD
                 workspace = make_safe_path(self._out_path, *[step])
-=======
-                workspace = make_safe_path(self._out_path, step)
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
                 self.workspaces[step] = workspace
                 logger.debug("Workspace: %s", workspace)
 
@@ -642,7 +618,6 @@ class Study(DAG):
                                 str(combo))
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(self.used_params[step])
-<<<<<<< HEAD
                     if self._hash_ws:
                         workspace = make_safe_path(
                                         self._out_path,
@@ -651,11 +626,7 @@ class Study(DAG):
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
                         logger.debug("Workspace: %s", workspace)
-=======
-                    workspace = \
-                        make_safe_path(self._out_path, step, combo_str)
-                    logger.debug("Workspace: %s", workspace)
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
+
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
@@ -751,22 +722,6 @@ class Study(DAG):
         :returns: The path to the study's global workspace and an
             ExecutionGraph based on linear steps in the study.
         """
-<<<<<<< HEAD
-=======
-        # Construct ExecutionGraph
-        dag = ExecutionGraph(
-            submission_attempts=self._submission_attempts,
-            submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp)
-        dag.add_description(**self.description)
-        # Items to store that should be reset.
-        logger.info("\n==================================================\n"
-                    "Constructing linear study '%s'\n"
-                    "==================================================\n",
-                    self.name
-                    )
-
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
         # For each step in the Study
         # Walk the study and add the steps to the ExecutionGraph.
         t_sorted = self.topological_sort()
@@ -778,11 +733,7 @@ class Study(DAG):
                 continue
 
             # Initialize management structures.
-<<<<<<< HEAD
             ws = make_safe_path(self._out_path, *[step])
-=======
-            ws = make_safe_path(self._out_path, step)
->>>>>>> e5c8ba1... Add the generation of metadata to Study construction. (#120)
             self.workspaces[step] = ws
             self.depends[step] = set()
             # Hub dependencies are not possible in linear studies. Empty set
