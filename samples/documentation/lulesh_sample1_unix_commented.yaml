@@ -71,10 +71,29 @@ env:
           path: $(OUTPUT_PATH)
           url: https://github.com/LLNL/LULESH.git
 
+####################################
+# Study Block (Required)
+####################################
+# The study block is where the steps in the workflow are defined. This section
+# of the specfication represents the unexpanded set of tasks that the study
+# is composed of.
+####################################
 study:
+    #-------------------------------
+    # Study Steps
+    #-------------------------------
+    # Represents a task to be completed in the study's workflow.
+    #-------------------------------
+      # 'make-lulesh' is an example of a singular step because the task
+      # does not contain parameters (more on those later).
+      # name: Unique name that identifies the task. (Required)
     - name: make-lulesh
+      # description: A general description of what this step is intended to do.
+      # (Required)
       description: Build the serial version of LULESH.
+      # run: Properties that describe the actual specification of the task.
       run:
+          # cmd: The actual task to be executed. (Required)
           cmd: |
             cd $(LULESH)
             sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
@@ -84,22 +103,42 @@ study:
             sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
             make clean
             make
+          # depends: A list of task names that this step is dependent on.
+          # The 'make-lulesh' step is not dependent on other tasks, and so will
+          # be executed at the start of the study.
           depends: []
 
+      # 'run-lulesh' is an example of a parameterized step because the task
+      # contains parameters (more on those later).
     - name: run-lulesh
       description: Run LULESH.
       run:
           cmd: |
             $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+          # NOTE: Because 'make-lulesh' is a singular step, it is only executed
+          # once. All parameterizations of 'run-lulesh' are dependent on the
+          # single node.
           depends: [make-lulesh]
 
     - name: post-process-lulesh
       description: Post process all LULESH results.
       run:
+          # This step refers to the 'run-lulesh' workspace using the
+          # $(run-lulesh.workspace) moniker.
+          # NOTE: A step can refer to other workspaces by using the step's name
+          # followed by '.workspace' such as '$(run-lulesh.workspace)'.
+          # NOTE: This step contains a special case. Because this step waits on
+          # all combinations of 'run-lulesh', $(run-lulesh.workspace) refers to
+          # the top level directory that contains each parameterized workspace.
+          # In this case, it points to './sample_output/lulesh/run-lulesh'.
           cmd: |
             echo "Unparameterized step with Parameter Independent dependencies." >> out.log
             echo $(run-lulesh.workspace) > out.log
             ls $(run-lulesh.workspace) > ls.log
+          # The 'post-process-lulesh' step is dependent on the completion of
+          # all parameterizations of 'run-lulesh' as represented by the '_*'.
+          # Because this step is not parameterized, it is a singular step that
+          # waits for all 'run-lulesh' steps to complete.
           depends: [run-lulesh_*]
 
     - name: post-process-lulesh-trials
@@ -110,6 +149,11 @@ study:
             echo "TRIAL = $(TRIAL)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
             ls $(run-lulesh.workspace) > out.log
+          # 'post-process-lulesh-trials' like 'post-process-lulesh' is dependent
+          # on all parameterizations of 'run-lulesh'. In this case, because this
+          # step is parameterized based on $(TRIALS), there will be a version of
+          # 'post-process-lulesh-trials' for each unique value of $(TRIAL) that
+          # each will wait on all combinations of 'run-lulesh'.
           depends: [run-lulesh_*]
 
     - name: post-process-lulesh-size
@@ -120,6 +164,10 @@ study:
             echo "SIZE = $(SIZE)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
             ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
+          # This step is more or less exactly the same as 'post-process-lulesh-trials'
+          # but it is parameterized on $(SIZE). This step is meant to illustrate
+          # that parameters can be reused for filtering or other useful things when
+          # dependent on parameterizations of other steps.
           depends: [run-lulesh_*]
 
 global.parameters:
