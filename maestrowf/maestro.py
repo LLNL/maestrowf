@@ -88,12 +88,47 @@ def cancel_study(args):
     return 0
 
 
+def load_parameter_generator(path):
+    """
+    Import and load custom parameter Python files.
+
+    :param path: Path to a Python file containing the function
+    'get_custom_generator()'
+    :returns: A populated ParameterGenerator instance.
+    """
+    path = os.path.abspath(path)
+    LOGGER.info("Loading custom parameter generator from '%s'", path)
+    try:
+        # Python 3.5
+        import importlib.util
+        LOGGER.debug("Using Python 3.5 importlib...")
+        spec = importlib.util.spec_from_file_location("custom_gen", path)
+        f = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(f)
+        return f.get_custom_generator()
+    except ImportError:
+        try:
+            # Python 3.3
+            from importlib.machinery import SourceFileLoader
+            LOGGER.debug("Using Python 3.4 SourceFileLoader...")
+            f = SourceFileLoader("custom_gen", path).load_module()
+            return f.get_custom_generator()
+        except ImportError:
+            # Python 2
+            import imp
+            LOGGER.debug("Using Python 2 imp library...")
+            f = imp.load_source("custom_gen", path)
+            return f.get_custom_generator()
+    except Exception as e:
+        LOGGER.exception(str(e))
+        raise e
+
+
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
     environment = spec.get_study_environment()
-    parameters = spec.get_parameters()
     steps = spec.get_study_steps()
 
     # Set up the output directory.
@@ -137,6 +172,14 @@ def run_study(args):
 
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
+
+    # Handle loading a custom ParameterGenerator if specified.
+    if args.pgen:
+        # Copy the Python file used to generate parameters.
+        shutil.copy(args.pgen, output_path)
+        parameters = load_parameter_generator(args.pgen)
+    else:
+        parameters = spec.get_parameters()
 
     # Addition of the $(SPECROOT) to the environment.
     spec_root = os.path.split(args.specification)[0]
@@ -266,6 +309,10 @@ def setup_argparser():
     run.add_argument("-d", "--dryrun", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("-p", "--pgen", type=str,
+                     help="Path to a Python code file containing a function "
+                     "that returns a custom filled ParameterGenerator"
+                     "instance.")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
