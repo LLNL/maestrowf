@@ -131,12 +131,6 @@ def run_study(args):
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
 
-    # Handle loading a custom ParameterGenerator if specified.
-    if args.pgen:
-        parameters = load_parameter_generator(args.pgen)
-    else:
-        parameters = spec.get_parameters()
-
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
     if args.out:
@@ -178,6 +172,14 @@ def run_study(args):
 
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
+
+    # Handle loading a custom ParameterGenerator if specified.
+    if args.pgen:
+        # Copy the Python file used to generate parameters.
+        shutil.copy(args.pgen, output_path)
+        parameters = load_parameter_generator(args.pgen)
+    else:
+        parameters = spec.get_parameters()
 
     # Addition of the $(SPECROOT) to the environment.
     spec_root = os.path.split(args.specification)[0]
