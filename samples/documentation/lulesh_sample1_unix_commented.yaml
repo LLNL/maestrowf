@@ -3,7 +3,7 @@
 ####################################
 # The description block is where the description of the study is placed. This
 # section is meant primarily for documentation purposes so that when a
-# spcecifcation is passed to other users they can gleam a general understanding
+# spcecifcation is passed to other users they can glean a general understanding
 # of what this study is meant to achieve.
 #-------------------------------
 # Required keys:
@@ -34,13 +34,22 @@ env:
     # concept to Unix environment variables. These variables are not dependent
     # on values in the environment and so are more portable.
 
-    # NOTE: These values are substituted as static strings meaning that other
-    # variables should not used in other variables.
+    # NOTE: These values are substituted as static strings meaning that
+    # variables should not be used in other variables.
     #-------------------------------
     variables:
         # OUTPUT_PATH is a keyword variable that Maestro looks for in order to
-        # set a custom output path for the study workspace. If not specified,
+        # set a custom output path for the study workspace. This path is where
+        # Maestro will place all temporary files, state files, and any output.
+        # The resulting path is usually a timestamped folder within OUTPUT_PATH
+        # and in this case would be
+        # './sample_output/lulesh/lulesh_sample1_<timestamp>'.
+        #
+        # NOTE: If not specified,
         # OUTPUT_PATH is assumed to be the path where Maestro was launched from.
+        # NOTE: If the '-o' flag is specified for the run subcommand, OUTPUT_PATH
+        # the output path will be taken from there and will not generate a
+        # timestamped path.
         OUTPUT_PATH: ./sample_output/lulesh
 
     #-------------------------------
@@ -182,9 +191,10 @@ study:
       # to have a step that is expanded because its dependencies have been
       # expanded. For example, if you wanted to run individual post processing
       # after each 'run-lulesh' step, you might have a step called
-      # 'post-process-run' that is dependent on 'run-lulesh'. This notation
-      # corresponds with the concept of "for each unique 'run-lulesh', there
-      # is a corresponding 'post-process-run'". So for example, the expanded
+      # 'post-process-run' with a dependency specified as
+      # 'depends: [run-lulesh]'. This notation corresponds with the concept of
+      # "for each unique 'run-lulesh', there is a corresponding
+      # 'post-process-run'". So for example, the expanded
       # 'run-lulesh_SIZE.10.ITER.10' would have a corresponding step named
       # 'post-process-run_SIZE.10.ITER.10' when declaring that 'post-process-run'
       # depends on 'run-lulesh' (which, to be clear, is different than depends
@@ -205,11 +215,14 @@ study:
 # 1. A list of values that the parameter takes.
 # 2. A label that represents a "pretty printed" version of the parameter. The
 #    parameter values is specfied by the '%%' moniker (for example, for SIZE --
-#    when SIZE is equal to 10, the label will be 'SIZE.10').
-# 3. (Optional) A list of custom names for each value in the values list.
-#    NOTE: The length of the 'names' list must be the same length as the list
-#    of values.
+#    when SIZE is equal to 10, the label will be 'SIZE.10'). To access the label
+#    for SIZE, for example, the token '$(SIZE.label)' is used.
+#    Labels can take one of two forms: A single string with the '%%' marker or
+#    a list of per value labels (must be the same length as the list of values).
 #
+# NOTE: A specified parameter does not necessarily have to be used in every step
+# or at all. If a parameter is specified and not used, it simply will not be
+# factored into expansion or the naming of expanded steps or their workspaces.
 # NOTE: You can also specify custom generation of parameters using a Python
 # file containing the definition of a function as follows:
 #
@@ -225,7 +238,9 @@ global.parameters:
     TRIAL:
         values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
         label   : TRIAL.%%
-        # names : []
+        # The use of label below is an example of the per value label set up.
+        # This specification of a label WILL affect the naming of workspaces.
+        # label : [TRIAL_1, TRIAL_2, TRIAL_3, TRIAL_4, TRIAL_5, TRIAL_6, TRIAL_7, TRIAL_8, TRIAL_9]
     SIZE:
         values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
         label   : SIZE.%%
