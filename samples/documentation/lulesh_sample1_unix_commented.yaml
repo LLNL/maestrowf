@@ -107,6 +107,9 @@ study:
           # The 'make-lulesh' step is not dependent on other tasks, and so will
           # be executed at the start of the study.
           depends: []
+          # NOTE: There are additional step entries for setting up a step for
+          # remote execution. For examples see 'launcher_tokens.yaml' in the
+          # 'samples/documentation' subdirectory in the maestrowf repo.
 
       # 'run-lulesh' is an example of a parameterized step because the task
       # contains parameters (more on those later). The step makes use of the
@@ -197,6 +200,7 @@ study:
 #   parameterized study.
 # 2. If a parameter block is not specified, the study is treated as linear and
 #    the resulting study is not expanded.
+#
 # There are three keys per parameter:
 # 1. A list of values that the parameter takes.
 # 2. A label that represents a "pretty printed" version of the parameter. The
@@ -205,6 +209,17 @@ study:
 # 3. (Optional) A list of custom names for each value in the values list.
 #    NOTE: The length of the 'names' list must be the same length as the list
 #    of values.
+#
+# NOTE: You can also specify custom generation of parameters using a Python
+# file containing the definition of a function as follows:
+#
+# 'def get_custom_generator():'
+#
+# The 'get_custom_generator' function is required to return a ParameterGenerator
+# instance populated with custom filled values. In order to use the file, simply
+# call Maestro using 'maestro run -p <path to py file> <specification path>'.
+# For an examples of custom parameter generation, see 'samples/parameterization'
+# in maestrowf repository.
 ####################################
 global.parameters:
     TRIAL:
