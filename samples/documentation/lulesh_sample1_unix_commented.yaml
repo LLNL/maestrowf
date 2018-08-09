@@ -170,6 +170,23 @@ study:
           # dependent on parameterizations of other steps.
           depends: [run-lulesh_*]
 
+      # NOTE: The 'depends' entry in a specification does not use parameterized
+      # names -- instead Maestro attempts to infer the expansion of the graph
+      # based on context via looking to see if a step uses parameters, workspaces,
+      # and if the step depends on other steps that are parameterized.
+      # NOTE: Second note -- this example lacks a type of step. It is possible
+      # to have a step that is expanded because its dependencies have been
+      # expanded. For example, if you wanted to run individual post processing
+      # after each 'run-lulesh' step, you might have a step called
+      # 'post-process-run' that is dependent on 'run-lulesh'. This notation
+      # corresponds with the concept of "for each unique 'run-lulesh', there
+      # is a corresponding 'post-process-run'". So for example, the expanded
+      # 'run-lulesh_SIZE.10.ITER.10' would have a corresponding step named
+      # 'post-process-run_SIZE.10.ITER.10' when declaring that 'post-process-run'
+      # depends on 'run-lulesh' (which, to be clear, is different than depends
+      # on 'run-lulesh_*' which declares dependency on ALL combinations of
+      # 'run-lulesh').
+
 global.parameters:
     TRIAL:
         values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
