@@ -188,10 +188,29 @@ study:
       # on 'run-lulesh_*' which declares dependency on ALL combinations of
       # 'run-lulesh').
 
+####################################
+# Parameter Block
+####################################
+# The parameter block contains all the things we'd like to vary in the study.
+# Currently, there are two modes of operating in the specification:
+# 1. If a parameter block is specified, the study is expanded and considered a
+#   parameterized study.
+# 2. If a parameter block is not specified, the study is treated as linear and
+#    the resulting study is not expanded.
+# There are three keys per parameter:
+# 1. A list of values that the parameter takes.
+# 2. A label that represents a "pretty printed" version of the parameter. The
+#    parameter values is specfied by the '%%' moniker (for example, for SIZE --
+#    when SIZE is equal to 10, the label will be 'SIZE.10').
+# 3. (Optional) A list of custom names for each value in the values list.
+#    NOTE: The length of the 'names' list must be the same length as the list
+#    of values.
+####################################
 global.parameters:
     TRIAL:
         values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
         label   : TRIAL.%%
+        # names : []
     SIZE:
         values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
         label   : SIZE.%%
