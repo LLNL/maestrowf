@@ -11,7 +11,7 @@
 #   description - Description of what this study does.
 #-------------------------------
 # NOTE: You can add other keys to this block for custom documentation. Maestro
-# currently on looks for the required set.
+# currently only looks for the required set.
 ####################################
 description:
     name: lulesh_sample1
@@ -109,7 +109,8 @@ study:
           depends: []
 
       # 'run-lulesh' is an example of a parameterized step because the task
-      # contains parameters (more on those later).
+      # contains parameters (more on those later). The step makes use of the
+      # $(SIZE) and $(ITERATIONS) parameters.
     - name: run-lulesh
       description: Run LULESH.
       run:
