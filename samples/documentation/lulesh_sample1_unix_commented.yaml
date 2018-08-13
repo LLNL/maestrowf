@@ -1,0 +1,249 @@
+####################################
+# Description Block (Required)
+####################################
+# The description block is where the description of the study is placed. This
+# section is meant primarily for documentation purposes so that when a
+# spcecifcation is passed to other users they can glean a general understanding
+# of what this study is meant to achieve.
+#-------------------------------
+# Required keys:
+#   name - Name of the study
+#   description - Description of what this study does.
+#-------------------------------
+# NOTE: You can add other keys to this block for custom documentation. Maestro
+# currently only looks for the required set.
+####################################
+description:
+    name: lulesh_sample1
+    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
+
+####################################
+# Environment Block
+####################################
+# The environment block is where items describing the study's environment are
+# defined. This includes static information that the study needs to know about
+# and dependencies that the workflow requires for execution.
+#-------------------------------
+# NOTE: This block isn't strictly required as a study may not depend on anything.
+####################################
+env:
+    #-------------------------------
+    # Variables
+    #-------------------------------
+    # Static values that the workflow substitutes into steps and are similar in
+    # concept to Unix environment variables. These variables are not dependent
+    # on values in the environment and so are more portable.
+
+    # NOTE: These values are substituted as static strings meaning that
+    # variables should not be used in other variables.
+    #-------------------------------
+    variables:
+        # OUTPUT_PATH is a keyword variable that Maestro looks for in order to
+        # set a custom output path for the study workspace. This path is where
+        # Maestro will place all temporary files, state files, and any output.
+        # The resulting path is usually a timestamped folder within OUTPUT_PATH
+        # and in this case would be
+        # './sample_output/lulesh/lulesh_sample1_<timestamp>'.
+        #
+        # NOTE: If not specified,
+        # OUTPUT_PATH is assumed to be the path where Maestro was launched from.
+        # NOTE: If the '-o' flag is specified for the run subcommand, OUTPUT_PATH
+        # the output path will be taken from there and will not generate a
+        # timestamped path.
+        OUTPUT_PATH: ./sample_output/lulesh
+
+    #-------------------------------
+    # Labels
+    #-------------------------------
+    # Static values that can contain variables and parameters which, like
+    # variables, will be substituted into all steps. Labels are useful for
+    # enforcing fixed formatting for output files, or fixed formatting for
+    # components of steps which follow fixed formats.
+    #-------------------------------
+    labels:
+        outfile: $(SIZE.label).$(ITERATIONS.label).log
+
+    #-------------------------------
+    # Dependencies
+    #-------------------------------
+    # Dependencies represent external artifacts that should be present before a
+    # workflow can run. These are things like acquirable inputs from a directory
+    # or a repository such as input files for programs, code, data, etc..
+
+    # NOTE: Currently there are only two types of dependencies:
+    # path - verifies the existence of the specified path before execution.
+    # git  - clones the specified repository before execution of the study.
+    #-------------------------------
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
+
+####################################
+# Study Block (Required)
+####################################
+# The study block is where the steps in the workflow are defined. This section
+# of the specfication represents the unexpanded set of tasks that the study
+# is composed of.
+####################################
+study:
+    #-------------------------------
+    # Study Steps
+    #-------------------------------
+    # Represents a task to be completed in the study's workflow.
+    #-------------------------------
+      # 'make-lulesh' is an example of a singular step because the task
+      # does not contain parameters (more on those later).
+      # name: Unique name that identifies the task. (Required)
+    - name: make-lulesh
+      # description: A general description of what this step is intended to do.
+      # (Required)
+      description: Build the serial version of LULESH.
+      # run: Properties that describe the actual specification of the task.
+      run:
+          # cmd: The actual task to be executed. (Required)
+          cmd: |
+            cd $(LULESH)
+            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
+            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
+            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
+            make clean
+            make
+          # depends: A list of task names that this step is dependent on.
+          # The 'make-lulesh' step is not dependent on other tasks, and so will
+          # be executed at the start of the study.
+          depends: []
+          # NOTE: There are additional step entries for setting up a step for
+          # remote execution. For examples see 'launcher_tokens.yaml' in the
+          # 'samples/documentation' subdirectory in the maestrowf repo.
+
+      # 'run-lulesh' is an example of a parameterized step because the task
+      # contains parameters (more on those later). The step makes use of the
+      # $(SIZE) and $(ITERATIONS) parameters.
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+          # NOTE: Because 'make-lulesh' is a singular step, it is only executed
+          # once. All parameterizations of 'run-lulesh' are dependent on the
+          # single node.
+          depends: [make-lulesh]
+
+    - name: post-process-lulesh
+      description: Post process all LULESH results.
+      run:
+          # This step refers to the 'run-lulesh' workspace using the
+          # $(run-lulesh.workspace) moniker.
+          # NOTE: A step can refer to other workspaces by using the step's name
+          # followed by '.workspace' such as '$(run-lulesh.workspace)'.
+          # NOTE: This step contains a special case. Because this step waits on
+          # all combinations of 'run-lulesh', $(run-lulesh.workspace) refers to
+          # the top level directory that contains each parameterized workspace.
+          # In this case, it points to './sample_output/lulesh/run-lulesh'.
+          cmd: |
+            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
+            echo $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) > ls.log
+          # The 'post-process-lulesh' step is dependent on the completion of
+          # all parameterizations of 'run-lulesh' as represented by the '_*'.
+          # Because this step is not parameterized, it is a singular step that
+          # waits for all 'run-lulesh' steps to complete.
+          depends: [run-lulesh_*]
+
+    - name: post-process-lulesh-trials
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "TRIAL = $(TRIAL)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) > out.log
+          # 'post-process-lulesh-trials' like 'post-process-lulesh' is dependent
+          # on all parameterizations of 'run-lulesh'. In this case, because this
+          # step is parameterized based on $(TRIALS), there will be a version of
+          # 'post-process-lulesh-trials' for each unique value of $(TRIAL) that
+          # each will wait on all combinations of 'run-lulesh'.
+          depends: [run-lulesh_*]
+
+    - name: post-process-lulesh-size
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "SIZE = $(SIZE)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
+          # This step is more or less exactly the same as 'post-process-lulesh-trials'
+          # but it is parameterized on $(SIZE). This step is meant to illustrate
+          # that parameters can be reused for filtering or other useful things when
+          # dependent on parameterizations of other steps.
+          depends: [run-lulesh_*]
+
+      # NOTE: The 'depends' entry in a specification does not use parameterized
+      # names -- instead Maestro attempts to infer the expansion of the graph
+      # based on context via looking to see if a step uses parameters, workspaces,
+      # and if the step depends on other steps that are parameterized.
+      # NOTE: Second note -- this example lacks a type of step. It is possible
+      # to have a step that is expanded because its dependencies have been
+      # expanded. For example, if you wanted to run individual post processing
+      # after each 'run-lulesh' step, you might have a step called
+      # 'post-process-run' with a dependency specified as
+      # 'depends: [run-lulesh]'. This notation corresponds with the concept of
+      # "for each unique 'run-lulesh', there is a corresponding
+      # 'post-process-run'". So for example, the expanded
+      # 'run-lulesh_SIZE.10.ITER.10' would have a corresponding step named
+      # 'post-process-run_SIZE.10.ITER.10' when declaring that 'post-process-run'
+      # depends on 'run-lulesh' (which, to be clear, is different than depends
+      # on 'run-lulesh_*' which declares dependency on ALL combinations of
+      # 'run-lulesh').
+
+####################################
+# Parameter Block
+####################################
+# The parameter block contains all the things we'd like to vary in the study.
+# Currently, there are two modes of operating in the specification:
+# 1. If a parameter block is specified, the study is expanded and considered a
+#   parameterized study.
+# 2. If a parameter block is not specified, the study is treated as linear and
+#    the resulting study is not expanded.
+#
+# There are three keys per parameter:
+# 1. A list of values that the parameter takes.
+# 2. A label that represents a "pretty printed" version of the parameter. The
+#    parameter values is specfied by the '%%' moniker (for example, for SIZE --
+#    when SIZE is equal to 10, the label will be 'SIZE.10'). To access the label
+#    for SIZE, for example, the token '$(SIZE.label)' is used.
+#    Labels can take one of two forms: A single string with the '%%' marker or
+#    a list of per value labels (must be the same length as the list of values).
+#
+# NOTE: A specified parameter does not necessarily have to be used in every step
+# or at all. If a parameter is specified and not used, it simply will not be
+# factored into expansion or the naming of expanded steps or their workspaces.
+# NOTE: You can also specify custom generation of parameters using a Python
+# file containing the definition of a function as follows:
+#
+# 'def get_custom_generator():'
+#
+# The 'get_custom_generator' function is required to return a ParameterGenerator
+# instance populated with custom filled values. In order to use the file, simply
+# call Maestro using 'maestro run -p <path to py file> <specification path>'.
+# For an examples of custom parameter generation, see 'samples/parameterization'
+# in maestrowf repository.
+####################################
+global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
+        # The use of label below is an example of the per value label set up.
+        # This specification of a label WILL affect the naming of workspaces.
+        # label : [TRIAL_1, TRIAL_2, TRIAL_3, TRIAL_4, TRIAL_5, TRIAL_6, TRIAL_7, TRIAL_8, TRIAL_9]
+    SIZE:
+        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%
