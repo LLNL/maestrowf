@@ -733,10 +733,16 @@ class ExecutionGraph(DAG):
                     else:
                         logger.info("'%s' timed out, but cannot be restarted."
                                     " Marked as TIMEDOUT.", name)
+                        # Mark that the step ended due to TIMEOUT.
                         record.mark_end(State.TIMEDOUT)
+                        # Remove from in progress since it no longer is.
                         self.in_progress.remove(name)
+                        # Add the subtree to the clean up steps
                         cleanup_steps.update(self.bfs_subtree(name)[0])
+                        # Remove the current step, clean up is used to mark
+                        # steps definitively as failed.
                         cleanup_steps.remove(name)
+                        # Add the current step to failed.
                         self.failed_steps.add(name)
 
                 elif status == State.HWFAILURE:
