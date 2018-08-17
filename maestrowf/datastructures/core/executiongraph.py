@@ -1,5 +1,5 @@
 """Module for the execution of DAG workflows."""
-from collections import deque
+from collections import deque, OrderedDict
 from datetime import datetime
 from filelock import FileLock, Timeout
 import getpass
@@ -312,7 +312,7 @@ class ExecutionGraph(DAG):
         super(ExecutionGraph, self).__init__()
         # Member variables for execution.
         self._adapter = None
-        self._description = {}
+        self._description = OrderedDict()
 
         # Generate tempdir (if specfied)
         if use_tmp:
@@ -424,7 +424,7 @@ class ExecutionGraph(DAG):
 
         self._adapter = adapter
 
-    def add_description(self, name, description):
+    def add_description(self, name, description, **kwargs):
         """
         Add a study description to the ExecutionGraph instance.
 
@@ -433,6 +433,7 @@ class ExecutionGraph(DAG):
         """
         self._description["name"] = name
         self._description["description"] = description
+        self._description.update(kwargs)
 
     @classmethod
     def unpickle(cls, path):
@@ -504,6 +505,18 @@ class ExecutionGraph(DAG):
         :param value: A string of the description for the study.
         """
         self._description["description"] = value
+
+    def log_description(self):
+        """Log the description of the ExecutionGraph."""
+        desc = ["{}: {}".format(key, value)
+                for key, value in self._description.items()]
+        desc = "\n".join(desc)
+        logger.info(
+            "\n==================================================\n"
+            "%s\n"
+            "==================================================\n",
+            desc
+        )
 
     def generate_scripts(self):
         """
