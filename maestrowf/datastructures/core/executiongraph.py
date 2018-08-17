@@ -828,7 +828,13 @@ class ExecutionGraph(DAG):
         else:
             # Compute the number of available slots we have for execution.
             _available = self._submission_throttle - len(self.in_progress)
+            # Available slots should never be negative, but on the off chance
+            # we are in a slot deficit, then we will just say none are free.
             _available = max(0, _available)
+            # Now, we need to take the min of the length of the queue and the
+            # computed number of slots. We could have free slots, but have less
+            # in the queue.
+            _available = min(_available, len(self.ready_steps))
             logger.info("Found %d available slots...", _available)
 
         for i in range(0, _available):
