@@ -389,7 +389,7 @@ class Study(DAG):
             use_tmp
         )
 
-    def _stage_parameterized(self):
+    def _stage_parameterized(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
 
@@ -398,12 +398,6 @@ class Study(DAG):
             ExecutionGraph based on the parameters and parameterized workflow
             steps.
         """
-        # Construct ExecutionGraph
-        dag = ExecutionGraph(
-            submission_attempts=self._submission_attempts,
-            submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp)
-        dag.add_description(**self.description)
         # Items to store that should be reset.
         logger.info(
             "\n==================================================\n"
@@ -675,7 +669,7 @@ class Study(DAG):
 
         return dag
 
-    def _stage_linear(self):
+    def _stage_linear(self, dag):
         """
         Execute a linear workflow without parameters.
 
@@ -683,19 +677,6 @@ class Study(DAG):
         :returns: The path to the study's global workspace and an
             ExecutionGraph based on linear steps in the study.
         """
-        # Construct ExecutionGraph
-        dag = ExecutionGraph(
-            submission_attempts=self._submission_attempts,
-            submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp)
-        dag.add_description(**self.description)
-        # Items to store that should be reset.
-        logger.info("\n==================================================\n"
-                    "Constructing linear study '%s'\n"
-                    "==================================================\n",
-                    self.name
-                    )
-
         # For each step in the Study
         # Walk the study and add the steps to the ExecutionGraph.
         t_sorted = self.topological_sort()
@@ -798,11 +779,19 @@ class Study(DAG):
         # will need to be formatted properly so that scripts get generated in
         # the appropriate fashion.
 
+        # Construct ExecutionGraph
+        dag = ExecutionGraph(
+            submission_attempts=self._submission_attempts,
+            submission_throttle=self._submission_throttle,
+            use_tmp=self._use_tmp)
+        dag.add_description(**self.description)
+        dag.log_description()
+
         # We have two cases:
         # 1. Parameterized workflows
         # 2. A linear, execute as specified workflow
         # NOTE: This scheme could be how we handle derived use cases.
         if self.parameters:
-            return self._out_path, self._stage_parameterized()
+            return self._out_path, self._stage_parameterized(dag)
         else:
-            return self._out_path, self._stage_linear()
+            return self._out_path, self._stage_linear(dag)
