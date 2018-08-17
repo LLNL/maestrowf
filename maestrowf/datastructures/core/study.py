@@ -426,11 +426,7 @@ class Study(DAG):
             use_tmp, hash_ws
         )
 
-<<<<<<< HEAD
     def _stage(self, dag):
-=======
-    def _stage_parameterized(self, dag):
->>>>>>> fceeffa... More flexible ExecutionGraph description API and logging of description. (#137)
         """
         Set up the ExecutionGraph of a parameterized study.
 
@@ -836,15 +832,4 @@ class Study(DAG):
         dag.add_description(**self.description)
         dag.log_description()
 
-<<<<<<< HEAD
         return self._out_path, self._stage(dag)
-=======
-        # We have two cases:
-        # 1. Parameterized workflows
-        # 2. A linear, execute as specified workflow
-        # NOTE: This scheme could be how we handle derived use cases.
-        if self.parameters:
-            return self._out_path, self._stage_parameterized(dag)
-        else:
-            return self._out_path, self._stage_linear(dag)
->>>>>>> fceeffa... More flexible ExecutionGraph description API and logging of description. (#137)
