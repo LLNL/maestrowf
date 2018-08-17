@@ -140,7 +140,7 @@ class _StepRecord(object):
             self._submit_time = datetime.now()
         else:
             logger.warning(
-                "Cannot set the submission time of '%s' because it has"
+                "Cannot set the submission time of '%s' because it has "
                 "already been set.", self.name
             )
 
@@ -753,7 +753,7 @@ class ExecutionGraph(DAG):
                                    "resubmit step '%s'.", name)
                     # We can just let the logic below handle submission with
                     # everything else.
-                    self.ready_steps.append(record)
+                    self.ready_steps.append(name)
 
                 elif status == State.FAILED:
                     logger.warning(
@@ -798,23 +798,23 @@ class ExecutionGraph(DAG):
 
                 logger.debug(
                     "Unfulfilled dependencies: %s",
-                    self._dependencies[record.name])
+                    self._dependencies[key])
 
                 s_completed = filter(
                     lambda x: x in self.completed_steps,
-                    self._dependencies[record.name])
-                self._dependencies[record.name] = \
-                    self._dependencies[record.name] - set(s_completed)
+                    self._dependencies[key])
+                self._dependencies[key] = \
+                    self._dependencies[key] - set(s_completed)
                 logger.debug(
                     "Completed dependencies: %s\n"
                     "Remaining dependencies: %s",
-                    s_completed, self._dependencies[record.name])
+                    s_completed, self._dependencies[key])
 
                 # If the gating dependencies set is empty, we can execute.
-                if not self._dependencies[record.name]:
+                if not self._dependencies[key]:
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
-                        self.ready_steps.append(record)
+                        self.ready_steps.append(key)
                     else:
                         logger.debug("Already staged. Passing.")
                         continue
@@ -833,7 +833,7 @@ class ExecutionGraph(DAG):
 
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.ready_steps.popleft()
+            _record = self.values[self.ready_steps.popleft()]
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
