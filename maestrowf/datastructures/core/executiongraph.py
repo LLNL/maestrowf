@@ -89,6 +89,7 @@ class _StepRecord(object):
                     self.script, self.restart_script, self.to_be_scheduled)
 
     def execute(self, adapter):
+        self.mark_submitted()
         retcode, jobid = self._execute(adapter, self.script)
 
         if retcode == SubmissionCode.OK:
@@ -567,7 +568,6 @@ class ExecutionGraph(DAG):
                 # Generate the script for execution on the fly.
                 record.setup_workspace()    # Generate the workspace.
                 record.generate_script(adapter, self._tmp_dir)
-                record.mark_submitted()
                 retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
