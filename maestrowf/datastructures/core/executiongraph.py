@@ -104,6 +104,18 @@ class _StepRecord(object):
 
         return retcode
 
+    @property
+    def can_restart(self):
+        """
+        Get whether or not the record can be restarted.
+
+        :returns: True if the record has a restart command assigned to it.
+        """
+        if self.restart_script:
+            return True
+
+        return False
+
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
             retcode, jobid = adapter.submit(
@@ -701,21 +713,37 @@ class ExecutionGraph(DAG):
                     # Execute the restart script.
                     # If a restart script doesn't exist, re-run the command.
                     # If we're under the restart limit, attempt a restart.
-                    if record.mark_restart():
-                        logger.info(
-                            "Step '%s' timed out. Restarting (%s of %s).",
-                            name, record.restarts, record.restart_limit
-                        )
-                        self._execute_record(record, adapter, restart=True)
+                    if record.can_restart:
+                        if record.mark_restart():
+                            logger.info(
+                                "Step '%s' timed out. Restarting (%s of %s).",
+                                name, record.restarts, record.restart_limit
+                            )
+                            self._execute_record(record, adapter, restart=True)
+                        else:
+                            logger.info("'%s' has been restarted %s of %s "
+                                        "times. Marking step and all "
+                                        "descendents as failed.",
+                                        name,
+                                        record.restarts,
+                                        record.restart_limit)
+                            self.in_progress.remove(name)
+                            cleanup_steps.update(self.bfs_subtree(name)[0])
+                    # Otherwise, we can't restart so mark the step timed out.
                     else:
-                        logger.info("'%s' has been restarted %s of %s times. "
-                                    "Marking step and all descendents as "
-                                    "failed.",
-                                    name,
-                                    record.restarts,
-                                    record.restart_limit)
+                        logger.info("'%s' timed out, but cannot be restarted."
+                                    " Marked as TIMEDOUT.", name)
+                        # Mark that the step ended due to TIMEOUT.
+                        record.mark_end(State.TIMEDOUT)
+                        # Remove from in progress since it no longer is.
                         self.in_progress.remove(name)
+                        # Add the subtree to the clean up steps
                         cleanup_steps.update(self.bfs_subtree(name)[0])
+                        # Remove the current step, clean up is used to mark
+                        # steps definitively as failed.
+                        cleanup_steps.remove(name)
+                        # Add the current step to failed.
+                        self.failed_steps.add(name)
 
                 elif status == State.HWFAILURE:
                     # TODO: Need to make sure that we do this a finite number
