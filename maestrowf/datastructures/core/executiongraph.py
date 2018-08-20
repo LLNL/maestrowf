@@ -89,6 +89,7 @@ class _StepRecord(object):
                     self.script, self.restart_script, self.to_be_scheduled)
 
     def execute(self, adapter):
+        self.mark_submitted()
         retcode, jobid = self._execute(adapter, self.script)
 
         if retcode == SubmissionCode.OK:
@@ -139,7 +140,7 @@ class _StepRecord(object):
             self._submit_time = datetime.now()
         else:
             logger.warning(
-                "Cannot set the submission time of '%s' because it has"
+                "Cannot set the submission time of '%s' because it has "
                 "already been set.", self.name
             )
 
@@ -580,7 +581,6 @@ class ExecutionGraph(DAG):
                 # Generate the script for execution on the fly.
                 record.setup_workspace()    # Generate the workspace.
                 record.generate_script(adapter, self._tmp_dir)
-                record.mark_submitted()
                 retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
@@ -766,7 +766,7 @@ class ExecutionGraph(DAG):
                                    "resubmit step '%s'.", name)
                     # We can just let the logic below handle submission with
                     # everything else.
-                    self.ready_steps.append(record)
+                    self.ready_steps.append(name)
 
                 elif status == State.FAILED:
                     logger.warning(
@@ -811,23 +811,23 @@ class ExecutionGraph(DAG):
 
                 logger.debug(
                     "Unfulfilled dependencies: %s",
-                    self._dependencies[record.name])
+                    self._dependencies[key])
 
                 s_completed = filter(
                     lambda x: x in self.completed_steps,
-                    self._dependencies[record.name])
-                self._dependencies[record.name] = \
-                    self._dependencies[record.name] - set(s_completed)
+                    self._dependencies[key])
+                self._dependencies[key] = \
+                    self._dependencies[key] - set(s_completed)
                 logger.debug(
                     "Completed dependencies: %s\n"
                     "Remaining dependencies: %s",
-                    s_completed, self._dependencies[record.name])
+                    s_completed, self._dependencies[key])
 
                 # If the gating dependencies set is empty, we can execute.
-                if not self._dependencies[record.name]:
+                if not self._dependencies[key]:
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
-                        self.ready_steps.append(record)
+                        self.ready_steps.append(key)
                     else:
                         logger.debug("Already staged. Passing.")
                         continue
@@ -841,12 +841,18 @@ class ExecutionGraph(DAG):
         else:
             # Compute the number of available slots we have for execution.
             _available = self._submission_throttle - len(self.in_progress)
+            # Available slots should never be negative, but on the off chance
+            # we are in a slot deficit, then we will just say none are free.
             _available = max(0, _available)
+            # Now, we need to take the min of the length of the queue and the
+            # computed number of slots. We could have free slots, but have less
+            # in the queue.
+            _available = min(_available, len(self.ready_steps))
             logger.info("Found %d available slots...", _available)
 
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.ready_steps.popleft()
+            _record = self.values[self.ready_steps.popleft()]
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
