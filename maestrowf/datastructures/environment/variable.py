@@ -95,7 +95,8 @@ class Variable(Substitution):
 
         :returns: True if Variable is valid, False otherwise.
         """
-        return bool(self.name) and bool(self.value)
+        _valid = bool(self.name) and self.value is not None
+        return _valid
 
     def __str__(self):
         """

@@ -10,6 +10,11 @@ Welcome to Maestro Workflow Conductor Documentation
    :maxdepth: 4
    :caption: Contents:
 
+   getting_started
+   quick_start
+   lulesh_breakdown
+   maestro_core
+
    modules
 
 Indices and tables
