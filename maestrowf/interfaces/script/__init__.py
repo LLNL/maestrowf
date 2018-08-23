@@ -34,3 +34,7 @@ from maestrowf.interfaces.script.fluxscriptadapter import \
 __all__ = (
     "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter"
 )
+
+class ParallelGenerator(object):
+    """Utility class for generating parallel commands."""
+    _recipedir = abspath(join(dirname(__file__), "recipes"))
