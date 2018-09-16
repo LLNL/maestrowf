@@ -202,8 +202,12 @@ def ping_url(url):
     try:
         response = urlopen(url)
     except HTTPError as e:
+        LOGGER.error("Error fulfilling HTTP request. (%s)", e.code)
         raise e
     except URLError as e:
+        LOGGER.error(
+            "Check specified URL (%s) and that you are connected to the "
+            "internet. (%s)", url, e.code)
         raise e
     else:
         response.read()
