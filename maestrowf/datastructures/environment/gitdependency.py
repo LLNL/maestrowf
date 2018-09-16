@@ -147,19 +147,23 @@ class GitDependency(Dependency):
                 self.url = substitution.substitute(self.url)
 
         path = os.path.join(self.path, self.name)
+
+        # Moved the path existence here because git doesn't actually return a
+        # specific enough error code.
+        if os.path.exists(path):
+            msg = "Destination path '{}' already exists and is not an " \
+                  "empty directory. (Error code: 128)".format(path)
+            logger.error(msg)
+            raise Exception(msg)
+
         logger.info("Cloning %s from %s...", self.name, self.url)
         clone = start_process(["git", "clone", self.url, path], shell=False)
         retcode = clone.wait()
         if retcode != 0:
-            if retcode == 128:
-                msg = "Destination path '{}' already exists and is not an " \
-                      "empty directory. (Error code: 128)".format(path)
-            else:
-                msg = "Failed to acquire GitDependency named '{}'. Check " \
-                  "that repository URL ({}) and repository local path ({}) " \
-                  "are valid. (Error code: {})".format(self.name, self.url,
-                                                       path, retcode)
-
+            msg = "Failed to acquire GitDependency named '{}'. Check " \
+              "that repository URL ({}) and repository local path ({}) " \
+              "are valid. (Error code: {})".format(self.name, self.url,
+                                                   path, retcode)
             logger.error(msg)
             raise Exception(msg)
 
