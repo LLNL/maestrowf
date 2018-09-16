@@ -33,6 +33,7 @@ from collections import OrderedDict
 import logging
 import os
 import string
+from subprocess import PIPE, Popen
 import time
 
 LOGGER = logging.getLogger(__name__)
@@ -153,3 +154,9 @@ def make_safe_path(*args):
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
     return os.path.join(*args)
+
+
+def start_process(cmd, cwd=None, env=None, shell=True):
+    return Popen(cmd,
+                 shell=shell, stdout=PIPE, stderr=PIPE,
+                 universal_newlines=False)
