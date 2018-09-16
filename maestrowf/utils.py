@@ -157,6 +157,14 @@ def make_safe_path(*args):
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):
+    """
+    Starts a new process using a specified command.
+
+    :param cmd: A string or a list representing the command to be run.
+    :param cwd: Current working path that the process will be started in.
+    :param env: A dictionary containing the environment the process will use.
+    :param shell: Boolean that determines if the process will run a shell.
+    """
     return Popen(cmd,
                  shell=shell, stdout=PIPE, stderr=PIPE,
                  universal_newlines=False)
