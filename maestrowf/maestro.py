@@ -34,7 +34,6 @@ import inspect
 import logging
 import os
 import shutil
-from subprocess import Popen, PIPE
 import six
 import sys
 import tabulate
@@ -44,7 +43,8 @@ from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
+from maestrowf.utils import \
+    create_parentdir, csvtable_to_dict, make_safe_path, start_process
 
 
 # Program Globals
@@ -266,7 +266,7 @@ def run_study(args):
                    "&>", "{}.txt".format(os.path.join(
                     study.output_path, exec_dag.name))]
             LOGGER.debug(" ".join(cmd))
-            Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
+            start_process(cmd)
 
     return 0
 

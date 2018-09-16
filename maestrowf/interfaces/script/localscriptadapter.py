@@ -30,11 +30,11 @@
 """Local interface implementation."""
 import logging
 import os
-from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
+from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
 
@@ -135,8 +135,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Script to execute: %s", path)
-        p = Popen(path, shell=False, stdout=PIPE, stderr=PIPE, cwd=cwd,
-                  env=env)
+        p = start_process(path, cwd=cwd, env=env)
         pid = p.pid
         output, err = p.communicate()
         retcode = p.wait()
