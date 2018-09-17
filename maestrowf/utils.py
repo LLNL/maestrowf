@@ -167,4 +167,4 @@ def start_process(cmd, cwd=None, env=None, shell=True):
     """
     return Popen(cmd,
                  shell=shell, stdout=PIPE, stderr=PIPE,
-                 universal_newlines=False)
+                 universal_newlines=True)
