@@ -165,6 +165,9 @@ def start_process(cmd, cwd=None, env=None, shell=True):
     :param env: A dictionary containing the environment the process will use.
     :param shell: Boolean that determines if the process will run a shell.
     """
+    if isinstance(cmd, list):
+        shell = False
+
     return Popen(cmd,
                  shell=shell, stdout=PIPE, stderr=PIPE,
                  universal_newlines=True)
