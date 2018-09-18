@@ -135,7 +135,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Script to execute: %s", path)
-        p = start_process(path, cwd=cwd, env=env)
+        p = start_process(path, shell=False, cwd=cwd, env=env)
         pid = p.pid
         output, err = p.communicate()
         retcode = p.wait()

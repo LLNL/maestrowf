@@ -168,6 +168,13 @@ def start_process(cmd, cwd=None, env=None, shell=True):
     if isinstance(cmd, list):
         shell = False
 
+    kwargs_to_Popen = {"shell": shell}
+    if cwd is not None:
+        kwargs_to_Popen["cwd"] = cwd
+    if env is not None:
+        kwargs_to_Popen["env"] = env
+        
     return Popen(cmd,
-                 shell=shell, stdout=PIPE, stderr=PIPE,
-                 universal_newlines=True)
+                 stdout=PIPE, stderr=PIPE,
+                 universal_newlines=True,
+                 **kwargs_to_Popen)
