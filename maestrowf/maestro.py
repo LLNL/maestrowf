@@ -266,7 +266,7 @@ def run_study(args):
                    "&>", "{}.txt".format(os.path.join(
                     study.output_path, exec_dag.name))]
             LOGGER.debug(" ".join(cmd))
-            start_process(cmd)
+            start_process(" ".join(cmd))
 
     return 0
 
