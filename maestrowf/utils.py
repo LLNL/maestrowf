@@ -168,6 +168,21 @@ def start_process(cmd, cwd=None, env=None, shell=True):
     if isinstance(cmd, list):
         shell = False
 
-    return Popen(cmd,
-                 shell=shell, stdout=PIPE, stderr=PIPE,
-                 universal_newlines=True)
+    # Define kwargs for the upcoming Popen call.
+    kwargs = {
+        "shell":                shell,
+        "universal_newlines":   True,
+        "stdout":               PIPE,
+        "stderr":               PIPE,
+    }
+
+    # Individually check if cwd and env are set -- this prevents us from
+    # adding parameters to the command that are only set to defaults. It
+    # also insulates us from potential default value changes in the future.
+    if cwd is not None:
+        kwargs["cwd"] = cwd
+
+    if env is not None:
+        kwargs["env"] = env
+
+    return Popen(cmd, **kwargs)
