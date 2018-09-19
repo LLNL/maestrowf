@@ -161,8 +161,8 @@ class GitDependency(Dependency):
         retcode = p.wait()
         if retcode != 0:
             msg = "Connectivity check failed. Check that you have " \
-                "permissions to the specified repository and that you have" \
-                " network connectivity."
+                "permissions to the specified repository, that the URL is " \
+                "correct, and that you have network connectivity."
             logger.error(msg)
             raise RuntimeError(msg)
         logger.info("Connectivity achieved!")
