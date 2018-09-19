@@ -32,9 +32,9 @@
 import logging
 import os
 import re
-import subprocess
 
 from maestrowf.abstracts import Dependency
+from maestrowf.utils import start_process
 
 logger = logging.getLogger(__name__)
 
@@ -148,8 +148,7 @@ class GitDependency(Dependency):
 
         path = os.path.join(self.path, self.name)
         logger.info("Cloning %s from %s...", self.name, self.url)
-        clone = subprocess.Popen(["git", "clone", self.url, path],
-                                 stdout=subprocess.PIPE)
+        clone = start_process(["git", "clone", self.url, path], shell=False)
         retcode = clone.wait()
         if retcode != 0:
             if retcode == 128:
@@ -166,7 +165,8 @@ class GitDependency(Dependency):
 
         if self.hash:
             logger.info("Checking out SHA1 hash '{}'...", self.hash)
-            chkout = subprocess.Popen(["git", "checkout", self.hash], cwd=path)
+            chkout = start_process(["git", "checkout", self.hash],
+                                   cwd=path, shell=False)
             retcode = chkout.wait()
 
             if retcode != 0:
@@ -179,7 +179,8 @@ class GitDependency(Dependency):
         if self.tag:
             logger.info("Checking out git tag '{}'...", self.tag)
             tag = "tags/{}".format(self.tag)
-            chkout = subprocess.Popen(["git", "checkout", tag], cwd=path)
+            chkout = start_process(["git", "checkout", tag],
+                                   cwd=path, shell=False)
 
             retcode = chkout.wait()
 
@@ -191,8 +192,8 @@ class GitDependency(Dependency):
 
         if self.branch:
             logger.info("Checking out git branch '{}'...", self.branch)
-            chkout = subprocess.Popen(["git", "checkout", self.branch],
-                                      cwd=path)
+            chkout = start_process(["git", "checkout", self.branch],
+                                   cwd=path, shell=False)
 
             retcode = chkout.wait()
 

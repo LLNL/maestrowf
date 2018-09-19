@@ -32,11 +32,11 @@ import getpass
 import logging
 import os
 import re
-from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
+from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
+        p = start_process(cmd, cwd=cwd, env=env)
         output, err = p.communicate()
         retcode = p.wait()
 
@@ -213,7 +213,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
         cmd = "squeue -u $USER -t all"
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
 
@@ -275,7 +275,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cmd = "scancel --quiet {}".format(" ".join(joblist))
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
 
