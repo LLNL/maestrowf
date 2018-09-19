@@ -33,12 +33,9 @@ from collections import OrderedDict
 import logging
 import os
 import string
-<<<<<<< HEAD
 from subprocess import PIPE, Popen
-=======
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
->>>>>>> Addition of a ping method.
 import time
 
 LOGGER = logging.getLogger(__name__)
