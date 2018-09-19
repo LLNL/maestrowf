@@ -156,6 +156,17 @@ class GitDependency(Dependency):
             logger.error(msg)
             raise Exception(msg)
 
+        logger.info("Checking for connectivity to %s", self.url)
+        p = start_process(["git", "ls-remote", self.url], shell=False)
+        retcode = p.wait()
+        if retcode != 0:
+            msg = "Connectivity check failed. Check that you have " \
+                "permissions to the specified repository and that you have" \
+                " network connectivity."
+            logger.error(msg)
+            raise RuntimeError(msg)
+        logger.info("Connectivity achieved!")
+
         logger.info("Cloning %s from %s...", self.name, self.url)
         clone = start_process(["git", "clone", self.url, path], shell=False)
         retcode = clone.wait()
