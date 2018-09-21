@@ -216,7 +216,7 @@ def run_study(args):
     study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
     # Stage the study.
     path, exec_dag = study.stage()
@@ -319,6 +319,9 @@ def setup_argparser():
     run.add_argument("-fg", action="store_true", default=False,
                      help="Runs the backend conductor in the foreground "
                      "instead of using nohup. [Default: %(default)s]")
+    run.add_argument("--hashws", action="store_true", default=False,
+                     help="Enable hashing of subdirectories in parameterized "
+                     "studies. [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
