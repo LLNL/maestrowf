@@ -34,6 +34,8 @@ import logging
 import os
 import string
 from subprocess import PIPE, Popen
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.error import HTTPError, URLError
 import time
 
 LOGGER = logging.getLogger(__name__)
@@ -186,3 +188,24 @@ def start_process(cmd, cwd=None, env=None, shell=True):
         kwargs["env"] = env
 
     return Popen(cmd, **kwargs)
+
+
+def ping_url(url):
+    """
+    Load a webpage to test that it is accessible.
+
+    :param url: URL string to be loaded.
+    """
+    try:
+        response = urlopen(url)
+    except HTTPError as e:
+        LOGGER.error("Error fulfilling HTTP request. (%s)", e.code)
+        raise e
+    except URLError as e:
+        LOGGER.error(
+            "Check specified URL (%s) and that you are connected to the "
+            "internet. (%s)", url, e.code)
+        raise e
+    else:
+        response.read()
+        return
