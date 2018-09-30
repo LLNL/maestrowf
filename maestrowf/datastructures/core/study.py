@@ -29,6 +29,7 @@
 
 """Class related to the construction of study campaigns."""
 import copy
+from hashlib import md5
 import logging
 import os
 import pickle
@@ -355,7 +356,7 @@ class Study(DAG):
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False):
+                        throttle=0, use_tmp=False, hash_ws=False):
         """
         Perform initial configuration of a study.
 
@@ -376,6 +377,7 @@ class Study(DAG):
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
         self._use_tmp = use_tmp
+        self._hash_ws = hash_ws
 
         logger.info(
             "\n------------------------------------------\n"
@@ -384,9 +386,10 @@ class Study(DAG):
             "Submission restart limit =  %d\n"
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
+            "Hash workspaces =           %s\n"
             "------------------------------------------",
             self._out_path, submission_attempts, restart_limit, throttle,
-            use_tmp
+            use_tmp, hash_ws
         )
 
     def _stage_parameterized(self, dag):
@@ -579,9 +582,13 @@ class Study(DAG):
                                 str(combo))
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(self.used_params[step])
-                    workspace = \
-                        make_safe_path(self._out_path, step, combo_str)
-                    logger.debug("Workspace: %s", workspace)
+                    if self._hash_ws:
+                        workspace = make_safe_path(
+                            self._out_path, step, md5(combo_str).hexdigest())
+                    else:
+                        workspace = \
+                            make_safe_path(self._out_path, step, combo_str)
+                        logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
