@@ -84,11 +84,13 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: These libraries are compiled at runtime when an allocation
         # is spun up.
         self.flux = __import__("flux")
-        self.kvs = __import__("flux.kvs")
+        self.kvs = __import__("flux.kvs", globals(), locals(), ["kvs"])
 
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self._mpi_exe = kwargs.pop("mpi")
+        self._addl_args = kwargs.pop("args", [])
 
         self._exec = "#!/bin/bash"
         # Header is only for informational purposes.
@@ -162,10 +164,11 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "-u", "PMI_FD",
             "-u", "PMI_RANK",
             "-u", "PMI_SIZE",
-            "mpirun",
-            "-gpu",
-            "-mca", "plm", "rsh",
-            "--map-by", "node"]
+            self._mpi_exe]
+
+        for item in self._addl_args:
+            args.append(item)
+
         args.extend(["-hostfile", "$HOSTF"])
         args.extend([
             "-n",
@@ -241,6 +244,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             #     },
             #   },
         }
+        LOGGER.debug("Submission Spec -- \n%s", jobspec)
         if step.run["nodes"] > 1:
             jobspec["cmdline"] = ["flux", "broker", path]
         else:
@@ -259,7 +263,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.warning("Job creation failed")
             return SubmissionCode.ERROR, -1
 
-        LOGGER.info("Submission returned status OK.")
+        LOGGER.info("Submission returned status OK. -- "
+                    "Assigned identifier (%s)", resp["jobid"])
         return SubmissionCode.OK, resp["jobid"]
 
     def check_jobs(self, joblist):
@@ -273,15 +278,23 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return code of the status query, and a dictionary of job
         identifiers to their status.
         """
+        LOGGER.debug("Joblist type -- %s", type(joblist))
+        LOGGER.debug("Joblist contents -- %s", joblist)
         if not joblist:
+            LOGGER.debug("Empty job list specified.")
             return JobStatusCode.OK, {}
         if not isinstance(joblist, list):
+            LOGGER.debug("Specified parameter is not a list.")
             if isinstance(joblist, int):
+                LOGGER.debug("Integer found.")
                 joblist = [joblist]
             else:
+                LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
         if self.h is None:
+            LOGGER.debug("Class instance is None. Initializing a new Flux "
+                         "instance.")
             self.h = self.flux.Flux()
 
         resp = self.h.rpc_send("job.kvspath", json.dumps({"ids": joblist}))
@@ -305,6 +318,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     flux_status = self.kvs.get(self.h, path + ".exit_status")
                     # Use kvs to grab the max error code encountered.
                     rcode = flux_status["max"]
+                    LOGGER.debug("State 'complete' found. Exit code -- %s",
+                                 rcode)
                     # If retcode is not 0, not normal execution
                     if rcode != 0:
                         # If retcode is in the signaled set, we cancelled.
@@ -336,7 +351,13 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
                     "Error seen on path {} Unexpected behavior encountered."
                     .format(path)
                 )
+                # NOTE: I don't know if we should actually be returning here.
+                # It feels like we may not want to.
                 return JobStatusCode.ERROR, status
+            except EnvironmentError:
+                LOGGER.warning("Job ID (%s) not found in kvs. Setting state"
+                               "to UNKNOWN.", jobid)
+                status[jobid] = self._state("unknown")
 
         if not status:
             return JobStatusCode.NOJOBS, status
@@ -359,19 +380,22 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
             for job in joblist:
+                LOGGER.debug("Cancelling JobID = %s", job)
                 retcode = sp.call(
                     ["flux", "wreck", "cancel", str(job)],
                     stdout=FNULL, stderr=FNULL
                 )
 
                 if retcode != 0:
+                    LOGGER.debug("'flux wreck cancel' failed, trying kill.")
                     retcode = sp.call(
                         ["flux", "wreck", "kill", str(job)],
                         stdout=FNULL, stderr=FNULL
                     )
 
                 if retcode != 0:
-                    status = self.check_jobs([job])
+                    LOGGER.debug("'flux wreck kill' failed, checking status.")
+                    retcode, status = self.check_jobs([job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
 
@@ -391,16 +415,19 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         LOGGER.debug("Received FLUX State -- %s", flux_state)
         if flux_state == "running":
             return State.RUNNING
-        elif flux_state == "pending" or flux_state == "runrequest":
+        elif flux_state == "pending" or flux_state == "runrequest" \
+                or flux_state == "allocated" or flux_state == "starting":
             return State.PENDING
         elif flux_state == "submitted":
-            return State.PENDING
+            return State.WAITING
         elif flux_state == "failed":
             return State.FAILED
         elif flux_state == "cancelled" or flux_state == "killed":
             return State.CANCELLED
         elif flux_state == "complete":
             return State.FINISHED
+        elif flux_state == "unknown":
+            return State.UNKNOWN
         else:
             return State.UNKNOWN
 

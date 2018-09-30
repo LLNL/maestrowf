@@ -97,7 +97,7 @@ class YAMLSpecification(Specification):
                 spec = yaml.load(data)
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.debug("Loaded specification -- \n%s", spec["description"])
@@ -149,7 +149,7 @@ class YAMLSpecification(Specification):
                     raise ValueError("Both 'name' and 'description' must be "
                                      "provided for a valid study description.")
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.info("Study description verified -- \n%s", self.description)
@@ -275,7 +275,7 @@ class YAMLSpecification(Specification):
             self._verify_steps()
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
     def _verify_steps(self):
@@ -310,7 +310,7 @@ class YAMLSpecification(Specification):
                                      "configuration for step named '{}'."
                                      .format(missing_attrs, step["name"]))
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.debug("Verified")
@@ -377,7 +377,7 @@ class YAMLSpecification(Specification):
                                          .format(name))
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
     @property

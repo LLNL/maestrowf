@@ -30,7 +30,7 @@
 """Package for providing enumerations for interfaces"""
 from enum import Enum
 
-__all__ = ("JobStatusCode", "State", "SubmissionCode")
+__all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
 
 
 class SubmissionCode(Enum):
@@ -65,3 +65,11 @@ class State(Enum):
     TIMEDOUT = 10
     UNKNOWN = 11
     CANCELLED = 12
+
+
+class StudyStatus(Enum):
+    """Workflow status enumeration"""
+    FINISHED = 0   # The Study has finished successfully, all steps ran
+    RUNNING = 1    # The Study is currently running
+    FAILURE = 2    # The Study has finished, but 1 or more steps failed
+    CANCELLED = 3  # The Study has finished, but was cancelled

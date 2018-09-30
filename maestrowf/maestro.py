@@ -34,7 +34,6 @@ import inspect
 import logging
 import os
 import shutil
-from subprocess import Popen, PIPE
 import six
 import sys
 import tabulate
@@ -44,7 +43,8 @@ from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
+from maestrowf.utils import \
+    create_parentdir, csvtable_to_dict, make_safe_path, start_process
 
 
 # Program Globals
@@ -88,12 +88,47 @@ def cancel_study(args):
     return 0
 
 
+def load_parameter_generator(path):
+    """
+    Import and load custom parameter Python files.
+
+    :param path: Path to a Python file containing the function
+    'get_custom_generator()'
+    :returns: A populated ParameterGenerator instance.
+    """
+    path = os.path.abspath(path)
+    LOGGER.info("Loading custom parameter generator from '%s'", path)
+    try:
+        # Python 3.5
+        import importlib.util
+        LOGGER.debug("Using Python 3.5 importlib...")
+        spec = importlib.util.spec_from_file_location("custom_gen", path)
+        f = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(f)
+        return f.get_custom_generator()
+    except ImportError:
+        try:
+            # Python 3.3
+            from importlib.machinery import SourceFileLoader
+            LOGGER.debug("Using Python 3.4 SourceFileLoader...")
+            f = SourceFileLoader("custom_gen", path).load_module()
+            return f.get_custom_generator()
+        except ImportError:
+            # Python 2
+            import imp
+            LOGGER.debug("Using Python 2 imp library...")
+            f = imp.load_source("custom_gen", path)
+            return f.get_custom_generator()
+    except Exception as e:
+        LOGGER.exception(str(e))
+        raise e
+
+
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
     spec = YAMLSpecification.load_specification(args.specification)
     environment = spec.get_study_environment()
-    parameters = spec.get_parameters()
     steps = spec.get_study_steps()
 
     # Set up the output directory.
@@ -136,7 +171,15 @@ def run_study(args):
     environment.add(Variable("OUTPUT_PATH", output_path))
 
     # Now that we know outpath, set up logging.
-    setup_logging(args, output_path, spec.name)
+    setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
+
+    # Handle loading a custom ParameterGenerator if specified.
+    if args.pgen:
+        # Copy the Python file used to generate parameters.
+        shutil.copy(args.pgen, output_path)
+        parameters = load_parameter_generator(args.pgen)
+    else:
+        parameters = spec.get_parameters()
 
     # Addition of the $(SPECROOT) to the environment.
     spec_root = os.path.split(args.specification)[0]
@@ -168,15 +211,17 @@ def run_study(args):
         LOGGER.error(_msg)
         raise ArgumentError(_msg)
 
-    study.setup(
-        throttle=args.throttle,
-        submission_attempts=args.attempts,
-        restart_limit=args.rlimit,
-        use_tmp=args.usetmp
-    )
+    # Set up the study workspace and configure it for execution.
+    study.setup_workspace()
+    study.setup_environment()
+    study.configure_study(
+        throttle=args.throttle, submission_attempts=args.attempts,
+        restart_limit=args.rlimit, use_tmp=args.usetmp)
 
     # Stage the study.
     path, exec_dag = study.stage()
+    # Write metadata
+    study.store_metadata()
 
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
@@ -191,7 +236,8 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    pkl_path = os.path.join(path, "{}.pkl".format(study.name))
+    pkl_path = os.path.join(path, "{}.pkl".format(
+        study.name.replace(" ", "_").lower()))
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
@@ -207,7 +253,10 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             cancel_path = os.path.join(path, ".cancel.lock")
-            monitor_study(exec_dag, pkl_path, cancel_path, args.sleeptime)
+            # capture the StudyStatus enum to return
+            completion_status = monitor_study(exec_dag, pkl_path,
+                                              cancel_path, args.sleeptime)
+            return completion_status.value
         else:
             # Launch manager with nohup
             cmd = ["nohup", "conductor",
@@ -217,7 +266,7 @@ def run_study(args):
                    "&>", "{}.txt".format(os.path.join(
                     study.output_path, exec_dag.name))]
             LOGGER.debug(" ".join(cmd))
-            Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
+            start_process(" ".join(cmd))
 
     return 0
 
@@ -260,6 +309,10 @@ def setup_argparser():
     run.add_argument("-d", "--dryrun", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("-p", "--pgen", type=str,
+                     help="Path to a Python code file containing a function "
+                     "that returns a custom filled ParameterGenerator"
+                     "instance.")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
