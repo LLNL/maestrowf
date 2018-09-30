@@ -321,7 +321,8 @@ def setup_argparser():
                      "instead of using nohup. [Default: %(default)s]")
     run.add_argument("--hashws", action="store_true", default=False,
                      help="Enable hashing of subdirectories in parameterized "
-                     "studies. [Default: %(default)s]")
+                     "studies (NOTE: breaks commands that use parameter labels"
+                     " to search directories). [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
