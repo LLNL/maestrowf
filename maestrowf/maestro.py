@@ -235,9 +235,12 @@ def run_study(args):
     study.setup_workspace()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
-    study.setup_environment()
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+
+    # Stage the study.
+    path, exec_dag = study.stage()
+    # Write metadata
+    study.store_metadata()
 
     if args.dry:
         # If performing a dry run, drive sleep time down to generate scripts.

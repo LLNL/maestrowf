@@ -392,8 +392,7 @@ class Study(DAG, PickleInterface):
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False):
+                        throttle=0, use_tmp=False, hash_ws=False):
         """
         Perform initial configuration of a study. \
 
@@ -418,7 +417,6 @@ class Study(DAG, PickleInterface):
         self._submission_throttle = throttle
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
-        self._dry_run = dry_run
 
         LOGGER.info(
             "\n------------------------------------------\n"
@@ -427,11 +425,9 @@ class Study(DAG, PickleInterface):
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
-            "Dry run enabled =           %s\n"
-            "Output path =               %s\n"
             "------------------------------------------",
-            submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, self._out_path
+            self._out_path, submission_attempts, restart_limit, throttle,
+            use_tmp, hash_ws
         )
 
         self.is_configured = True
@@ -630,12 +626,11 @@ class Study(DAG, PickleInterface):
                     combo_str = combo.get_param_string(self.used_params[step])
                     if self._hash_ws:
                         workspace = make_safe_path(
-                                        self._out_path,
-                                        *[step, md5(combo_str).hexdigest()])
+                            self._out_path, step, md5(combo_str).hexdigest())
                     else:
                         workspace = \
-                            make_safe_path(self._out_path, *[step, combo_str])
-                        LOGGER.debug("Workspace: %s", workspace)
+                            make_safe_path(self._out_path, step, combo_str)
+                        logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
