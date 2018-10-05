@@ -2,32 +2,16 @@ from os import path
 from maestrowf import __version__
 from setuptools import setup, find_packages
 
-
-def load_readme():
-    """
-    Load the readme from the root of the package directory.
-
-    :returns: A string containing the contents of README.md.
-    """
-    pkg_path = path.abspath(path.dirname(__file__))
-    with open(path.join(pkg_path, 'README.md')) as f:
-        long_description = f.read()
-
-    return long_description
-
-
-setup(
-    name='maestrowf',
-    description='A tool to easily orchestrate general computational workflows '
-    'both locally and on supercomputers.',
-    version=__version__,
-    author='Francesco Di Natale',
-    maintainer='Francesco Di Natale',
-    author_email='dinatale3@llnl.gov',
-    url='https://github.com/llnl/maestrowf',
-    license='MIT License',
-    packages=find_packages(),
-    entry_points={
+setup(name='maestrowf',
+      description='A tool and library for specifying and conducting general '
+      'workflows.',
+      version='1.1.4dev',
+      author='Francesco Di Natale',
+      author_email='dinatale3@llnl.gov',
+      url='https://github.com/llnl/maestrowf',
+      license='MIT License',
+      packages=find_packages(),
+      entry_points={
         'console_scripts': [
                 'maestro = maestrowf.maestro:main',
                 'conductor = maestrowf.conductor:main',
