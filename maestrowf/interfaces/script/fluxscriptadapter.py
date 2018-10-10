@@ -600,7 +600,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             # NOTE: interface doesn"t allow multiple here yet
             "ntasks":   step.run["nodes"],
             "ncores":   cores_per_task * step.run["procs"],
-            "gpus":     step.run.get("gpus", 0),
+            "ngpus":     step.run.get("gpus", 0),
             "environ":  get_environment(),          # TODO: revisit
             "options":  {"stdio-delay-commit": 1},
             "opts": {
