@@ -567,11 +567,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
         and procs.
         """
-        args = ["flux", "wreckrun", "-n", procs]
+        args = ["flux", "wreckrun", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         args.append("-N")
-        args.append(nodes)
+        args.append(str(nodes))
 
         # flux has additional arguments that can be passed via the '-o' flag.
         if self._addl_args:
