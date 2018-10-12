@@ -33,8 +33,16 @@ import pkgutil
 import inspect
 from maestrowf.abstracts.interfaces import ScriptAdapter
 
+from maestrowf.interfaces.script import \
+    FluxScriptAdapter, \
+    LocalScriptAdapter, \
+    SlurmScriptAdapter, \
+    SpectrumFluxScriptAdapter
 
-__all__ = ("ScriptAdapterFactory",)
+__all__ = (
+    "FluxScriptAdapter", "LocalScriptAdapter", "SlurmScriptAdapter",
+    "SpectrumFluxScriptAdapter", "ScriptAdapterFactory"
+)
 LOGGER = logging.getLogger(__name__)
 
 
@@ -67,7 +75,10 @@ def iter_adapters():
 
 class ScriptAdapterFactory(object):
     factories = {
-       adapter.key: adapter for adapter in iter_adapters()
+        "slurm":            SlurmScriptAdapter,
+        "local":            LocalScriptAdapter,
+        "flux-spectrum":    SpectrumFluxScriptAdapter,
+        "flux":             FluxScriptAdapter,
     }
 
     @classmethod
