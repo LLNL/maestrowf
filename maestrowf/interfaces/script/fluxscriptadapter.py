@@ -594,19 +594,44 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         identiifer.
         """
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
+        nodes = step.run.get("nodes")
         cores_per_task = step.run.get("cores per task", 1)
+        processors = step.run.get("procs", 0)
+
+        # Calculate ngpus
+        ngpus = step.run.get("gpus", 0)
+        if not ngpus:
+            ngpus = 0
+
+        # Calculate nprocs
+        ncores = cores_per_task * nodes
+        # Check to make sure that cores_per_task matches if processors
+        # is specified.
+        if processors > 0 and processors != ncores:
+            msg = "Calculated ncores (nodes * cores per task) = {} " \
+                  "-- procs = {}".format(ncores, processors)
+            LOGGER.error(msg)
+            raise ValueError(msg)
+
+        # Raise an exception if ncores is 0
+        if ncores <= 0:
+            msg = "Invalid number of cores specified. " \
+                  "Aborting. (ncores = {})".format(ncores)
+            LOGGER.error(msg)
+            raise ValueError(msg)
+
         jobspec = {
             "nnodes": step.run["nodes"],
             # NOTE: interface doesn"t allow multiple here yet
-            "ntasks":   step.run["nodes"],
-            "ncores":   cores_per_task * step.run["procs"],
-            "ngpus":     step.run.get("gpus", 0),
+            "ntasks":   nodes,
+            "ncores":   ncores,
+            "ngpus":    ngpus,
             "environ":  get_environment(),          # TODO: revisit
             "options":  {"stdio-delay-commit": 1},
             "opts": {
-                "nnodes": step.run["nodes"],
-                "ntasks": step.run["nodes"],
-                "cores-per-task": step.run["cores per task"],
+                "nnodes": nodes,
+                "ntasks": nodes,
+                "cores-per-task": cores_per_task,
                 "tasks-per-node": 1,
             },
             # "environ": {"PATH" : os.environ["PATH"]},
