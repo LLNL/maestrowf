@@ -595,8 +595,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
-        cores_per_task = step.run.get("cores per task", 1)
         processors = step.run.get("procs", 0)
+
+        # Compute cores per task
+        cores_per_task = step.run.get("cores per task", 1)
+        if not cores_per_task:
+            cores_per_task = 1
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
