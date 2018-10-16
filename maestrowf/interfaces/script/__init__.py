@@ -29,8 +29,9 @@
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
 from maestrowf.interfaces.script.fluxscriptadapter import \
-    SpectrumFluxScriptAdapter
+    FluxScriptAdapter, SpectrumFluxScriptAdapter
 
 __all__ = (
-    "LocalScriptAdapter", "SlurmScriptAdapter", "SpectrumFluxScriptAdapter"
+    "FluxScriptAdapter", "LocalScriptAdapter", "SlurmScriptAdapter",
+    "SpectrumFluxScriptAdapter"
 )
