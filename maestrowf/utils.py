@@ -33,6 +33,9 @@ from collections import OrderedDict
 import logging
 import os
 import string
+from subprocess import PIPE, Popen
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.error import HTTPError, URLError
 import time
 
 LOGGER = logging.getLogger(__name__)
@@ -153,3 +156,56 @@ def make_safe_path(*args):
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
     return os.path.join(*args)
+
+
+def start_process(cmd, cwd=None, env=None, shell=True):
+    """
+    Starts a new process using a specified command.
+
+    :param cmd: A string or a list representing the command to be run.
+    :param cwd: Current working path that the process will be started in.
+    :param env: A dictionary containing the environment the process will use.
+    :param shell: Boolean that determines if the process will run a shell.
+    """
+    if isinstance(cmd, list):
+        shell = False
+
+    # Define kwargs for the upcoming Popen call.
+    kwargs = {
+        "shell":                shell,
+        "universal_newlines":   True,
+        "stdout":               PIPE,
+        "stderr":               PIPE,
+    }
+
+    # Individually check if cwd and env are set -- this prevents us from
+    # adding parameters to the command that are only set to defaults. It
+    # also insulates us from potential default value changes in the future.
+    if cwd is not None:
+        kwargs["cwd"] = cwd
+
+    if env is not None:
+        kwargs["env"] = env
+
+    return Popen(cmd, **kwargs)
+
+
+def ping_url(url):
+    """
+    Load a webpage to test that it is accessible.
+
+    :param url: URL string to be loaded.
+    """
+    try:
+        response = urlopen(url)
+    except HTTPError as e:
+        LOGGER.error("Error fulfilling HTTP request. (%s)", e.code)
+        raise e
+    except URLError as e:
+        LOGGER.error(
+            "Check specified URL (%s) and that you are connected to the "
+            "internet. (%s)", url, e.code)
+        raise e
+    else:
+        response.read()
+        return

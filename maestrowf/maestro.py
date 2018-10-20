@@ -34,7 +34,6 @@ import inspect
 import logging
 import os
 import shutil
-from subprocess import Popen, PIPE
 import six
 import sys
 import tabulate
@@ -44,7 +43,8 @@ from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
+from maestrowf.utils import \
+    create_parentdir, csvtable_to_dict, make_safe_path, start_process
 
 
 # Program Globals
@@ -216,7 +216,7 @@ def run_study(args):
     study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
     # Stage the study.
     path, exec_dag = study.stage()
@@ -266,7 +266,7 @@ def run_study(args):
                    "&>", "{}.txt".format(os.path.join(
                     study.output_path, exec_dag.name))]
             LOGGER.debug(" ".join(cmd))
-            Popen(" ".join(cmd), shell=True, stdout=PIPE, stderr=PIPE)
+            start_process(" ".join(cmd))
 
     return 0
 
@@ -319,6 +319,10 @@ def setup_argparser():
     run.add_argument("-fg", action="store_true", default=False,
                      help="Runs the backend conductor in the foreground "
                      "instead of using nohup. [Default: %(default)s]")
+    run.add_argument("--hashws", action="store_true", default=False,
+                     help="Enable hashing of subdirectories in parameterized "
+                     "studies (NOTE: breaks commands that use parameter labels"
+                     " to search directories). [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
