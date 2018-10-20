@@ -1,0 +1,70 @@
+description:
+    name: lulesh_sample1
+    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/lulesh
+
+    labels:
+        outfile: $(SIZE.label).$(ITERATIONS.label).log
+
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
+
+study:
+    make-lulesh:
+      description: Build the serial version of LULESH.
+      depends: []
+      run:
+          cmd: |
+            cd $(LULESH)
+            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
+            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
+            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
+            make clean
+            make
+      resources:
+          # Not needed, but illustrates the default.
+          adapter: local
+
+    run-lulesh:
+        description: Run LULESH.
+        depends: [make-lulesh]
+        run:
+            cmd: |
+              $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+        resources:
+            adapter: flux
+            nodes: 1
+            cores: 1
+            tasks: 1
+            cores per task: 1
+
+    post-process-lulesh:
+        description: Post process all LULESH results.
+        depends: [run-lulesh_*]
+        run:
+            cmd: |
+              echo "Unparameterized step with Parameter Independent dependencies." >> out.log
+              echo $(run-lulesh.workspace) > out.log
+              ls $(run-lulesh.workspace) > ls.log
+        resources:
+            # Not needed, but illustrates the default.
+            adapter: local
+
+global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
+    SIZE:
+        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%
