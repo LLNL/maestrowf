@@ -176,6 +176,12 @@ def run_study(args):
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
 
+    # Check for pargs without the matching pgen
+    if args.pargs and not args.pgen:
+        msg = "Cannot use the 'pargs' parameter without specifying a 'pgen'!"
+        LOGGER.exception(msg)
+        raise ArgumentError(msg)
+
     # Handle loading a custom ParameterGenerator if specified.
     if args.pgen:
         # 'pgen_args' has a default of an empty list, which should translate
