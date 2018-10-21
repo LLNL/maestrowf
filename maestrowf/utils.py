@@ -209,3 +209,19 @@ def ping_url(url):
     else:
         response.read()
         return
+
+
+def create_dictionary(list_keyvalues, token=":"):
+    """
+    Create a dictionary from a list of key-value pairs.
+
+    :param list_keyvalues: List of token separates key-values.
+    :param token: The token to split each key-value by.
+    :returns: A dictionary containing the key-value pairings in list_keyvalues.
+    """
+    _dict = {}
+    for item in list_keyvalues:
+        key, value = [i.strip() for i in item.split(token, 1)]
+        _dict[key] = value
+
+    return _dict
