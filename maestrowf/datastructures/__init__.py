@@ -40,8 +40,4 @@ wide concepts of a Study, Environment, and Parameter generation.
 
 import logging
 
-from maestrowf.datastructures.dag import DAG
-
-
-__all__ = ("DAG")
 logger = logging.getLogger(__name__)
