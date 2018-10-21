@@ -137,36 +137,7 @@ Maestro's core tenets are defined as follows:
 
 ##### Repeatability
 
-A study should be easily repeatable. Like any well-planned and implemented science experiment, the steps themselves should be executed the exact same way each time a study is run over each set of parameters or over different runs of the study itself.
-
-##### Consistent
-
-Studies should be consistently documented and able to be run in a consistent fashion. The removal of variation in the process means less mistakes when executing studies, ease of picking up studies created by others, and uniformity in defining new studies.
-
-##### Self-documenting
-
-Documentation is important in computational studies as much as it is in physical science. The YAML specification defined by Maestro provides a few required key encouraging human-readable documentation. Even further, the specification itself is a documentation of a complete workflow.
-
-----------------
-
-## Setting up your Python Environment
-
-To get started, we recommend using virtual environments. If you do not have the
-Python `virtualenv` package installed, take a look at their official [documentation](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) to get started.
-
-To create a new virtual environment:
-
-    python -m virtualenv maestro_venv
-    source maestro_venv/bin/activate
-
-### Getting Started for Contributors
-
-If you plan to develop on Maestro, install the repository directly using:
-
-    pip install -r requirements.txt
-    pip install -e .
-
-Once set up, test the environment. The paths should point to a virtual environment folder.
+MaestroWF comes packed with a basic example using LULESH, a proxy application provided by LLNL. You can find the Quick Start guide [here](https://maestrowf.readthedocs.io/en/latest/quick_start.html#).
 
     which python
     which pip
