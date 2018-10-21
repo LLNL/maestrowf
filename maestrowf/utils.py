@@ -221,7 +221,14 @@ def create_dictionary(list_keyvalues, token=":"):
     """
     _dict = {}
     for item in list_keyvalues:
-        key, value = [i.strip() for i in item.split(token, 1)]
-        _dict[key] = value
+        try:
+            key, value = [i.strip() for i in item.split(token, 1)]
+            _dict[key] = value
+        except ValueError:
+            msg = "'{}' is not capable of being split by the token '{}'. " \
+                  "Verify that all other parameters are formatted properly." \
+                  .format(item, token)
+            LOGGER.exception(msg)
+            raise ValueError(msg)
 
     return _dict
