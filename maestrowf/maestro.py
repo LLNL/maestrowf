@@ -40,7 +40,7 @@ import tabulate
 import time
 
 from maestrowf.conductor import monitor_study
-from maestrowf.datastructures import YAMLSpecification
+from maestrowf.datastructures.specifications import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
