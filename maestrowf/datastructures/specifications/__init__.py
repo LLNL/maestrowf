@@ -22,6 +22,8 @@ class SpecificationFactory(object):
         Look up and retrieve a Specification by name.
 
         :param spec_name: Name of the Specification to find.
+        :param version: Identifier of a specific version of the 'spec_name'
+        Specification. [Default: 'latest']
         :returns: A Specification class matching the specifed spec_name.
         """
         if spec_name.lower() not in cls._classes:
