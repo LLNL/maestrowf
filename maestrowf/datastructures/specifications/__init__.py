@@ -29,7 +29,7 @@ class SpecificationFactory(object):
                   "exists." \
                   .format(str(spec_name))
             LOGGER.error(msg)
-            raise Keyerror(msg)
+            raise KeyError(msg)
 
         parent_module = getmodule(cls).__name__
         module = cls._classes[spec_name][version]
