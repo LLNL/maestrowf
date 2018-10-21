@@ -40,7 +40,7 @@ import tabulate
 import time
 
 from maestrowf.conductor import monitor_study
-from maestrowf.datastructures.specifications import YAMLSpecification
+from maestrowf.datastructures.specifications import SpecificationFactory
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
@@ -127,7 +127,8 @@ def load_parameter_generator(path):
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
-    spec = YAMLSpecification.load_specification(args.specification)
+    spec_cls = SpecificationFactory.get_specification("yaml")()
+    spec = spec_cls.load_specification(args.specification)
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
 
