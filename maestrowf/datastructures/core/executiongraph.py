@@ -164,7 +164,7 @@ class _StepRecord:
 
         :param state: State enum corresponding to termination state.
         """
-        LOGGER.debug(
+        logger.debug(
             "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
@@ -588,7 +588,7 @@ class ExecutionGraph(DAG, PickleInterface):
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            LOGGER.warning("'%s' failed to submit properly. "
+            logger.warning("'%s' failed to submit properly. "
                            "Step failed.", record.name)
             path, parent = self.bfs_subtree(record.name)
             for node in path:
