@@ -17,11 +17,11 @@ class SpecificationFactory(object):
     }
 
     @classmethod
-    def get_specification(cls, spec_name, version="latest"):
+    def get_specification(cls, spec_type, version="latest"):
         """
         Look up and retrieve a Specification by name.
 
-        :param spec_name: Name of the Specification to find.
+        :param spec_type: Name of the Specification type to find.
         :param version: Identifier of a specific version of the 'spec_name'
         Specification. [Default: 'latest']
         :returns: A Specification class matching the specifed spec_name.
@@ -49,10 +49,11 @@ class SpecificationFactory(object):
         return cls._classes.keys()
 
     @classmethod
-    def get_specifications_versions(cls, spec_name):
+    def get_specifications_versions(cls, spec_type):
         """
         Get available versions of a specification type.
 
+        :params spec_type: The Specification type name to search for.
         :returns: A list of all available versions of a Specification.
         """
         if spec_name not in cls._classes:
