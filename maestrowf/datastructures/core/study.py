@@ -392,7 +392,7 @@ class Study(DAG):
             use_tmp, hash_ws
         )
 
-    def _stage_parameterized(self, dag):
+    def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
 
@@ -794,11 +794,4 @@ class Study(DAG):
         dag.add_description(**self.description)
         dag.log_description()
 
-        # We have two cases:
-        # 1. Parameterized workflows
-        # 2. A linear, execute as specified workflow
-        # NOTE: This scheme could be how we handle derived use cases.
-        if self.parameters:
-            return self._out_path, self._stage_parameterized(dag)
-        else:
-            return self._out_path, self._stage_linear(dag)
+        return self._out_path, self._stage(dag)
