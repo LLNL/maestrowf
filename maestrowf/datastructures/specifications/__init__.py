@@ -22,19 +22,19 @@ class SpecificationFactory(object):
         Look up and retrieve a Specification by name.
 
         :param spec_type: Name of the Specification type to find.
-        :param version: Identifier of a specific version of the 'spec_name'
+        :param version: Identifier of a specific version of the 'spec_type'
         Specification. [Default: 'latest']
-        :returns: A Specification class matching the specifed spec_name.
+        :returns: A Specification class matching the specifed spec_type.
         """
-        if spec_name.lower() not in cls._classes:
+        if spec_type.lower() not in cls._classes:
             msg = "Specification '{0}' not found. Specify an adapter that " \
                   "exists." \
-                  .format(str(spec_name))
+                  .format(str(spec_type))
             LOGGER.error(msg)
             raise KeyError(msg)
 
         parent_module = getmodule(cls).__name__
-        module = cls._classes[spec_name][version]
+        module = cls._classes[spec_type][version]
         return getattr(
             import_module("{}{}".format(parent_module, module[0])),
             module[1])
@@ -56,11 +56,11 @@ class SpecificationFactory(object):
         :params spec_type: The Specification type name to search for.
         :returns: A list of all available versions of a Specification.
         """
-        if spec_name not in cls._classes:
+        if spec_type not in cls._classes:
             msg = "Specification '{0}' not found. Specify an adapter that " \
                   "exists." \
-                  .format(str(spec_name))
+                  .format(str(spec_type))
             LOGGER.error(msg)
             raise KeyError(msg)
 
-        return cls._classes[spec_name].keys()
+        return cls._classes[spec_type].keys()
