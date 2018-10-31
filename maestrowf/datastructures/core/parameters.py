@@ -321,7 +321,7 @@ class ParameterGenerator(SimObject):
             return
         elif isinstance(item, str):
             for key in self.parameters.keys():
-                _ = "\\{}\\({}\\.*\\w*\)".format(self.token, key)
+                _ = r"\{}({}\.*\w*)".format(self.token, key)
                 matches = re.findall(_, item)
                 if matches:
                     params.add(key)
