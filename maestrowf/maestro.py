@@ -236,8 +236,7 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    pkl_path = os.path.join(path, "{}.pkl".format(
-        study.name.replace(" ", "_").lower()))
+    pkl_path = make_safe_path(path, "{}.pkl".format(study.name))
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
@@ -259,12 +258,15 @@ def run_study(args):
             return completion_status.value
         else:
             # Launch manager with nohup
+            log_path = make_safe_path(
+                study.output_path,
+                "{}.txt".format(exec_dag.name))
+
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
                    path,
-                   "&>", "{}.txt".format(os.path.join(
-                    study.output_path, exec_dag.name))]
+                   "&>", log_path]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
