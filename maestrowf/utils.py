@@ -159,10 +159,12 @@ def make_safe_path(base_path, *args):
     :returns: A joined subpath with invalid characters stripped.
     """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    path = [base_path]
     for arg in args:
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
-    return os.path.join(base_path, *args)
+        path.append(arg)
+    return os.path.join(*path)
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):
