@@ -135,7 +135,7 @@ def run_study(args):
     out_dir = environment.remove("OUTPUT_PATH")
     if args.out:
         # If out is specified in the args, ignore OUTPUT_PATH.
-        output_path = os.path.abspath(make_safe_path(args.out))
+        output_path = os.path.abspath(args.out)
 
         # If we are automatically launching, just set the input as yes.
         if os.path.exists(output_path):
@@ -167,7 +167,7 @@ def run_study(args):
             spec.name.replace(" ", "_"),
             time.strftime("%Y%m%d-%H%M%S")
         )
-        output_path = make_safe_path(out_dir, out_name)
+        output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
 
     # Now that we know outpath, set up logging.
@@ -236,8 +236,7 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    pkl_path = os.path.join(path, "{}.pkl".format(
-        study.name.replace(" ", "_").lower()))
+    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
@@ -259,12 +258,15 @@ def run_study(args):
             return completion_status.value
         else:
             # Launch manager with nohup
+            log_path = make_safe_path(
+                study.output_path,
+                *["{}.txt".format(exec_dag.name)])
+
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
                    path,
-                   "&>", "{}.txt".format(os.path.join(
-                    study.output_path, exec_dag.name))]
+                   "&>", log_path]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
@@ -385,7 +387,7 @@ def setup_logging(args, path, name):
         logpath = args.logpath
     # Otherwise, we should just output to the OUTPUT_PATH.
     else:
-        logpath = make_safe_path(path, "logs")
+        logpath = make_safe_path(path, *["logs"])
 
     loglevel = args.debug_lvl * 10
 
@@ -394,8 +396,8 @@ def setup_logging(args, path, name):
     formatter = logging.Formatter(LFORMAT)
     ROOTLOGGER.setLevel(loglevel)
 
-    logname = make_safe_path("{}.log".format(name))
-    fh = logging.FileHandler(os.path.join(logpath, logname))
+    log_path = make_safe_path(logpath, *["{}.log".format(name)])
+    fh = logging.FileHandler(log_path)
     fh.setLevel(loglevel)
     fh.setFormatter(formatter)
     ROOTLOGGER.addHandler(fh)
