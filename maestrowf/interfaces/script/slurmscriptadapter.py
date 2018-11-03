@@ -235,7 +235,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 # 5 - Current Execution Time
                 # 6 - Assigned Node Count
                 # 7 - Hostname and assigned node identifier list
-                job_split = re.split("\s+", job)
+                job_split = re.split(r"\s+", job)
                 state_index = 4
                 jobid_index = 0
                 if job_split[0] == "":
