@@ -150,12 +150,21 @@ def csvtable_to_dict(fstream):
     return table
 
 
-def make_safe_path(*args):
+def make_safe_path(base_path, *args):
+    """
+    Construct a subpath that is path safe.
+
+    :params base_path: The base path to append args to.
+    :params *args: Path components to join into a path.
+    :returns: A joined subpath with invalid characters stripped.
+    """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    path = [base_path]
     for arg in args:
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
-    return os.path.join(*args)
+        path.append(arg)
+    return os.path.join(*path)
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):

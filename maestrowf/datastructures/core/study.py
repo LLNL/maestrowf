@@ -510,7 +510,7 @@ class Study(DAG):
                 # Copy the step and set to not modified.
                 self.step_combos[step].add(step)
 
-                workspace = make_safe_path(self._out_path, step)
+                workspace = make_safe_path(self._out_path, *[step])
                 self.workspaces[step] = workspace
                 logger.debug("Workspace: %s", workspace)
 
@@ -527,7 +527,7 @@ class Study(DAG):
                         # If we're looking at a parameter independent match
                         # the workspace is the folder that contains all of
                         # the outputs of all combinations for the step.
-                        ws = make_safe_path(self._out_path, match)
+                        ws = make_safe_path(self._out_path, *[match])
                         logger.info("Found funnel workspace -- %s", ws)
                     else:
                         ws = self.workspaces[match]
@@ -584,10 +584,11 @@ class Study(DAG):
                     combo_str = combo.get_param_string(self.used_params[step])
                     if self._hash_ws:
                         workspace = make_safe_path(
-                            self._out_path, step, md5(combo_str).hexdigest())
+                                        self._out_path,
+                                        *[step, md5(combo_str).hexdigest()])
                     else:
                         workspace = \
-                            make_safe_path(self._out_path, step, combo_str)
+                            make_safe_path(self._out_path, *[step, combo_str])
                         logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
@@ -613,7 +614,7 @@ class Study(DAG):
                             # If we're looking at a parameter independent match
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
-                            ws = make_safe_path(self._out_path, match)
+                            ws = make_safe_path(self._out_path, *[match])
                             logger.info("Found funnel workspace -- %s", ws)
                         elif not self.used_params[match]:
                             # If it's not a funneled dependency and the match
@@ -695,7 +696,7 @@ class Study(DAG):
                 continue
 
             # Initialize management structures.
-            ws = make_safe_path(self._out_path, step)
+            ws = make_safe_path(self._out_path, *[step])
             self.workspaces[step] = ws
             self.depends[step] = set()
             # Hub dependencies are not possible in linear studies. Empty set
