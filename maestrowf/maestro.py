@@ -257,9 +257,9 @@ def run_study(args):
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
 
-    # Use the Conductor's classmethod to store the study.
-    Conductor.store_study(study)
-    Conductor.store_batch(study.output_path, batch)
+    # Pickle up the DAG
+    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
+    exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes or args.dry:
@@ -282,13 +282,13 @@ def run_study(args):
             # Launch manager with nohup
             log_path = make_safe_path(
                 study.output_path,
-                *["{}.txt".format(study.name)])
+                *["{}.txt".format(exec_dag.name)])
 
             cmd = ["nohup", "conductor",
                    "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
-                   study.output_path,
-                   ">", log_path, "2>&1"]
+                   path,
+                   "&>", log_path]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
@@ -403,6 +403,49 @@ def setup_argparser():
         "-v", "--version", action="version", version='%(prog)s ' + __version__)
 
     return parser
+
+
+def setup_logging(args, path, name):
+    """
+    Set up logging based on the ArgumentParser.
+
+    :param args: A Namespace object created by a parsed ArgumentParser.
+    :param path: A default path to be used if a log path is not specified by
+        user command line arguments.
+    :param name: The name of the log file.
+    """
+    # If the user has specified a path, use that.
+    if args.logpath:
+        logpath = args.logpath
+    # Otherwise, we should just output to the OUTPUT_PATH.
+    else:
+        logpath = make_safe_path(path, *["logs"])
+
+    loglevel = args.debug_lvl * 10
+
+    # Create the FileHandler and add it to the logger.
+    create_parentdir(logpath)
+    formatter = logging.Formatter(LFORMAT)
+    ROOTLOGGER.setLevel(loglevel)
+
+    log_path = make_safe_path(logpath, *["{}.log".format(name)])
+    fh = logging.FileHandler(log_path)
+    fh.setLevel(loglevel)
+    fh.setFormatter(formatter)
+    ROOTLOGGER.addHandler(fh)
+
+    if args.logstdout:
+        # Add the StreamHandler
+        sh = logging.StreamHandler()
+        sh.setLevel(loglevel)
+        sh.setFormatter(formatter)
+        ROOTLOGGER.addHandler(sh)
+
+    # Print the level of logging.
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
 
 def main():

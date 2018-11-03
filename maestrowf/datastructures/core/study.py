@@ -569,7 +569,7 @@ class Study(DAG, PickleInterface):
                         # the workspace is the folder that contains all of
                         # the outputs of all combinations for the step.
                         ws = make_safe_path(self._out_path, *[match])
-                        LOGGER.info("Found funnel workspace -- %s", ws)
+                        logger.info("Found funnel workspace -- %s", ws)
                     else:
                         ws = self.workspaces[match]
                     cmd = cmd.replace(workspace_var, ws)
@@ -626,10 +626,11 @@ class Study(DAG, PickleInterface):
                     combo_str = combo.get_param_string(self.used_params[step])
                     if self._hash_ws:
                         workspace = make_safe_path(
-                            self._out_path, step, md5(combo_str).hexdigest())
+                                        self._out_path,
+                                        *[step, md5(combo_str).hexdigest()])
                     else:
                         workspace = \
-                            make_safe_path(self._out_path, step, combo_str)
+                            make_safe_path(self._out_path, *[step, combo_str])
                         logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
@@ -656,7 +657,7 @@ class Study(DAG, PickleInterface):
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
                             ws = make_safe_path(self._out_path, *[match])
-                            LOGGER.info("Found funnel workspace -- %s", ws)
+                            logger.info("Found funnel workspace -- %s", ws)
                         elif not self.used_params[match]:
                             # If it's not a funneled dependency and the match
                             # is not parameterized, then the workspace is just
