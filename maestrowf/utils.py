@@ -41,9 +41,26 @@ import time
 LOGGER = logging.getLogger(__name__)
 
 
+def get_duration(time_delta):
+    """
+    Covert durations to HH:MM:SS format.
+
+    :params time_delta: A time difference in datatime format.
+    :returns: A formatted string in HH:MM:SS
+    """
+    duration = time_delta.total_seconds()
+    days = int(duration / 86400)
+    hours = int((duration % 86400) / 3600)
+    minutes = int((duration % 86400 % 3600) / 60)
+    seconds = int((duration % 86400 % 3600) % 60)
+
+    return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
+           .format(days, hours, minutes, seconds)
+
+
 def generate_filename(path, append_time=True):
     """
-    Utility function for generating a non-conflicting file name.
+    Generate a non-conflicting file name.
 
     :param path: Path to file.
     :param append_time: Setting to append a timestamp.
@@ -150,12 +167,21 @@ def csvtable_to_dict(fstream):
     return table
 
 
-def make_safe_path(*args):
+def make_safe_path(base_path, *args):
+    """
+    Construct a subpath that is path safe.
+
+    :params base_path: The base path to append args to.
+    :params *args: Path components to join into a path.
+    :returns: A joined subpath with invalid characters stripped.
+    """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    path = [base_path]
     for arg in args:
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
-    return os.path.join(*args)
+        path.append(arg)
+    return os.path.join(*path)
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):

@@ -14,7 +14,7 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir
+from maestrowf.utils import create_parentdir, get_duration
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -195,10 +195,10 @@ class _StepRecord(object):
         """Compute the elapsed time of the record (includes queue wait)."""
         if self._submit_time and self._end_time:
             # Return the total elapsed time.
-            return str(self._end_time - self._submit_time)
+            return get_duration(self._end_time - self._submit_time)
         elif self._submit_time and self.status == State.RUNNING:
             # Return the current elapsed time.
-            return str(datetime.now() - self._submit_time)
+            return get_duration(datetime.now() - self._submit_time)
         else:
             return "--:--:--"
 
@@ -211,10 +211,10 @@ class _StepRecord(object):
         """
         if self._start_time and self._end_time:
             # If start and end time is set -- calculate run time.
-            return str(self._end_time - self._start_time)
+            return get_duration(self._end_time - self._start_time)
         elif self._start_time and not self.status == State.RUNNING:
             # If start time but no end time, calculate current duration.
-            return str(datetime.now() - self._start_time)
+            return get_duration(datetime.now() - self._start_time)
         else:
             # Otherwise, return an uncalculated marker.
             return "--:--:--"
