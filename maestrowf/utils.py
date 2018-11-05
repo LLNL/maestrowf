@@ -54,7 +54,7 @@ def get_duration(time_delta):
     minutes = int((duration % 86400 % 3600) / 60)
     seconds = int((duration % 86400 % 3600) % 60)
 
-    return "{:02d} days {:02d}:{:02d}:{:02d}" \
+    return "{:d} days {:02d}h:{:02d}m:{:02d}s" \
            .format(days, hours, minutes, seconds)
 
 
