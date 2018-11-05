@@ -41,9 +41,24 @@ import time
 LOGGER = logging.getLogger(__name__)
 
 
+def get_duration(time_delta):
+    """
+    Covert durations to HH:MM:SS format.
+
+    :params time_delta: A time difference in datatime format.
+    :returns: A formatted string in HH:MM:SS
+    """
+    duration = time_delta.total_seconds()
+    hours = int(duration / 3600)
+    minutes = int(duration % 3600 / 60)
+    seconds = int((duration % 3600) % 60)
+
+    return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
+
+
 def generate_filename(path, append_time=True):
     """
-    Utility function for generating a non-conflicting file name.
+    Generate a non-conflicting file name.
 
     :param path: Path to file.
     :param append_time: Setting to append a timestamp.
