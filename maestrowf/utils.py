@@ -49,11 +49,13 @@ def get_duration(time_delta):
     :returns: A formatted string in HH:MM:SS
     """
     duration = time_delta.total_seconds()
-    hours = int(duration / 3600)
-    minutes = int(duration % 3600 / 60)
-    seconds = int((duration % 3600) % 60)
+    days = int(duration / 86400)
+    hours = int((duration % 86400) / 3600)
+    minutes = int((duration % 86400 % 3600) / 60)
+    seconds = int((duration % 86400 % 3600) % 60)
 
-    return "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
+    return "{:02d} days {:02d}:{:02d}:{:02d}" \
+           .format(days, hours, minutes, seconds)
 
 
 def generate_filename(path, append_time=True):
