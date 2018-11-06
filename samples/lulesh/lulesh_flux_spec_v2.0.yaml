@@ -10,17 +10,10 @@ env:
         outfile: $(SIZE.label).$(ITERATIONS.label).log
 
     dependencies:
-<<<<<<< HEAD
       LULESH:
         type: git
         path: $(OUTPUT_PATH)
         url: https://github.com/LLNL/LULESH.git
-=======
-      git:
-        - name: LULESH
-          path: $(OUTPUT_PATH)
-          url: https://github.com/LLNL/LULESH.git
->>>>>>> Initial pass at a possible v2.0
 
 study:
     make-lulesh:
