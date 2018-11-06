@@ -17,7 +17,6 @@ env:
         - name: LULESH
           path: $(OUTPUT_PATH)
           url: https://github.com/LLNL/LULESH.git
-          tag: 2.0.3
 
 study:
     - name: make-lulesh

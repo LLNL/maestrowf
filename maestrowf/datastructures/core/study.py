@@ -430,8 +430,6 @@ class Study(DAG, PickleInterface):
             use_tmp, hash_ws
         )
 
-        self.is_configured = True
-
     def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
@@ -836,14 +834,5 @@ class Study(DAG, PickleInterface):
             use_tmp=self._use_tmp, dry_run=self._dry_run)
         dag.add_description(**self.description)
         dag.log_description()
-
-        # Because we're working within a Study class whose steps have already
-        # been verified to not contain a cycle, we can override the check for
-        # the execution graph. Because the execution graph is constructed from
-        # the study steps, it won't contain a cycle.
-        def _pass_detect_cycle(self):
-            pass
-
-        dag.detect_cycle = MethodType(_pass_detect_cycle, dag)
 
         return self._out_path, self._stage(dag)
