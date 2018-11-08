@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(name='maestrowf',
       description='A tool and library for specifying and conducting general '
       'workflows.',
-      version='1.1.4dev1.1',
+      version='1.1.4dev1.2',
       author='Francesco Di Natale',
       author_email='dinatale3@llnl.gov',
       url='https://github.com/llnl/maestrowf',
