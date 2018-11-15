@@ -282,6 +282,8 @@ def run_study(args):
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
+    print("Study launched successfully.")
+
     return 0
 
 
