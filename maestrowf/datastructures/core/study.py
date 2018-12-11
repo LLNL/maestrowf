@@ -244,10 +244,20 @@ class Study(DAG):
             pickle.dump(self, pkl)
 
         # Construct other metadata related to study construction.
+        _workspaces = {}
+        for key, value in self.workspaces.items():
+            if key == "_source":
+                _workspaces[key] = value
+            elif key in self.step_combos:
+                _workspaces[key] = os.path.split(value)[-1]
+            else:
+                _workspaces[key] = \
+                    os.path.sep.join(value.rsplit(os.path.sep)[-2:])
+
         metadata = {
             "dependencies": self.depends,
             "hub_dependencies": self.hub_depends,
-            "workspaces": self.workspaces,
+            "workspaces": _workspaces,
             "used_parameters": self.used_params,
             "step_combinations": self.step_combos,
         }
