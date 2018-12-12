@@ -74,6 +74,7 @@ class State(Enum):
     TIMEDOUT = 10
     UNKNOWN = 11
     CANCELLED = 12
+    NOOP = 13
 
 
 class StudyStatus(Enum):
