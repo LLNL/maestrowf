@@ -244,12 +244,38 @@ class Study(DAG):
             pickle.dump(self, pkl)
 
         # Construct other metadata related to study construction.
+        _workspaces = {}
+        for key, value in self.workspaces.items():
+            if key == "_source":
+                _workspaces[key] = value
+            elif key in self.step_combos:
+                _workspaces[key] = os.path.split(value)[-1]
+            else:
+                _workspaces[key] = \
+                    os.path.sep.join(value.rsplit(os.path.sep)[-2:])
+
+        # Construct relative paths for the combinations and nest them in the
+        # same way as the step combinations dictionary.
+        _step_combos = {}
+        for key, value in self.step_combos.items():
+            if key == SOURCE:
+                _step_combos[key] = self.workspaces[key]
+            elif not self.used_params[key]:
+                _ws = self.workspaces[key]
+                _step_combos[key] = {key: os.path.split(_ws)[-1]}
+            else:
+                _step_combos[key] = {}
+                for combo in value:
+                    _ws = self.workspaces[combo]
+                    _step_combos[key][combo] = \
+                        os.path.sep.join(_ws.rsplit(os.path.sep)[-2:])
+
         metadata = {
             "dependencies": self.depends,
             "hub_dependencies": self.hub_depends,
-            "workspaces": self.workspaces,
+            "workspaces": _workspaces,
             "used_parameters": self.used_params,
-            "step_combinations": self.step_combos,
+            "step_combinations": _step_combos,
         }
         # Write out the study construction metadata.
         path = os.path.join(self._meta_path, "metadata.yaml")
