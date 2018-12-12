@@ -30,20 +30,29 @@
 """Package for providing enumerations for interfaces"""
 from enum import Enum
 
-__all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
+__all__ = (
+    "JobStatusCode",
+    "PostCode",
+    "State",
+    "SubmissionCode",
+    "StudyStatus"
+)
 
 
 class SubmissionCode(Enum):
+    """Return states during submission."""
     OK = 0
     ERROR = 1
 
 
 class CancelCode(Enum):
+    """Return states during cancellation."""
     OK = 0
     ERROR = 1
 
 
 class JobStatusCode(Enum):
+    """Return states when polling for job status."""
     OK = 0
     NOJOBS = 1
     ERROR = 2
