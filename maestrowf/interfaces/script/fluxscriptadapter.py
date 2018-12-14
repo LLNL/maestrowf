@@ -865,6 +865,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if to_be_scheduled:
+            st = os.stat(script_path)
             os.chmod(script_path, st.st_mode | stat.S_IXUSR)
             w_script = os.path.join(
                 ws_path,
@@ -894,10 +895,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 script.write(cmd)
 
             if to_be_scheduled:
-                os.chmod(script_path, st.st_mode | stat.S_IXUSR)
+                st = os.stat(restart_path)
+                os.chmod(restart_path, st.st_mode | stat.S_IXUSR)
                 w_script = os.path.join(
                     ws_path,
-                    "{}.wrapper.sh".format(step.name)
+                    "{}.restart.wrapper.sh".format(step.name)
                 )
 
                 with open(w_script, "w") as wrapper:
