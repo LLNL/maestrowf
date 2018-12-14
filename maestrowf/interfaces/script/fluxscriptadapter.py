@@ -650,10 +650,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             #   },
         }
         LOGGER.debug("Submission Spec -- \n%s", jobspec)
-        if step.run["nodes"] > 1:
-            jobspec["cmdline"] = ["flux", "broker", path]
-        else:
-            jobspec["cmdline"] = [path]
+        jobspec["cmdline"] = [path]
 
         if self.h is None:
             self.h = self.flux.Flux()
@@ -866,6 +863,21 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             cmd = "\n\n{}\n".format(cmd)
             script.write(cmd)
 
+        if to_be_scheduled:
+            w_script = os.path.join(
+                ws_path,
+                "{}.wrapper.sh".format(step.name)
+            )
+
+            with open(w_script, "w") as wrapper:
+                wrapper.write(self._exec)
+
+                cmd = "flux broker {}".format(script_path)
+                cmd = "\n\n{}\n".format(cmd)
+                wrapper.write(cmd)
+
+            script_path = w_script
+
         if restart:
             rname = "{}.restart.flux.sh".format(step.name)
             restart_path = os.path.join(ws_path, rname)
@@ -878,6 +890,22 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
                 cmd = "\n\n{}\n".format(restart)
                 script.write(cmd)
+
+            if to_be_scheduled:
+                w_script = os.path.join(
+                    ws_path,
+                    "{}.wrapper.sh".format(step.name)
+                )
+
+                with open(w_script, "w") as wrapper:
+                    wrapper.write(self._exec)
+
+                    cmd = "flux broker {}".format(restart_path)
+                    cmd = "\n\n{}\n".format(cmd)
+                    wrapper.write(cmd)
+
+                restart_path = w_script
+
         else:
             restart_path = None
 
