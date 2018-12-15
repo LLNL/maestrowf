@@ -651,7 +651,17 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             #   },
         }
         LOGGER.debug("Submission Spec -- \n%s", jobspec)
-        jobspec["cmdline"] = [path]
+        wrapper = step.run.get("wrapper", "")
+        if step.run["nodes"] > 1:
+            if wrapper == "":
+                jobspec["cmdline"] = ["flux", "broker", path]
+            else:
+                jobspec["cmdline"] = ["flux", "broker", wrapper, path]
+        else:
+            if wrapper == "":
+                jobspec["cmdline"] = [path]
+            else:
+                jobspec["cmdline"] = [wrapper, path]
 
         if self.h is None:
             self.h = self.flux.Flux()
@@ -864,23 +874,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             cmd = "\n\n{}\n".format(cmd)
             script.write(cmd)
 
-        if to_be_scheduled:
-            st = os.stat(script_path)
-            os.chmod(script_path, st.st_mode | stat.S_IXUSR)
-            w_script = os.path.join(
-                ws_path,
-                "{}.wrapper.sh".format(step.name)
-            )
-
-            with open(w_script, "w") as wrapper:
-                wrapper.write(self._exec)
-
-                cmd = "flux broker {}".format(script_path)
-                cmd = "\n\n{}\n".format(cmd)
-                wrapper.write(cmd)
-
-            script_path = w_script
-
         if restart:
             rname = "{}.restart.flux.sh".format(step.name)
             restart_path = os.path.join(ws_path, rname)
@@ -893,23 +886,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
                 cmd = "\n\n{}\n".format(restart)
                 script.write(cmd)
-
-            if to_be_scheduled:
-                st = os.stat(restart_path)
-                os.chmod(restart_path, st.st_mode | stat.S_IXUSR)
-                w_script = os.path.join(
-                    ws_path,
-                    "{}.restart.wrapper.sh".format(step.name)
-                )
-
-                with open(w_script, "w") as wrapper:
-                    wrapper.write(self._exec)
-
-                    cmd = "flux broker {}".format(restart_path)
-                    cmd = "\n\n{}\n".format(cmd)
-                    wrapper.write(cmd)
-
-                restart_path = w_script
 
         else:
             restart_path = None
