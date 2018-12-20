@@ -6,3 +6,10 @@ Now that you're acquainted with Maestro's interface running a pre-made example, 
 - A single step "Hello World" without parameterization.
 - An introduction to a single parameter "Hello World" study.
 - An introduction to a multi-parameter "Hello World" study.
+- Adding a "farewell" step to "Hello World".
+
+
+Creating a Single Step Study
+*****************************
+
+To start, we will walk through constructing a single step "Hello World" study that simply echoes "Hello, World!" to a file. 
