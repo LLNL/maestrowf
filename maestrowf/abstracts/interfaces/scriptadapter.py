@@ -133,3 +133,13 @@ class ScriptAdapter(object):
         :returns: The return code of the submission command and job identiifer.
         """
         pass
+
+    @property
+    @abstractmethod
+    def key(self):
+        """
+        The key to be used in workflow specification to describe the adapter.
+
+        This is used to register the adapter in the ScriptAdapterFactory and when writing the workflow specification.
+        """
+        pass

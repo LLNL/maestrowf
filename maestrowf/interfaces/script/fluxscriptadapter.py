@@ -62,6 +62,8 @@ def get_environment():
 class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
     """Interface class for the flux scheduler (on Spectrum MPI)."""
 
+    key = "flux-spectrum"
+
     def __init__(self, **kwargs):
         """
         Initialize an instance of the FluxScriptAdapter.
@@ -480,6 +482,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
 class FluxScriptAdapter(SchedulerScriptAdapter):
     """Interface class for the flux scheduler (on Spectrum MPI)."""
+
+    key = "flux"
 
     def __init__(self, **kwargs):
         """

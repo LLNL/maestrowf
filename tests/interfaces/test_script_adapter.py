@@ -43,27 +43,27 @@ def test_get_valid_adapters():
 
 def test_local_adapter_in_factory():
     saf = ScriptAdapterFactory
-    assert(saf.factories['local'] == LocalScriptAdapter)
-    assert('local' in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter('local') == LocalScriptAdapter)
+    assert(saf.factories[LocalScriptAdapter.key] == LocalScriptAdapter)
+    assert(LocalScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) == LocalScriptAdapter)
 
 
 def test_slurm_adapter_in_factory():
     saf = ScriptAdapterFactory
-    assert(saf.factories['slurm'] == SlurmScriptAdapter)
-    assert('slurm' in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter('slurm') == SlurmScriptAdapter)
+    assert(saf.factories[SlurmScriptAdapter.key] == SlurmScriptAdapter)
+    assert(SlurmScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key) == SlurmScriptAdapter)
 
 
 def test_flux_adapter_in_factory():
     saf = ScriptAdapterFactory
-    assert(saf.factories['flux'] == FluxScriptAdapter)
-    assert('flux' in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter('flux') == FluxScriptAdapter)
+    assert(saf.factories[FluxScriptAdapter.key] == FluxScriptAdapter)
+    assert(FluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(FluxScriptAdapter.key) == FluxScriptAdapter)
 
 
 def test_flux_spectrum_adapter_in_factory():
     saf = ScriptAdapterFactory
-    assert(saf.factories['flux-spectrum'] == SpectrumFluxScriptAdapter)
-    assert('flux-spectrum' in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter('flux-spectrum') == SpectrumFluxScriptAdapter)
+    assert(saf.factories[SpectrumFluxScriptAdapter.key] == SpectrumFluxScriptAdapter)
+    assert(SpectrumFluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(SpectrumFluxScriptAdapter.key) == SpectrumFluxScriptAdapter)
