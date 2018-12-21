@@ -45,10 +45,10 @@ LOGGER = logging.getLogger(__name__)
 
 class ScriptAdapterFactory(object):
     factories = {
-        "slurm":            SlurmScriptAdapter,
-        "local":            LocalScriptAdapter,
-        "flux-spectrum":    SpectrumFluxScriptAdapter,
-        "flux":             FluxScriptAdapter,
+        SlurmScriptAdapter.key:            SlurmScriptAdapter,
+        LocalScriptAdapter.key:            LocalScriptAdapter,
+        SpectrumFluxScriptAdapter.key:    SpectrumFluxScriptAdapter,
+        FluxScriptAdapter.key:             FluxScriptAdapter,
     }
 
     @classmethod
