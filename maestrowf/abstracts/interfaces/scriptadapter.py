@@ -140,6 +140,7 @@ class ScriptAdapter(object):
         """
         The key to be used in workflow specification to describe the adapter.
 
-        This is used to register the adapter in the ScriptAdapterFactory and when writing the workflow specification.
+        This is used to register the adapter in the ScriptAdapterFactory
+        and when writing the workflow specification.
         """
         pass

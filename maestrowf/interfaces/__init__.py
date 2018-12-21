@@ -30,16 +30,12 @@
 """Collection of custom adapters for interfacing with various systems."""
 import logging
 
-from maestrowf.interfaces.script import \
-    FluxScriptAdapter, \
-    LocalScriptAdapter, \
-    SlurmScriptAdapter, \
+from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter,\
     SpectrumFluxScriptAdapter
 
-__all__ = (
-    "FluxScriptAdapter", "LocalScriptAdapter", "SlurmScriptAdapter",
-    "SpectrumFluxScriptAdapter", "ScriptAdapterFactory"
-)
+__all__ = "ScriptAdapterFactory"
 LOGGER = logging.getLogger(__name__)
 
 
