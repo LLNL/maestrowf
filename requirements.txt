@@ -12,3 +12,4 @@ pydocstyle
 pylint
 tox
 tabulate
+pytest
