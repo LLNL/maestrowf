@@ -27,8 +27,9 @@
 # SOFTWARE.
 ###############################################################################
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.interfaces.script import LocalScriptAdapter, SlurmScriptAdapter, \
-    FluxScriptAdapter, SpectrumFluxScriptAdapter
+from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter, SpectrumFluxScriptAdapter
 
 
 def test_factory():
