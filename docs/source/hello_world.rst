@@ -8,12 +8,15 @@ Now that you're acquainted with Maestro's interface running a pre-made example, 
 - An introduction to a multi-parameter "Hello World" study.
 - Adding a "farewell" step to "Hello World".
 
-Maestro's default study description uses general YAML notation, which stands for "Yet Another Markup Language" and is a standard data serialization language. For more information on the YAML language, head `here <https://yaml.org>`_ to learn more.
+Maestro's default study description uses general YAML notation, which stands for "Yet Another Markup Language" and is a standard data serialization language. For more information on the YAML language, head `here <https://yaml.org/spec/1.2/spec.html>`_ to learn more.
 
 Creating a Single Step Study
 *****************************
 
-To start, we will walk through constructing a single step "Hello World" study that simply echoes "Hello, World!" to a file. The first step is to name your study -- in this case we'll settle for something simple and just call our study "Hello World". In your editor of choice, begin by adding the following::
+To start, we will walk through constructing a single step "Hello World" study that simply echoes "Hello, World!" to a file. The first step is to name your study -- in this case we'll settle for something simple and just call our study "Hello World". In your editor of choice, begin by adding the following:
+
+.. code-block:: yaml
+    :linenos:
 
     description:
         name: hello_world
@@ -22,7 +25,10 @@ To start, we will walk through constructing a single step "Hello World" study th
 
 .. note:: The `description` block is a required section in every study and has two required keys: name, and description. You may add other keys to the description section, but Maestro will not check for them.
 
-The next section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block::
+The next section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block:
+
+.. code-block:: yaml
+    :linenos:
 
     study:
         - name: hello_world
@@ -49,3 +55,17 @@ The only required keys for a study step are the name, description, and a run sec
 
     cmd
      A string of commands to be executed by this step.
+
+There are optional keys which we will cover later on -- but for now, these are the minimum set of requirements.
+
+Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following::
+
+    $ maestro run hello_world.yaml
+
+The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide.
+
+
+Adding Parameters to Hello World
+*********************************
+
+Now that we have a functioning single step study, let's expand "Hello World" to greet multiple people.
