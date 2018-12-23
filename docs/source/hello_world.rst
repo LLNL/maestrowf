@@ -8,8 +8,44 @@ Now that you're acquainted with Maestro's interface running a pre-made example, 
 - An introduction to a multi-parameter "Hello World" study.
 - Adding a "farewell" step to "Hello World".
 
+Maestro's default study description uses general YAML notation, which stands for "Yet Another Markup Language" and is a standard data serialization language. For more information on the YAML language, head `here <https://yaml.org>`_ to learn more.
 
 Creating a Single Step Study
 *****************************
 
-To start, we will walk through constructing a single step "Hello World" study that simply echoes "Hello, World!" to a file. 
+To start, we will walk through constructing a single step "Hello World" study that simply echoes "Hello, World!" to a file. The first step is to name your study -- in this case we'll settle for something simple and just call our study "Hello World". In your editor of choice, begin by adding the following::
+
+    description:
+        name: hello_world
+        description: A simple 'Hello World' study.
+
+
+.. note:: The `description` block is a required section in every study and has two required keys: name, and description. You may add other keys to the description section, but Maestro will not check for them.
+
+The next section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block::
+
+    study:
+        - name: hello_world
+          description: Build the serial version of LULESH.
+          run:
+              cmd: |
+                echo "Hello, World!" > hello_world.txt
+
+
+.. note:: The `-` denotes a list item in YAML, which means if you wanted to add more steps you could. For now, though, we will keep it simple with one.
+
+The only required keys for a study step are the name, description, and a run section containing a command (`cmd`). You might notice the similarity in requirement to the study itself of a `name` and `description` entry. This requirement is intentional in order to encourage documentation as you develop a study. The following are descriptions of the required keys:
+
+.. glossary::
+
+    name
+     A unique name to identify this step by (tip: make this something relevant).
+
+    description
+     A human-readable sentence or paragraph describing what this step is meant to achieve.
+
+    run
+     A dictionary containing keys that describe what runs in this step.
+
+    cmd
+     A string of commands to be executed by this step.
