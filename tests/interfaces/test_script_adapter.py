@@ -26,7 +26,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-from maestrowf.interfaces import ScriptAdapterFactory
+import maestrowf.interfaces.script
+import pytest
+
+from maestrowf.interfaces import ScriptAdapterFactory, iter_namespace
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
 from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter, SpectrumFluxScriptAdapter
@@ -68,3 +71,8 @@ def test_flux_spectrum_adapter_in_factory():
     assert(saf.factories[SpectrumFluxScriptAdapter.key] == SpectrumFluxScriptAdapter)
     assert(SpectrumFluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
     assert(ScriptAdapterFactory.get_adapter(SpectrumFluxScriptAdapter.key) == SpectrumFluxScriptAdapter)
+
+
+def test_adapter_none_found():
+    with pytest.raises(Exception):
+        ScriptAdapterFactory.get_adapter('empty-adapter')
