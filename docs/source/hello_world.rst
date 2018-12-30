@@ -65,7 +65,17 @@ Now that the single step "Hello World" study is complete, go ahead and save it t
 The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide.
 
 
-Adding Parameters to Hello World
-*********************************
+Adding a Single Parameter to Hello World
+*****************************************
 
-Now that we have a functioning single step study, let's expand "Hello World" to greet multiple people.
+Now that we have a functioning single step study, let's expand "Hello World" to greet multiple people. To add this new functionality, that means we need to add a new section called `global.parameters` to our `hello_world.yaml` study specification.  So, let's say we want to say hello to Pam, Jim, Michael, and Dwight. The `global.paramters` section would look as follows:
+
+.. code-block:: yaml
+    :linenos:
+
+    global.parameters:
+        NAME:
+            values: [Pam, Jim, Michael, Dwight]
+            label: NAME.%%
+
+.. note::
