@@ -1,16 +1,18 @@
 description:
-    name: lulesh sample1
+    name: lulesh_sample1
     description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
+
+batch:
+    type: flux
+    bank: testbank
+    queue: pbatch
 
 env:
     variables:
         OUTPUT_PATH: ./sample_output/lulesh
-        SIZE: 10
-        ITERATIONS: 20
-        TRIAL: 1
 
     labels:
-        outfile: SIZE.$(SIZE).ITER.$(ITERATIONS).log
+        outfile: $(SIZE.label).$(ITERATIONS.label).log
 
     dependencies:
       git:
@@ -38,8 +40,11 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(LAUNCHER) $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
+          nodes: 1
+          procs: 1
+          walltime: "00:10:00"
 
     - name: post-process-lulesh
       description: Post process all LULESH results.
@@ -48,7 +53,7 @@ study:
             echo "Unparameterized step with Parameter Independent dependencies." >> out.log
             echo $(run-lulesh.workspace) > out.log
             ls $(run-lulesh.workspace) > ls.log
-          depends: [run-lulesh]
+          depends: [run-lulesh_*]
 
     - name: post-process-lulesh-trials
       description: Post process all LULESH results.
@@ -58,7 +63,7 @@ study:
             echo "TRIAL = $(TRIAL)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
             ls $(run-lulesh.workspace) > out.log
-          depends: [run-lulesh]
+          depends: [run-lulesh_*]
 
     - name: post-process-lulesh-size
       description: Post process all LULESH results.
@@ -67,5 +72,16 @@ study:
             echo "Parameterized step that has Parameter Independent dependencies" >> out.log
             echo "SIZE = $(SIZE)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
-            ls $(run-lulesh.workspace) | grep SIZE.$(SIZE) >> out.log
-          depends: [run-lulesh]
+            ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
+          depends: [run-lulesh_*]
+
+global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
+    SIZE:
+        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%
