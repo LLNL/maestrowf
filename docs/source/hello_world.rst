@@ -78,4 +78,4 @@ Now that we have a functioning single step study, let's expand "Hello World" to 
             values: [Pam, Jim, Michael, Dwight]
             label: NAME.%%
 
-.. note::
+.. note:: '%%' is a special token that defines where the value in the label is placed. In this case the parameter labels will be "NAME.Pam", "NAME.Jim", and etc. The label can take a custom text format, so long as the '%%' token is included to be able to substitute the parameter's value in the appropriate place.
