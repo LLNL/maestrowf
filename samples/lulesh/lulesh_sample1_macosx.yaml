@@ -22,9 +22,6 @@ env:
           url: https://github.com/LLNL/LULESH.git
           tag: 2.0.3
 
-batch:
-    shell: /bin/bash
-
 study:
     - name: make-lulesh
       description: Build the serial version of LULESH.
