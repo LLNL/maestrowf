@@ -62,8 +62,28 @@ Now that the single step "Hello World" study is complete, go ahead and save it t
 
     $ maestro run hello_world.yaml
 
-The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide.
+The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide. The "hello_world" study above produces a directory that looks similar to the following:
 
+.. code-block:: bash
+
+    drwxr-xr-x  4 dinatale3  59021   136B Jan 10 09:41 hello_world
+    -rw-r--r--  1 dinatale3  59021   2.3K Jan 10 09:41 hello_world.pkl
+    -rw-r--r--  1 dinatale3  59021     0B Jan 10 09:41 hello_world.txt
+    -rw-r--r--  1 dinatale3  59021   340B Jan 10 09:40 hello_world.yaml
+    drwxr-xr-x  3 dinatale3  59021   102B Jan 10 09:40 logs
+    drwxr-xr-x  5 dinatale3  59021   170B Jan 10 09:40 meta
+    -rw-r--r--  1 dinatale3  59021   241B Jan 10 09:41 status.csv
+
+From here, change into the "hello_world" subdirectory. Here you'll see that there are two files: the generated "hello_world.sh" shell script and the resulting output "hello_world.txt". The directory looks similar to:
+
+.. code-block:: bash
+
+    -rwxr--r--  1 dinatale3  59021    53B Jan 10 09:41 hello_world.sh
+    -rw-r--r--  1 dinatale3  59021    14B Jan 10 09:41 hello_world.txt
+
+You'll notice that the study directory only contains "hello_world" and the contents for a single run (which corresponds to the singular step above). Maestro detects that the step is not parameterized and uses the workspace that corresponds with the "hello_world" step.
+
+In the next section we cover the basics of how to add a single parameter to the "Hello World" study.
 
 Adding a Single Parameter to Hello World
 *****************************************
