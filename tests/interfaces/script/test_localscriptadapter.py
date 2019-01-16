@@ -27,7 +27,15 @@
 # SOFTWARE.
 ###############################################################################
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces import ScriptAdapterFactory
 
 
 def test_local_adapter():
     assert(LocalScriptAdapter.key == 'local')
+
+
+def test_local_adapter_in_factory():
+    saf = ScriptAdapterFactory
+    assert(saf.factories[LocalScriptAdapter.key] == LocalScriptAdapter)
+    assert(LocalScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) == LocalScriptAdapter)

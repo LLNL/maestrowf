@@ -27,6 +27,7 @@
 # SOFTWARE.
 ###############################################################################
 from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter, SpectrumFluxScriptAdapter
+from maestrowf.interfaces import ScriptAdapterFactory
 
 
 def test_flux_adapter():
@@ -35,3 +36,17 @@ def test_flux_adapter():
 
 def test_flux_spectrum_adapter():
     assert(SpectrumFluxScriptAdapter.key == 'flux-spectrum')
+
+
+def test_flux_adapter_in_factory():
+    saf = ScriptAdapterFactory
+    assert(saf.factories[FluxScriptAdapter.key] == FluxScriptAdapter)
+    assert(FluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(FluxScriptAdapter.key) == FluxScriptAdapter)
+
+
+def test_flux_spectrum_adapter_in_factory():
+    saf = ScriptAdapterFactory
+    assert(saf.factories[SpectrumFluxScriptAdapter.key] == SpectrumFluxScriptAdapter)
+    assert(SpectrumFluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(SpectrumFluxScriptAdapter.key) == SpectrumFluxScriptAdapter)

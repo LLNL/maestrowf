@@ -45,34 +45,6 @@ def test_get_valid_adapters():
     assert(saf.factories.keys() == ScriptAdapterFactory.get_valid_adapters())
 
 
-def test_local_adapter_in_factory():
-    saf = ScriptAdapterFactory
-    assert(saf.factories[LocalScriptAdapter.key] == LocalScriptAdapter)
-    assert(LocalScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) == LocalScriptAdapter)
-
-
-def test_slurm_adapter_in_factory():
-    saf = ScriptAdapterFactory
-    assert(saf.factories[SlurmScriptAdapter.key] == SlurmScriptAdapter)
-    assert(SlurmScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key) == SlurmScriptAdapter)
-
-
-def test_flux_adapter_in_factory():
-    saf = ScriptAdapterFactory
-    assert(saf.factories[FluxScriptAdapter.key] == FluxScriptAdapter)
-    assert(FluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(FluxScriptAdapter.key) == FluxScriptAdapter)
-
-
-def test_flux_spectrum_adapter_in_factory():
-    saf = ScriptAdapterFactory
-    assert(saf.factories[SpectrumFluxScriptAdapter.key] == SpectrumFluxScriptAdapter)
-    assert(SpectrumFluxScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(SpectrumFluxScriptAdapter.key) == SpectrumFluxScriptAdapter)
-
-
 def test_adapter_none_found():
     with pytest.raises(Exception):
         ScriptAdapterFactory.get_adapter('empty-adapter')

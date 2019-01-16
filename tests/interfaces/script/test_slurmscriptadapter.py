@@ -27,7 +27,15 @@
 # SOFTWARE.
 ###############################################################################
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
+from maestrowf.interfaces import ScriptAdapterFactory
 
 
 def test_slurm_adapter():
     assert(SlurmScriptAdapter.key == 'slurm')
+
+
+def test_slurm_adapter_in_factory():
+    saf = ScriptAdapterFactory
+    assert(saf.factories[SlurmScriptAdapter.key] == SlurmScriptAdapter)
+    assert(SlurmScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key) == SlurmScriptAdapter)
