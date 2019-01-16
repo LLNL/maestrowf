@@ -29,6 +29,8 @@
 
 """Collection of custom adapters for interfacing with various systems."""
 import logging
+import importlib
+import pkgutil
 
 from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
 from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
@@ -39,11 +41,20 @@ __all__ = "ScriptAdapterFactory"
 LOGGER = logging.getLogger(__name__)
 
 
+def iter_namespace(ns_pkg):
+    """
+    From packaging.python.org loop over a namespace and find the modules
+    :param ns_pkg: name of the namespace
+    :return: an iterable of the modules existing in the namespace
+    """
+    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
+
+
 class ScriptAdapterFactory(object):
     factories = {
         SlurmScriptAdapter.key:            SlurmScriptAdapter,
         LocalScriptAdapter.key:            LocalScriptAdapter,
-        SpectrumFluxScriptAdapter.key:    SpectrumFluxScriptAdapter,
+        SpectrumFluxScriptAdapter.key:     SpectrumFluxScriptAdapter,
         FluxScriptAdapter.key:             FluxScriptAdapter,
     }
 
