@@ -29,10 +29,7 @@
 import maestrowf.interfaces.script
 import pytest
 
-from maestrowf.interfaces import ScriptAdapterFactory, iter_namespace
-from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
-from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
-from maestrowf.interfaces.script.fluxscriptadapter import FluxScriptAdapter, SpectrumFluxScriptAdapter
+from maestrowf.interfaces import ScriptAdapterFactory
 
 
 def test_factory():
