@@ -26,4 +26,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+"""
+This module is intended to test maestrowf.interfaces.script.localscriptadapter
+module. It is setup to use nose or pytest to do that testing.
+
+This was created to verify existing functionality of the ScriptAdapterFactory
+as it was converted to dynamically load all ScriptAdapters using a namespace
+plugin methodology.
+"""
+from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
+from maestrowf.interfaces import ScriptAdapterFactory
+
+
+def test_local_adapter():
+    """
+    Tests to verify that LocalScriptAdapter has the key property set to 'local'
+    this is validate that existing specifications do not break.
+    :return:
+    """
+    assert(LocalScriptAdapter.key == 'local')
+
+
+def test_local_adapter_in_factory():
+    """
+    Testing to makes sure that the LocalScriptAdapter has been registered
+    correctly in the ScriptAdapterFactory.
+    :return:
+    """
+    saf = ScriptAdapterFactory
+    assert(saf.factories[LocalScriptAdapter.key] == LocalScriptAdapter)
+    assert(LocalScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
+    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) ==
+           LocalScriptAdapter)
