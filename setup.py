@@ -16,7 +16,7 @@ setup(name='maestrowf',
         ]
       },
       install_requires=[
-        'PyYAML',
+        'PyYAML>=4.2b1',
         'six',
         'enum34',
         "filelock",
