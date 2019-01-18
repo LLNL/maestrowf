@@ -33,7 +33,6 @@ htmlcov/
 wheelhouse/
 
 pylint_*.txt
-Pipfile.lock
 
 #pycharm
 .idea/

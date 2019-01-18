@@ -17,6 +17,5 @@ flake8
 pydocstyle
 pylint
 tox
+tabulate
 pytest
-pytest-cov
-pre-commit

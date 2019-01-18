@@ -147,7 +147,7 @@ class ScriptAdapter(object):
     @abstractmethod
     def key(self):
         """
-        Return the key name for a ScriptAdapter..
+        The key to be used in workflow specification to describe the adapter.
 
         This is used to register the adapter in the ScriptAdapterFactory
         and when writing the workflow specification.
