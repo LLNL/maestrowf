@@ -38,4 +38,5 @@ def test_local_adapter_in_factory():
     saf = ScriptAdapterFactory
     assert(saf.factories[LocalScriptAdapter.key] == LocalScriptAdapter)
     assert(LocalScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) == LocalScriptAdapter)
+    assert(ScriptAdapterFactory.get_adapter(LocalScriptAdapter.key) ==
+           LocalScriptAdapter)

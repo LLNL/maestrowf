@@ -38,4 +38,5 @@ def test_slurm_adapter_in_factory():
     saf = ScriptAdapterFactory
     assert(saf.factories[SlurmScriptAdapter.key] == SlurmScriptAdapter)
     assert(SlurmScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
-    assert(ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key) == SlurmScriptAdapter)
+    assert(ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key) ==
+           SlurmScriptAdapter)

@@ -26,7 +26,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-import maestrowf.interfaces.script
 import pytest
 
 from maestrowf.interfaces import ScriptAdapterFactory
