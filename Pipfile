@@ -14,7 +14,6 @@ maestrowf = {path = "."}
 
 [dev-packages]
 "flake8" = "*"
-nose = "*"
 pydocstyle = "*"
 pylint = "*"
 tox = "*"
