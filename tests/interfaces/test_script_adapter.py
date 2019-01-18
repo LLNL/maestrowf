@@ -26,21 +26,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
+"""
+This module is intended to test maestrowf.interfacesmodule. It is setup to
+use nose or pytest to do that testing.
+
+This was created to verify existing functionality of the ScriptAdapterFactory
+as it was converted to dynamically load all ScriptAdapters using a namespace
+plugin methodology.
+"""
 import pytest
 
 from maestrowf.interfaces import ScriptAdapterFactory
 
 
 def test_factory():
+    """
+    Test to verify that the ScriptAdapterFactory loads correctly
+    """
     saf = ScriptAdapterFactory
     assert(saf.factories is not None)
 
 
 def test_get_valid_adapters():
+    """
+    Test to verify that the keys in the internal factory is the same set as
+    the resutls from get_valid_adapters()
+    """
     saf = ScriptAdapterFactory
     assert(saf.factories.keys() == ScriptAdapterFactory.get_valid_adapters())
 
 
 def test_adapter_none_found():
+    """
+    Test to verify that an Exception is raised when an non-existing adapter
+    is requested from the factory
+    """
     with pytest.raises(Exception):
         ScriptAdapterFactory.get_adapter('empty-adapter')
