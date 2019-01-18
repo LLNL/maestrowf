@@ -40,6 +40,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LocalScriptAdapter(ScriptAdapter):
+    key = "local"
+
     """
     A ScriptAdapter class for interfacing for local execution.
     """
