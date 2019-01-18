@@ -6,7 +6,6 @@ PyYAML
 six
 sphinx_rtd_theme
 sphinx
-nose
 flake8
 pydocstyle
 pylint
