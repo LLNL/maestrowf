@@ -77,8 +77,8 @@ def test_flux_adapter_in_factory():
 
 def test_flux_spectrum_adapter_in_factory():
     """
-    Testing to makes sure that the SpectrumFluxScriptAdapter has been registered
-    correctly in the ScriptAdapterFactory.
+    Testing to makes sure that the SpectrumFluxScriptAdapter has been
+    registered correctly in the ScriptAdapterFactory.
     :return:
     """
     saf = ScriptAdapterFactory
