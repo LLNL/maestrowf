@@ -9,7 +9,7 @@ filelock = "*"
 six = "*"
 tabulate = "*"
 Fabric = "*"
-PyYAML >= "4.2b1"
+PyYAML = ">= 4.2b1"
 maestrowf = {path = "."}
 
 [dev-packages]
