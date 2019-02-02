@@ -16,8 +16,8 @@ setup(name='maestrowf',
                 'maestro = maestrowf.maestro:main',
                 'conductor = maestrowf.conductor:main',
         ]
-    },
-    install_requires=[
+      },
+      install_requires=[
         'PyYAML>=4.2b1',
         'six',
         "filelock",
