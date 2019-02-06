@@ -835,8 +835,8 @@ class ExecutionGraph(DAG):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-                logger.info("Launching all ready steps...")
-                _available = len(self.ready_steps)
+            logger.info("Launching all ready steps...")
+            _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
