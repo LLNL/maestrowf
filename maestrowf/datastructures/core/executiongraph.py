@@ -832,7 +832,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-            LOGGER.info("Launching all ready steps...")
+            logger.info("Launching all ready steps...")
             _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
