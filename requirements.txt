@@ -11,6 +11,9 @@ chainmap; python_version<'3'
 
 fabric
 coverage
+filelock
+PyYAML>=4.2b1
+six
 sphinx_rtd_theme
 sphinx
 flake8
