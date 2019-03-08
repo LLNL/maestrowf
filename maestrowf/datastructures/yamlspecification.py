@@ -94,7 +94,14 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                spec = yaml.load(data, yaml.FullLoader)
+                try:
+                    spec = yaml.load(data, yaml.FullLoader)
+                except AttributeError:
+                    logger.warning(
+                        "*** PyYAML is using an unsafe version with a known "
+                        "load vulnerability. Please upgrade your installation "
+                        "to a more recent version! ***")
+                    spec = yaml.load(data)
 
         except Exception as e:
             logger.exception(e.args)
