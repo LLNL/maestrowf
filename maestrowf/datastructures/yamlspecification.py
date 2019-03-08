@@ -94,7 +94,7 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                spec = yaml.load(data)
+                spec = yaml.load(data, yaml.FullLoader)
 
         except Exception as e:
             logger.exception(e.args)
