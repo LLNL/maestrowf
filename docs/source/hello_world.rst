@@ -88,7 +88,7 @@ In the next section we cover the basics of how to add a single parameter to the 
 Adding a Single Parameter to Hello World
 *****************************************
 
-Now that we have a functioning single step study, let's expand "Hello World" to greet multiple people. To add this new functionality, that means we need to add a new section called `global.parameters` to our `hello_world.yaml` study specification.  So, let's say we want to say hello to Pam, Jim, Michael, and Dwight. The `global.paramters` section would look as follows:
+Now that you have a functioning single step study, let's expand "Hello World" to greet multiple people. To add this new functionality, that means you need to add a new section called `global.parameters` to our `hello_world.yaml` study specification.  So, let's say we want to say hello to Pam, Jim, Michael, and Dwight. The `global.paramters` section would look as follows:
 
 .. code-block:: yaml
     :linenos:
@@ -98,4 +98,6 @@ Now that we have a functioning single step study, let's expand "Hello World" to 
             values: [Pam, Jim, Michael, Dwight]
             label: NAME.%%
 
-.. note:: '%%' is a special token that defines where the value in the label is placed. In this case the parameter labels will be "NAME.Pam", "NAME.Jim", and etc. The label can take a custom text format, so long as the '%%' token is included to be able to substitute the parameter's value in the appropriate place.
+.. note:: `%%` is a special token that defines where the value in the label is placed. In this case the parameter labels will be `NAME.Pam`, `NAME.Jim`, and etc. The label can take a custom text format, so long as the `%%` token is included to be able to substitute the parameter's value in the appropriate place.
+
+In order to use the
