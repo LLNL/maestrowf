@@ -18,10 +18,12 @@ setup(name='maestrowf',
       install_requires=[
         'PyYAML>=4.2b1',
         'six',
-        'enum34',
         "filelock",
         "tabulate",
         ],
+      extras_require={
+        ":python_version<'3.4'": ['enum34'],
+      },
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
