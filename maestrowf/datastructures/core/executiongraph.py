@@ -119,14 +119,16 @@ class _StepRecord(object):
 
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
-            retcode, jobid = adapter.submit(
+            srecord = adapter.submit(
                 self.step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
-            retcode, jobid = ladapter.submit(
+            srecord = ladapter.submit(
                 self.step, script, self.workspace.value)
 
+        retcode = srecord.submission_code
+        jobid = srecord.job_identifier
         return retcode, jobid
 
     def mark_submitted(self):
