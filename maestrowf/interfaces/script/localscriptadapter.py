@@ -35,6 +35,7 @@ from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
+from maestrowf.interfaces.script import SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
