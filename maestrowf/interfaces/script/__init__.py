@@ -38,7 +38,7 @@ from maestrowf.abstracts.enums import SubmissionCode
 class SubmissionRecord(Record):
     """A container for data about return state upon scheduler submission."""
 
-    def __init__(self, jobid, subcode, retcode):
+    def __init__(self, subcode, retcode, jobid=-1):
         """
         Initialize a new SubmissionRecord.
 
