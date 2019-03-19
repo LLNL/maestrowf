@@ -26,4 +26,59 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
+
+"""Module for interfaces that support various schedulers."""
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
+
+
+from maestrowf.abstracts.containers import Record
+from maestrowf.abstracts.enums import SubmissionCode
+
+
+class SubmissionRecord(Record):
+    """A container for data about return state upon scheduler submission."""
+
+    def __init__(self, jobid, subcode, retcode):
+        """
+        Initialize a new SubmissionRecord.
+
+        :param jobid: The assigned job identifier for this record.
+        :param retcode: The submission code returned by the scheduler submit.
+        """
+        self._subcode = subcode
+        self._info = {}
+
+        if subcode == SubmissionCode.OK:
+            # If we got an error, ignore the job identifier.
+            self._info["jobid"] = jobid
+        self._info["retcode"] = retcode
+
+    @property
+    def job_identifier(self):
+        """
+        Property for the job identifier for the record.
+
+        :returns: A string representing the job identifer assigned by the
+        scheduler.
+        """
+        return self._info.get("jobid", None)
+
+    @property
+    def submission_code(self):
+        """
+        Property for submission state for the record.
+
+        :returns: A SubmissionCode enum representing the state of the
+        submission call.
+        """
+        return self._subcode
+
+    @property
+    def return_code(self):
+        """
+        Property for the raw return code returned from submission.
+
+        :returns: An integer representing the state of the raw return code
+        from submission.
+        """
+        return self._info["retcode"]
