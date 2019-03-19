@@ -34,6 +34,7 @@ import os
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
+from maestrowf.interfaces.script import SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Execution returned status OK.")
-            return SubmissionCode.OK, pid
+            return SubmissionRecord(SubmissionCode.OK, retcode, pid)
         else:
             LOGGER.warning("Execution returned an error: %s", str(err))
-            return SubmissionCode.ERROR, pid
+            return SubmissionRecord(SubmissionCode.ERROR, retcode, pid)

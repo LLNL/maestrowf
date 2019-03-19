@@ -36,6 +36,7 @@ import re
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
+from maestrowf.interfaces.script import SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
@@ -194,10 +195,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            return SubmissionCode.OK, re.search('[0-9]+', output).group(0)
+            jid = re.search('[0-9]+', output).group(0)
+            return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
             LOGGER.warning("Submission returned an error.")
-            return SubmissionCode.ERROR, -1
+            return SubmissionRecord(SubmissionCode.ERROR, retcode)
 
     def check_jobs(self, joblist):
         """
