@@ -45,8 +45,8 @@ class SubmissionRecord(Record):
         :param jobid: The assigned job identifier for this record.
         :param retcode: The submission code returned by the scheduler submit.
         """
+        super(SubmissionRecord, self).__init__()
         self._subcode = subcode
-        self._info = {}
 
         if subcode == SubmissionCode.OK:
             # If we got an error, ignore the job identifier.
