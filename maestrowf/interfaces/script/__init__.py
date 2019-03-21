@@ -32,7 +32,7 @@ __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
 
 from maestrowf.abstracts.containers import Record
-from maestrowf.abstracts.enums import SubmissionCode
+from maestrowf.abstracts.enums import CancelCode, SubmissionCode
 
 
 class SubmissionRecord(Record):
@@ -82,3 +82,25 @@ class SubmissionRecord(Record):
         from submission.
         """
         return self._info["retcode"]
+
+
+class CancellationRecord(Record):
+    """A container for data returned from a scheduler cancellation call."""
+
+    def __init__(self):
+        """Initialize an empty CancellationRecord."""
+        self._status = {}   # Map of job identifier to its own status.
+
+    def add_status(self, jobid, cancel_status):
+        """
+        Add the cancellation status for a single job to a record.
+
+        :param jobid: Unique job identifier for the job status to be added.
+        :param cancel_status: CancelCode designating how cancellation
+        terminated.
+        """
+        if not isinstance(cancel_status, CancelCode):
+            raise TypeError(
+                "Parameter 'cancel_code' must be of type 'CancelCode'. "
+                "Received type '%s' instead.", type(cancel_status))
+        self._status[jobid] = cancel_status
