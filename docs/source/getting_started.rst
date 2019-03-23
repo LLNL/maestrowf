@@ -1,7 +1,7 @@
 Getting Started
 ================
 
-## Maestro Docker Container
+Maestro Docker Container
 *********************
 
 In order to set up the Docker container execute the following from the root of the Maestro repository::
