@@ -22,7 +22,6 @@ To start, we will walk through constructing a single step "Hello World" study th
         name: hello_world
         description: A simple 'Hello World' study.
 
-
 .. note:: The `description` block is a required section in every study and has two required keys: name, and description. You may add other keys to the description section, but Maestro will not check for them.
 
 Next we will add the `env` section. This section isn't required, but in this case, we want to stash all study workspaces in a common directory. The `env` section can contain a section named `variables`, which can contain a variable named `OUTPUT_PATH`. Maestro recognizes `OUTPUT_PATH` as a keyword and we can use it to have Maestro create new workspaces for this study in a single place. In this case, we want to create the path `./sample_output/hello_world` to collect all "Hello World" studies. To do that, add the `env` section as follows to the specification:
@@ -87,7 +86,7 @@ The completed "Hello World" specification should now look like the following:
               cmd: |
                 echo "Hello, World!" > hello_world.txt
 
-Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following:
+Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following::
 
     $ maestro run hello_world.yaml
 
@@ -110,7 +109,10 @@ From here, change into the "hello_world" subdirectory. Here you'll see that ther
     -rwxr--r--  1 dinatale3  59021    53B Jan 10 09:41 hello_world.sh
     -rw-r--r--  1 dinatale3  59021    14B Jan 10 09:41 hello_world.txt
 
-You'll notice that the study directory only contains "hello_world" and the contents for a single run (which corresponds to the singular step above). Maestro detects that the step is not parameterized and uses the workspace that corresponds with the "hello_world" step.
+You'll notice that the study directory only contains "hello_world" and the contents for a single run (which corresponds to the singular step above). Maestro detects that the step is not parameterized and uses the workspace that corresponds with the "hello_world" step. If we execute the command `cat hello_world.txt` we see that the output is exactly as specified in the `cmd` portion of the step::
+
+    $ cat hello_world.txt
+    $ Hello, World!
 
 In the next section we cover the basics of how to add a single parameter to the "Hello World" study.
 
@@ -158,7 +160,7 @@ The full single parameter version of the study specification that says hello to 
 
     study:
         - name: hello_world
-          description: Say hello to the world!
+          description: Say hello to someone!
           run:
               cmd: |
                 echo "Hello, $(NAME)!" > hello_world.txt
