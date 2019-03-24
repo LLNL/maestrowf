@@ -87,7 +87,7 @@ The completed "Hello World" specification should now look like the following:
               cmd: |
                 echo "Hello, World!" > hello_world.txt
 
-Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following::
+Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following:
 
     $ maestro run hello_world.yaml
 
@@ -129,7 +129,7 @@ Now that you have a functioning single step study, let's expand "Hello World" to
 
 .. note:: `%%` is a special token that defines where the value in the label is placed. In this case the parameter labels will be `NAME.Pam`, `NAME.Jim`, and etc. The label can take a custom text format, so long as the `%%` token is included to be able to substitute the parameter's value in the appropriate place.
 
-In order to use the `NAME` parameter, we simply modify the "hello_world" step as follows::
+In order to use the `NAME` parameter, we simply modify the "hello_world" step as follows:
 
 .. code-block:: yaml
     :linenos:
@@ -143,7 +143,7 @@ study:
 
 .. note:: The `$(NAME)` format is an example of the general format used for variables, parameters, dependency references, and labels. For more examples of referencing values, see the `LULESH study <https://github.com/LLNL/maestrowf/blob/develop/samples/lulesh/lulesh_sample1_unix.yaml>`_ in the samples folder in the Maestro GitHub repository.
 
-The full single parameter version of the study specification that says hello to different people is as follows::
+The full single parameter version of the study specification that says hello to different people is as follows:
 
 .. code-block:: yaml
     :linenos:
