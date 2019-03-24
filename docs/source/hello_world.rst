@@ -25,7 +25,16 @@ To start, we will walk through constructing a single step "Hello World" study th
 
 .. note:: The `description` block is a required section in every study and has two required keys: name, and description. You may add other keys to the description section, but Maestro will not check for them.
 
-The next section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block:
+Next we will add the `env` section. This section isn't required, but in this case, we want to stash all study workspaces in a common directory. The `env` section can contain a section named `variables`, which can contain a variable named `OUTPUT_PATH`. Maestro recognizes `OUTPUT_PATH` as a keyword and we can use it to have Maestro create new workspaces for this study in a single place. In this case, we want to create the path `./sample_output/hello_world` to collect all "hello world" studies. To do that, add the `env` section as follows to the specification:
+
+.. code-block:: yaml
+    :linenos:
+
+    env:
+        variables:
+            OUTPUT_PATH: ./sample_output/hello_world
+
+The final section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block:
 
 .. code-block:: yaml
     :linenos:
@@ -57,6 +66,26 @@ The only required keys for a study step are the name, description, and a run sec
      A string of commands to be executed by this step.
 
 There are optional keys which we will cover later on -- but for now, these are the minimum set of requirements.
+
+The completed "hello world" specification should now look like the following:
+
+.. code-block:: yaml
+    :linenos:
+
+    description:
+        name: hello_world
+        description: A simple 'Hello World' study.
+
+    env:
+        variables:
+            OUTPUT_PATH: ./sample_output/hello_world
+
+    study:
+        - name: hello_world
+          description: Build the serial version of LULESH.
+          run:
+              cmd: |
+                echo "Hello, World!" > hello_world.txt
 
 Now that the single step "Hello World" study is complete, go ahead and save it to the file `hello_world.yaml`. In order to run the study, simply run the following::
 
