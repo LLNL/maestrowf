@@ -25,7 +25,7 @@ To start, we will walk through constructing a single step "Hello World" study th
 
 .. note:: The `description` block is a required section in every study and has two required keys: name, and description. You may add other keys to the description section, but Maestro will not check for them.
 
-Next we will add the `env` section. This section isn't required, but in this case, we want to stash all study workspaces in a common directory. The `env` section can contain a section named `variables`, which can contain a variable named `OUTPUT_PATH`. Maestro recognizes `OUTPUT_PATH` as a keyword and we can use it to have Maestro create new workspaces for this study in a single place. In this case, we want to create the path `./sample_output/hello_world` to collect all "hello world" studies. To do that, add the `env` section as follows to the specification:
+Next we will add the `env` section. This section isn't required, but in this case, we want to stash all study workspaces in a common directory. The `env` section can contain a section named `variables`, which can contain a variable named `OUTPUT_PATH`. Maestro recognizes `OUTPUT_PATH` as a keyword and we can use it to have Maestro create new workspaces for this study in a single place. In this case, we want to create the path `./sample_output/hello_world` to collect all "Hello World" studies. To do that, add the `env` section as follows to the specification:
 
 .. code-block:: yaml
     :linenos:
@@ -41,7 +41,7 @@ The final section to add will be the `study` section which will only contain a s
 
     study:
         - name: hello_world
-          description: Build the serial version of LULESH.
+          description: Say hello to the world!
           run:
               cmd: |
                 echo "Hello, World!" > hello_world.txt
@@ -67,7 +67,7 @@ The only required keys for a study step are the name, description, and a run sec
 
 There are optional keys which we will cover later on -- but for now, these are the minimum set of requirements.
 
-The completed "hello world" specification should now look like the following:
+The completed "Hello World" specification should now look like the following:
 
 .. code-block:: yaml
     :linenos:
@@ -82,7 +82,7 @@ The completed "hello world" specification should now look like the following:
 
     study:
         - name: hello_world
-          description: Build the serial version of LULESH.
+          description: Say hello to the world!
           run:
               cmd: |
                 echo "Hello, World!" > hello_world.txt
@@ -129,4 +129,41 @@ Now that you have a functioning single step study, let's expand "Hello World" to
 
 .. note:: `%%` is a special token that defines where the value in the label is placed. In this case the parameter labels will be `NAME.Pam`, `NAME.Jim`, and etc. The label can take a custom text format, so long as the `%%` token is included to be able to substitute the parameter's value in the appropriate place.
 
-In order to use the
+In order to use the `NAME` parameter, we simply modify the "hello_world" step as follows::
+
+.. code-block:: yaml
+    :linenos:
+
+study:
+    - name: hello_world
+      description: Say hello to the someone!
+      run:
+          cmd: |
+            echo "Hello, $(NAME)!" > hello_world.txt
+
+.. note:: The `$(NAME)` format is an example of the general format used for variables, parameters, dependency references, and labels. For more examples of referencing values, see the `LULESH study <https://github.com/LLNL/maestrowf/blob/develop/samples/lulesh/lulesh_sample1_unix.yaml>`_ in the samples folder in the Maestro GitHub repository.
+
+The full single parameter version of the study specification that says hello to different people is as follows::
+
+.. code-block:: yaml
+    :linenos:
+
+    description:
+        name: hello_world
+        description: A simple 'Hello World' study.
+
+    env:
+        variables:
+            OUTPUT_PATH: ./sample_output/hello_world
+
+    study:
+        - name: hello_world
+          description: Say hello to the world!
+          run:
+              cmd: |
+                echo "Hello, $(NAME)!" > hello_world.txt
+
+    global.parameters:
+        NAME:
+            values: [Pam, Jim, Michael, Dwight]
+            label: NAME.%%
