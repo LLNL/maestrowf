@@ -1,8 +1,7 @@
-enum34
 fabric
 coverage
 filelock
-PyYAML
+PyYAML>=4.2b1
 six
 sphinx_rtd_theme
 sphinx
@@ -12,3 +11,4 @@ pylint
 tox
 tabulate
 pytest
+enum34; python_version<'3.4'
