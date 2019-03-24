@@ -136,12 +136,12 @@ In order to use the `NAME` parameter, we simply modify the "hello_world" step as
 .. code-block:: yaml
     :linenos:
 
-study:
-    - name: hello_world
-      description: Say hello to the someone!
-      run:
-          cmd: |
-            echo "Hello, $(NAME)!" > hello_world.txt
+    study:
+        - name: hello_world
+          description: Say hello to the world!
+          run:
+              cmd: |
+                echo "Hello, $(NAME)!" > hello_world.txt
 
 .. note:: The `$(NAME)` format is an example of the general format used for variables, parameters, dependency references, and labels. For more examples of referencing values, see the `LULESH study <https://github.com/LLNL/maestrowf/blob/develop/samples/lulesh/lulesh_sample1_unix.yaml>`_ in the samples folder in the Maestro GitHub repository.
 
