@@ -169,3 +169,9 @@ The full single parameter version of the study specification that says hello to 
         NAME:
             values: [Pam, Jim, Michael, Dwight]
             label: NAME.%%
+
+If we execute the study and print the contents of the study's workspace, we'll see that the contents are the same as described above. Just as before, if we change into the `hello_world` directory we'll see that the format of the directory has changed. There will now be a set of four directories, one for each parameter.
+
+.. code-block:: bash
+    -rwxr--r--  1 dinatale3  59021    53B Jan 10 09:41 hello_world.sh
+    -rw-r--r--  1 dinatale3  59021    14B Jan 10 09:41 hello_world.txt
