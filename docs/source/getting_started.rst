@@ -1,10 +1,25 @@
 Getting Started
 ================
 
+Maestro Docker Container
+*********************
+
+In order to set up the Docker container execute the following from the root of the Maestro repository::
+
+    $ docker --build -t maestrowf .
+
+To launch the interactive shell of the Ubuntu image simply run::
+
+    $ docker run -it maestrowf
+
+Once inside the Docker container, the following should bring up help::
+
+    $ maestro -h
+
 Installing MaestroWF
 *********************
 
-MaestroWF can be installed via pip::
+MaestroWF can be installed via pip outside of Docker with the following::
 
     $ pip install maestrowf
 
@@ -13,7 +28,7 @@ MaestroWF can be installed via pip::
 Once installed run::
 
     $ maestro -h
-    
+
     usage: maestro [-h] [-l LOGPATH] [-d DEBUG_LVL] [-c] {cancel,run,status} ...
 
     The Maestro Workflow Conductor for specifiying, launching, and managing general workflows.
