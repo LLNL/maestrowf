@@ -93,14 +93,16 @@ Now that the single step "Hello World" study is complete, go ahead and save it t
 The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide. The "hello_world" study above produces a directory that looks similar to the following:
 
 .. code-block:: bash
-
-    drwxr-xr-x  4 dinatale3  59021   136B Jan 10 09:41 hello_world
-    -rw-r--r--  1 dinatale3  59021   2.3K Jan 10 09:41 hello_world.pkl
-    -rw-r--r--  1 dinatale3  59021     0B Jan 10 09:41 hello_world.txt
-    -rw-r--r--  1 dinatale3  59021   340B Jan 10 09:40 hello_world.yaml
-    drwxr-xr-x  3 dinatale3  59021   102B Jan 10 09:40 logs
-    drwxr-xr-x  5 dinatale3  59021   170B Jan 10 09:40 meta
-    -rw-r--r--  1 dinatale3  59021   241B Jan 10 09:41 status.csv
+    drwxr-xr-x 5 root root 4096 Mar 25 01:33 ./
+    drwxr-xr-x 3 root root 4096 Mar 25 01:33 ../
+    -rwxr-xr-x 1 root root    0 Mar 25 01:33 .status.lock
+    drwxr-xr-x 2 root root 4096 Mar 25 01:33 hello_world/
+    -rw-r--r-- 1 root root 2352 Mar 25 01:33 hello_world.pkl
+    -rw-r--r-- 1 root root    0 Mar 25 01:33 hello_world.txt
+    -rwxr-xr-x 1 root root  332 Mar 25 01:33 hello_world.yaml*
+    drwxr-xr-x 2 root root 4096 Mar 25 01:33 logs/
+    drwxr-xr-x 3 root root 4096 Mar 25 01:33 meta/
+    -rw-r--r-- 1 root root  241 Mar 25 01:33 status.csv
 
 From here, change into the "hello_world" subdirectory. Here you'll see that there are two files: the generated "hello_world.sh" shell script and the resulting output "hello_world.txt". The directory looks similar to:
 
@@ -116,8 +118,8 @@ You'll notice that the study directory only contains "hello_world" and the conte
 
 In the next section we cover the basics of how to add a single parameter to the "Hello World" study.
 
-Adding a Single Parameter to Hello World
-*****************************************
+Adding a Single Parameter to "Hello World"
+*******************************************
 
 Now that you have a functioning single step study, let's expand "Hello World" to greet multiple people. To add this new functionality, that means you need to add a new section called `global.parameters` to our `hello_world.yaml` study specification.  So, let's say we want to say hello to Pam, Jim, Michael, and Dwight. The `global.paramters` section would look as follows:
 
@@ -170,8 +172,21 @@ The full single parameter version of the study specification that says hello to 
             values: [Pam, Jim, Michael, Dwight]
             label: NAME.%%
 
-If we execute the study and print the contents of the study's workspace, we'll see that the contents are the same as described above. Just as before, if we change into the `hello_world` directory we'll see that the format of the directory has changed. There will now be a set of four directories, one for each parameter.
+If we execute the study and print the contents of the study's workspace, we'll see that the contents are the same as described above. Just as before, if we change into the `hello_world` directory we'll see that the format of the directory has changed. There will now be a set of four directories, one for each parameter value, each containing the `hello_world.txt` output.
 
 .. code-block:: bash
-    -rwxr--r--  1 dinatale3  59021    53B Jan 10 09:41 hello_world.sh
-    -rw-r--r--  1 dinatale3  59021    14B Jan 10 09:41 hello_world.txt
+    drwxr-xr-x 6 root root 4096 Mar 25 01:30 ./
+    drwxr-xr-x 5 root root 4096 Mar 25 01:30 ../
+    drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Dwight/
+    drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Jim/
+    drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Michael/
+    drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Pam/
+
+However, if we `cat` each of the outputs from each directory, we'll see that the value for `$(NAME)` has been substituted.
+
+.. code-block:: bash
+    cat */hello_world.txt
+    Hello, Dwight!
+    Hello, Jim!
+    Hello, Michael!
+    Hello, Pam!
