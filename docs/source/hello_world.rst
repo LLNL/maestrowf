@@ -93,6 +93,7 @@ Now that the single step "Hello World" study is complete, go ahead and save it t
 The command above will produce a timestamped folder that contains the output of the above study. If you'd like to know more about Maestro's command line interface and study output, take a look at our :doc:`Quick Start <./quick_start>` guide. The "hello_world" study above produces a directory that looks similar to the following:
 
 .. code-block:: bash
+
     drwxr-xr-x 5 root root 4096 Mar 25 01:33 ./
     drwxr-xr-x 3 root root 4096 Mar 25 01:33 ../
     -rwxr-xr-x 1 root root    0 Mar 25 01:33 .status.lock
@@ -175,6 +176,7 @@ The full single parameter version of the study specification that says hello to 
 If we execute the study and print the contents of the study's workspace, we'll see that the contents are the same as described above. Just as before, if we change into the `hello_world` directory we'll see that the format of the directory has changed. There will now be a set of four directories, one for each parameter value, each containing the `hello_world.txt` output.
 
 .. code-block:: bash
+
     drwxr-xr-x 6 root root 4096 Mar 25 01:30 ./
     drwxr-xr-x 5 root root 4096 Mar 25 01:30 ../
     drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Dwight/
@@ -182,11 +184,10 @@ If we execute the study and print the contents of the study's workspace, we'll s
     drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Michael/
     drwxr-xr-x 2 root root 4096 Mar 25 01:30 NAME.Pam/
 
-However, if we `cat` each of the outputs from each directory, we'll see that the value for `$(NAME)` has been substituted.
+However, if we `cat` each of the outputs from each directory, we'll see that the value for `$(NAME)` has been substituted::
 
-.. code-block:: bash
-    cat */hello_world.txt
-    Hello, Dwight!
-    Hello, Jim!
-    Hello, Michael!
-    Hello, Pam!
+    $ cat */hello_world.txt
+    $ Hello, Dwight!
+    $ Hello, Jim!
+    $ Hello, Michael!
+    $ Hello, Pam!
