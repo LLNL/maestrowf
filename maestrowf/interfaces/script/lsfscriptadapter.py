@@ -46,7 +46,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing with the LSF cluster scheduler."""
 
     NOJOB_REGEX = re.compile(r"^No\s")
-    key = "slurm"
+    key = "lsf"
 
     def __init__(self, **kwargs):
         """
