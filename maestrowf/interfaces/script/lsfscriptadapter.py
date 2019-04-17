@@ -272,8 +272,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     continue
 
                 if job_split[jobid_index] in status:
-                    if "limit reached" in job_split[term_reason]:
+                    if "TERM_RUNLIMIT" in job_split[term_reason]:
                         _j_state = "TIMEOUT"
+                    elif "TERM_OWNER" in job_split[term_reason]:
+                        _j_state = "CANCELLED"
                     else:
                         _j_state = job_split[state_index]
                     _state = self._state(_j_state)
@@ -336,6 +338,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             return State.PENDING
         elif lsf_state == "DONE":
             return State.FINISHED
+        elif lsf_state == "CANCELLED":
+            return State.CANCELLED
         elif lsf_state == "EXIT":
             return State.FAILED
         elif lsf_state == "TIMEOUT":
