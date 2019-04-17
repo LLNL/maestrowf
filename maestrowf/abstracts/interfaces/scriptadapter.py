@@ -48,9 +48,9 @@ class ScriptAdapter(object):
     is ultimately the DAG that manages the state of tasks. Adapters attempt to
     bridge the 'how' in an abstract way such that the interface is refined to
     methods such as:
-        - Generating a script with the proper syntax to submit.
-        - Submitting a script using the proper command.
-        - Checking job status.
+    - Generating a script with the proper syntax to submit.
+    - Submitting a script using the proper command.
+    - Checking job status.
     """
 
     @abstractmethod
@@ -60,7 +60,7 @@ class ScriptAdapter(object):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+            identifiers to their status.
         """
         pass
 
@@ -89,7 +89,7 @@ class ScriptAdapter(object):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if the workflow step is to be scheduled,
-        False otherwise) and the path to the written script.
+            False otherwise) and the path to the written script.
         """
         pass
 
@@ -100,8 +100,8 @@ class ScriptAdapter(object):
         :param ws_path: Workspace path for the step.
         :param step: An instance of a StudyStep class.
         :returns: A tuple containing a boolean set to True if step should be
-        scheduled (False otherwise), path to the generate script, and path
-        to the generated restart script (None if step cannot be restarted).
+            scheduled (False otherwise), path to the generate script, and path
+            to the generated restart script (None if step cannot be restarted).
         """
         to_be_scheduled, script_path, restart_path = \
             self._write_script(ws_path, step)
@@ -131,5 +131,16 @@ class ScriptAdapter(object):
         :param job_map: A map of workflow step names to their job identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return code of the submission command and job identiifer.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def key(self):
+        """
+        The key to be used in workflow specification to describe the adapter.
+
+        This is used to register the adapter in the ScriptAdapterFactory
+        and when writing the workflow specification.
         """
         pass

@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+"enum34" = "*"
+filelock = "*"
+six = "*"
+tabulate = "*"
+Fabric = "*"
+PyYAML = ">= 4.2b1"
+maestrowf = {path = "."}
+
+[dev-packages]
+"flake8" = "*"
+pydocstyle = "*"
+pylint = "*"
+tox = "*"
+coverage = "*"
+sphinx_rtd_theme = "*"
+Sphinx = "*"
+pytest = "*"
+
+[requires]
+python_version = "3.6"

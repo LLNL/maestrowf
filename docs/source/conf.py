@@ -15,17 +15,15 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../'))
 
 # -- General configuration ------------------------------------------------
 
-# If your documentation needs a minimal Sphinx version, state it here.
+# 1.3 needed for autodoc_mock_imports
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -33,6 +31,8 @@
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage']
+
+autodoc_mock_imports = ['filelock', 'tabulate', 'setup']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'SimMananger'
+project = u'Maestro Workflow Conductor'
 copyright = u'2017, Francesco Di Natale'
 author = u'Francesco Di Natale'
 
@@ -101,7 +101,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SimManangerdoc'
+htmlhelp_basename = 'MaestroWFdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -128,7 +128,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'SimMananger.tex', u'SimMananger Documentation',
+    (master_doc, 'MaestroWF.tex', u'MaestroWF Documentation',
      u'Francesco Di Natale', 'manual'),
 ]
 
@@ -138,7 +138,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'simmananger', u'SimMananger Documentation',
+    (master_doc, 'MaestroWF', u'MaestroWF Documentation',
      [author], 1)
 ]
 
@@ -149,7 +149,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'SimMananger', u'SimMananger Documentation',
-     author, 'SimMananger', 'One line description of project.',
+    (master_doc, 'MaestroWF', u'MaestroWF Documentation',
+     author, 'MaestroWF', 'One line description of project.',
      'Miscellaneous'),
 ]

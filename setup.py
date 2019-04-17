@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(name='maestrowf',
       description='A tool and library for specifying and conducting general '
       'workflows.',
-      version='1.1.0dev',
+      version='1.1.4dev1.2',
       author='Francesco Di Natale',
       author_email='dinatale3@llnl.gov',
       url='https://github.com/llnl/maestrowf',
@@ -16,12 +16,14 @@ setup(name='maestrowf',
         ]
       },
       install_requires=[
-        'PyYAML',
+        'PyYAML>=4.2b1',
         'six',
-        'enum34',
         "filelock",
         "tabulate",
         ],
+      extras_require={
+        ":python_version<'3.4'": ['enum34'],
+      },
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

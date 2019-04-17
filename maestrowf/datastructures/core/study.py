@@ -28,23 +28,26 @@
 ###############################################################################
 
 """Class related to the construction of study campaigns."""
-
 import copy
+from hashlib import md5
 import logging
 import os
+import pickle
 import re
-import time
+import yaml
 
 from maestrowf.abstracts import SimObject
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.datastructures.dag import DAG
-from maestrowf.datastructures.environment import Variable
-from maestrowf.utils import apply_function, create_parentdir
+from maestrowf.utils import apply_function, create_parentdir, make_safe_path
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
 WSREGEX = re.compile(
     r"\$\(([-!\$%\^&\*\(\)_\+\|~=`{}\[\]:;<>\?,\.\/\w]+)\.workspace\)"
+)
+ALL_COMBOS = re.compile(
+    r"_\*|\*"
 )
 
 
@@ -65,15 +68,17 @@ class StudyStep(SimObject):
         self.name = ""
         self.description = ""
         self.run = {
-                        "cmd": "",
-                        "depends": "",
-                        "pre": "",
-                        "post": "",
-                        "restart": "",
-                        "nodes": "",
-                        "procs": "",
-                        "walltime": "",
-                        "reservation": ""
+                        "cmd":              "",
+                        "depends":          "",
+                        "pre":              "",
+                        "post":             "",
+                        "restart":          "",
+                        "nodes":            "",
+                        "procs":            "",
+                        "gpus":             "",
+                        "cores per task":   "",
+                        "walltime":         "",
+                        "reservation":      ""
                     }
 
     def apply_parameters(self, combo):
@@ -87,6 +92,7 @@ class StudyStep(SimObject):
         tmp = StudyStep()
         tmp.__dict__ = apply_function(self.__dict__, combo.apply)
         # Return if the new step is modified and the step itself.
+
         return self.__ne__(tmp), tmp
 
     def __eq__(self, other):
@@ -140,24 +146,24 @@ class Study(DAG):
 
     Future functionality that makes sense to add here:
         - Metadata collection. If we're setting things up here, collect the
-        general information. We might even want to venture to say that a set of
-        directives may be useful so that they could be placed into Dependency
-        classes as hooks for dumping that data automatically.
+          general information. We might even want to venture to say that a set
+          of directives may be useful so that they could be placed into
+          Dependency classes as hooks for dumping that data automatically.
         - A way of packaging an instance of the class up into something that is
-        easy to store in the ExecutionDAG class so that an API can be designed
-        in whatever class ends up managing all of this to have machine learning
-        applications pipe messages to spin up new studies using the same
-        environment.
+          easy to store in the ExecutionDAG class so that an API can be
+          designed in whatever class ends up managing all of this to have
+          machine learning applications pipe messages to spin up new studies
+          using the same environment.
             - The current solution to this is VERY basic. Currently the plan is
-            to write a parameterized specification (not unlike the method of
-            using parameterized .dat files for simulators) and just have the ML
-            engine string replace those. It's crude because currently we'd have
-            to just construct a new environment, with no way to manage
-            injecting the new set into an existing workspace.
+              to write a parameterized specification (not unlike the method of
+              using parameterized .dat files for simulators) and just have the
+              ML engine string replace those. It's crude because currently we'd
+              have to just construct a new environment, with no way to manage
+              injecting the new set into an existing workspace.
     """
 
     def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None):
+                 studyenv=None, parameters=None, steps=None, out_path="./"):
         """
         Study object used to represent the full workflow of a study.
 
@@ -182,25 +188,12 @@ class Study(DAG):
 
         # We want deep copies so that properties don't change out from under
         # the Sudy data structure.
-        self.environment = copy.deepcopy(studyenv)
-        self.parameters = copy.deepcopy(parameters)
+        self.environment = studyenv
+        self.parameters = parameters
+        self._out_path = out_path
+        self._meta_path = os.path.join(out_path, "meta")
 
-        # Isolate the OUTPUT_PATH variable. Even though it should be contained
-        # in the environment, it needs to be tweaked for each combination of
-        # parameters to isolate their workspaces.
-        if self.environment:
-            # Attempt to remove the OUTPUT_PATH from the environment.
-            self.output = self.environment.find('OUTPUT_PATH')
-
-            # If it doesn't exist, assume the current directory is our output
-            # path.
-            if self.output is None:
-                out_path = os.path.abspath('./')
-                self.output = Variable('OUTPUT_PATH', out_path, '$')
-                self.environment.add(self.output)
-            else:
-                self.output.value = os.path.abspath(self.output.value)
-
+        logger.info("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
         self.add_node(SOURCE, None)
@@ -208,13 +201,26 @@ class Study(DAG):
         # Settings for handling restarts and submission attempts.
         self._restart_limit = 0
         self._submission_attempts = 0
+        self._use_tmp = False
+
+        # Management structures
+        # The workspace used by each step.
+        self.workspaces = {SOURCE: self._out_path}
+        # Parameter independent dependencies by step.
+        self.hub_depends = {SOURCE: set()}
+        # Other dependencies per step.
+        self.depends = {SOURCE: set()}
+        # Parameters that each step depends on.
+        self.used_params = {SOURCE: set()}
+        # Combinations seen per step.
+        self.step_combos = {SOURCE: set()}
 
         # If the user specified a flow in the form of steps, copy those into
         # into the Study object.
         if steps:
             for step in steps:
                 # Deep copy because it prevents modifications after the fact.
-                self.add_step(copy.deepcopy(step))
+                self.add_step(step)
 
     @property
     def output_path(self):
@@ -223,11 +229,94 @@ class Study(DAG):
 
         :returns: The string path stored in the OUTPUT_PATH variable.
         """
-        return self.output.value
+        return self._out_path
+
+    def store_metadata(self):
+        """Store metadata related to the study."""
+        # Create the metadata directory.
+        create_parentdir(self._meta_path)
+
+        # Store the environment object in order to preserve it.
+        path = os.path.join(self._meta_path, "study")
+        create_parentdir(path)
+        path = os.path.join(path, "env.pkl")
+        with open(path, 'wb') as pkl:
+            pickle.dump(self, pkl)
+
+        # Construct other metadata related to study construction.
+        _workspaces = {}
+        for key, value in self.workspaces.items():
+            if key == "_source":
+                _workspaces[key] = value
+            elif key in self.step_combos:
+                _workspaces[key] = os.path.split(value)[-1]
+            else:
+                _workspaces[key] = \
+                    os.path.sep.join(value.rsplit(os.path.sep)[-2:])
+
+        # Construct relative paths for the combinations and nest them in the
+        # same way as the step combinations dictionary.
+        _step_combos = {}
+        for key, value in self.step_combos.items():
+            if key == SOURCE:
+                _step_combos[key] = self.workspaces[key]
+            elif not self.used_params[key]:
+                _ws = self.workspaces[key]
+                _step_combos[key] = {key: os.path.split(_ws)[-1]}
+            else:
+                _step_combos[key] = {}
+                for combo in value:
+                    _ws = self.workspaces[combo]
+                    _step_combos[key][combo] = \
+                        os.path.sep.join(_ws.rsplit(os.path.sep)[-2:])
+
+        metadata = {
+            "dependencies": self.depends,
+            "hub_dependencies": self.hub_depends,
+            "workspaces": _workspaces,
+            "used_parameters": self.used_params,
+            "step_combinations": _step_combos,
+        }
+        # Write out the study construction metadata.
+        path = os.path.join(self._meta_path, "metadata.yaml")
+        with open(path, "wb") as metafile:
+            metafile.write(yaml.dump(metadata).encode("utf-8"))
+
+        # Write out parameter metadata.
+        metadata = self.parameters.get_metadata()
+        path = os.path.join(self._meta_path, "parameters.yaml")
+        with open(path, "wb") as metafile:
+            metafile.write(yaml.dump(metadata).encode("utf-8"))
+
+    def load_metadata(self):
+        """Load metadata for the study."""
+        if not os.path.exists(self._meta_path):
+            return
+
+        path = os.path.join(self._meta_path, "study", "env.pkl")
+        with open(path, 'rb') as pkl:
+            env = pickle.load(pkl)
+
+        if not isinstance(env, type(self)):
+            msg = "Object loaded from {path} is of type {type}. Expected an" \
+                  " object of type '{cls}.'".format(path=path, type=type(env),
+                                                    cls=type(self))
+            logger.error(msg)
+            raise TypeError(msg)
+
+        metapath = os.path.join(self._meta_path, "metadata.yaml")
+        with open(metapath, "rb") as metafile:
+            metadata = yaml.load(metafile)
+
+        self.depends = metadata["dependencies"]
+        self.hub_depends = metadata["hub_dependencies"]
+        self.workspaces = metadata["workspaces"]
+        self.used_params = metadata["used_parameters"]
+        self.step_combos = metadata["step_combinations"]
 
     def add_step(self, step):
         """
-        Helper method for adding steps to a Study instance.
+        Add a step to a study.
 
         For this helper to be most effective, it recommended to apply steps in
         the order that they will be encountered. The method attempts to be
@@ -239,13 +328,24 @@ class Study(DAG):
         """
         # Add the node to the DAG.
         self.add_node(step.name, step)
+        logger.info(
+            "Adding step '%s' to study '%s'...", step.name, self.name)
+        # Apply the environment to the incoming step.
+        step.__dict__ = \
+            apply_function(step.__dict__, self.environment.apply_environment)
 
         # If the step depends on a prior step, create an edge.
         if "depends" in step.run and step.run["depends"]:
             for dependency in step.run["depends"]:
                 logger.info("{0} is dependent on {1}. Creating edge ("
                             "{1}, {0})...".format(step.name, dependency))
-                self.add_edge(dependency, step.name)
+                if "*" not in dependency:
+                    self.add_edge(dependency, step.name)
+                else:
+                    self.add_edge(
+                        re.sub(ALL_COMBOS, "", dependency),
+                        step.name
+                    )
         else:
             # Otherwise, if no other dependency, just execute the step.
             self.add_edge(SOURCE, step.name)
@@ -265,305 +365,432 @@ class Study(DAG):
         for node in path:
             yield parents[node], node, self.values[node]
 
-    def setup(self, submission_attempts=1, restart_limit=1, throttle=0):
-        """
-        Method for executing initial setup of a Study.
+    def setup_workspace(self):
+        """Set up the study's main workspace directory."""
+        try:
+            logger.info("Setting up study workspace in '%s'", self._out_path)
+            create_parentdir(self._out_path)
+        except Exception as e:
+            logger.error(e.args)
+            return False
 
-        The method is used for going through and actually acquiring each
-        dependency, substituting variables, sources and labels. Also sets up
-        the folder structure for the study.
-
-        :param submission_attempts: Number of attempted submissions before
-        marking a step as failed.
-        :param restart_limit: Upper limit on the number of times a step with
-        a restart command can be resubmitted before it is considered failed.
-        :returns: True if the Study is successfully setup, False otherwise.
-        """
-        # If the study has been set up, just return.
-        if self._issetup:
-            logger.info("%s is already set up, returning.")
-            return True
-
-        self._submission_attempts = submission_attempts
-        self._restart_limit = restart_limit
-        self._submission_throttle = throttle
-
-        # Set up the directory structure.
-        # TODO: fdinatal - As I implement the high level program (manager and
-        # launcher in bin), I'm starting to have questions about whether or
-        # not the study set up is the place to handle the output path... it
-        # feels like the determination of the output path should be at the
-        # higher level.
-        out_name = "{}_{}".format(
-            self.name.replace(" ", "_"),
-            time.strftime("%Y%m%d-%H%M%S")
-        )
-        self.output.value = os.path.join(self.output.value, out_name)
-
+    def setup_environment(self):
+        """Set up the environment by acquiring outside dependencies."""
         # Set up the environment if it hasn't been already.
         if not self.environment.is_set_up:
             logger.info("Environment is setting up.")
             self.environment.acquire_environment()
 
-        try:
-            create_parentdir(self.output.value)
-        except Exception as e:
-            logger.error(e.message)
-            return False
+    def configure_study(self, submission_attempts=1, restart_limit=1,
+                        throttle=0, use_tmp=False, hash_ws=False):
+        """
+        Perform initial configuration of a study.
 
-        # Apply all environment artifcacts and acquire everything.
-        for key, node in self.values.items():
-            logger.info("Applying to step '%s' of the study '%s'...",
-                        key, node)
-            if node:
-                node.__dict__ = apply_function(
-                                    node.__dict__,
-                                    self.environment.apply_environment)
+        The method is used for going through and actually acquiring each
+        dependency, substituting variables, sources and labels.
 
-        # Flag the study as set up.
-        self._issetup = True
-        return True
+        :param submission_attempts: Number of attempted submissions before
+            marking a step as failed.
+        :param restart_limit: Upper limit on the number of times a step with
+        a restart command can be resubmitted before it is considered failed.
+        :param throttle: The maximum number of in-progress jobs allowed. [0
+        denotes no cap].
+        :param use_tmp: Boolean value specifying if the generated
+        ExecutionGraph dumps its information into a temporary directory.
+        :returns: True if the Study is successfully setup, False otherwise.
+        """
+        self._submission_attempts = submission_attempts
+        self._restart_limit = restart_limit
+        self._submission_throttle = throttle
+        self._use_tmp = use_tmp
+        self._hash_ws = hash_ws
 
-    def _setup_parameterized(self):
+        logger.info(
+            "\n------------------------------------------\n"
+            "Output path =               %s\n"
+            "Submission attempts =       %d\n"
+            "Submission restart limit =  %d\n"
+            "Submission throttle limit = %d\n"
+            "Use temporary directory =   %s\n"
+            "Hash workspaces =           %s\n"
+            "------------------------------------------",
+            self._out_path, submission_attempts, restart_limit, throttle,
+            use_tmp, hash_ws
+        )
+
+    def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
 
         :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an expanded
-        ExecutionGraph based on the parameters and parameterized workflow
-        steps.
+            ExecutionGraph based on the parameters and parameterized workflow
+            steps.
         """
-        # Construct ExecutionGraph
-        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
-        dag.add_description(**self.description)
         # Items to store that should be reset.
-        global_workspace = self.output.value  # Highest ouput dir
+        logger.info(
+            "\n==================================================\n"
+            "Constructing parameter study '%s'\n"
+            "==================================================\n",
+            self.name
+        )
 
-        # Rework begins here:
-        # First step, we need to map each workflow step to the parameters that
-        # they actually use -- and only the parameters used. This setup will
-        # make it so that workflows can be constructed with implicit stages.
-        # That's to say that if a step only requires a subset of parameters,
-        # we only need to run the set of combinations dictated by that subset.
-        # NOTE: We're going to need to make a way for users to access the
-        # workspaces of other steps. With this rework we won't be able to
-        # assume that every directory has all parameters on it.
-        used_params = {}
-        workspaces = {}
-        for parent, step, node in self.walk_study():
-            # Source doesn't matter -- ignore it.
+        # Topological sorted list of steps.
+        t_sorted = self.topological_sort()
+
+        # For each step, we need to assess what type of step it is.
+        # So far we've seen five types of steps:
+        # 1. Linear - The step uses no parameters, so we can add it as it is.
+        # 2. Parameterized - The step uses or is dependent on steps that use
+        # parameters.
+        # 3. Parameter Independent - A step who only uses hub dependencies; or
+        # phrased more concisely, is not directly dependent on the parameters
+        # of a parent step but simply makes use of all of its combinations.
+        # 4. Parameter Dependent - A step that may or may not be parameterized
+        # itself, but whose combinations also depend on the combinations of its
+        # parents.
+        # 5. Parameterized and Parameter Independent - A step that is a combo
+        # of #2 and #3 which requires the step to be expanded based on the
+        # used parameters of the step, and then adding all parameterized
+        # combinations of funneled steps.
+        for step in t_sorted:
+            logger.info(
+                "\n==================================================\n"
+                "Processing step '%s'\n"
+                "==================================================\n",
+                step
+            )
+            # If we encounter SOURCE, just add it and continue.
             if step == SOURCE:
+                logger.info("Encountered '%s'. Adding and continuing.", SOURCE)
+                dag.add_node(SOURCE, None)
                 continue
 
-            # Otherwise, we have a valid key.
-            # We need to collect used parameters for two things:
-            # 1. Collect the used parameters for the current step.
-            # 2. Get the used parameters for the parent step.
-            # The logic here is that the used parameters are going to be the
-            # union of the used parameters for this step and ALL parent steps.
-            # If we keep including the step's parent parameters, we will simply
-            # carry parent parameters recursively.
-            step_params = self.parameters.get_used_parameters(node)
-            if parent != SOURCE:
-                step_params |= used_params[parent]
-            used_params[step] = step_params
+            # We're dealing with an actual step. So we have to:
+            # Update our management structures.
+            node = self.values[step]
+            self.hub_depends[step] = set()
+            self.depends[step] = set()
+            self.step_combos[step] = set()
 
-        logger.debug("Used Parameters - \n%s", used_params)
+            s_params = self.parameters.get_used_parameters(node)
+            p_params = set()    # Used parameters excluding the current step.
+            # Iterate through dependencies to update the p_params
+            logger.debug("\n*** Processing dependencies ***")
+            for parent in node.run["depends"]:
+                # If we have a dependency that is parameter independent, add
+                # it to the hub dependency set.
+                if "*" in parent:
+                    logger.debug("Found funnel dependency -- %s", parent)
+                    self.hub_depends[step].add(re.sub(ALL_COMBOS, "", parent))
+                else:
+                    logger.debug("Found dependency -- %s", parent)
+                    # Otherwise, just note the parameters used by the step.
+                    self.depends[step].add(parent)
+                    p_params |= self.used_params[parent]
 
-        # Secondly, we need to now iterate over all combinations for each step
-        # and simply apply the combination. We can then add the name to the
-        # expanded map using only the parameters that we discovered above.
-        for combo in self.parameters:
-            # For each Combination in the parameters...
-            logger.info("==================================================")
-            logger.info("Expanding study '%s' for combination '%s'",
-                        self.name, str(combo))
-            logger.info("==================================================")
+            # Search for workspace matches. These affect the expansion of a
+            # node because they may use parameters. These are likely to cause
+            # a node to fall into the 'Parameter Dependent' case.
+            used_spaces = re.findall(WSREGEX, node.run["cmd"])
+            for ws in used_spaces:
+                if ws not in self.used_params:
+                    msg = "Workspace for '{}' is being used before it would" \
+                          " be generated.".format(ws)
+                    logger.error(msg)
+                    raise Exception(msg)
 
-            # For each step in the Study
-            # Walk the study and construct subtree based on the combination.
-            for parent, step, node in self.walk_study():
-                # If we find the source node, we can just add it and continue.
-                if step == SOURCE:
-                    logger.debug("Source node found.")
-                    dag.add_node(SOURCE, None)
+                # We have the case that if we're using a workspace of a step
+                # that is a parameter independent dependency, we can skip it.
+                # The parameters don't affect the combinations.
+                if ws in self.hub_depends[step]:
+                    logger.info(
+                        "'%s' parameter independent association found. "
+                        "Skipping.", ws)
                     continue
 
-                logger.debug("Processing step '%s'.", step)
-                # Due to the rework, we now can get the parameters used. We no
-                # longer have to blindly apply the parameters. In fact, better
-                # if we don't know. We have to see if the name exists in the
-                # DAG first. If it does we can skip the step. Otherwise, apply
-                # and add.
-                if used_params[step]:
-                    logger.debug("Used parameters %s", used_params[step])
-                    # Apply the used parameters to the step.
-                    modified, step_exp = node.apply_parameters(combo)
-                    # Name the step based on the parameters used.
-                    combo_str = combo.get_param_string(used_params[step])
-                    step_name = "{}_{}".format(step_exp.name, combo_str)
-                    logger.debug("Step has been modified. Step '%s' renamed"
-                                 " to '%s'", step_exp.name, step_name)
-                    step_exp.name = step_name
-                    logger.debug("Resulting step name: %s", step_name)
+                logger.debug(
+                    "Found workspace '%s' using parameters %s",
+                    ws, self.used_params[ws])
+                p_params |= self.used_params[ws]
 
-                    # Set the workspace to the parameterized workspace
-                    self.output.value = os.path.join(global_workspace,
-                                                     combo_str)
+            # Total parameters used for this step are the union of each parent
+            # and the union of the parameters used by this step.
+            self.used_params[step] = p_params | s_params
 
-                    # We now should account for varying workspace locations.
-                    # Search for the use of workspaces in the command line so
-                    # that we can go ahead and fill in the appropriate space
-                    # for this combination.
-                    cmd = step_exp.run["cmd"]
-                    used_spaces = re.findall(WSREGEX, cmd)
-                    for match in used_spaces:
-                        logger.debug("Workspace found -- %s", match)
-                        # Append the parameters that the step uses matching the
-                        # current combo.
-                        combo_str = combo.get_param_string(used_params[match])
-                        logger.debug("Combo str -- %s", combo_str)
-                        if combo_str:
-                            _ = "{}_{}".format(match, combo_str)
-                        else:
-                            _ = match
-                        # Replace the workspace tag in the command.
-                        workspace_var = "$({}.workspace)".format(match)
-                        cmd = cmd.replace(workspace_var, workspaces[_])
-                        logger.debug("New cmd -- %s", cmd)
-                    step_exp.run["cmd"] = cmd
-                else:
-                    # Otherwise, we know that this step is a joining node.
-                    step_exp = copy.deepcopy(node)
-                    modified = False
-                    logger.debug("No parameters found. Resulting name %s",
-                                 step_exp.name)
-                    self.output.value = os.path.join(global_workspace)
+            # Check for a restart and set the rlimit accordingly.
+            if node.run["restart"]:
+                rlimit = self._restart_limit
+            else:
+                rlimit = 0
 
-                # Add the workspace name to the map of workspaces.
-                workspaces[step_exp.name] = self.output.value
-
-                # Now we need to make sure we handle the dependencies.
-                # We know the parent and the step name (whether it's modified
-                # or not and is not _source). So now there's two cases:
-                #   1. If the ExecutionGraph contains the parent name as it
-                #      exists without parameterization, then we know we have
-                #      a hub/joining node.
-                #   2. If the ExecutionGraph does not have the parent node,
-                #      then our next assumption is that it has a parameterized
-                #      version of the parent. We need to check and make sure.
-                #   3. Fall back third case... Abort. Something is not right.
-                if step_exp.run["restart"]:
-                    rlimit = self._restart_limit
-                else:
-                    rlimit = 0
-
-                if parent != SOURCE:
-                    # With the rework, we now need to check the parent's used
-                    # parmeters.
-                    combo_str = combo.get_param_string(used_params[parent])
-                    param_name = "{}_{}".format(parent, combo_str)
-                    # If the parent node is not '_source', check.
-                    if parent in dag.values:
-                        # If the parent is in the dag, add the current step...
-                        dag.add_step(step_exp.name, step_exp,
-                                     self.output.value, rlimit)
-                        # And its associated edge.
-                        dag.add_edge(parent, step_exp.name)
-                    elif param_name in dag.values:
-                        # Find the index in the step for the dependency...
-                        i = step_exp.run['depends'].index(parent)
-                        # Sub it with parameterized dependency...
-                        step_exp.run['depends'][i] = param_name
-                        # Add the node and edge.
-                        dag.add_step(step_exp.name, step_exp,
-                                     self.output.value, rlimit)
-                        dag.add_edge(param_name, step_exp.name)
-                    else:
-                        msg = "'{}' nor '{}' found in the ExecutionGraph. " \
-                              "Unexpected error occurred." \
-                              .format(parent, param_name)
-                        logger.error(msg)
-                        raise ValueError(msg)
-                else:
-                    # If the parent is source, then we can just execute it from
-                    # '_source'.
-                    dag.add_step(step_exp.name, step_exp, self.output.value,
-                                 rlimit)
-                    dag.add_edge(SOURCE, step_exp.name)
-
-                # Go ahead and substitute in the output path and create the
-                # workspace in the ExecutionGraph.
-                create_parentdir(self.output.value)
-                step_exp.__dict__ = apply_function(step_exp.__dict__,
-                                                   self.output.substitute)
-
-                # logging
-                logger.debug("---------------- Modified --------------")
-                logger.debug("Modified = %s", modified)
-                logger.debug("step_exp = %s", step_exp.__dict__)
-                logger.debug("----------------------------------------")
-
-                # Reset the output path to the global_workspace.
-                self.output.value = global_workspace
+            # 1. The step and all its preceding parents use no parameters.
+            if not self.used_params[step]:
                 logger.info(
-                    "==================================================")
+                    "\n-------------------------------------------------\n"
+                    "Adding step '%s' (No parameters used)\n"
+                    "-------------------------------------------------\n",
+                    step
+                )
+                # If we're not using any parameters at all, we do:
+                # Copy the step and set to not modified.
+                self.step_combos[step].add(step)
 
-        return global_workspace, dag
+                workspace = make_safe_path(self._out_path, *[step])
+                self.workspaces[step] = workspace
+                logger.debug("Workspace: %s", workspace)
 
-    def _setup_linear(self):
+                # NOTE: I don't think it's valid to have a specific workspace
+                # since a step with no parameters operates at the global level.
+                # NOTE: Opting to save the old command for provenence reasons.
+                cmd = node.run["cmd"]
+                r_cmd = node.run["restart"]
+                logger.info("Searching for workspaces...\ncmd = %s", cmd)
+                for match in used_spaces:
+                    logger.info("Workspace found -- %s", match)
+                    workspace_var = "$({}.workspace)".format(match)
+                    if match in self.hub_depends[step]:
+                        # If we're looking at a parameter independent match
+                        # the workspace is the folder that contains all of
+                        # the outputs of all combinations for the step.
+                        ws = make_safe_path(self._out_path, *[match])
+                        logger.info("Found funnel workspace -- %s", ws)
+                    else:
+                        ws = self.workspaces[match]
+                    cmd = cmd.replace(workspace_var, ws)
+                    r_cmd = r_cmd.replace(workspace_var, ws)
+                # We have to deepcopy the node, otherwise when we modify it
+                # here, it's reflected in the ExecutionGraph.
+                node = copy.deepcopy(node)
+                node.run["cmd"] = cmd
+                logger.debug("New cmd = %s", cmd)
+                logger.debug("New restart = %s", r_cmd)
+
+                dag.add_step(step, node, workspace, rlimit)
+
+                if self.depends[step] or self.hub_depends[step]:
+                    # So, because we don't have used parameters, we can just
+                    # loop over the dependencies and add them.
+                    logger.debug("Processing regular dependencies.")
+                    for parent in self.depends[step]:
+                        logger.info("Adding edge (%s, %s)...", parent, step)
+                        dag.add_connection(parent, step)
+
+                    # We can still have a case where we have steps that do
+                    # funnel into this one even though this particular step
+                    # is not parameterized.
+                    logger.debug("Processing hub dependencies.")
+                    for parent in self.hub_depends[step]:
+                        for item in self.step_combos[parent]:
+                            logger.info("Adding edge (%s, %s)...", item, step)
+                            dag.add_connection(item, step)
+                else:
+                    # Otherwise, just add source since we're not dependent.
+                    logger.debug("Adding edge (%s, %s)...", SOURCE, step)
+                    dag.add_connection(SOURCE, step)
+
+            # 2. The step has used parameters.
+            else:
+                logger.info(
+                    "\n==================================================\n"
+                    "Expanding step '%s'\n"
+                    "==================================================\n"
+                    "-------- Used Parameters --------\n"
+                    "%s\n"
+                    "---------------------------------",
+                    step, self.used_params[step]
+                )
+                # Now we iterate over the combinations and expand the step.
+                for combo in self.parameters:
+                    logger.info("\n**********************************\n"
+                                "Combo [%s]\n"
+                                "**********************************",
+                                str(combo))
+                    # Compute this step's combination name and workspace.
+                    combo_str = combo.get_param_string(self.used_params[step])
+                    if self._hash_ws:
+                        workspace = make_safe_path(
+                                        self._out_path,
+                                        *[step, md5(combo_str).hexdigest()])
+                    else:
+                        workspace = \
+                            make_safe_path(self._out_path, *[step, combo_str])
+                        logger.debug("Workspace: %s", workspace)
+                    combo_str = "{}_{}".format(step, combo_str)
+                    self.workspaces[combo_str] = workspace
+
+                    # Check if the step combination has been processed.
+                    if combo_str in self.step_combos:
+                        continue
+                    # Add this step to the combinations seen.
+                    self.step_combos[step].add(combo_str)
+
+                    modified, step_exp = node.apply_parameters(combo)
+                    step_exp.name = combo_str
+
+                    # Substitute workspaces into the combination.
+                    cmd = step_exp.run["cmd"]
+                    r_cmd = step_exp.run["restart"]
+                    logger.info("Searching for workspaces...\ncmd = %s", cmd)
+                    for match in used_spaces:
+                        # Construct the workspace variable.
+                        logger.info("Workspace found -- %s", ws)
+                        workspace_var = "$({}.workspace)".format(match)
+                        if match in self.hub_depends[step]:
+                            # If we're looking at a parameter independent match
+                            # the workspace is the folder that contains all of
+                            # the outputs of all combinations for the step.
+                            ws = make_safe_path(self._out_path, *[match])
+                            logger.info("Found funnel workspace -- %s", ws)
+                        elif not self.used_params[match]:
+                            # If it's not a funneled dependency and the match
+                            # is not parameterized, then the workspace is just
+                            # the unparameterized match.
+                            ws = self.workspaces[match]
+                            logger.info(
+                                "Found unparameterized workspace -- %s", match)
+                        else:
+                            # Otherwise, we're dealing with a combination.
+                            ws = "{}_{}".format(
+                                match,
+                                combo.get_param_string(self.used_params[match])
+                            )
+                            logger.info(
+                                "Found parameterized workspace -- %s", ws)
+                            ws = self.workspaces[ws]
+
+                        # Replace in both the command and restart command.
+                        cmd = cmd.replace(workspace_var, ws)
+                        r_cmd = r_cmd.replace(workspace_var, ws)
+                    logger.info("New cmd = %s", cmd)
+
+                    step_exp.run["cmd"] = cmd
+                    step_exp.run["restart"] = r_cmd
+                    # Add to the step to the DAG.
+                    dag.add_step(step_exp.name, step_exp, workspace, rlimit)
+
+                    if self.depends[step] or self.hub_depends[step]:
+                        # So, because we don't have used parameters, we can
+                        # just loop over the dependencies and add them.
+                        logger.info("Processing regular dependencies.")
+                        for p in self.depends[step]:
+                            if self.used_params[p]:
+                                p = "{}_{}".format(
+                                    p,
+                                    combo.get_param_string(self.used_params[p])
+                                )
+                            logger.info(
+                                "Adding edge (%s, %s)...", p, combo_str
+                            )
+                            dag.add_connection(p, combo_str)
+
+                        # We can still have a case where we have steps that do
+                        # funnel into this one even though this particular step
+                        # is not parameterized.
+                        logger.debug("Processing hub dependencies.")
+                        for parent in self.hub_depends[step]:
+                            for item in self.step_combos[parent]:
+                                logger.info(
+                                    "Adding edge (%s, %s)...", item, combo_str
+                                )
+                                dag.add_connection(item, combo_str)
+                    else:
+                        # Otherwise, just add source since we're not dependent.
+                        logger.debug(
+                            "Adding edge (%s, %s)...", SOURCE, combo_str
+                        )
+                        dag.add_connection(SOURCE, combo_str)
+
+        return dag
+
+    def _stage_linear(self, dag):
         """
         Execute a linear workflow without parameters.
 
         :param throttle: Maximum number of in progress jobs allowed.
         :returns: The path to the study's global workspace and an
-        ExecutionGraph based on linear steps in the study.
+            ExecutionGraph based on linear steps in the study.
         """
-        # Construct ExecutionGraph
-        dag = ExecutionGraph(submission_throttle=self._submission_throttle)
-        dag.add_description(**self.description)
-        # Items to store that should be reset.
-        logger.info("==================================================")
-        logger.info("Constructing linear study '%s'", self.name)
-        logger.info("==================================================")
-
         # For each step in the Study
         # Walk the study and add the steps to the ExecutionGraph.
-        for parent, step, node in self.walk_study():
+        t_sorted = self.topological_sort()
+        for step in t_sorted:
             # If we find the source node, we can just add it and continue.
             if step == SOURCE:
                 logger.debug("Source node found.")
                 dag.add_node(SOURCE, None)
                 continue
 
+            # Initialize management structures.
+            ws = make_safe_path(self._out_path, *[step])
+            self.workspaces[step] = ws
+            self.depends[step] = set()
+            # Hub dependencies are not possible in linear studies. Empty set
+            # for completion.
+            self.hub_depends[step] = set()
+            self.used_params[step] = set()
+            self.step_combos[step] = set([step])
+
+            node = self.values[step]
             # If the step has a restart cmd, set the limit.
             if node.run["restart"]:
                 rlimit = self._restart_limit
             else:
                 rlimit = 0
 
-            # Add the step
-            dag.add_step(step, node, self.output.value, rlimit)
-            dag.add_edge(parent, step)
+            cmd = node.run["cmd"]
+            r_cmd = node.run["restart"]
+            logger.info("Searching for workspaces...\ncmd = %s", cmd)
+            used_spaces = re.findall(WSREGEX, cmd)
+            for match in used_spaces:
+                # In this case we don't need to look for any parameters, or
+                # combination depdendent ("funnel") steps. It's a simple sub.
+                logger.info("Workspace found -- %s", match)
+                workspace_var = "$({}.workspace)".format(match)
+                ws = self.workspaces[match]
+                cmd = cmd.replace(workspace_var, ws)
+                r_cmd = r_cmd.replace(workspace_var, ws)
+            node.run["cmd"] = cmd
+            node.run["restart"] = r_cmd
 
-        return self.output.value, dag
+            # Add the step
+            dag.add_step(step, node, ws, rlimit)
+            # If the node does not depend on any other steps, make it so that
+            # if connects to SOURCE.
+            if not node.run["depends"]:
+                dag.add_connection(SOURCE, step)
+            else:
+                # In this case, since our step names are not parameterized,
+                # and due to topological sort, we can guarantee that our
+                # dependencies have been added. Go through and add each edge.
+                for parent in node.run["depends"]:
+                    self.depends[step].add(parent)
+                    dag.add_connection(parent, step)
+
+        return dag
 
     def stage(self):
         """
-        Method that produces the expanded DAG representing the Study.
+        Generate the execution graph for a Study.
 
         Staging creates an ExecutionGraph based on the combinations generated
         by the ParameterGeneration object stored in an instance of a Study.
         The stage method also sets up individual working directories (or
         workspaces) for each node in the workflow that requires it.
 
-        :param throttle: Maximum number of in progress jobs allowed.
         :returns: An ExecutionGraph object with the expanded workflow.
         """
-        # If not set up, return None.
-        if not self._issetup:
-            msg = "Study {} is not set up for staging. Run setup before " \
-                  "attempting to stage.".format(self.name)
+        # If the workspace doesn't exist, raise an exception.
+        if not os.path.exists(self._out_path):
+            msg = "Study {} is not set up for staging. Workspace does not " \
+                  "exists (Output Dir = {}).".format(self.name, self._out_path)
+            logger.error(msg)
+            raise Exception(msg)
+
+        # If the environment isn't set up, raise an exception.
+        if not self.environment.is_set_up:
+            msg = "Study {} is not set up for staging. Environment is not " \
+                  "set up. Aborting.".format(self.name)
             logger.error(msg)
             raise Exception(msg)
 
@@ -586,11 +813,12 @@ class Study(DAG):
         # will need to be formatted properly so that scripts get generated in
         # the appropriate fashion.
 
-        # We have two cases:
-        # 1. Parameterized workflows
-        # 2. A linear, execute as specified workflow
-        # NOTE: This scheme could be how we handle derived use cases.
-        if self.parameters:
-            return self._setup_parameterized()
-        else:
-            return self._setup_linear()
+        # Construct ExecutionGraph
+        dag = ExecutionGraph(
+            submission_attempts=self._submission_attempts,
+            submission_throttle=self._submission_throttle,
+            use_tmp=self._use_tmp)
+        dag.add_description(**self.description)
+        dag.log_description()
+
+        return self._out_path, self._stage(dag)

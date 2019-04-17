@@ -32,9 +32,9 @@
 import logging
 import os
 import re
-import subprocess
 
 from maestrowf.abstracts import Dependency
+from maestrowf.utils import start_process
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +65,11 @@ class GitDependency(Dependency):
         :params name: String name that refers to a GitDependency instance.
         :params value: The URL (SSH or FTP) to the remote git repository.
         :params path: The local path where the copy of the repository is
-        cloned to.
+            cloned to.
         :params token: String of expected character(s) that appear at the
-        beginning of a substring representing the dependency variable.
+            beginning of a substring representing the dependency variable.
         :params kwargs: Optional keyword arguments - Only valid optionals are
-        "branch", "hash", and "tag".
+            "branch", "hash", and "tag".
         """
         # Required base information
         self.name = name
@@ -147,39 +147,55 @@ class GitDependency(Dependency):
                 self.url = substitution.substitute(self.url)
 
         path = os.path.join(self.path, self.name)
+
+        # Moved the path existence here because git doesn't actually return a
+        # specific enough error code.
+        if os.path.exists(path):
+            msg = "Destination path '{}' already exists and is not an " \
+                  "empty directory.".format(path)
+            logger.error(msg)
+            raise Exception(msg)
+
+        logger.info("Checking for connectivity to %s", self.url)
+        p = start_process(["git", "ls-remote", self.url], shell=False)
+        retcode = p.wait()
+        if retcode != 0:
+            msg = "Connectivity check failed. Check that you have " \
+                "permissions to the specified repository, that the URL is " \
+                "correct, and that you have network connectivity. (url = {})" \
+                .format(self.url)
+            logger.error(msg)
+            raise RuntimeError(msg)
+        logger.info("Connectivity achieved!")
+
         logger.info("Cloning %s from %s...", self.name, self.url)
-        clone = subprocess.Popen(["git", "clone", self.url, path],
-                                 stdout=subprocess.PIPE)
+        clone = start_process(["git", "clone", self.url, path], shell=False)
         retcode = clone.wait()
         if retcode != 0:
-            if retcode == 128:
-                msg = "Destination path '{}' already exists and is not an " \
-                      "empty directory. (Error code: 128)".format(path)
-            else:
-                msg = "Failed to acquire GitDependency named '{}'. Check " \
-                  "that repository URL ({}) and repository local path ({}) " \
-                  "are valid. (Error code: {})".format(self.name, self.url,
-                                                       path, retcode)
-
+            msg = "Failed to acquire GitDependency named '{}'. Check " \
+              "that repository URL ({}) and repository local path ({}) " \
+              "are valid.".format(self.name, self.url, path)
             logger.error(msg)
             raise Exception(msg)
 
         if self.hash:
             logger.info("Checking out SHA1 hash '{}'...", self.hash)
-            chkout = subprocess.Popen(["git", "checkout", self.hash], cwd=path)
+            chkout = start_process(["git", "checkout", self.hash],
+                                   cwd=path, shell=False)
             retcode = chkout.wait()
 
             if retcode != 0:
                 msg = "Unable to checkout SHA1 hash '{}' for the repository" \
-                      " located at {}. (Error code: {})" \
-                      .format(self.hash, self.url, retcode)
+                      " located at {}." \
+                      .format(self.hash, self.url)
                 logger.error(msg)
                 raise ValueError(msg)
 
         if self.tag:
             logger.info("Checking out git tag '{}'...", self.tag)
             tag = "tags/{}".format(self.tag)
-            chkout = subprocess.Popen(["git", "checkout", tag], cwd=path)
+            chkout = start_process(["git", "checkout", tag],
+                                   cwd=path, shell=False)
 
             retcode = chkout.wait()
 
@@ -191,8 +207,8 @@ class GitDependency(Dependency):
 
         if self.branch:
             logger.info("Checking out git branch '{}'...", self.branch)
-            chkout = subprocess.Popen(["git", "checkout", self.branch],
-                                      cwd=path)
+            chkout = start_process(["git", "checkout", self.branch],
+                                   cwd=path, shell=False)
 
             retcode = chkout.wait()
 

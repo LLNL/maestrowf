@@ -32,14 +32,35 @@
 from collections import OrderedDict
 import logging
 import os
+import string
+from subprocess import PIPE, Popen
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.error import HTTPError, URLError
 import time
 
 LOGGER = logging.getLogger(__name__)
 
 
+def get_duration(time_delta):
+    """
+    Covert durations to HH:MM:SS format.
+
+    :params time_delta: A time difference in datatime format.
+    :returns: A formatted string in HH:MM:SS
+    """
+    duration = time_delta.total_seconds()
+    days = int(duration / 86400)
+    hours = int((duration % 86400) / 3600)
+    minutes = int((duration % 86400 % 3600) / 60)
+    seconds = int((duration % 86400 % 3600) % 60)
+
+    return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
+           .format(days, hours, minutes, seconds)
+
+
 def generate_filename(path, append_time=True):
     """
-    Utility function for generating a non-conflicting file name.
+    Generate a non-conflicting file name.
 
     :param path: Path to file.
     :param append_time: Setting to append a timestamp.
@@ -89,7 +110,7 @@ def apply_function(item, func):
 
     :param item: A Python primitive to apply a function to.
     :param func: Function that returns takes item as a parameter and returns
-    item modified in some way.
+        item modified in some way.
     """
     if not item:
         return item
@@ -115,7 +136,7 @@ def csvtable_to_dict(fstream):
 
     :param fstream: An open file stream to a csv table (with header)
     :returns: A dictionary with a key for each column header and a list of
-    column values for each key.
+        column values for each key.
     """
     # Read in the lines from the file stream.
     lines = fstream.readlines()
@@ -144,3 +165,96 @@ def csvtable_to_dict(fstream):
 
     # Return the completed table
     return table
+
+
+def make_safe_path(base_path, *args):
+    """
+    Construct a subpath that is path safe.
+
+    :params base_path: The base path to append args to.
+    :params *args: Path components to join into a path.
+    :returns: A joined subpath with invalid characters stripped.
+    """
+    valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    path = [base_path]
+    for arg in args:
+        arg = "".join(c for c in arg if c in valid)
+        arg = arg.replace(" ", "_")
+        path.append(arg)
+    return os.path.join(*path)
+
+
+def start_process(cmd, cwd=None, env=None, shell=True):
+    """
+    Starts a new process using a specified command.
+
+    :param cmd: A string or a list representing the command to be run.
+    :param cwd: Current working path that the process will be started in.
+    :param env: A dictionary containing the environment the process will use.
+    :param shell: Boolean that determines if the process will run a shell.
+    """
+    if isinstance(cmd, list):
+        shell = False
+
+    # Define kwargs for the upcoming Popen call.
+    kwargs = {
+        "shell":                shell,
+        "universal_newlines":   True,
+        "stdout":               PIPE,
+        "stderr":               PIPE,
+    }
+
+    # Individually check if cwd and env are set -- this prevents us from
+    # adding parameters to the command that are only set to defaults. It
+    # also insulates us from potential default value changes in the future.
+    if cwd is not None:
+        kwargs["cwd"] = cwd
+
+    if env is not None:
+        kwargs["env"] = env
+
+    return Popen(cmd, **kwargs)
+
+
+def ping_url(url):
+    """
+    Load a webpage to test that it is accessible.
+
+    :param url: URL string to be loaded.
+    """
+    try:
+        response = urlopen(url)
+    except HTTPError as e:
+        LOGGER.error("Error fulfilling HTTP request. (%s)", e.code)
+        raise e
+    except URLError as e:
+        LOGGER.error(
+            "Check specified URL (%s) and that you are connected to the "
+            "internet. (%s)", url, e.code)
+        raise e
+    else:
+        response.read()
+        return
+
+
+def create_dictionary(list_keyvalues, token=":"):
+    """
+    Create a dictionary from a list of key-value pairs.
+
+    :param list_keyvalues: List of token separates key-values.
+    :param token: The token to split each key-value by.
+    :returns: A dictionary containing the key-value pairings in list_keyvalues.
+    """
+    _dict = {}
+    for item in list_keyvalues:
+        try:
+            key, value = [i.strip() for i in item.split(token, 1)]
+            _dict[key] = value
+        except ValueError:
+            msg = "'{}' is not capable of being split by the token '{}'. " \
+                  "Verify that all other parameters are formatted properly." \
+                  .format(item, token)
+            LOGGER.exception(msg)
+            raise ValueError(msg)
+
+    return _dict

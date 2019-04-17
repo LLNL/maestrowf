@@ -1,0 +1,71 @@
+description:
+    name: lulesh sample1
+    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/lulesh
+        SIZE: 10
+        ITERATIONS: 20
+        TRIAL: 1
+
+    labels:
+        outfile: SIZE.$(SIZE).ITER.$(ITERATIONS).log
+
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
+          tag: 2.0.3
+
+study:
+    - name: make-lulesh
+      description: Build the serial version of LULESH.
+      run:
+          cmd: |
+            cd $(LULESH)
+            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
+            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
+            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
+            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
+            make clean
+            make
+          depends: []
+
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+          depends: [make-lulesh]
+
+    - name: post-process-lulesh
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
+            echo $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) > ls.log
+          depends: [run-lulesh]
+
+    - name: post-process-lulesh-trials
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "TRIAL = $(TRIAL)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) > out.log
+          depends: [run-lulesh]
+
+    - name: post-process-lulesh-size
+      description: Post process all LULESH results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "SIZE = $(SIZE)" >> out.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) | grep SIZE.$(SIZE) >> out.log
+          depends: [run-lulesh]

@@ -78,7 +78,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param name: String name of the parameter that's being added.
         :param value: Value associated with the parameter name (should have a
-        str method).
+            str method).
         """
         self._batch[name] = value
 
@@ -89,7 +89,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+            the parameter step.
         """
         pass
 
@@ -100,9 +100,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+            (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+            and procs.
         """
         pass
 
@@ -118,8 +118,12 @@ class SchedulerScriptAdapter(ScriptAdapter):
         err_msg = "{} attempting to allocate {} {} for a parallel call with" \
                   " a maximum allocation of {}"
 
-        nodes = kwargs.pop("nodes")
-        procs = kwargs.pop("procs")
+        nodes = kwargs.get("nodes")
+        procs = kwargs.get("procs")
+        addl_args = dict(kwargs)
+        addl_args.pop("nodes")
+        addl_args.pop("procs")
+
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
         LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
@@ -205,7 +209,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     LOGGER.error(msg)
                     raise ValueError(msg)
 
-                pcmd = self.get_parallelize_command(_procs, _nodes, **kwargs)
+                pcmd = self.get_parallelize_command(
+                    _procs, _nodes, **addl_args
+                )
                 cmd = cmd.replace(match.group(), pcmd)
 
             # Verify that the total nodes/procs used is within maximum.
@@ -223,16 +229,22 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
             return cmd
         else:
-            # 3. If not using launcher token,then just prepend.
-            pcmd = self.get_parallelize_command(procs, nodes, **kwargs)
+            # 3. Two smaller cases here. If we see the launcher token WITHOUT
+            # any parameters, replace it there with full nodes and procs.
+            # Otherwise, just return the command. A user may simply want to run
+            # an unparallelized code in a submission.
+            pcmd = self.get_parallelize_command(procs, nodes, **addl_args)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
                 LOGGER.debug("'%s' found in cmd -- %s",
                              self.launcher_var, step_cmd)
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
-                LOGGER.debug("Prepending parallel command. cmd=%s", step_cmd)
-                return " ".join([pcmd, step_cmd])
+                LOGGER.debug(
+                    "The command did not specify an MPI command. cmd=%s",
+                    step_cmd
+                )
+                return step_cmd
 
     def get_scheduler_command(self, step):
         """
@@ -256,7 +268,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
         # If the user is requesting nodes, we need to request the nodes and
         # set up the command with scheduling.
-        if "nodes" in step.run or "procs" in step.run:
+        _nodes = step.run.get("nodes", 0)
+        _procs = step.run.get("procs", 0)
+        if _nodes or _procs:
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
                 step.run["cmd"],
@@ -297,7 +311,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if the workflow step is to be scheduled,
-        False otherwise) and the path to the written script.
+            False otherwise) and the path to the written script.
         """
         pass
 

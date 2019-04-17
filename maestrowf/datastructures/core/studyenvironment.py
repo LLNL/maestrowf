@@ -65,7 +65,7 @@ class StudyEnvironment(SimObject):
         Override for the __bool__ operator.
 
         :returns: True if the StudyEnvironment instance has values, False
-        otherwise.
+            otherwise.
         """
         return bool(self._names)
 
@@ -134,7 +134,7 @@ class StudyEnvironment(SimObject):
 
         :param key: Name of the environment object to find.
         :returns: The environment object labeled by key, None if key is not
-        found.
+            found.
         """
         logger.debug("Looking for '%s'...", key)
         if key in self.dependencies:
@@ -160,25 +160,30 @@ class StudyEnvironment(SimObject):
         :returns: The environment object labeled by key.
         """
         logger.debug("Looking to remove '%s'...", key)
+
+        if key not in self._names:
+            return None
+
         _ = self.dependencies.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         _ = self.substitutions.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         _ = self.labels.pop(key, None)
         if _ is not None:
+            self._names.remove(key)
             return _
 
         logger.debug("'%s' not found -- \n%s", key, self)
         return None
 
     def acquire_environment(self):
-        """
-        Acquire any environment items that may be stored remotely.
-        """
+        """Acquire any environment items that may be stored remotely."""
         if self._is_set_up:
             logger.info("Environment already set up. Returning.")
             return

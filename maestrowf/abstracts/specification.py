@@ -116,7 +116,7 @@ class Specification(object):
         Getter for the description of a study specification.
 
         :returns: A string containing the description of the study
-        specification.
+            specification.
         """
         pass
 

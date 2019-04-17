@@ -26,7 +26,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-from maestrowf.interfaces.script.localscriptadapter import LocalScriptAdapter
-from maestrowf.interfaces.script.slurmscriptadapter import SlurmScriptAdapter
-
-__all__ = ("LocalScriptAdapter", "SlurmScriptAdapter")
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)

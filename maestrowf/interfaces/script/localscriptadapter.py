@@ -30,16 +30,18 @@
 """Local interface implementation."""
 import logging
 import os
-from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.abstracts.interfaces import ScriptAdapter
+from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
 
 
 class LocalScriptAdapter(ScriptAdapter):
+    key = "local"
+
     """
     A ScriptAdapter class for interfacing for local execution.
     """
@@ -70,8 +72,8 @@ class LocalScriptAdapter(ScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: False (will not be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+            written script for run["cmd"], and the path to the script written
+            for run["restart"] (if it exists).
         """
         cmd = step.run["cmd"]
         restart = step.run["restart"]
@@ -103,7 +105,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+            identifiers to their status.
         """
         return JobStatusCode.NOJOBS, {}
 
@@ -135,8 +137,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Script to execute: %s", path)
-        p = Popen(path, shell=False, stdout=PIPE, stderr=PIPE, cwd=cwd,
-                  env=env)
+        p = start_process(path, shell=False, cwd=cwd, env=env)
         pid = p.pid
         output, err = p.communicate()
         retcode = p.wait()

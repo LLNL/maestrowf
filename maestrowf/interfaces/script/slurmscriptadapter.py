@@ -32,17 +32,19 @@ import getpass
 import logging
 import os
 import re
-from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
+from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
 
 
 class SlurmScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing with the SLURM scheduler."""
+
+    key = "slurm"
 
     def __init__(self, **kwargs):
         """
@@ -87,7 +89,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "ntasks": "-n",
             "nodes": "-N",
             "reservation": "--reservation",
+            "cores per task": "-c",
         }
+        self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
         """
@@ -95,7 +99,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+            the parameter step.
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -122,9 +126,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+            (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+            and procs.
         """
         args = [
             # SLURM srun command
@@ -140,12 +144,17 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 str(nodes),
             ]
 
-        rsvp = kwargs.pop("reservation", "")
-        if rsvp:
-            args += [
-                self._cmd_flags["reservation"],
-                "\"{}\"".format(str(rsvp))
-            ]
+        supported = set(kwargs.keys()) - self._unsupported
+        for key in supported:
+            value = kwargs.get(key)
+            if key not in self._cmd_flags:
+                LOGGER.warning("'%s' is not supported -- ommitted.", key)
+                continue
+            if value:
+                args += [
+                    self._cmd_flags[key],
+                    "{}".format(str(value))
+                ]
 
         return " ".join(args)
 
@@ -157,10 +166,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+            identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+            identiifer.
         """
         # Leading command is 'sbatch'
         cmd = ["sbatch"]
@@ -175,7 +184,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Command to execute: %s", cmd)
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
+        p = start_process(cmd, cwd=cwd, env=env)
         output, err = p.communicate()
         retcode = p.wait()
 
@@ -199,14 +208,14 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+            identifiers to their status.
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
         cmd = "squeue -u $USER -t all"
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
 
@@ -228,7 +237,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 # 5 - Current Execution Time
                 # 6 - Assigned Node Count
                 # 7 - Hostname and assigned node identifier list
-                job_split = re.split("\s+", job)
+                job_split = re.split(r"\s+", job)
                 state_index = 4
                 jobid_index = 0
                 if job_split[0] == "":
@@ -268,7 +277,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cmd = "scancel --quiet {}".format(" ".join(joblist))
-        p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
 
@@ -319,8 +328,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if to be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+            written script for run["cmd"], and the path to the script written
+            for run["restart"] (if it exists).
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 

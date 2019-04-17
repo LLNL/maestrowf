@@ -29,17 +29,45 @@
 
 """Collection of custom adapters for interfacing with various systems."""
 import logging
+import pkgutil
+import inspect
+from maestrowf.abstracts.interfaces import ScriptAdapter
 
-from maestrowf.interfaces.script import LocalScriptAdapter, SlurmScriptAdapter
 
-__all__ = ("SlurmScriptAdapter", "ScriptAdapterFactory")
+__all__ = "ScriptAdapterFactory"
 LOGGER = logging.getLogger(__name__)
+
+
+def iter_adapters():
+    """
+    Based off of packaging.python.org loop over a namespace and find the
+    modules. This has been adapted for this particular use case of loading
+    all classes implementing ScriptAdapter loaded from all modules in
+    maestrowf.interfaces.script.
+    :return: an iterable of the classes existing in the namespace
+    """
+    # get loader for the script adapter package
+    loader = pkgutil.get_loader('maestrowf.interfaces.script')
+    # get all of the modules in the package
+    mods = [(name, ispkg) for finder, name, ispkg in pkgutil.iter_modules(
+            loader.load_module('maestrowf.interfaces.script').__path__,
+            loader.load_module('maestrowf.interfaces.script').__name__ + ".")]
+    cs = []
+    for name, _ in mods:
+        # get loader for every module
+        m = pkgutil.get_loader(name).load_module(name)
+        # get all classes that implement ScriptAdapter and are not abstract
+        for n, cls in m.__dict__.items():
+            if isinstance(cls, type) and issubclass(cls, ScriptAdapter) and \
+                    not inspect.isabstract(cls):
+                cs.append(cls)
+
+    return cs
 
 
 class ScriptAdapterFactory(object):
     factories = {
-        "slurm": SlurmScriptAdapter,
-        "local": LocalScriptAdapter,
+       adapter.key: adapter for adapter in iter_adapters()
     }
 
     @classmethod

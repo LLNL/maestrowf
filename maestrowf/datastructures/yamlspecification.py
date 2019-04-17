@@ -53,19 +53,20 @@ class YAMLSpecification(Specification):
     presented in the maestrowf.datastructure.core package. The objectives for
     such a structure are three-fold:
         1. Present users who do not want a coding interface with a means to
-        execute their studies without having to know the underlying details of
-        the package itself. If the user learns the core concepts as presented
-        by the YAML specification, the study should be able to be parsed and
-        executed by the underlying data structures.
+           execute their studies without having to know the underlying details
+           of the package itself. If the user learns the core concepts as
+           presented by the YAML specification, the study should be able to be
+           parsed and executed by the underlying data structures.
         2. Providing an abstract specification aids in presentation to users
-        because it provides a concrete example of not only how to use the
-        MaestroWF package as a whole, but as a very useful way to discuss the
-        core concepts without actually having to dive into the code.
+           because it provides a concrete example of not only how to use the
+           MaestroWF package as a whole, but as a very useful way to discuss
+           the core concepts without actually having to dive into the code.
         3. Provides a "living and breathing" example of how to use the core
-        structures to make a presentable interface for users. The YAML
-        specification just so happens to be a textual representation, but it
-        is an example of how you would use an interface (of whatever type) to
-        construct the core structures and make use of them to run a study.
+           structures to make a presentable interface for users. The YAML
+           specification just so happens to be a textual representation, but it
+           is an example of how you would use an interface (of whatever type)
+           to construct the core structures and make use of them to run a
+           study.
     """
 
     def __init__(self):
@@ -84,7 +85,7 @@ class YAMLSpecification(Specification):
     @classmethod
     def load_specification(cls, path):
         """
-        Method for loading a study specification.
+        Load a study specification.
 
         :param path: Path to a study specification.
         :returns: A specification object containing the information from path.
@@ -93,10 +94,17 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                spec = yaml.load(data)
+                try:
+                    spec = yaml.load(data, yaml.FullLoader)
+                except AttributeError:
+                    logger.warning(
+                        "*** PyYAML is using an unsafe version with a known "
+                        "load vulnerability. Please upgrade your installation "
+                        "to a more recent version! ***")
+                    spec = yaml.load(data)
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.debug("Loaded specification -- \n%s", spec["description"])
@@ -148,7 +156,7 @@ class YAMLSpecification(Specification):
                     raise ValueError("Both 'name' and 'description' must be "
                                      "provided for a valid study description.")
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.info("Study description verified -- \n%s", self.description)
@@ -201,7 +209,7 @@ class YAMLSpecification(Specification):
         required keys are entirely dependent on the type of dependency.
 
         :param keys_seen: A set of the keys seen in other parts of the
-        specification.
+            specification.
         :returns: A set of variable names seen.
         """
         dep_types = ["path", "git", "spack"]
@@ -274,7 +282,7 @@ class YAMLSpecification(Specification):
             self._verify_steps()
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
     def _verify_steps(self):
@@ -309,7 +317,7 @@ class YAMLSpecification(Specification):
                                      "configuration for step named '{}'."
                                      .format(missing_attrs, step["name"]))
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
         logger.debug("Verified")
@@ -321,16 +329,19 @@ class YAMLSpecification(Specification):
         Verify that (if globals exist) they conform to the following:
         Each parameter must have:
             1. values
-            2. label
-        Conditions that must be satisfied for a collection fo globals:
+            2. label(s)
+
+        Conditions that must be satisfied for a collection of globals:
             1. All global names must be unique.
             2. Each list of values must be the same length.
+            3. If the label is a list, its length must match
+               the value length
         """
         try:
             if self.globals:
                 req_global = set(["values", "label"])
                 global_names = set()
-                value_len = -1
+                values_len = -1
                 for name, value in self.globals.items():
                     # Check if the name is in the set
                     if name in global_names:
@@ -344,22 +355,36 @@ class YAMLSpecification(Specification):
                         raise ValueError("Missing {} keys in the global "
                                          "parameter named {}"
                                          .format(missing_attrs, name))
+                    # If label is a list, check its length against values.
+                    values = value["values"]
+                    label = value["label"]
+                    if isinstance(label, list):
+                        if len(values) != len(label):
+                            raise ValueError("Global parameter '{}' the "
+                                             "values length does not "
+                                             "match the label list length."
+                                             .format(name))
+                        if len(label) != len(set(label)):
+                            raise ValueError("Global parameter '{}' the "
+                                             "label does not contain "
+                                             "unique labels."
+                                             .format(name))
                     # Add the name to global parameters encountered, check if
                     # length of values is the same as previously encountered.
                     global_names.add(name)
                     # If length not set, set it and continue
-                    if value_len == -1:
-                        value_len = len(value)
+                    if values_len == -1:
+                        values_len = len(values)
                         continue
 
                     # Check length. Exception if doesn't match.
-                    if len(value) != value_len:
+                    if len(values) != values_len:
                         raise ValueError("Global parameter '{}' is not the "
                                          "same length as other parameters."
                                          .format(name))
 
         except Exception as e:
-            logger.exception(e.message)
+            logger.exception(e.args)
             raise
 
     @property
@@ -401,7 +426,7 @@ class YAMLSpecification(Specification):
         Getter for the description of a study specification.
 
         :returns: A string containing the description of the study
-        specification.
+            specification.
         """
         return self.description["description"]
 

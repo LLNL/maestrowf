@@ -1,15 +1,20 @@
+"""Module for the execution of DAG workflows."""
+from collections import deque, OrderedDict
 from datetime import datetime
 from filelock import FileLock, Timeout
 import getpass
 import logging
 import os
 import pickle
-from collections import deque
+import shutil
+import tempfile
 
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
-    CancelCode
+    CancelCode, StudyStatus
 from maestrowf.datastructures.dag import DAG
+from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
+from maestrowf.utils import create_parentdir, get_duration
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -25,7 +30,7 @@ class _StepRecord(object):
     step in the DAG.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, workspace, step, **kwargs):
         """
         Initialize a new instance of a StepRecord.
 
@@ -38,22 +43,91 @@ class _StepRecord(object):
         to_be_scheduled: True if the record needs scheduling. False otherwise.
         step: The StudyStep that is represented by the record instance.
         restart_limit: Upper limit on the number of restart attempts.
+        tmp_dir: A provided temp directory to write scripts to instead of step
+        workspace.
         """
-        self.workspace = kwargs.pop("workspace", "")
+        self.workspace = Variable("WORKSPACE", workspace)
+        step.run["cmd"] = self.workspace.substitute(step.run["cmd"])
 
-        self.jobid = kwargs.pop("jobid", [])
-        self.script = kwargs.pop("script", "")
-        self.restart_script = kwargs.pop("restart", "")
+        self.jobid = kwargs.get("jobid", [])
+        self.script = kwargs.get("script", "")
+        self.restart_script = kwargs.get("restart", "")
         self.to_be_scheduled = False
-        self.step = kwargs.pop("step", None)
-        self.restart_limit = kwargs.pop("restart_limit", 3)
+        self.step = step
+        self.restart_limit = kwargs.get("restart_limit", 3)
 
         # Status Information
         self._num_restarts = 0
         self._submit_time = None
         self._start_time = None
         self._end_time = None
-        self.status = kwargs.pop("status", State.INITIALIZED)
+        self.status = kwargs.get("status", State.INITIALIZED)
+
+    def setup_workspace(self):
+        """Initialize the record's workspace."""
+        create_parentdir(self.workspace.value)
+
+    def generate_script(self, adapter, tmp_dir=""):
+        """
+        Generate the script for executing the workflow step.
+
+        :param adapter: Instance of adapter to be used for script generation.
+        :param tmp_dir: If specified, place generated script in the specified
+        temp directory.
+        """
+        if tmp_dir:
+            scr_dir = tmp_dir
+        else:
+            scr_dir = self.workspace.value
+
+        self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
+
+        logger.info("Generating script for %s into %s", self.name, scr_dir)
+        self.to_be_scheduled, self.script, self.restart_script = \
+            adapter.write_script(scr_dir, self.step)
+        logger.info("Script: %s\nRestart: %s\nScheduled?: %s",
+                    self.script, self.restart_script, self.to_be_scheduled)
+
+    def execute(self, adapter):
+        self.mark_submitted()
+        retcode, jobid = self._execute(adapter, self.script)
+
+        if retcode == SubmissionCode.OK:
+            self.jobid.append(jobid)
+
+        return retcode
+
+    def restart(self, adapter):
+        retcode, jobid = self._execute(adapter, self.restart_script)
+
+        if retcode == SubmissionCode.OK:
+            self.jobid.append(jobid)
+
+        return retcode
+
+    @property
+    def can_restart(self):
+        """
+        Get whether or not the record can be restarted.
+
+        :returns: True if the record has a restart command assigned to it.
+        """
+        if self.restart_script:
+            return True
+
+        return False
+
+    def _execute(self, adapter, script):
+        if self.to_be_scheduled:
+            retcode, jobid = adapter.submit(
+                self.step, script, self.workspace.value)
+        else:
+            self.mark_running()
+            ladapter = ScriptAdapterFactory.get_adapter("local")()
+            retcode, jobid = ladapter.submit(
+                self.step, script, self.workspace.value)
+
+        return retcode, jobid
 
     def mark_submitted(self):
         """Mark the submission time of the record."""
@@ -66,7 +140,7 @@ class _StepRecord(object):
             self._submit_time = datetime.now()
         else:
             logger.warning(
-                "Cannot set the submission time of '%s' because it has"
+                "Cannot set the submission time of '%s' because it has "
                 "already been set.", self.name
             )
 
@@ -87,7 +161,7 @@ class _StepRecord(object):
         :param state: State enum corresponding to termination state.
         """
         logger.debug(
-            "Marking %s as finised (%s) -- previously %s",
+            "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
             self.status)
@@ -102,21 +176,29 @@ class _StepRecord(object):
             self.name,
             self.status)
         self.status = State.TIMEDOUT
-        if self._num_restarts == self.restart_limit:
-            return False
-        else:
+        # Designating a restart limit of zero as an unlimited restart setting.
+        # Otherwise, if we're less than restart limit, attempt another restart.
+        if self.restart_limit == 0 or \
+                self._num_restarts < self.restart_limit:
             self._num_restarts += 1
             return True
+        else:
+            return False
+
+    @property
+    def is_local_step(self):
+        """Return whether or not this step executes locally."""
+        return not self.to_be_scheduled
 
     @property
     def elapsed_time(self):
         """Compute the elapsed time of the record (includes queue wait)."""
         if self._submit_time and self._end_time:
             # Return the total elapsed time.
-            return str(self._end_time - self._submit_time)
+            return get_duration(self._end_time - self._submit_time)
         elif self._submit_time and self.status == State.RUNNING:
             # Return the current elapsed time.
-            return str(datetime.now() - self._submit_time)
+            return get_duration(datetime.now() - self._submit_time)
         else:
             return "--:--:--"
 
@@ -129,10 +211,10 @@ class _StepRecord(object):
         """
         if self._start_time and self._end_time:
             # If start and end time is set -- calculate run time.
-            return str(self._end_time - self._start_time)
+            return get_duration(self._end_time - self._start_time)
         elif self._start_time and not self.status == State.RUNNING:
             # If start time but no end time, calculate current duration.
-            return str(datetime.now() - self._start_time)
+            return get_duration(datetime.now() - self._start_time)
         else:
             # Otherwise, return an uncalculated marker.
             return "--:--:--"
@@ -216,30 +298,57 @@ class ExecutionGraph(DAG):
     where that would go.
     """
 
-    def __init__(self, submission_attempts=1, submission_throttle=0):
+    def __init__(self, submission_attempts=1, submission_throttle=0,
+                 use_tmp=False):
         """
         Initialize a new instance of an ExecutionGraph.
 
         :param submission_attempts: Number of attempted submissions before
-        marking a step as failed.
+            marking a step as failed.
         :param submission_throttle: Maximum number of scheduled in progress
         submissions.
+        :param use_tmp: A Boolean value that when set to 'True' designates
+        that ExecutionGraph should use temporary files for output.
         """
         super(ExecutionGraph, self).__init__()
         # Member variables for execution.
         self._adapter = None
-        self._description = {}
+        self._description = OrderedDict()
+
+        # Generate tempdir (if specfied)
+        if use_tmp:
+            self._tmp_dir = tempfile.mkdtemp()
+        else:
+            self._tmp_dir = ""
 
         # Sets to track progress.
         self.completed_steps = set([SOURCE])
         self.in_progress = set()
         self.failed_steps = set()
+        self.cancelled_steps = set()
         self.ready_steps = deque()
+        self.is_canceled = False
 
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
         self._submission_throttle = submission_throttle
+
+        # A map that tracks the dependencies of a step.
+        # NOTE: I don't know how performant the Python dict structure is, but
+        # we'll use it for now. I think this may want to be changed to an AVL
+        # tree or something of that nature to guarantee worst case performance.
+        self._dependencies = {}
+
+        logger.info(
+            "\n------------------------------------------\n"
+            "Submission attempts =       %d\n"
+            "Submission throttle limit = %d\n"
+            "Use temporary directory =   %s\n"
+            "Tmp Dir = %s\n"
+            "------------------------------------------",
+            submission_attempts, submission_throttle, use_tmp, self._tmp_dir
+        )
 
         # Error check that the submission values are valid.
         if self._submission_attempts < 1:
@@ -254,6 +363,13 @@ class ExecutionGraph(DAG):
                    "Received a value of {}.".format(self._submission_throttle)
             logger.error(_msg)
             raise ValueError(_msg)
+
+    def _check_tmp_dir(self):
+        """Check and recreate the tempdir should it have been erased."""
+        # If we've specified a tmp dir and the previous tmp dir doesn't exist
+        # recreate it.
+        if self._tmp_dir and not os.path.exists(self._tmp_dir):
+            self._tmp_dir = tempfile.mkdtemp()
 
     def add_step(self, name, step, workspace, restart_limit):
         """
@@ -271,7 +387,18 @@ class ExecutionGraph(DAG):
                     "restart_limit": restart_limit
                 }
         record = _StepRecord(**data)
+        self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
+
+    def add_connection(self, parent, step):
+        """
+        Add a connection between two steps in the ExecutionGraph.
+
+        :param parent: The parent step that is required to execute 'step'
+        :param step: The dependent step that relies on parent.
+        """
+        self.add_edge(parent, step)
+        self._dependencies[step].add(parent)
 
     def set_adapter(self, adapter):
         """
@@ -298,7 +425,7 @@ class ExecutionGraph(DAG):
 
         self._adapter = adapter
 
-    def add_description(self, name, description):
+    def add_description(self, name, description, **kwargs):
         """
         Add a study description to the ExecutionGraph instance.
 
@@ -307,6 +434,7 @@ class ExecutionGraph(DAG):
         """
         self._description["name"] = name
         self._description["description"] = description
+        self._description.update(kwargs)
 
     @classmethod
     def unpickle(cls, path):
@@ -379,6 +507,18 @@ class ExecutionGraph(DAG):
         """
         self._description["description"] = value
 
+    def log_description(self):
+        """Log the description of the ExecutionGraph."""
+        desc = ["{}: {}".format(key, value)
+                for key, value in self._description.items()]
+        desc = "\n".join(desc)
+        logger.info(
+            "\n==================================================\n"
+            "%s\n"
+            "==================================================\n",
+            desc
+        )
+
     def generate_scripts(self):
         """
         Generate the scripts for all steps in the ExecutionGraph.
@@ -395,115 +535,79 @@ class ExecutionGraph(DAG):
             logger.error(msg)
             raise ValueError(msg)
 
+        # Set up the adapter.
+        logger.info("Generating scripts...")
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        adapter = adapter(**self._adapter)
+
+        self._check_tmp_dir()
         for key, record in self.values.items():
             if key == SOURCE:
                 continue
 
-            logger.info("Generating scripts...")
-            adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
-            adapter = adapter(**self._adapter)
-            to_be_scheduled, cmd_script, restart_script = \
-                adapter.write_script(record.workspace, record.step)
-            logger.info("Step -- %s\nScript: %s\nRestart: %s\nScheduled?: %s",
-                        record.step.name, cmd_script, restart_script,
-                        to_be_scheduled)
-            record.to_be_scheduled = to_be_scheduled
-            record.script = cmd_script
-            record.restart_script = restart_script
+            # Record generates its own script.
+            record.setup_workspace()
+            record.generate_script(adapter, self._tmp_dir)
 
-    def _execute_record(self, record, restart=False):
+    def _execute_record(self, record, adapter, restart=False):
         """
         Execute a StepRecord.
 
-        :param name: The name of the step to be executed.
-        :param record: An instance of a _StepRecord class.
+        :param record: The StepRecord to be executed.
+        :param adapter: An instance of the adapter to be used for cluster
+        submission.
         :param restart: True if the record needs restarting, False otherwise.
         """
         # Logging for debugging.
-        logger.info("Executing -- '%s'\nScript path = %s", record.name,
-                    record.script)
-        logger.debug(
-            "Attempting to execute '%s' -- Current state is %s.",
-            record.name, record.status
-        )
+        logger.info("Calling execute for StepRecord '%s'", record.name)
 
         num_restarts = 0    # Times this step has temporally restarted.
         retcode = None      # Execution return code.
 
-        # If we want to schedule the execution of the record, grab the
-        # scheduler adapter from the ScriptAdapterFactory.
-        if record.to_be_scheduled:
-            adapter = \
-                ScriptAdapterFactory.get_adapter(self._adapter["type"])
-        else:
-            # Otherwise, just use the local adapter.
-            adapter = \
-                ScriptAdapterFactory.get_adapter("local")
-
-        # Pass the adapter the settings we've stored.
-        adapter = adapter(**self._adapter)
         # While our submission needs to be submitted, keep trying:
         # 1. If the JobStatus is not OK.
         # 2. num_restarts is less than self._submission_attempts
+        self._check_tmp_dir()
         while retcode != SubmissionCode.OK and \
                 num_restarts < self._submission_attempts:
             logger.info("Attempting submission of '%s' (attempt %d of %d)...",
                         record.name, num_restarts + 1,
                         self._submission_attempts)
 
-            # If not a restart, submit the cmd script.
+            # We're not restarting -- submit as usual.
             if not restart:
-                logger.debug(
-                    "'%s' is not restarting -- Marking as SUBMITTED from %s "
-                    "at %s",
-                    record.name,
-                    record.status,
-                    str(datetime.now())
-                )
-                # Mark the start time.
-                record.mark_submitted()
-                # If local, we'll execute right away so mark as running.
-                if not record.to_be_scheduled:
-                    logger.debug(
-                        "'%s' running locally -- Marking as RUNNING from %s "
-                        "at %s",
-                        record.name,
-                        record.status,
-                        str(datetime.now())
-                    )
-                    record.mark_running()
-
-                retcode, jobid = adapter.submit(
-                    record.step,
-                    record.script,
-                    record.workspace)
+                logger.debug("Calling 'execute' on '%s' at %s",
+                             record.name, str(datetime.now()))
+                # Generate the script for execution on the fly.
+                record.setup_workspace()    # Generate the workspace.
+                record.generate_script(adapter, self._tmp_dir)
+                retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
                 # If the restart is specified, use the record restart script.
-                record.mark_running()
-                retcode, jobid = adapter.submit(
-                    record.step,
-                    record.restart_script,
-                    record.workspace)
+                logger.debug("Calling 'restart' on '%s' at %s",
+                             record.name, str(datetime.now()))
+                # Generate the script for execution on the fly.
+                record.generate_script(adapter, self._tmp_dir)
+                retcode = record.restart(adapter)
 
             # Increment the number of restarts we've attempted.
+            logger.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:
-            logger.info("'%s' submitted with identifier '%s'",
-                        record.name, jobid)
-            record.jobid.append(jobid)
             self.in_progress.add(record.name)
 
-            # Executed locally, so if we executed OK -- Finished.
-            if record.to_be_scheduled is False:
+            if record.is_local_step:
+                logger.info("Local step %s executed with status OK. Complete.",
+                            record.name)
                 record.mark_end(State.FINISHED)
                 self.completed_steps.add(record.name)
                 self.in_progress.remove(record.name)
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            logger.warning("'%s' failed to properly submit properly. "
+            logger.warning("'%s' failed to submit properly. "
                            "Step failed.", record.name)
             path, parent = self.bfs_subtree(record.name)
             for node in path:
@@ -511,12 +615,11 @@ class ExecutionGraph(DAG):
                 self.values[node].mark_end(State.FAILED)
 
         # After execution state debug logging.
-        logger.debug(
-            "After execution of '%s' -- New state is %s.",
-            record.name, record.status
-        )
+        logger.debug("After execution of '%s' -- New state is %s.",
+                     record.name, record.status)
 
     def write_status(self, path):
+        """Write the status of the DAG to a CSV file."""
         header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
                  ",Submit Time,End Time,Number Restarts"
         status = [header]
@@ -524,8 +627,8 @@ class ExecutionGraph(DAG):
         for key in keys:
             value = self.values[key]
             _ = [
-                    value.name, os.path.split(value.workspace)[1],
-                    str(value.status), value.run_time, value.elapsed_time,
+                    value.name, os.path.split(value.workspace.value)[1],
+                    str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)
                 ]
@@ -542,6 +645,33 @@ class ExecutionGraph(DAG):
         except Timeout:
             pass
 
+    def _check_study_completion(self):
+        # We cancelled, return True marking study as complete.
+        if self.is_canceled:
+            logger.info("Cancelled -- completing study.")
+            return StudyStatus.CANCELLED
+
+        # check for completion of all steps
+        resolved_set = \
+            self.completed_steps | self.failed_steps | self.cancelled_steps
+        if not set(self.values.keys()) - resolved_set:
+            # some steps were cancelled and is_canceled wasn't set
+            if len(self.cancelled_steps) > 0:
+                logging.info("'%s' was cancelled. Returning.", self.name)
+                return StudyStatus.CANCELLED
+
+            # some steps were failures indicating failure
+            if len(self.failed_steps) > 0:
+                logging.info("'%s' is complete with failures. Returning.",
+                             self.name)
+                return StudyStatus.FAILURE
+
+            # everything completed were are done
+            logging.info("'%s' is complete. Returning.", self.name)
+            return StudyStatus.FINISHED
+
+        return StudyStatus.RUNNING
+
     def execute_ready_steps(self):
         """
         Execute any steps whose dependencies are satisfied.
@@ -556,14 +686,11 @@ class ExecutionGraph(DAG):
 
         :returns: True if the study has completed, False otherwise.
         """
-        resolved_set = self.completed_steps | self.failed_steps
-        if not set(self.values.keys()) - resolved_set:
-            # Just return for now, but we'll need a way to signal that there
-            # are no more things to run.
-            logging.info("'%s' is complete. Returning.", self.name)
-            return True
+        # TODO: We may want to move this to a singleton somewhere
+        # so we can guarantee that all steps use the same adapter.
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        adapter = adapter(**self._adapter)
 
-        ready_steps = {}
         retcode, job_status = self.check_study_status()
         logger.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
@@ -576,13 +703,12 @@ class ExecutionGraph(DAG):
         elif retcode == JobStatusCode.OK:
             # For the status of each currently in progress job, check its
             # state.
-            # TODO: We need to mark a record as running if it is detected
-            # to be.
             cleanup_steps = set()  # Steps that are in progress showing failed.
+
             for name, status in job_status.items():
-                logger.debug("Checking job '%s' with status %s.",
-                             name, status)
+                logger.debug("Checking job '%s' with status %s.", name, status)
                 record = self.values[name]
+
                 if status == State.FINISHED:
                     # Mark the step complete and notate its end time.
                     record.mark_end(State.FINISHED)
@@ -600,21 +726,37 @@ class ExecutionGraph(DAG):
                     # Execute the restart script.
                     # If a restart script doesn't exist, re-run the command.
                     # If we're under the restart limit, attempt a restart.
-                    if record.mark_restart():
-                        logger.info(
-                            "Step '%s' timed out. Restarting (%s of %s).",
-                            name, record.restarts, record.restart_limit
-                        )
-                        self._execute_record(record, restart=True)
+                    if record.can_restart:
+                        if record.mark_restart():
+                            logger.info(
+                                "Step '%s' timed out. Restarting (%s of %s).",
+                                name, record.restarts, record.restart_limit
+                            )
+                            self._execute_record(record, adapter, restart=True)
+                        else:
+                            logger.info("'%s' has been restarted %s of %s "
+                                        "times. Marking step and all "
+                                        "descendents as failed.",
+                                        name,
+                                        record.restarts,
+                                        record.restart_limit)
+                            self.in_progress.remove(name)
+                            cleanup_steps.update(self.bfs_subtree(name)[0])
+                    # Otherwise, we can't restart so mark the step timed out.
                     else:
-                        logger.info("'%s' has been restarted %s of %s times. "
-                                    "Marking step and all descendents as "
-                                    "failed.",
-                                    name,
-                                    record.restarts,
-                                    record.restart_limit)
+                        logger.info("'%s' timed out, but cannot be restarted."
+                                    " Marked as TIMEDOUT.", name)
+                        # Mark that the step ended due to TIMEOUT.
+                        record.mark_end(State.TIMEDOUT)
+                        # Remove from in progress since it no longer is.
                         self.in_progress.remove(name)
+                        # Add the subtree to the clean up steps
                         cleanup_steps.update(self.bfs_subtree(name)[0])
+                        # Remove the current step, clean up is used to mark
+                        # steps definitively as failed.
+                        cleanup_steps.remove(name)
+                        # Add the current step to failed.
+                        self.failed_steps.add(name)
 
                 elif status == State.HWFAILURE:
                     # TODO: Need to make sure that we do this a finite number
@@ -624,7 +766,7 @@ class ExecutionGraph(DAG):
                                    "resubmit step '%s'.", name)
                     # We can just let the logic below handle submission with
                     # everything else.
-                    ready_steps[name] = self.values[name]
+                    self.ready_steps.append(name)
 
                 elif status == State.FAILED:
                     logger.warning(
@@ -665,21 +807,27 @@ class ExecutionGraph(DAG):
             # that needs consideration.
             if record.status == State.INITIALIZED:
                 logger.debug("'%s' found to be initialized. Checking "
-                             "dependencies...", key)
-                # Count the number of its dependencies have finised.
-                num_finished = 0
-                for dependency in record.step.run["depends"]:
-                    logger.debug("Checking '%s'...", dependency)
-                    if dependency in self.completed_steps:
-                        logger.debug("Found in completed steps.")
-                        num_finished += 1
-                # If the total number of dependencies finished is the same
-                # as the number of dependencies the step has, it's ready to
-                # be executed. Add it to the map.
-                if num_finished == len(record.step.run["depends"]):
+                             "dependencies. ", key)
+
+                logger.debug(
+                    "Unfulfilled dependencies: %s",
+                    self._dependencies[key])
+
+                s_completed = filter(
+                    lambda x: x in self.completed_steps,
+                    self._dependencies[key])
+                self._dependencies[key] = \
+                    self._dependencies[key] - set(s_completed)
+                logger.debug(
+                    "Completed dependencies: %s\n"
+                    "Remaining dependencies: %s",
+                    s_completed, self._dependencies[key])
+
+                # If the gating dependencies set is empty, we can execute.
+                if not self._dependencies[key]:
                     if key not in self.ready_steps:
                         logger.debug("All dependencies completed. Staging.")
-                        self.ready_steps.append(record)
+                        self.ready_steps.append(key)
                     else:
                         logger.debug("Already staged. Passing.")
                         continue
@@ -687,22 +835,38 @@ class ExecutionGraph(DAG):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-                logger.info("Launching all ready steps...")
-                _available = len(self.ready_steps)
+            logger.info("Launching all ready steps...")
+            _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
             _available = self._submission_throttle - len(self.in_progress)
+            # Available slots should never be negative, but on the off chance
+            # we are in a slot deficit, then we will just say none are free.
             _available = max(0, _available)
+            # Now, we need to take the min of the length of the queue and the
+            # computed number of slots. We could have free slots, but have less
+            # in the queue.
+            _available = min(_available, len(self.ready_steps))
             logger.info("Found %d available slots...", _available)
 
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.ready_steps.popleft()
-            logger.debug("Launching job %d -- %s", i, _record.name)
-            self._execute_record(_record)
+            _record = self.values[self.ready_steps.popleft()]
 
-        return False
+            # If we get to this point and we've cancelled, cancel the record.
+            if self.is_canceled:
+                logger.info("Cancelling '%s' -- continuing.", _record.name)
+                _record.mark_end(State.CANCELLED)
+                self.cancelled_steps.add(_record.name)
+                continue
+
+            logger.debug("Launching job %d -- %s", i, _record.name)
+            self._execute_record(_record, adapter)
+
+        # check the status of the study upon finishing this round of execution
+        completion_status = self._check_study_completion()
+        return completion_status
 
     def check_study_status(self):
         """
@@ -737,14 +901,12 @@ class ExecutionGraph(DAG):
             logger.info("No jobs found.")
             return retcode, step_status
         else:
-            msg = "Unknown Error (Code = {retcode})".format(retcode)
+            msg = "Unknown Error (Code = {})".format(retcode)
             logger.error(msg)
             return retcode, step_status
 
     def cancel_study(self):
-        """
-        Cancel the study.
-        """
+        """Cancel the study."""
         joblist = []
         for step in self.in_progress:
             jobid = self.values[step].jobid[-1]
@@ -756,6 +918,7 @@ class ExecutionGraph(DAG):
 
         # cancel our jobs
         retcode = adapter.cancel_jobs(joblist)
+        self.is_canceled = True
 
         if retcode == CancelCode.OK:
             logger.info("Successfully requested to cancel all jobs.")
@@ -767,3 +930,8 @@ class ExecutionGraph(DAG):
             msg = "Unknown Error (Code = {retcode})".format(retcode)
             logger.error(msg)
             return retcode
+
+    def cleanup(self):
+        """Clean up output produced by the ExecutionGraph."""
+        if self._tmp_dir:
+            shutil.rmtree(self._tmp_dir, ignore_errors=True)

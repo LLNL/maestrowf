@@ -26,7 +26,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-
+"""A script for launching the Maestro conductor for study monitoring."""
 from argparse import ArgumentParser, RawTextHelpFormatter
 from filelock import FileLock, Timeout
 from datetime import datetime
@@ -37,6 +37,7 @@ import os
 import sys
 from time import sleep
 
+from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.utils import create_parentdir
 
@@ -50,9 +51,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 
 
 def setup_argparser():
-    """
-    Method for setting up the program's argument parser.
-    """
+    """Set up the program's argument parser."""
     parser = ArgumentParser(prog="ExecutionManager",
                             description="An application for checking and "
                             "managing an ExecutionDAG within an executing"
@@ -86,7 +85,7 @@ def setup_argparser():
 
 def setup_logging(args, name):
     """
-    Method for setting up logging in the Main class.
+    Set up logging in the Main class.
 
     :param args: A Namespace object created by a parsed ArgumentParser.
     :param name: The name of the log file.
@@ -125,38 +124,16 @@ def setup_logging(args, name):
     logger.debug("DEBUG Logging Level -- Enabled")
 
 
-def main():
-    # Set up and parse the ArgumentParser
-    parser = setup_argparser()
-    args = parser.parse_args()
+def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
+    """Monitor a running study."""
+    logger.debug("\n -------- Calling monitor study -------\n"
+                 "pkl path    = %s"
+                 "cancel path = %s"
+                 "sleep time  = %s",
+                 pickle_path, cancel_lock_path, sleep_time)
 
-    # Unpickle the ExecutionGraph
-    study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
-    # We expect only a single pickle file.
-    if len(study_pkl) == 1:
-        dag = ExecutionGraph.unpickle(study_pkl[0])
-    else:
-        if len(study_pkl) > 1:
-            msg = "More than one pickle found. Expected only one. Aborting."
-            status = 2
-        else:
-            msg = "No pickle found. Aborting."
-            status = 1
-
-        sys.stderr.write(msg)
-        sys.exit(status)
-
-    # Set up logging
-    setup_logging(args, dag.name)
-    # Use ExecutionGraph API to determine next jobs to be launched.
-    logger.info("Checking the ExecutionGraph for study '%s' located in "
-                "%s...", dag.name, study_pkl[0])
-    logger.info("Study Description: %s", dag.description)
-
-    cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
-
-    study_complete = False
-    while not study_complete:
+    completion_status = StudyStatus.RUNNING
+    while completion_status == StudyStatus.RUNNING:
         if os.path.exists(cancel_lock_path):
             # cancel the study if a cancel lock file is found
             cancel_lock = FileLock(cancel_lock_path)
@@ -172,16 +149,63 @@ def main():
 
         logger.info("Checking DAG status at %s", str(datetime.now()))
         # Execute steps that are ready
-        study_complete = dag.execute_ready_steps()
+        # Recieves StudyStatus enum
+        completion_status = dag.execute_ready_steps()
         # Re-pickle the ExecutionGraph.
-        dag.pickle(study_pkl[0])
+        dag.pickle(pickle_path)
         # Write out the state
-        dag.write_status(os.path.split(study_pkl[0])[0])
-        # Sleep for SLEEPTIME in args
-        sleep(args.sleeptime)
+        dag.write_status(os.path.split(pickle_path)[0])
+        # Sleep for SLEEPTIME in args if study not complete.
+        if completion_status == StudyStatus.RUNNING:
+            sleep(sleep_time)
 
-    # Explicitly return a 0 status.
-    sys.exit(0)
+    return completion_status
+
+
+def main():
+    """Run the main segment of the conductor."""
+    try:
+        # Set up and parse the ArgumentParser
+        parser = setup_argparser()
+        args = parser.parse_args()
+
+        # Unpickle the ExecutionGraph
+        study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
+        # We expect only a single pickle file.
+        if len(study_pkl) == 1:
+            dag = ExecutionGraph.unpickle(study_pkl[0])
+        else:
+            if len(study_pkl) > 1:
+                msg = "More than one pickle found. Expected one. Aborting."
+                status = 2
+            else:
+                msg = "No pickle found. Aborting."
+                status = 1
+
+            sys.stderr.write(msg)
+            sys.exit(status)
+
+        # Set up logging
+        setup_logging(args, dag.name)
+        # Use ExecutionGraph API to determine next jobs to be launched.
+        logger.info("Checking the ExecutionGraph for study '%s' located in "
+                    "%s...", dag.name, study_pkl[0])
+        logger.info("Study Description: %s", dag.description)
+
+        cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
+        logger.info("Starting to monitor '%s'", dag.name)
+        completion_status = monitor_study(dag, study_pkl[0],
+                                          cancel_lock_path, args.sleeptime)
+
+        logger.info("Cleaning up...")
+        dag.cleanup()
+        logger.info("Squeaky clean!")
+
+        # Explicitly return a 0 status.
+        sys.exit(completion_status.value)
+    except Exception as e:
+        logger.error(e.args, exc_info=True)
+        raise e
 
 
 if __name__ == "__main__":
