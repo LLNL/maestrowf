@@ -55,7 +55,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         super(LocalScriptAdapter, self).__init__()
 
-        self._exec = kwargs.pop("shell", "#!/bin/bash")
+        self._exec = kwargs.pop("shell", "/bin/bash")
 
     def _write_script(self, ws_path, step):
         """
@@ -89,7 +89,7 @@ class LocalScriptAdapter(ScriptAdapter):
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
-                script.write(self._exec)
+                script.write("#!"+self._exec)
                 _ = "\n\n{}\n".format(restart)
                 script.write(_)
         else:
