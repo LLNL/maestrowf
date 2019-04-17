@@ -226,6 +226,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter=\"|\""
         stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
         cmd = stat_cmd.format(self._batch["queue"], o_format)
+        LOGGER.debug("bjobs cmd = \"%s\"", stat_cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
