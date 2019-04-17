@@ -223,7 +223,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
         # -o = status output formatting
-        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter=\"|\""
+        o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter='|'"
         stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
         cmd = stat_cmd.format(self._batch["queue"], o_format)
         LOGGER.debug("bjobs cmd = \"%s\"", stat_cmd)
