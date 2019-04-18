@@ -81,7 +81,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(SpectrumFluxScriptAdapter, self).__init__()
+        super(SpectrumFluxScriptAdapter, self).__init__(**kwargs)
 
         # NOTE: These libraries are compiled at runtime when an allocation
         # is spun up.
@@ -94,7 +94,6 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         self._mpi_exe = kwargs.pop("mpi")
         self._addl_args = kwargs.pop("args", [])
 
-        self._exec = "#!/bin/bash"
         # Header is only for informational purposes.
         self._header = {
             "nodes": "#SBATCH -N {nodes}",
@@ -502,7 +501,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(FluxScriptAdapter, self).__init__()
+        super(FluxScriptAdapter, self).__init__(**kwargs)
 
         # NOTE: These libraries are compiled at runtime when an allocation
         # is spun up.
@@ -514,7 +513,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self._addl_args = kwargs.get("args", [])
 
-        self._exec = "#!/bin/bash"
         # Header is only for informational purposes.
         self._header = {
             "nodes": "#INFO (nodes) {nodes}",
