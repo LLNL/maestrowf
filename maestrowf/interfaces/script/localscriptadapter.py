@@ -57,7 +57,6 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         super(LocalScriptAdapter, self).__init__()
 
-        self._exec = kwargs.pop("shell", "/bin/bash")
 
     def _write_script(self, ws_path, step):
         """

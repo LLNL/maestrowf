@@ -53,6 +53,10 @@ class ScriptAdapter(object):
     - Checking job status.
     """
 
+    def __init__(self, **kwargs):
+        self._exec = kwargs.pop("shell", "/bin/bash")
+        LOGGER.debug("Shell set to '%s'.", self._exec)
+
     @abstractmethod
     def check_jobs(self, joblist):
         """

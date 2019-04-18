@@ -238,6 +238,9 @@ def run_study(args):
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
     else:
+        if "type" not in spec.batch:
+            spec.batch["type"] = "local"
+
         exec_dag.set_adapter(spec.batch)
 
     # Copy the spec to the output directory
