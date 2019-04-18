@@ -54,6 +54,11 @@ class ScriptAdapter(object):
     """
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new instance of a ScriptAdapter.
+
+        :param kwargs: The key value arguments for the ScriptAdapter instance.
+        """
         self._exec = kwargs.pop("shell", "/bin/bash")
         LOGGER.debug("Shell set to '%s'.", self._exec)
 
@@ -142,7 +147,7 @@ class ScriptAdapter(object):
     @abstractmethod
     def key(self):
         """
-        The key to be used in workflow specification to describe the adapter.
+        Return the key name for a ScriptAdapter..
 
         This is used to register the adapter in the ScriptAdapterFactory
         and when writing the workflow specification.
