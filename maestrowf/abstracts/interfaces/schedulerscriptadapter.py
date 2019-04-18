@@ -65,7 +65,13 @@ class SchedulerScriptAdapter(ScriptAdapter):
     node_alloc = r"(?P<nodes>[0-9]+)n"
 
     def __init__(self, **kwargs):
-        """Initialize an empty ScriptAdapter object."""
+        """
+        Initialize an empty ScriptAdapter object.
+
+        :param kwargs: Key-value dictionary of arguments.
+
+        Currently we only support the "shell" keyword.
+        """
         # NOTE: The _batch member should be used to store persistent batching
         # parameters. The entries in this dictionary are meant to capture the
         # the base settings for submission to a batch. This member variables
