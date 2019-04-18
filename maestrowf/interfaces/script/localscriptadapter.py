@@ -56,8 +56,9 @@ class LocalScriptAdapter(ScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        LOGGER.debug("kwargs\n--------------------------\n%s", kwargs)
-        super(LocalScriptAdapter, self).__init__(**kwargs)
+        super(LocalScriptAdapter, self).__init__()
+
+        self._exec = kwargs.pop("shell", "/bin/bash")
 
     def _write_script(self, ws_path, step):
         """
