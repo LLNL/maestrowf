@@ -156,7 +156,7 @@ class GitDependency(Dependency):
             logger.error(msg)
             raise Exception(msg)
 
-        logger.info("Checking for connectivity to %s", self.url)
+        logger.info("Checking for connectivity to '%s'", self.url)
         p = start_process(["git", "ls-remote", self.url], shell=False)
         retcode = p.wait()
         if retcode != 0:
@@ -168,7 +168,7 @@ class GitDependency(Dependency):
             raise RuntimeError(msg)
         logger.info("Connectivity achieved!")
 
-        logger.info("Cloning %s from %s...", self.name, self.url)
+        logger.info("Cloning '%s' from '%s'...", self.name, self.url)
         clone = start_process(["git", "clone", self.url, path], shell=False)
         retcode = clone.wait()
         if retcode != 0:
@@ -179,7 +179,7 @@ class GitDependency(Dependency):
             raise Exception(msg)
 
         if self.hash:
-            logger.info("Checking out SHA1 hash '{}'...", self.hash)
+            logger.info("Checking out SHA1 hash '%s'...", self.hash)
             chkout = start_process(["git", "checkout", self.hash],
                                    cwd=path, shell=False)
             retcode = chkout.wait()
@@ -192,7 +192,7 @@ class GitDependency(Dependency):
                 raise ValueError(msg)
 
         if self.tag:
-            logger.info("Checking out git tag '{}'...", self.tag)
+            logger.info("Checking out git tag '%s'...", self.tag)
             tag = "tags/{}".format(self.tag)
             chkout = start_process(["git", "checkout", tag],
                                    cwd=path, shell=False)
@@ -206,7 +206,7 @@ class GitDependency(Dependency):
                 raise ValueError(msg)
 
         if self.branch:
-            logger.info("Checking out git branch '{}'...", self.branch)
+            logger.info("Checking out git branch '%s'...", self.branch)
             chkout = start_process(["git", "checkout", self.branch],
                                    cwd=path, shell=False)
 
