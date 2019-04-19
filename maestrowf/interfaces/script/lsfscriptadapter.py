@@ -226,7 +226,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter='|'"
         stat_cmd = "bjobs -a -u $USER -q {} -o \"{}\""
         cmd = stat_cmd.format(self._batch["queue"], o_format)
-        LOGGER.debug("bjobs cmd = \"%s\"", stat_cmd)
+        LOGGER.debug("bjobs cmd = \"%s\"", cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
@@ -259,14 +259,17 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 2 - Exit code application terminated with
                 # 3 - Reason for termination (if applicable)
                 job_split = re.split("|", job)
+                LOGGER.debug("Entry split: %s", job_split)
                 if len(job_split) < 4:
+                    LOGGER.debug(
+                        "Entry has less than 4 fields. Skipping.",
+                        job_split)
                     continue
 
                 while job_split[0] == "":
                     LOGGER.debug("Removing blank entry from head of status.")
                     job_split = job_split[1:]
 
-                LOGGER.debug("Entry split: %s", job_split)
                 if not job_split:
                     LOGGER.debug("Continuing...")
                     continue
