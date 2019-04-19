@@ -83,3 +83,12 @@ class StudyStatus(Enum):
     RUNNING = 1    # The Study is currently running
     FAILURE = 2    # The Study has finished, but 1 or more steps failed
     CANCELLED = 3  # The Study has finished, but was cancelled
+
+
+class PostCode(Enum):
+    """Codes for step post step returns."""
+    COMPLETE = 0
+    FAILURE = 1
+    RESTART = 2
+    RERUN = 3
+    CANCEL = 4
