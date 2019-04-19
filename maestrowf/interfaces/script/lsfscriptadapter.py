@@ -258,7 +258,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 1 - Status of the job
                 # 2 - Exit code application terminated with
                 # 3 - Reason for termination (if applicable)
-                job_split = job.split("|")
+                job_split = re.split(r"\s*|\s*", job)
                 LOGGER.debug("Entry split: %s", job_split)
                 if len(job_split) < 4:
                     LOGGER.debug(
@@ -275,10 +275,13 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     continue
 
                 if job_split[jobid_index] in status:
-                    if "TERM_RUNLIMIT" in job_split[term_reason]:
-                        _j_state = "TIMEOUT"
-                    elif "TERM_OWNER" in job_split[term_reason]:
-                        _j_state = "CANCELLED"
+                    if job_split[state_index] == "EXIT":
+                        if "TERM_RUNLIMIT" in job_split[term_reason]:
+                            _j_state = "TIMEOUT"
+                        elif "TERM_OWNER" in job_split[term_reason]:
+                            _j_state = "CANCELLED"
+                        else:
+                            _j_state = job_split[state_index]
                     else:
                         _j_state = job_split[state_index]
                     _state = self._state(_j_state)
