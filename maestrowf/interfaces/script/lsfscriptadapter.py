@@ -258,7 +258,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 # 1 - Status of the job
                 # 2 - Exit code application terminated with
                 # 3 - Reason for termination (if applicable)
-                job_split = re.split(r"\s*|\s*", job)
+                job_split = [x.strip() for x in job.split("|")]
                 LOGGER.debug("Entry split: %s", job_split)
                 if len(job_split) < 4:
                     LOGGER.debug(
