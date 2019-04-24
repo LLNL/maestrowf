@@ -7,7 +7,7 @@ env:
         OUTPUT_PATH: ./sample_output/hello_world
 
 study:
-    - name: hello_world
+    - name: say_hi
       description: Build the serial version of LULESH.
       run:
           cmd: |
