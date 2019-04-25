@@ -83,17 +83,38 @@ class SubmissionRecord(Record):
         """
         return self._info["retcode"]
 
+    def add_info(self, key, value):
+        """
+        Set additional informational key-value information.
+
+        :param key: Record key identifying data.
+        :param value: Data to be recorded.
+        """
+        self._info[key] = value
+
+    def get(self, key, default=None):
+        """
+        Retrieve the value labeled by the specified key.
+
+        :param key: Key to retrieve.
+        :param default: Default value if parameter key is not found. Default
+        is None.
+        :returns: The data labeled by key, otherwise default if key is not
+        found.
+        """
+
 
 class CancellationRecord(Record):
     """A container for data returned from a scheduler cancellation call."""
 
-    def __init__(self, retcode):
+    def __init__(self, cancel_status, retcode):
         """Initialize an empty CancellationRecord."""
         self._status = {
             CancelCode.OK:      set(),
-            CancelCode.Error:   set(),
+            CancelCode.ERROR:   set(),
         }   # Map of cancellation status to job set.
         self._retcode = retcode
+        self._cstatus = cancel_status
 
     def add_status(self, jobid, cancel_status):
         """
@@ -112,6 +133,11 @@ class CancellationRecord(Record):
     @property
     def cancel_status(self):
         """Get the high level CancelCode status."""
+        return self._cstatus
+
+    @property
+    def return_code(self):
+        """Get the return code from the cancel command."""
         return self._retcode
 
     def lookup_status(self, cancel_status):
