@@ -35,17 +35,17 @@ from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
-from maestrowf.interfaces.script import SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
 
 
 class LocalScriptAdapter(ScriptAdapter):
-    """A ScriptAdapter class for interfacing for local execution."""
-
     key = "local"
 
+    """
+    A ScriptAdapter class for interfacing for local execution.
+    """
     def __init__(self, **kwargs):
         """
         Initialize an instance of the LocalScriptAdapter.
