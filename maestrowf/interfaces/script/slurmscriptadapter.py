@@ -36,7 +36,7 @@ import re
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
-from maestrowf.interfaces.script import SubmissionRecord
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
@@ -276,7 +276,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         # If we don't have any jobs to check, just return status OK.
         if not joblist:
-            return CancelCode.OK
+            return CancellationRecord(CancelCode.OK, 0)
 
         cmd = "scancel --quiet {}".format(" ".join(joblist))
         p = start_process(cmd)
@@ -284,11 +284,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         retcode = p.wait()
 
         if retcode == 0:
-            return CancelCode.OK
+            _record = CancellationRecord(CancelCode.OK, retcode)
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
                          "encountered.")
-            return CancelCode.ERROR
+            _record = CancellationRecord(CancelCode.ERROR, retcode)
+
+        return _record
 
     def _state(self, slurm_state):
         """
