@@ -919,19 +919,18 @@ class ExecutionGraph(DAG):
         adapter = adapter(**self._adapter)
 
         # cancel our jobs
-        retcode = adapter.cancel_jobs(joblist)
+        crecord = adapter.cancel_jobs(joblist)
         self.is_canceled = True
 
-        if retcode == CancelCode.OK:
+        if crecord.cancel_status == CancelCode.OK:
             logger.info("Successfully requested to cancel all jobs.")
-            return retcode
-        elif retcode == CancelCode.ERROR:
-            logger.error("Failed to cancel jobs.")
-            return retcode
+        elif crecord.cancel_status == CancelCode.ERROR:
+            logger.error(
+                "Failed to cancel jobs. (Code = %s)", crecord.return_code)
         else:
-            msg = "Unknown Error (Code = {retcode})".format(retcode)
-            logger.error(msg)
-            return retcode
+            logger.error("Unknown Error (Code = %s)", crecord.return_code)
+
+        return crecord.cancel_status
 
     def cleanup(self):
         """Clean up output produced by the ExecutionGraph."""
