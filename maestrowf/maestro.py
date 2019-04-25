@@ -245,14 +245,11 @@ def run_study(args):
         # If performing a dry run, drive sleep time down to generate scripts.
         sleeptime = 1
     else:
-        # else, use args to decide sleeptime
-        sleeptime = args.sleeptime
+        if "type" not in spec.batch:
+            spec.batch["type"] = "local"
 
-    batch = {"type": "local"}
-    if spec.batch:
-        batch = spec.batch
-        if "type" not in batch:
-            batch["type"] = "local"
+        exec_dag.set_adapter(spec.batch)
+
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
 
