@@ -92,17 +92,6 @@ class SubmissionRecord(Record):
         """
         self._info[key] = value
 
-    def get(self, key, default=None):
-        """
-        Retrieve the value labeled by the specified key.
-
-        :param key: Key to retrieve.
-        :param default: Default value if parameter key is not found. Default
-        is None.
-        :returns: The data labeled by key, otherwise default if key is not
-        found.
-        """
-
 
 class CancellationRecord(Record):
     """A container for data returned from a scheduler cancellation call."""
