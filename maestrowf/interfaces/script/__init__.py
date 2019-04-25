@@ -83,7 +83,6 @@ class SubmissionRecord(Record):
         """
         return self._info["retcode"]
 
-<<<<<<< 0972ffc3ec7a2067f392adc7746d63cde33eb76f
     def add_info(self, key, value):
         """
         Set additional informational key-value information.
