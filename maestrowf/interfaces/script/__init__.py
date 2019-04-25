@@ -87,9 +87,13 @@ class SubmissionRecord(Record):
 class CancellationRecord(Record):
     """A container for data returned from a scheduler cancellation call."""
 
-    def __init__(self):
+    def __init__(self, retcode):
         """Initialize an empty CancellationRecord."""
-        self._status = {}   # Map of job identifier to its own status.
+        self._status = {
+            CancelCode.OK:      set(),
+            CancelCode.Error:   set(),
+        }   # Map of cancellation status to job set.
+        self._retcode = retcode
 
     def add_status(self, jobid, cancel_status):
         """
@@ -103,4 +107,18 @@ class CancellationRecord(Record):
             raise TypeError(
                 "Parameter 'cancel_code' must be of type 'CancelCode'. "
                 "Received type '%s' instead.", type(cancel_status))
-        self._status[jobid] = cancel_status
+        self._status[cancel_status].add(jobid)
+
+    @property
+    def cancel_status(self):
+        """Get the high level CancelCode status."""
+        return self._retcode
+
+    def lookup_status(self, cancel_status):
+        """
+        Find the cancellation status of the job identified by jid.
+
+        :param cancel_status: The CancelCode to look up.
+        :returns: Set of job identifiers that match the requested status.
+        """
+        return self._status.get(cancel_status, set())
