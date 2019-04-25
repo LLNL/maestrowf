@@ -64,12 +64,21 @@ class SchedulerScriptAdapter(ScriptAdapter):
     # Just allocate based on nodes.
     node_alloc = r"(?P<nodes>[0-9]+)n"
 
-    def __init__(self):
-        """Initialize an empty ScriptAdapter object."""
+    def __init__(self, **kwargs):
+        """
+        Initialize an empty ScriptAdapter object.
+
+        :param kwargs: Key-value dictionary of arguments.
+
+        Currently we only support the "shell" keyword.
+        """
         # NOTE: The _batch member should be used to store persistent batching
         # parameters. The entries in this dictionary are meant to capture the
         # the base settings for submission to a batch. This member variables
         # should never be used publicallly outside of an instance.
+
+        # Call super to set self._exec
+        super(SchedulerScriptAdapter, self).__init__(**kwargs)
         self._batch = {}
 
     def add_batch_parameter(self, name, value):

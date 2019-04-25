@@ -63,7 +63,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(SlurmScriptAdapter, self).__init__()
+        super(SlurmScriptAdapter, self).__init__(**kwargs)
 
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
