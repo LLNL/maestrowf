@@ -109,7 +109,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["comment"] = step.description.replace("\n", " ")
 
-        modified_header = [self._exec]
+        modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
             # If we're looking at the bank and the reservation header exists,
             # skip the bank to prefer the reservation.
@@ -335,27 +335,22 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         fname = "{}.slurm.sh".format(step.name)
         script_path = os.path.join(ws_path, fname)
-        with open(script_path, "w") as script:
-            if to_be_scheduled:
-                script.write(self.get_header(step))
-            else:
-                script.write(self._exec)
 
-            cmd = "\n\n{}\n".format(cmd)
-            script.write(cmd)
+        if to_be_scheduled:
+            header = self.get_header(step)
+        else:
+            header = "#!{}".format(self._exec)
+
+        form_cmd = cmd = "{0}\n\n{1}\n"
+        with open(script_path, "w") as script:
+            script.write(form_cmd.format(header, cmd))
 
         if restart:
             rname = "{}.restart.slurm.sh".format(step.name)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
-                if to_be_scheduled:
-                    script.write(self.get_header(step))
-                else:
-                    script.write(self._exec)
-
-                cmd = "\n\n{}\n".format(restart)
-                script.write(cmd)
+                script.write(form_cmd.format(header, restart))
         else:
             restart_path = None
 
