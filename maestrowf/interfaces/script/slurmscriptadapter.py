@@ -116,9 +116,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
             the parameter step.
         """
-        resources = ChainMap(step.run, self._batch)
-        resources["job-name"] = step.name.replace(" ", "_")
-        resources["comment"] = step.description.replace("\n", " ")
+        run = dict(step.run)
+        batch_header = dict(self._batch)
+        batch_header["walltime"] = run.pop("walltime")
+        if run["nodes"]:
+            batch_header["nodes"] = run.pop("nodes")
+        batch_header["job-name"] = step.name.replace(" ", "_")
+        batch_header["comment"] = step.description.replace("\n", " ")
 
         modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
@@ -364,7 +368,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         else:
             header = "#!{}".format(self._exec)
 
-        form_cmd = "{0}\n\n{1}\n"
+        form_cmd = cmd = "{0}\n\n{1}\n"
         with open(script_path, "w") as script:
             script.write(form_cmd.format(header, cmd))
 
