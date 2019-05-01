@@ -918,12 +918,12 @@ class ExecutionGraph(DAG, PickleInterface):
         self.is_canceled = True
 
         if crecord.cancel_status == CancelCode.OK:
-            LOGGER.info("Successfully requested to cancel all jobs.")
+            logger.info("Successfully requested to cancel all jobs.")
         elif crecord.cancel_status == CancelCode.ERROR:
-            LOGGER.error(
+            logger.error(
                 "Failed to cancel jobs. (Code = %s)", crecord.return_code)
         else:
-            LOGGER.error("Unknown Error (Code = %s)", crecord.return_code)
+            logger.error("Unknown Error (Code = %s)", crecord.return_code)
 
         return crecord.cancel_status
 
