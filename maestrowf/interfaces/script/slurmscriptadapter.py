@@ -368,7 +368,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         else:
             header = "#!{}".format(self._exec)
 
-        form_cmd = cmd = "{0}\n\n{1}\n"
+        form_cmd = "{0}\n\n{1}\n"
         with open(script_path, "w") as script:
             script.write(form_cmd.format(header, cmd))
 
