@@ -79,12 +79,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
-        # Check for procs separately, as we don't want it in the header if it's
-        # not present.
-        procs = kwargs.get("procs", None)
-        if procs:
-            self.add_batch_parameter("procs", procs)
-
         self._header = {
             "nodes": "#SBATCH --nodes={nodes}",
             "queue": "#SBATCH --partition={queue}",
