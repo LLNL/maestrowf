@@ -33,6 +33,7 @@ import os
 
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
 from maestrowf.utils import start_process
 
@@ -110,7 +111,7 @@ class LocalScriptAdapter(ScriptAdapter):
         :param joblist: A list of job identifiers to be cancelled.
         :returns: The return code to indicate if jobs were cancelled.
         """
-        return CancelCode.OK
+        return CancellationRecord(CancelCode.OK, 0)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
@@ -138,7 +139,9 @@ class LocalScriptAdapter(ScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Execution returned status OK.")
-            return SubmissionCode.OK, pid
+            return SubmissionRecord(SubmissionCode.OK, retcode, pid)
         else:
             LOGGER.warning("Execution returned an error: %s", str(err))
-            return SubmissionCode.ERROR, pid
+            _record = SubmissionRecord(SubmissionCode.ERROR, retcode, pid)
+            _record.add_info("stderr", str(err))
+            return _record
