@@ -73,7 +73,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
-        self._exec = "#!/bin/bash"
         self._header = {
             "nodes": "#SBATCH -N {nodes}",
             "queue": "#SBATCH -p {queue}",
