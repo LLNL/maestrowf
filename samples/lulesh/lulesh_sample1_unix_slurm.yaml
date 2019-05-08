@@ -1,11 +1,6 @@
 description:
     name: lulesh_sample1
-    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
-
-batch:
-    type: flux
-    bank: testbank
-    queue: pbatch
+    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations on SLURM.
 
 env:
     variables:
@@ -19,20 +14,24 @@ env:
         - name: LULESH
           path: $(OUTPUT_PATH)
           url: https://github.com/LLNL/LULESH.git
-          tag: 2.0.3
+
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+    gres        : ignore
 
 study:
     - name: make-lulesh
-      description: Build the serial version of LULESH.
+      description: Build the MPI enabled version of LULESH.
       run:
           cmd: |
+            module load cmake/3.13.4
             cd $(LULESH)
-            sed -i 's/^CXX = $(MPICXX)/CXX = $(SERCXX)/' ./Makefile
-            sed -i 's/^CXXFLAGS = -g -O3 -fopenmp/#CXXFLAGS = -g -O3 -fopenmp/' ./Makefile
-            sed -i 's/^#LDFLAGS = -g -O3/LDFLAGS = -g -O3/' ./Makefile
-            sed -i 's/^LDFLAGS = -g -O3 -fopenmp/#LDFLAGS = -g -O3 -fopenmp/' ./Makefile
-            sed -i 's/^#CXXFLAGS = -g -O3 -I/CXXFLAGS = -g -O3 -I/' ./Makefile
-            make clean
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release -DMPI_CXX_COMPILER=`which mpicxx` ..
             make
           depends: []
 
@@ -40,48 +39,15 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(LAUNCHER) $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+            $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
-          nodes: 1
-          procs: 1
-          walltime: "00:10:00"
-
-    - name: post-process-lulesh
-      description: Post process all LULESH results.
-      run:
-          cmd: |
-            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
-            echo $(run-lulesh.workspace) > out.log
-            ls $(run-lulesh.workspace) > ls.log
-          depends: [run-lulesh_*]
-
-    - name: post-process-lulesh-trials
-      description: Post process all LULESH results.
-      run:
-          cmd: |
-            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
-            echo "TRIAL = $(TRIAL)" >> out.log
-            echo $(run-lulesh.workspace) >> out.log
-            ls $(run-lulesh.workspace) > out.log
-          depends: [run-lulesh_*]
-
-    - name: post-process-lulesh-size
-      description: Post process all LULESH results.
-      run:
-          cmd: |
-            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
-            echo "SIZE = $(SIZE)" >> out.log
-            echo $(run-lulesh.workspace) >> out.log
-            ls $(run-lulesh.workspace) | grep $(SIZE.label) >> out.log
-          depends: [run-lulesh_*]
+          nodes: 2
+          procs: 27
 
 global.parameters:
-    TRIAL:
-        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        label   : TRIAL.%%
     SIZE:
-        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
         label   : SIZE.%%
     ITERATIONS:
-        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
         label   : ITER.%%
