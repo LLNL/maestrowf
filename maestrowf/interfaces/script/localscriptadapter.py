@@ -140,10 +140,10 @@ class LocalScriptAdapter(ScriptAdapter):
         o_path = os.path.join(cwd, "{}.out".format(step.name))
         e_path = os.path.join(cwd, "{}.err".format(step.name))
 
-        with file(o_path, "w") as out:
+        with open(o_path, "w") as out:
             out.write(output)
 
-        with file(e_path, "w") as out:
+        with open(e_path, "w") as out:
             out.write(err)
 
         if retcode == 0:
