@@ -1,7 +1,4 @@
-![](https://github.com/LLNL/maestrowf/raw/develop/assets/logo.png?raw=true "Orchestrate your workflows with ease!")
-
-# Maestro Workflow Conductor ([maestrowf](https://pypi.org/project/maestrowf/))
-
+# Maestro Workflow Conductor (MaestroWF)
 [![Build Status](https://travis-ci.org/LLNL/maestrowf.svg?branch=develop)](https://travis-ci.org/LLNL/maestrowf)
 [![PyPI](https://img.shields.io/pypi/v/maestrowf.svg)](https://pypi.python.org/pypi?name=maestrowf&version=1.0.0&:action=display)
 ![Spack](https://img.shields.io/spack/v/py-maestrowf)
