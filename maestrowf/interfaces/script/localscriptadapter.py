@@ -137,6 +137,15 @@ class LocalScriptAdapter(ScriptAdapter):
         output, err = p.communicate()
         retcode = p.wait()
 
+        o_path = os.path.join(cwd, "{}.out".format(step.name))
+        e_path = os.path.join(cwd, "{}.err".format(step.name))
+
+        with file(o_path, "w") as out:
+            out.write(output)
+
+        with file(e_path, "w") as out:
+            out.write(err)
+
         if retcode == 0:
             LOGGER.info("Execution returned status OK.")
             return SubmissionRecord(SubmissionCode.OK, retcode, pid)
