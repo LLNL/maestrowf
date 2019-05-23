@@ -33,6 +33,7 @@ import os
 
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
 from maestrowf.utils import start_process
 
@@ -40,11 +41,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LocalScriptAdapter(ScriptAdapter):
+    """A ScriptAdapter class for interfacing for local execution."""
+
     key = "local"
 
-    """
-    A ScriptAdapter class for interfacing for local execution.
-    """
     def __init__(self, **kwargs):
         """
         Initialize an instance of the LocalScriptAdapter.
@@ -55,9 +55,8 @@ class LocalScriptAdapter(ScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(LocalScriptAdapter, self).__init__()
-
-        self._exec = kwargs.pop("shell", "/bin/bash")
+        LOGGER.debug("kwargs\n--------------------------\n%s", kwargs)
+        super(LocalScriptAdapter, self).__init__(**kwargs)
 
     def _write_script(self, ws_path, step):
         """
@@ -112,7 +111,7 @@ class LocalScriptAdapter(ScriptAdapter):
         :param joblist: A list of job identifiers to be cancelled.
         :returns: The return code to indicate if jobs were cancelled.
         """
-        return CancelCode.OK
+        return CancellationRecord(CancelCode.OK, 0)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
@@ -138,9 +137,20 @@ class LocalScriptAdapter(ScriptAdapter):
         output, err = p.communicate()
         retcode = p.wait()
 
+        o_path = os.path.join(cwd, "{}.out".format(step.name))
+        e_path = os.path.join(cwd, "{}.err".format(step.name))
+
+        with open(o_path, "w") as out:
+            out.write(output)
+
+        with open(e_path, "w") as out:
+            out.write(err)
+
         if retcode == 0:
             LOGGER.info("Execution returned status OK.")
-            return SubmissionCode.OK, pid
+            return SubmissionRecord(SubmissionCode.OK, retcode, pid)
         else:
             LOGGER.warning("Execution returned an error: %s", str(err))
-            return SubmissionCode.ERROR, pid
+            _record = SubmissionRecord(SubmissionCode.ERROR, retcode, pid)
+            _record.add_info("stderr", str(err))
+            return _record
