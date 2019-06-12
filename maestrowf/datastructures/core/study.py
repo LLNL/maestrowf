@@ -288,6 +288,11 @@ class Study(DAG):
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(metadata).encode("utf-8"))
 
+        # Write out environment metadata
+        path = os.path.join(self._meta_path, "environment.yaml")
+        with open(path, "wb") as metafile:
+            metafile.write(yaml.dump(os.environ.copy()).encode("utf-8"))
+
     def load_metadata(self):
         """Load metadata for the study."""
         if not os.path.exists(self._meta_path):
