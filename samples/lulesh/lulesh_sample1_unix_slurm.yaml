@@ -43,6 +43,7 @@ study:
           depends: [make-lulesh]
           nodes: 2
           procs: 27
+          walltime: "00:10:00"
 
 global.parameters:
     SIZE:
