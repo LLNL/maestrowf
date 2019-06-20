@@ -34,7 +34,7 @@ import inspect
 from maestrowf.abstracts.interfaces import ScriptAdapter
 
 
-__all__ = "ScriptAdapterFactory"
+__all__ = ("ScriptAdapterFactory",)
 LOGGER = logging.getLogger(__name__)
 
 
