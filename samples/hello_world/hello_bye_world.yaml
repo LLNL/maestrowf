@@ -1,0 +1,31 @@
+description:
+    name: hello_bye_world
+    description: A study that says hello and bye to multiple people.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/hello_world
+    labels:
+        OUT_FORMAT: $(GREETING)_$(NAME).txt
+
+study:
+    - name: hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
+
+    - name: bye
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "Bye, $(NAME)!" > Bye_$(NAME).txt
+          depends: [hello]
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
