@@ -8,7 +8,7 @@ env:
 
 study:
     - name: hello_world
-      description: Build the serial version of LULESH.
+      description: Say hello to the world!
       run:
           cmd: |
             echo "Hello, World!" > hello_world.txt

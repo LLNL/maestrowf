@@ -1,13 +1,13 @@
 description:
-    name: hello_world
-    description: A simple 'Hello World' study.
+    name: hello_world_singleparam
+    description: A simple single parameter 'Hello World' study.
 
 env:
     variables:
         OUTPUT_PATH: ./sample_output/hello_world
 
 study:
-    - name: hello_world
+    - name: hello
       description: Say hello to someone!
       run:
           cmd: |
