@@ -172,7 +172,7 @@ def make_safe_path(base_path, *args):
     Construct a subpath that is path safe.
 
     :params base_path: The base path to append args to.
-    :params *args: Path components to join into a path.
+    :params args: Path components to join into a path.
     :returns: A joined subpath with invalid characters stripped.
     """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
