@@ -1,0 +1,23 @@
+description:
+    name: hello_bye
+    description: A simple 'Hello World' study with one parameter.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/hello_world
+    labels:
+        OUT_FORMAT: $(GREETING)_$(NAME).txt
+
+study:
+    - name: hello_world
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "Hello, World!" > hello_world.txt
+
+    - name: bye_world
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "Bye, World!" > bye_world.txt
+          depends: [hello_world]

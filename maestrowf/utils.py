@@ -93,7 +93,7 @@ def generate_filename(path, append_time=True):
 
 def create_parentdir(path):
     """
-    Utility function that recursively creates parent directories.
+    Recursively create parent directories.
 
     :param path: Path to a directory to be created.
     """
@@ -106,7 +106,7 @@ def create_parentdir(path):
 
 def apply_function(item, func):
     """
-    Utility function for applying a wider range of functions to items.
+    Apply a function to items depending on type.
 
     :param item: A Python primitive to apply a function to.
     :param func: Function that returns takes item as a parameter and returns
@@ -172,7 +172,7 @@ def make_safe_path(base_path, *args):
     Construct a subpath that is path safe.
 
     :params base_path: The base path to append args to.
-    :params *args: Path components to join into a path.
+    :params args: Path components to join into a path.
     :returns: A joined subpath with invalid characters stripped.
     """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
@@ -186,7 +186,7 @@ def make_safe_path(base_path, *args):
 
 def start_process(cmd, cwd=None, env=None, shell=True):
     """
-    Starts a new process using a specified command.
+    Start a new process using a specified command.
 
     :param cmd: A string or a list representing the command to be run.
     :param cwd: Current working path that the process will be started in.
