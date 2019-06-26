@@ -33,6 +33,8 @@ Next we will add the `env` section. This section isn't required, but in this cas
         variables:
             OUTPUT_PATH: ./sample_output/hello_world
 
+.. note:: The `OUTPUT_PATH` variable is a Maestro recognized keyword that specifies the base path where study output is written.
+
 The final section to add will be the `study` section which will only contain a single step. Below the `description` section in the study file you've created add the following block:
 
 .. code-block:: yaml
@@ -46,7 +48,7 @@ The final section to add will be the `study` section which will only contain a s
                 echo "Hello, World!" > hello_world.txt
 
 
-.. note:: The `-` denotes a list item in YAML, which means if you wanted to add more steps you could. For now, though, we will keep it simple with one.
+.. note:: The `-` denotes a list item in YAML. To add elements, simply add new elements prefixed with a hyphen. For now, we will keep it simple with one step and will cover adding extra steps later in this guide.
 
 The only required keys for a study step are the name, description, and a run section containing a command (`cmd`). You might notice the similarity in requirement to the study itself of a `name` and `description` entry. This requirement is intentional in order to encourage documentation as you develop a study. The following are descriptions of the required keys:
 
@@ -63,8 +65,6 @@ The only required keys for a study step are the name, description, and a run sec
 
     cmd
      A string of commands to be executed by this step.
-
-There are optional keys which we will cover later on -- but for now, these are the minimum set of requirements.
 
 The completed "Hello World" specification should now look like the following:
 
@@ -94,23 +94,22 @@ The command above will produce a timestamped folder that contains the output of 
 
 .. code-block:: bash
 
-    drwxr-xr-x 5 root root 4096 Mar 25 01:33 ./
-    drwxr-xr-x 3 root root 4096 Mar 25 01:33 ../
-    -rwxr-xr-x 1 root root    0 Mar 25 01:33 .status.lock
-    drwxr-xr-x 2 root root 4096 Mar 25 01:33 hello_world/
-    -rw-r--r-- 1 root root 2352 Mar 25 01:33 hello_world.pkl
-    -rw-r--r-- 1 root root    0 Mar 25 01:33 hello_world.txt
-    -rwxr-xr-x 1 root root  332 Mar 25 01:33 hello_world.yaml*
-    drwxr-xr-x 2 root root 4096 Mar 25 01:33 logs/
-    drwxr-xr-x 3 root root 4096 Mar 25 01:33 meta/
-    -rw-r--r-- 1 root root  241 Mar 25 01:33 status.csv
+    drwxr-xr-x  6 frank  staff   192B Jun 18 11:32 hello_world
+    -rw-r--r--  1 frank  staff   1.8K Jun 18 11:32 hello_world.pkl
+    -rw-r--r--  1 frank  staff     0B Jun 18 11:32 hello_world.txt
+    -rw-r--r--  1 frank  staff   306B Jun 18 11:32 hello_world.yaml
+    drwxr-xr-x  3 frank  staff    96B Jun 18 11:32 logs
+    drwxr-xr-x  5 frank  staff   160B Jun 18 11:32 meta
+    -rw-r--r--  1 frank  staff   241B Jun 18 11:32 status.csv
 
-From here, change into the "hello_world" subdirectory. Here you'll see that there are two files: the generated "hello_world.sh" shell script and the resulting output "hello_world.txt". The directory looks similar to:
+From here, change into the "hello_world" subdirectory. Here you'll see that there are four files: the generated "hello_world.sh" shell script, the resulting output "hello_world.txt", a .out log file, and a .err error log. Your directory should look similar to:
 
 .. code-block:: bash
 
-    -rwxr--r--  1 dinatale3  59021    53B Jan 10 09:41 hello_world.sh
-    -rw-r--r--  1 dinatale3  59021    14B Jan 10 09:41 hello_world.txt
+    -rw-r--r--  1 frank  staff     0B Jun 18 11:32 hello_world.err
+    -rw-r--r--  1 frank  staff     0B Jun 18 11:32 hello_world.out
+    -rwxr--r--  1 frank  staff    53B Jun 18 11:32 hello_world.sh
+    -rw-r--r--  1 frank  staff    14B Jun 18 11:32 hello_world.txt
 
 You'll notice that the study directory only contains "hello_world" and the contents for a single run (which corresponds to the singular step above). Maestro detects that the step is not parameterized and uses the workspace that corresponds with the "hello_world" step. If we execute the command `cat hello_world.txt` we see that the output is exactly as specified in the `cmd` portion of the step::
 
@@ -191,3 +190,95 @@ However, if we `cat` each of the outputs from each directory, we'll see that the
     $ Hello, Jim!
     $ Hello, Michael!
     $ Hello, Pam!
+
+
+Expanding "Hello World" to Multiple Steps
+******************************************
+
+Now that we've got our specification set up to say hello to multiple people, let's take a step back and look at our base "Hello World" specification and add "bye_world" as specified below:
+
+.. code-block:: yaml
+    :linenos:
+
+    description:
+        name: hello_world
+        description: A simple 'Hello World' study.
+
+    env:
+        variables:
+            OUTPUT_PATH: ./sample_output/hello_world
+
+    study:
+        - name: hello_world
+          description: Say hello to the world!
+          run:
+              cmd: |
+                echo "Hello, World!" > hello_world.txt
+
+        - name: bye_world
+          description: Say bye to someone!
+          run:
+              cmd: |
+                echo "Bye, $(NAME)!" > Bye_$(NAME).txt
+              depends: [hello_world]
+
+
+After adding this step to your specification, go ahead and run it using `maestro run` as before. Now, if you look at the generated study directory, we see that the study generates an extra directory for the "bye_world" step.
+
+.. code-block:: bash
+
+    drwxr-xr-x  6 frank  staff   192B Jun 25 20:54 bye_world
+    -rw-r--r--  1 frank  staff   2.3K Jun 25 20:54 hello_bye.pkl
+    -rw-r--r--  1 frank  staff     0B Jun 25 20:53 hello_bye.txt
+    -rw-r--r--  1 frank  staff   551B Jun 25 20:53 hello_bye_world.yaml
+    drwxr-xr-x  6 frank  staff   192B Jun 25 20:53 hello_world
+    drwxr-xr-x  3 frank  staff    96B Jun 25 20:54 logs
+    drwxr-xr-x  5 frank  staff   160B Jun 25 20:53 meta
+    -rw-r--r--  1 frank  staff   383B Jun 25 20:54 status.csv
+
+If you change into this directory, you'll see that a similar set of files to the previous "hello_world" step have been created. You'll see that executing `cat bye_world.txt` prints out "Bye, World!". Now, to take this a step further -- what if we wanted to say bye to each particular person in our parameterized "hello world" example?
+
+Starting with our parameterized hello world specification, we add the "bye" step and make it dependent on the "hello" step. You should also update the description and study name to something meaningful for the new study.
+
+.. code-block:: YAML
+    description:
+        name: hello_bye_parameterized
+        description: A study that says hello and bye to multiple people.
+
+    env:
+        variables:
+            OUTPUT_PATH: ./sample_output/hello_world
+        labels:
+            OUT_FORMAT: $(GREETING)_$(NAME).txt
+
+    study:
+        - name: hello_world
+          description: Say hello to someone!
+          run:
+              cmd: |
+                echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
+
+        - name: bye_world
+          description: Say bye to someone!
+          run:
+              cmd: |
+                echo "Bye, World!" > bye.txt
+              depends: [hello_world]
+
+    global.parameters:
+        NAME:
+            values: [Pam, Jim, Michael, Dwight]
+            label: NAME.%%
+        GREETING:
+            values: [Hello, Ciao, Hey, Hi]
+            label: GREETING.%%
+
+The study workspace looks the same as the "hello_bye_world" study specified above at the top level;  however, like the multi-parameterized "hello_world" study you'll see that each step's workspaces have parameterized folders. The "hello_world" step has the same workspace set up as the previous parameterized study as expected.
+
+.. code-block:: bash
+    drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Ciao.NAME.Jim
+    drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Hello.NAME.Pam
+    drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Hey.NAME.Michael
+    drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Hi.NAME.Dwight
+
+If you look into the "bye_world" workspace, you'll also notice it has the same exact set of folders as "hello_world". While this set up might seem weird at first, it is a feature of how Maestro expands the study using parameters. In a later section, we'll describe how Maestro expands the study in a predictable manner -- but for now, it is enough to know that the "bye_world" step was expanded in a 1:1 fashion because the step is dependent on "hello_world" and the parameters it used. Maestro, in this case, can not make any assumptions and simply expands the "bye_world" one to one with each parameterized "hello_world".
