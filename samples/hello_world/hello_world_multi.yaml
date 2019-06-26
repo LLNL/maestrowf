@@ -1,0 +1,22 @@
+description:
+    name: hello_world_multi
+    description: A simple 'Hello World' study with multiple parameters.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/hello_world
+
+study:
+    - name: say_hi
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "Hello, $(NAME)!" > hello_world.txt
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
