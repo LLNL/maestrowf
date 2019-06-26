@@ -219,7 +219,7 @@ Now that we've got our specification set up to say hello to multiple people, let
           description: Say bye to someone!
           run:
               cmd: |
-                echo "Bye, $(NAME)!" > Bye_$(NAME).txt
+                echo "Bye, World!" > bye_world.txt
               depends: [hello_world]
 
 
@@ -238,7 +238,7 @@ After adding this step to your specification, go ahead and run it using `maestro
 
 If you change into this directory, you'll see that a similar set of files to the previous "hello_world" step have been created. You'll see that executing `cat bye_world.txt` prints out "Bye, World!". Now, to take this a step further -- what if we wanted to say bye to each particular person in our parameterized "hello world" example?
 
-Starting with our parameterized hello world specification, we add the "bye" step and make it dependent on the "hello" step. You should also update the description and study name to something meaningful for the new study.
+Now, if we start with our parameterized hello world specification, we add the "bye_world" step and make it dependent on the "hello_world" step. You should also update the description and study name to something meaningful for the new study.
 
 .. code-block:: YAML
     description:
@@ -248,21 +248,19 @@ Starting with our parameterized hello world specification, we add the "bye" step
     env:
         variables:
             OUTPUT_PATH: ./sample_output/hello_world
-        labels:
-            OUT_FORMAT: $(GREETING)_$(NAME).txt
 
     study:
         - name: hello_world
           description: Say hello to someone!
           run:
               cmd: |
-                echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
+                echo "$(GREETING), $(NAME)!" > hello_world.txt
 
         - name: bye_world
           description: Say bye to someone!
           run:
               cmd: |
-                echo "Bye, World!" > bye.txt
+                echo "Bye, World!" > bye_world.txt
               depends: [hello_world]
 
     global.parameters:
