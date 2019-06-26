@@ -1,56 +1,31 @@
 description:
-<<<<<<< HEAD
     name: hello_bye_world
     description: A study that says hello and bye to multiple people.
-=======
-    name: hello_bye
-    description: A simple 'Hello World' study with one parameter.
->>>>>>> a435e36481aee4f6c6044a9932d459e122b58a9b
 
 env:
     variables:
         OUTPUT_PATH: ./sample_output/hello_world
-<<<<<<< HEAD
     labels:
         OUT_FORMAT: $(GREETING)_$(NAME).txt
 
 study:
-    - name: hello
+    - name: hello_world
       description: Say hello to someone!
       run:
           cmd: |
             echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
 
-    - name: bye
+    - name: bye_world
       description: Say bye to someone!
       run:
           cmd: |
-            echo "Bye, $(NAME)!" > Bye_$(NAME).txt
-          depends: [hello]
-=======
-
-study:
-    - name: say_hi
-      description: Say hello to someone!
-      run:
-          cmd: |
-            echo "Hello, $(NAME)!" > hello_world.txt
-
-    - name: say_bye
-      description: Echo a friendly goodbye
-      run:
-          cmd: |
-            echo "Bye, $(NAME)!" > bye_$(NAME).txt
-          depends: [say_hi]
->>>>>>> a435e36481aee4f6c6044a9932d459e122b58a9b
+            echo "Bye, World!" > bye.txt
+          depends: [hello_world]
 
 global.parameters:
     NAME:
         values: [Pam, Jim, Michael, Dwight]
         label: NAME.%%
-<<<<<<< HEAD
     GREETING:
         values: [Hello, Ciao, Hey, Hi]
         label: GREETING.%%
-=======
->>>>>>> a435e36481aee4f6c6044a9932d459e122b58a9b

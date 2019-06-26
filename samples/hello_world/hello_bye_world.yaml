@@ -9,20 +9,15 @@ env:
         OUT_FORMAT: $(GREETING)_$(NAME).txt
 
 study:
-    - name: hello
+    - name: hello_world
       description: Say hello to someone!
       run:
           cmd: |
-            echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
+            echo "Hello, World!" > hello_world.txt
 
-    - name: bye
+    - name: bye_world
       description: Say bye to someone!
       run:
           cmd: |
-            echo "Bye, $(NAME)!" > Bye_$(NAME).txt
-          depends: [hello]
-
-global.parameters:
-    NAME:
-        values: [Pam, Jim, Michael, Dwight]
-        label: NAME.%%
+            echo "Bye, World!" > bye_world.txt
+          depends: [hello_world]
