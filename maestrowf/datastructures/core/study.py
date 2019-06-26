@@ -407,8 +407,6 @@ class Study(DAG, PickleInterface):
         denotes no cap].\
         :param use_tmp: Boolean value specifying if the generated \
         ExecutionGraph dumps its information into a temporary directory. \
-        :param dry_run: Boolean value that toggles dry run to just generate \
-        study workspaces and scripts without execution or status checking. \
         :returns: True if the Study is successfully setup, False otherwise. \
         """
 

@@ -281,4 +281,4 @@ The study workspace looks the same as the "hello_bye_world" study specified abov
 
 If you look into the "bye_world" workspace, you'll also notice it has the same exact set of folders as "hello_world". While this set up might seem weird at first, it is a feature of how Maestro expands the study using parameters. In a later section, we'll describe how Maestro expands the study in a predictable manner -- but for now, it is enough to know that the "bye_world" step was expanded in a 1:1 fashion because the step is dependent on "hello_world" and the parameters it used. Maestro, in this case, can not make any assumptions and simply expands the "bye_world" one to one with each parameterized "hello_world".
 
-.. note:: You can view the sample specifications constructed here in their entirety in Maestro's GitHub repository `here <https://github.com/LLNL/maestrowf/tree/develop/samples/hello_world>`_.
+.. note:: You can view the sample specifications constructed here in their entirety in Maestro's GitHub repository [here](https://github.com/LLNL/maestrowf/tree/develop/samples/hello_world).

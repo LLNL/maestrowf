@@ -88,9 +88,9 @@ def load_parameter_generator(path, kwargs):
     """
     Import and load custom parameter Python files.
 
-    :param path: Path to a Python file containing the function
+    :param path: Path to a Python file containing the function \
     'get_custom_generator'.
-    :param kwargs: Dictionary containing keyword arguments for the function
+    :param kwargs: Dictionary containing keyword arguments for the function \
     'get_custom_generator'.
     :returns: A populated ParameterGenerator instance.
     """
