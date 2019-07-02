@@ -30,20 +30,29 @@
 """Package for providing enumerations for interfaces"""
 from enum import Enum
 
-__all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
+__all__ = (
+    "JobStatusCode",
+    "PostCode",
+    "State",
+    "SubmissionCode",
+    "StudyStatus"
+)
 
 
 class SubmissionCode(Enum):
+    """Return states during submission."""
     OK = 0
     ERROR = 1
 
 
 class CancelCode(Enum):
+    """Return states during cancellation."""
     OK = 0
     ERROR = 1
 
 
 class JobStatusCode(Enum):
+    """Return states when polling for job status."""
     OK = 0
     NOJOBS = 1
     ERROR = 2
@@ -65,6 +74,7 @@ class State(Enum):
     TIMEDOUT = 10
     UNKNOWN = 11
     CANCELLED = 12
+    NOOP = 13
 
 
 class StudyStatus(Enum):
@@ -73,3 +83,12 @@ class StudyStatus(Enum):
     RUNNING = 1    # The Study is currently running
     FAILURE = 2    # The Study has finished, but 1 or more steps failed
     CANCELLED = 3  # The Study has finished, but was cancelled
+
+
+class PostCode(Enum):
+    """Codes for step post step returns."""
+    COMPLETE = 0
+    FAILURE = 1
+    RESTART = 2
+    RERUN = 3
+    CANCEL = 4
