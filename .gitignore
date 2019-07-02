@@ -6,6 +6,9 @@ venv
 .output/
 sample_output/
 
+# VSCode
+.vscode
+
 # Doxygen output
 docs/html/
 
@@ -30,6 +33,7 @@ htmlcov/
 wheelhouse/
 
 pylint_*.txt
+Pipfile.lock
 
 #pycharm
 .idea/
