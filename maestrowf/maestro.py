@@ -44,7 +44,8 @@ from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
-    create_parentdir, csvtable_to_dict, make_safe_path, start_process
+    create_parentdir, create_dictionary, csvtable_to_dict, make_safe_path, \
+    start_process
 
 
 # Program Globals
@@ -88,12 +89,14 @@ def cancel_study(args):
     return 0
 
 
-def load_parameter_generator(path):
+def load_parameter_generator(path, kwargs):
     """
     Import and load custom parameter Python files.
 
-    :param path: Path to a Python file containing the function
-    'get_custom_generator()'
+    :param path: Path to a Python file containing the function \
+    'get_custom_generator'.
+    :param kwargs: Dictionary containing keyword arguments for the function \
+    'get_custom_generator'.
     :returns: A populated ParameterGenerator instance.
     """
     path = os.path.abspath(path)
@@ -105,20 +108,20 @@ def load_parameter_generator(path):
         spec = importlib.util.spec_from_file_location("custom_gen", path)
         f = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(f)
-        return f.get_custom_generator()
+        return f.get_custom_generator(**kwargs)
     except ImportError:
         try:
             # Python 3.3
             from importlib.machinery import SourceFileLoader
             LOGGER.debug("Using Python 3.4 SourceFileLoader...")
             f = SourceFileLoader("custom_gen", path).load_module()
-            return f.get_custom_generator()
+            return f.get_custom_generator(**kwargs)
         except ImportError:
             # Python 2
             import imp
             LOGGER.debug("Using Python 2 imp library...")
             f = imp.load_source("custom_gen", path)
-            return f.get_custom_generator()
+            return f.get_custom_generator(**kwargs)
     except Exception as e:
         LOGGER.exception(str(e))
         raise e
@@ -135,7 +138,7 @@ def run_study(args):
     out_dir = environment.remove("OUTPUT_PATH")
     if args.out:
         # If out is specified in the args, ignore OUTPUT_PATH.
-        output_path = os.path.abspath(make_safe_path(args.out))
+        output_path = os.path.abspath(args.out)
 
         # If we are automatically launching, just set the input as yes.
         if os.path.exists(output_path):
@@ -167,17 +170,26 @@ def run_study(args):
             spec.name.replace(" ", "_"),
             time.strftime("%Y%m%d-%H%M%S")
         )
-        output_path = make_safe_path(out_dir, out_name)
+        output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
 
     # Now that we know outpath, set up logging.
     setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
 
+    # Check for pargs without the matching pgen
+    if args.pargs and not args.pgen:
+        msg = "Cannot use the 'pargs' parameter without specifying a 'pgen'!"
+        LOGGER.exception(msg)
+        raise ArgumentError(msg)
+
     # Handle loading a custom ParameterGenerator if specified.
     if args.pgen:
+        # 'pgen_args' has a default of an empty list, which should translate
+        # to an empty dictionary.
+        kwargs = create_dictionary(args.pargs)
         # Copy the Python file used to generate parameters.
         shutil.copy(args.pgen, output_path)
-        parameters = load_parameter_generator(args.pgen)
+        parameters = load_parameter_generator(args.pgen, kwargs)
     else:
         parameters = spec.get_parameters()
 
@@ -216,7 +228,7 @@ def run_study(args):
     study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
     # Stage the study.
     path, exec_dag = study.stage()
@@ -226,6 +238,9 @@ def run_study(args):
     if not spec.batch:
         exec_dag.set_adapter({"type": "local"})
     else:
+        if "type" not in spec.batch:
+            spec.batch["type"] = "local"
+
         exec_dag.set_adapter(spec.batch)
 
     # Copy the spec to the output directory
@@ -236,8 +251,7 @@ def run_study(args):
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
     # Pickle up the DAG
-    pkl_path = os.path.join(path, "{}.pkl".format(
-        study.name.replace(" ", "_").lower()))
+    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
     exec_dag.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
@@ -259,14 +273,21 @@ def run_study(args):
             return completion_status.value
         else:
             # Launch manager with nohup
+            log_path = make_safe_path(
+                study.output_path,
+                *["{}.txt".format(exec_dag.name)])
+
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
                    path,
-                   "&>", "{}.txt".format(os.path.join(
-                    study.output_path, exec_dag.name))]
+                   "&>", log_path]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
+
+            print("Study launched successfully.")
+    else:
+        print("Study launch aborted.")
 
     return 0
 
@@ -313,12 +334,20 @@ def setup_argparser():
                      help="Path to a Python code file containing a function "
                      "that returns a custom filled ParameterGenerator"
                      "instance.")
+    run.add_argument("--pargs", type=str, action="append", default=[],
+                     help="A string that represents a single argument to pass "
+                     "a custom parameter generation function. Reuse '--parg' "
+                     "to pass multiple arguments. [Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
     run.add_argument("-fg", action="store_true", default=False,
                      help="Runs the backend conductor in the foreground "
                      "instead of using nohup. [Default: %(default)s]")
+    run.add_argument("--hashws", action="store_true", default=False,
+                     help="Enable hashing of subdirectories in parameterized "
+                     "studies (NOTE: breaks commands that use parameter labels"
+                     " to search directories). [Default: %(default)s]")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
@@ -381,7 +410,7 @@ def setup_logging(args, path, name):
         logpath = args.logpath
     # Otherwise, we should just output to the OUTPUT_PATH.
     else:
-        logpath = make_safe_path(path, "logs")
+        logpath = make_safe_path(path, *["logs"])
 
     loglevel = args.debug_lvl * 10
 
@@ -390,8 +419,8 @@ def setup_logging(args, path, name):
     formatter = logging.Formatter(LFORMAT)
     ROOTLOGGER.setLevel(loglevel)
 
-    logname = make_safe_path("{}.log".format(name))
-    fh = logging.FileHandler(os.path.join(logpath, logname))
+    log_path = make_safe_path(logpath, *["{}.log".format(name)])
+    fh = logging.FileHandler(log_path)
     fh.setLevel(loglevel)
     fh.setFormatter(formatter)
     ROOTLOGGER.addHandler(fh)

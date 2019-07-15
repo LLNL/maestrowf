@@ -41,9 +41,26 @@ import time
 LOGGER = logging.getLogger(__name__)
 
 
+def get_duration(time_delta):
+    """
+    Covert durations to HH:MM:SS format.
+
+    :params time_delta: A time difference in datatime format.
+    :returns: A formatted string in HH:MM:SS
+    """
+    duration = time_delta.total_seconds()
+    days = int(duration / 86400)
+    hours = int((duration % 86400) / 3600)
+    minutes = int((duration % 86400 % 3600) / 60)
+    seconds = int((duration % 86400 % 3600) % 60)
+
+    return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
+           .format(days, hours, minutes, seconds)
+
+
 def generate_filename(path, append_time=True):
     """
-    Utility function for generating a non-conflicting file name.
+    Generate a non-conflicting file name.
 
     :param path: Path to file.
     :param append_time: Setting to append a timestamp.
@@ -76,7 +93,7 @@ def generate_filename(path, append_time=True):
 
 def create_parentdir(path):
     """
-    Utility function that recursively creates parent directories.
+    Recursively create parent directories.
 
     :param path: Path to a directory to be created.
     """
@@ -89,7 +106,7 @@ def create_parentdir(path):
 
 def apply_function(item, func):
     """
-    Utility function for applying a wider range of functions to items.
+    Apply a function to items depending on type.
 
     :param item: A Python primitive to apply a function to.
     :param func: Function that returns takes item as a parameter and returns
@@ -150,17 +167,26 @@ def csvtable_to_dict(fstream):
     return table
 
 
-def make_safe_path(*args):
+def make_safe_path(base_path, *args):
+    """
+    Construct a subpath that is path safe.
+
+    :params base_path: The base path to append args to.
+    :params args: Path components to join into a path.
+    :returns: A joined subpath with invalid characters stripped.
+    """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
+    path = [base_path]
     for arg in args:
         arg = "".join(c for c in arg if c in valid)
         arg = arg.replace(" ", "_")
-    return os.path.join(*args)
+        path.append(arg)
+    return os.path.join(*path)
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):
     """
-    Starts a new process using a specified command.
+    Start a new process using a specified command.
 
     :param cmd: A string or a list representing the command to be run.
     :param cwd: Current working path that the process will be started in.
@@ -209,3 +235,26 @@ def ping_url(url):
     else:
         response.read()
         return
+
+
+def create_dictionary(list_keyvalues, token=":"):
+    """
+    Create a dictionary from a list of key-value pairs.
+
+    :param list_keyvalues: List of token separates key-values.
+    :param token: The token to split each key-value by.
+    :returns: A dictionary containing the key-value pairings in list_keyvalues.
+    """
+    _dict = {}
+    for item in list_keyvalues:
+        try:
+            key, value = [i.strip() for i in item.split(token, 1)]
+            _dict[key] = value
+        except ValueError:
+            msg = "'{}' is not capable of being split by the token '{}'. " \
+                  "Verify that all other parameters are formatted properly." \
+                  .format(item, token)
+            LOGGER.exception(msg)
+            raise ValueError(msg)
+
+    return _dict

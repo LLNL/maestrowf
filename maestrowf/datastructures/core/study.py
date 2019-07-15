@@ -29,6 +29,7 @@
 
 """Class related to the construction of study campaigns."""
 import copy
+from hashlib import md5
 import logging
 import os
 import pickle
@@ -138,27 +139,29 @@ class Study(DAG):
             - Creating the global workspace for a study.
             - Setting up the parameterized workspaces for each combination.
             - Acquiring dependencies as specified in the StudyEnvironment.
+
         - Intelligently constructing the expanded DAG to be able to:
             - Recognize when a step executes in a parameterized workspace
             - Recognize when a step executes in the global workspace
+
         - Expanding the abstract flow to the full set of specified parameters.
 
     Future functionality that makes sense to add here:
         - Metadata collection. If we're setting things up here, collect the
-          general information. We might even want to venture to say that a set
-          of directives may be useful so that they could be placed into
-          Dependency classes as hooks for dumping that data automatically.
+        general information. We might even want to venture to say that a set
+        of directives may be useful so that they could be placed into
+        Dependency classes as hooks for dumping that data automatically.
         - A way of packaging an instance of the class up into something that is
-          easy to store in the ExecutionDAG class so that an API can be
-          designed in whatever class ends up managing all of this to have
-          machine learning applications pipe messages to spin up new studies
-          using the same environment.
+        easy to store in the ExecutionDAG class so that an API can be
+        designed in whatever class ends up managing all of this to have
+        machine learning applications pipe messages to spin up new studies
+        using the same environment.
             - The current solution to this is VERY basic. Currently the plan is
-              to write a parameterized specification (not unlike the method of
-              using parameterized .dat files for simulators) and just have the
-              ML engine string replace those. It's crude because currently we'd
-              have to just construct a new environment, with no way to manage
-              injecting the new set into an existing workspace.
+            to write a parameterized specification (not unlike the method of
+            using parameterized .dat files for simulators) and just have the
+            ML engine string replace those. It's crude because currently we'd
+            have to just construct a new environment, with no way to manage
+            injecting the new set into an existing workspace.
     """
 
     def __init__(self, name, description,
@@ -243,12 +246,38 @@ class Study(DAG):
             pickle.dump(self, pkl)
 
         # Construct other metadata related to study construction.
+        _workspaces = {}
+        for key, value in self.workspaces.items():
+            if key == "_source":
+                _workspaces[key] = value
+            elif key in self.step_combos:
+                _workspaces[key] = os.path.split(value)[-1]
+            else:
+                _workspaces[key] = \
+                    os.path.sep.join(value.rsplit(os.path.sep)[-2:])
+
+        # Construct relative paths for the combinations and nest them in the
+        # same way as the step combinations dictionary.
+        _step_combos = {}
+        for key, value in self.step_combos.items():
+            if key == SOURCE:
+                _step_combos[key] = self.workspaces[key]
+            elif not self.used_params[key]:
+                _ws = self.workspaces[key]
+                _step_combos[key] = {key: os.path.split(_ws)[-1]}
+            else:
+                _step_combos[key] = {}
+                for combo in value:
+                    _ws = self.workspaces[combo]
+                    _step_combos[key][combo] = \
+                        os.path.sep.join(_ws.rsplit(os.path.sep)[-2:])
+
         metadata = {
             "dependencies": self.depends,
             "hub_dependencies": self.hub_depends,
-            "workspaces": self.workspaces,
+            "workspaces": _workspaces,
             "used_parameters": self.used_params,
-            "step_combinations": self.step_combos,
+            "step_combinations": _step_combos,
         }
         # Write out the study construction metadata.
         path = os.path.join(self._meta_path, "metadata.yaml")
@@ -260,6 +289,11 @@ class Study(DAG):
         path = os.path.join(self._meta_path, "parameters.yaml")
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(metadata).encode("utf-8"))
+
+        # Write out environment metadata
+        path = os.path.join(self._meta_path, "environment.yaml")
+        with open(path, "wb") as metafile:
+            metafile.write(yaml.dump(os.environ.copy()).encode("utf-8"))
 
     def load_metadata(self):
         """Load metadata for the study."""
@@ -295,7 +329,7 @@ class Study(DAG):
         the order that they will be encountered. The method attempts to be
         intelligent and make the intended edge based on the 'depends' entry in
         a step. When adding steps out of order it's recommended to just use the
-         base class DAG functionality and manually make connections.
+        base class DAG functionality and manually make connections.
 
          :param step: A StudyStep instance to be added to the Study instance.
         """
@@ -355,27 +389,29 @@ class Study(DAG):
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False):
+                        throttle=0, use_tmp=False, hash_ws=False):
         """
-        Perform initial configuration of a study.
+        Perform initial configuration of a study. \
 
-        The method is used for going through and actually acquiring each
-        dependency, substituting variables, sources and labels.
+        The method is used for going through and actually acquiring each \
+        dependency, substituting variables, sources and labels. \
 
-        :param submission_attempts: Number of attempted submissions before
-            marking a step as failed.
-        :param restart_limit: Upper limit on the number of times a step with
-        a restart command can be resubmitted before it is considered failed.
-        :param throttle: The maximum number of in-progress jobs allowed. [0
-        denotes no cap].
-        :param use_tmp: Boolean value specifying if the generated
-        ExecutionGraph dumps its information into a temporary directory.
-        :returns: True if the Study is successfully setup, False otherwise.
+        :param submission_attempts: Number of attempted submissions before \
+        marking a step as failed. \
+        :param restart_limit: Upper limit on the number of times a step with \
+        a restart command can be resubmitted before it is considered failed. \
+        :param throttle: The maximum number of in-progress jobs allowed. [0 \
+        denotes no cap].\
+        :param use_tmp: Boolean value specifying if the generated \
+        ExecutionGraph dumps its information into a temporary directory. \
+        :returns: True if the Study is successfully setup, False otherwise. \
         """
+
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
         self._use_tmp = use_tmp
+        self._hash_ws = hash_ws
 
         logger.info(
             "\n------------------------------------------\n"
@@ -384,12 +420,13 @@ class Study(DAG):
             "Submission restart limit =  %d\n"
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
+            "Hash workspaces =           %s\n"
             "------------------------------------------",
             self._out_path, submission_attempts, restart_limit, throttle,
-            use_tmp
+            use_tmp, hash_ws
         )
 
-    def _stage_parameterized(self, dag):
+    def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
 
@@ -507,7 +544,7 @@ class Study(DAG):
                 # Copy the step and set to not modified.
                 self.step_combos[step].add(step)
 
-                workspace = make_safe_path(self._out_path, step)
+                workspace = make_safe_path(self._out_path, *[step])
                 self.workspaces[step] = workspace
                 logger.debug("Workspace: %s", workspace)
 
@@ -524,7 +561,7 @@ class Study(DAG):
                         # If we're looking at a parameter independent match
                         # the workspace is the folder that contains all of
                         # the outputs of all combinations for the step.
-                        ws = make_safe_path(self._out_path, match)
+                        ws = make_safe_path(self._out_path, *[match])
                         logger.info("Found funnel workspace -- %s", ws)
                     else:
                         ws = self.workspaces[match]
@@ -579,9 +616,14 @@ class Study(DAG):
                                 str(combo))
                     # Compute this step's combination name and workspace.
                     combo_str = combo.get_param_string(self.used_params[step])
-                    workspace = \
-                        make_safe_path(self._out_path, step, combo_str)
-                    logger.debug("Workspace: %s", workspace)
+                    if self._hash_ws:
+                        workspace = make_safe_path(
+                                        self._out_path,
+                                        *[step, md5(combo_str).hexdigest()])
+                    else:
+                        workspace = \
+                            make_safe_path(self._out_path, *[step, combo_str])
+                        logger.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
@@ -606,7 +648,7 @@ class Study(DAG):
                             # If we're looking at a parameter independent match
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
-                            ws = make_safe_path(self._out_path, match)
+                            ws = make_safe_path(self._out_path, *[match])
                             logger.info("Found funnel workspace -- %s", ws)
                         elif not self.used_params[match]:
                             # If it's not a funneled dependency and the match
@@ -688,7 +730,7 @@ class Study(DAG):
                 continue
 
             # Initialize management structures.
-            ws = make_safe_path(self._out_path, step)
+            ws = make_safe_path(self._out_path, *[step])
             self.workspaces[step] = ws
             self.depends[step] = set()
             # Hub dependencies are not possible in linear studies. Empty set
@@ -787,11 +829,4 @@ class Study(DAG):
         dag.add_description(**self.description)
         dag.log_description()
 
-        # We have two cases:
-        # 1. Parameterized workflows
-        # 2. A linear, execute as specified workflow
-        # NOTE: This scheme could be how we handle derived use cases.
-        if self.parameters:
-            return self._out_path, self._stage_parameterized(dag)
-        else:
-            return self._out_path, self._stage_linear(dag)
+        return self._out_path, self._stage(dag)

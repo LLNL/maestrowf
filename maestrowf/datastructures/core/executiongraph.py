@@ -14,7 +14,7 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir
+from maestrowf.utils import create_parentdir, get_duration
 
 logger = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -119,14 +119,16 @@ class _StepRecord(object):
 
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
-            retcode, jobid = adapter.submit(
+            srecord = adapter.submit(
                 self.step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
-            retcode, jobid = ladapter.submit(
+            srecord = ladapter.submit(
                 self.step, script, self.workspace.value)
 
+        retcode = srecord.submission_code
+        jobid = srecord.job_identifier
         return retcode, jobid
 
     def mark_submitted(self):
@@ -161,7 +163,7 @@ class _StepRecord(object):
         :param state: State enum corresponding to termination state.
         """
         logger.debug(
-            "Marking %s as finised (%s) -- previously %s",
+            "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
             self.status)
@@ -195,10 +197,10 @@ class _StepRecord(object):
         """Compute the elapsed time of the record (includes queue wait)."""
         if self._submit_time and self._end_time:
             # Return the total elapsed time.
-            return str(self._end_time - self._submit_time)
+            return get_duration(self._end_time - self._submit_time)
         elif self._submit_time and self.status == State.RUNNING:
             # Return the current elapsed time.
-            return str(datetime.now() - self._submit_time)
+            return get_duration(datetime.now() - self._submit_time)
         else:
             return "--:--:--"
 
@@ -211,10 +213,10 @@ class _StepRecord(object):
         """
         if self._start_time and self._end_time:
             # If start and end time is set -- calculate run time.
-            return str(self._end_time - self._start_time)
+            return get_duration(self._end_time - self._start_time)
         elif self._start_time and not self.status == State.RUNNING:
             # If start time but no end time, calculate current duration.
-            return str(datetime.now() - self._start_time)
+            return get_duration(datetime.now() - self._start_time)
         else:
             # Otherwise, return an uncalculated marker.
             return "--:--:--"
@@ -607,7 +609,7 @@ class ExecutionGraph(DAG):
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            logger.warning("'%s' failed to properly submit properly. "
+            logger.warning("'%s' failed to submit properly. "
                            "Step failed.", record.name)
             path, parent = self.bfs_subtree(record.name)
             for node in path:
@@ -835,8 +837,8 @@ class ExecutionGraph(DAG):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-                logger.info("Launching all ready steps...")
-                _available = len(self.ready_steps)
+            logger.info("Launching all ready steps...")
+            _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
@@ -917,19 +919,18 @@ class ExecutionGraph(DAG):
         adapter = adapter(**self._adapter)
 
         # cancel our jobs
-        retcode = adapter.cancel_jobs(joblist)
+        crecord = adapter.cancel_jobs(joblist)
         self.is_canceled = True
 
-        if retcode == CancelCode.OK:
+        if crecord.cancel_status == CancelCode.OK:
             logger.info("Successfully requested to cancel all jobs.")
-            return retcode
-        elif retcode == CancelCode.ERROR:
-            logger.error("Failed to cancel jobs.")
-            return retcode
+        elif crecord.cancel_status == CancelCode.ERROR:
+            logger.error(
+                "Failed to cancel jobs. (Code = %s)", crecord.return_code)
         else:
-            msg = "Unknown Error (Code = {retcode})".format(retcode)
-            logger.error(msg)
-            return retcode
+            logger.error("Unknown Error (Code = %s)", crecord.return_code)
+
+        return crecord.cancel_status
 
     def cleanup(self):
         """Clean up output produced by the ExecutionGraph."""

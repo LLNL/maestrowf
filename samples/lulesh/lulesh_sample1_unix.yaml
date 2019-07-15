@@ -14,6 +14,7 @@ env:
         - name: LULESH
           path: $(OUTPUT_PATH)
           url: https://github.com/LLNL/LULESH.git
+          tag: 2.0.3
 
 study:
     - name: make-lulesh
@@ -53,7 +54,7 @@ study:
             echo "Parameterized step that has Parameter Independent dependencies" >> out.log
             echo "TRIAL = $(TRIAL)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
-            ls $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) >> out.log
           depends: [run-lulesh_*]
 
     - name: post-process-lulesh-size

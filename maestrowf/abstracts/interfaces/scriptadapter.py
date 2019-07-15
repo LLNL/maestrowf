@@ -53,6 +53,15 @@ class ScriptAdapter(object):
     - Checking job status.
     """
 
+    def __init__(self, **kwargs):
+        """
+        Initialize a new instance of a ScriptAdapter.
+
+        :param kwargs: The key value arguments for the ScriptAdapter instance.
+        """
+        self._exec = kwargs.pop("shell", "/bin/bash")
+        LOGGER.debug("Shell set to '%s'.", self._exec)
+
     @abstractmethod
     def check_jobs(self, joblist):
         """
@@ -131,5 +140,16 @@ class ScriptAdapter(object):
         :param job_map: A map of workflow step names to their job identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return code of the submission command and job identiifer.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def key(self):
+        """
+        Return the key name for a ScriptAdapter..
+
+        This is used to register the adapter in the ScriptAdapterFactory
+        and when writing the workflow specification.
         """
         pass

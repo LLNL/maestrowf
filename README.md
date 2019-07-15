@@ -1,4 +1,5 @@
 # Maestro Workflow Conductor (MaestroWF)
+[![Build Status](https://travis-ci.org/LLNL/maestrowf.svg?branch=develop)](https://travis-ci.org/LLNL/maestrowf)
 [![PyPI](https://img.shields.io/pypi/v/maestrowf.svg)](https://pypi.python.org/pypi?name=maestrowf&version=1.0.0&:action=display)
 [![Issues](https://img.shields.io/github/issues/LLNL/maestrowf.svg)](https://github.com/LLNL/maestrowf/issues)
 [![Forks](https://img.shields.io/github/forks/LLNL/maestrowf.svg)](https://github.com/LLNL/maestrowf/network)
@@ -68,39 +69,7 @@ If you plan to develop on MaestroWF, install the repository directly using:
 
 ### Quickstart Example
 
-MaestroWF comes packed with a basic example using LULESH, a proxy application provided
-by LLNL. Information and source code for LULESH can be found [here](https://codesign.llnl.gov/lulesh.php).
-
-The example performs the following workflow locally:
-- Download LULESH from the webpage linked above and decompress it.
-- Substitute all necessary variables with their serial compilers and make LULESH.
-- Execute a small parameter sweep of varying size and iterations (a simple sensitivity study)
-
-Two copies of the workflow are in the ```samples/lulesh``` directory for unix and macosx.
-This is due to differences with ```sed```. In order to execute the sample study simply
-execute from the root directory of the repository:
-
-Unix:
-
-    $ maestro run ./samples/lulesh/lulesh_sample1_unix.yaml
-
-MacOSX:
-
-    $ maestro run ./samples/lulesh/lulesh_sample1_macosx.yaml
-
-When prompted, reply in the affirmative:
-
-    $ Would you like to launch the study?[yn] y
-
-Maestro will create a timestamped directory in ```sample_output/lulesh```.
-
-To monitor the study run:
-
-    $ maestro status sample_output/lulesh/<study_dir>
-
-To cancel the study:
-
-    $ maestro cancel sample_output/lulesh/<study_dir>
+MaestroWF comes packed with a basic example using LULESH, a proxy application provided by LLNL. You can find the Quick Start guide [here](https://maestrowf.readthedocs.io/en/latest/quick_start.html#).
 
 ----------------
 

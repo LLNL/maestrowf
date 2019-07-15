@@ -52,21 +52,22 @@ class YAMLSpecification(Specification):
     provide an abstracted interface that makes use of the core concepts as
     presented in the maestrowf.datastructure.core package. The objectives for
     such a structure are three-fold:
-        1. Present users who do not want a coding interface with a means to
-           execute their studies without having to know the underlying details
-           of the package itself. If the user learns the core concepts as
-           presented by the YAML specification, the study should be able to be
-           parsed and executed by the underlying data structures.
-        2. Providing an abstract specification aids in presentation to users
-           because it provides a concrete example of not only how to use the
-           MaestroWF package as a whole, but as a very useful way to discuss
-           the core concepts without actually having to dive into the code.
-        3. Provides a "living and breathing" example of how to use the core
-           structures to make a presentable interface for users. The YAML
-           specification just so happens to be a textual representation, but it
-           is an example of how you would use an interface (of whatever type)
-           to construct the core structures and make use of them to run a
-           study.
+
+    1. Present users who do not want a coding interface with a means to
+    execute their studies without having to know the underlying details
+    of the package itself. If the user learns the core concepts as
+    presented by the YAML specification, the study should be able to be
+    parsed and executed by the underlying data structures.
+    2. Providing an abstract specification aids in presentation to users
+    because it provides a concrete example of not only how to use the
+    MaestroWF package as a whole, but as a very useful way to discuss
+    the core concepts without actually having to dive into the code.
+    3. Provides a "living and breathing" example of how to use the core
+    structures to make a presentable interface for users. The YAML
+    specification just so happens to be a textual representation, but it
+    is an example of how you would use an interface (of whatever type)
+    to construct the core structures and make use of them to run a
+    study.
     """
 
     def __init__(self):
@@ -94,7 +95,14 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                spec = yaml.load(data)
+                try:
+                    spec = yaml.load(data, yaml.FullLoader)
+                except AttributeError:
+                    logger.warning(
+                        "*** PyYAML is using an unsafe version with a known "
+                        "load vulnerability. Please upgrade your installation "
+                        "to a more recent version! ***")
+                    spec = yaml.load(data)
 
         except Exception as e:
             logger.exception(e.args)
@@ -321,14 +329,15 @@ class YAMLSpecification(Specification):
 
         Verify that (if globals exist) they conform to the following:
         Each parameter must have:
-            1. values
-            2. label(s)
+
+        1. values
+        2. label(s)
 
         Conditions that must be satisfied for a collection of globals:
-            1. All global names must be unique.
-            2. Each list of values must be the same length.
-            3. If the label is a list, its length must match
-               the value length
+
+        1. All global names must be unique.
+        2. Each list of values must be the same length.
+        3. If the label is a list, its length must match the value length.
         """
         try:
             if self.globals:

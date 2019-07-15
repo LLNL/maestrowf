@@ -36,6 +36,7 @@ import re
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.utils import start_process
 
 LOGGER = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ LOGGER = logging.getLogger(__name__)
 
 class SlurmScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing with the SLURM scheduler."""
+
+    key = "slurm"
 
     def __init__(self, **kwargs):
         """
@@ -61,7 +64,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
-        super(SlurmScriptAdapter, self).__init__()
+        super(SlurmScriptAdapter, self).__init__(**kwargs)
 
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
@@ -71,7 +74,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
-        self._exec = "#!/bin/bash"
         self._header = {
             "nodes": "#SBATCH -N {nodes}",
             "queue": "#SBATCH -p {queue}",
@@ -107,7 +109,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["comment"] = step.description.replace("\n", " ")
 
-        modified_header = [self._exec]
+        modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
             # If we're looking at the bank and the reservation header exists,
             # skip the bank to prefer the reservation.
@@ -192,10 +194,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            return SubmissionCode.OK, re.search('[0-9]+', output).group(0)
+            jid = re.search('[0-9]+', output).group(0)
+            return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
             LOGGER.warning("Submission returned an error.")
-            return SubmissionCode.ERROR, -1
+            return SubmissionRecord(SubmissionCode.ERROR, retcode)
 
     def check_jobs(self, joblist):
         """
@@ -235,7 +238,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 # 5 - Current Execution Time
                 # 6 - Assigned Node Count
                 # 7 - Hostname and assigned node identifier list
-                job_split = re.split("\s+", job)
+                job_split = re.split(r"\s+", job)
                 state_index = 4
                 jobid_index = 0
                 if job_split[0] == "":
@@ -272,7 +275,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         # If we don't have any jobs to check, just return status OK.
         if not joblist:
-            return CancelCode.OK
+            return CancellationRecord(CancelCode.OK, 0)
 
         cmd = "scancel --quiet {}".format(" ".join(joblist))
         p = start_process(cmd)
@@ -280,11 +283,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         retcode = p.wait()
 
         if retcode == 0:
-            return CancelCode.OK
+            _record = CancellationRecord(CancelCode.OK, retcode)
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
                          "encountered.")
-            return CancelCode.ERROR
+            _record = CancellationRecord(CancelCode.ERROR, retcode)
+
+        return _record
 
     def _state(self, slurm_state):
         """
@@ -333,27 +338,22 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         fname = "{}.slurm.sh".format(step.name)
         script_path = os.path.join(ws_path, fname)
-        with open(script_path, "w") as script:
-            if to_be_scheduled:
-                script.write(self.get_header(step))
-            else:
-                script.write(self._exec)
 
-            cmd = "\n\n{}\n".format(cmd)
-            script.write(cmd)
+        if to_be_scheduled:
+            header = self.get_header(step)
+        else:
+            header = "#!{}".format(self._exec)
+
+        form_cmd = "{0}\n\n{1}\n"
+        with open(script_path, "w") as script:
+            script.write(form_cmd.format(header, cmd))
 
         if restart:
             rname = "{}.restart.slurm.sh".format(step.name)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
-                if to_be_scheduled:
-                    script.write(self.get_header(step))
-                else:
-                    script.write(self._exec)
-
-                cmd = "\n\n{}\n".format(restart)
-                script.write(cmd)
+                script.write(form_cmd.format(header, restart))
         else:
             restart_path = None
 
