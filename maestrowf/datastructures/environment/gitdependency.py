@@ -156,11 +156,7 @@ class GitDependency(Dependency):
             logger.error(msg)
             raise Exception(msg)
 
-<<<<<<< HEAD
         logger.info("Checking for connectivity to '%s'", self.url)
-=======
-        logger.info("Checking for connectivity to %s", self.url)
->>>>>>> 92d2b95... Cleans up GitDependency errors to not rely on return codes. (#144)
         p = start_process(["git", "ls-remote", self.url], shell=False)
         retcode = p.wait()
         if retcode != 0:
