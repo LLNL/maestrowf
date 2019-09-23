@@ -33,7 +33,6 @@ import logging
 import os
 import re
 import json
-import stat
 import subprocess as sp
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
