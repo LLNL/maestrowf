@@ -55,7 +55,7 @@ class Specification(object):
         """
         Method for loading a study specification.
 
-        :param path: Path to a study specification.
+        :param string: Raw text containing specification data.
         :returns: A specification object containing the information in string.
         """
         pass
