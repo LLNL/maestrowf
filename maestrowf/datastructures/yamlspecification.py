@@ -30,6 +30,7 @@
 """Module containing all things needed for a YAML Study Specification."""
 
 from copy import deepcopy
+from io import StringIO
 import logging
 import yaml
 
@@ -95,22 +96,33 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                try:
-                    spec = yaml.load(data, yaml.FullLoader)
-                except AttributeError:
-                    logger.warning(
-                        "*** PyYAML is using an unsafe version with a known "
-                        "load vulnerability. Please upgrade your installation "
-                        "to a more recent version! ***")
-                    spec = yaml.load(data)
-
+                specification = cls.load_specification_from_stream(data)
         except Exception as e:
             logger.exception(e.args)
             raise
 
+        return specification
+
+    @classmethod
+    def load_specification_from_stream(cls, stream):
+        """
+        Load a study specification.
+
+        :param path: Path to a study specification.
+        :returns: A specification object containing the information from path.
+        """
+
+        try:
+            spec = yaml.load(stream, yaml.FullLoader)
+        except AttributeError:
+            logger.warning(
+                "*** PyYAML is using an unsafe version with a known "
+                "load vulnerability. Please upgrade your installation "
+                "to a more recent version! ***")
+            spec = yaml.load(stream)
+
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
-        specification.path = path
         specification.description = spec.pop("description", {})
         specification.environment = spec.pop("env",
                                              {'variables': {},
