@@ -45,7 +45,18 @@ class Specification(object):
         Method for loading a study specification.
 
         :param path: Path to a study specification.
-        :returns: A specification object containing the information from path.
+        :returns: A specification object containing the information loaded
+        from path.
+        """
+        pass
+
+    @abstractclassmethod
+    def load_specification_from_str(cls, string):
+        """
+        Method for loading a study specification.
+
+        :param path: Path to a study specification.
+        :returns: A specification object containing the information in string.
         """
         pass
 
