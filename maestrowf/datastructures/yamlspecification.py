@@ -107,8 +107,9 @@ class YAMLSpecification(Specification):
         """
         Load a study specification.
 
-        :param path: Path to a study specification.
-        :returns: A specification object containing the information from path.
+        :param stream: Raw text stream to study YAML specification data.
+        :returns: A specification object containing the information from the
+        passed stream.
         """
 
         try:
