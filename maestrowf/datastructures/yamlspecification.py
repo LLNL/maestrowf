@@ -30,7 +30,6 @@
 """Module containing all things needed for a YAML Study Specification."""
 
 from copy import deepcopy
-from io import StringIO
 import logging
 import yaml
 
