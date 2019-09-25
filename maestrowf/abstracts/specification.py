@@ -42,7 +42,7 @@ class Specification(object):
     @abstractclassmethod
     def load_specification(cls, path):
         """
-        Method for loading a study specification.
+        Method for loading a study specification from a file.
 
         :param path: Path to a study specification.
         :returns: A specification object containing the information loaded
@@ -51,11 +51,11 @@ class Specification(object):
         pass
 
     @abstractclassmethod
-    def load_specification_from_str(cls, string):
+    def load_specification_from_stream(cls, stream):
         """
-        Method for loading a study specification.
+        Method for loading a study specification from a stream.
 
-        :param string: Raw text containing specification data.
+        :param stream: Raw text stream containing specification data.
         :returns: A specification object containing the information in string.
         """
         pass
