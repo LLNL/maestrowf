@@ -102,15 +102,7 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, 'r') as data:
-                try:
-                    spec = yaml.load(data, yaml.FullLoader)
-                except AttributeError:
-                    logger.warning(
-                        "*** PyYAML is using an unsafe version with a known "
-                        "load vulnerability. Please upgrade your installation "
-                        "to a more recent version! ***")
-                    spec = yaml.load(data)
-
+                specification = cls.load_specification_from_stream(data)
         except Exception as e:
             logger.exception(e.args)
             raise e
@@ -139,9 +131,29 @@ class YAMLSpecification(Specification):
             )
             spec = yaml.load(stream)
 
+        return specification
+
+    @classmethod
+    def load_specification_from_stream(cls, stream):
+        """
+        Load a study specification.
+
+        :param stream: Raw text stream to study YAML specification data.
+        :returns: A specification object containing the information from the
+        passed stream.
+        """
+
+        try:
+            spec = yaml.load(stream, yaml.FullLoader)
+        except AttributeError:
+            logger.warning(
+                "*** PyYAML is using an unsafe version with a known "
+                "load vulnerability. Please upgrade your installation "
+                "to a more recent version! ***")
+            spec = yaml.load(stream)
+
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
-        specification.path = None
         specification.description = spec.pop("description", {})
         specification.environment = spec.pop(
             "env",

@@ -46,8 +46,9 @@ class Specification:
 
         :param path: Path to a study specification.
         :returns: A specification object containing the information loaded
-                  from path.
+        from path.
         """
+        pass
 
     @abstractclassmethod
     def load_specification_from_stream(cls, stream):
