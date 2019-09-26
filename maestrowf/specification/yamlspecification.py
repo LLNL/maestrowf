@@ -131,6 +131,8 @@ class YAMLSpecification(Specification):
             )
             spec = yaml.load(stream)
 
+        # Populate the path to the specification that populated this instance.
+        specification.path = path
         return specification
 
     @classmethod
@@ -154,6 +156,7 @@ class YAMLSpecification(Specification):
 
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
+        specification.path = None
         specification.description = spec.pop("description", {})
         specification.environment = spec.pop(
             "env",
