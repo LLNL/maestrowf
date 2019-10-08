@@ -20,10 +20,9 @@ setup(name='maestrowf',
         'six',
         "filelock",
         "tabulate",
+        "enum34 ; python_version<'3.4'"
         ],
-      extras_require={
-        ":python_version<'3.4'": ['enum34'],
-      },
+      extras_require={},
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -32,5 +31,6 @@ setup(name='maestrowf',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         ],
       )
