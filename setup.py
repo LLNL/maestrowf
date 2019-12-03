@@ -1,11 +1,10 @@
-from os import path
 from maestrowf import __version__
 from setuptools import setup, find_packages
 
 setup(name='maestrowf',
       description='A tool and library for specifying and conducting general '
       'workflows.',
-      version='1.1.5dev',
+      version=__version__,
       author='Francesco Di Natale',
       author_email='dinatale3@llnl.gov',
       url='https://github.com/llnl/maestrowf',

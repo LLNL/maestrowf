@@ -39,8 +39,8 @@ import tabulate
 import time
 
 from maestrowf import __version__
-from maestrowf.conductor import Conductor
-from maestrowf.specification import YAMLSpecification
+from maestrowf.conductor import monitor_study
+from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
