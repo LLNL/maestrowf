@@ -50,3 +50,6 @@ except ImportError:
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(NullHandler())
+
+__version_info__ = ("1", "1", "5dev")
+__version__ = '.'.join(__version_info__)
