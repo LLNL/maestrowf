@@ -39,6 +39,7 @@ import sys
 import tabulate
 import time
 
+from maestrowf import __version__
 from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
@@ -392,6 +393,8 @@ def setup_argparser():
     parser.add_argument(
         "-c", "--logstdout", action="store_true", default=True,
         help="Log to stdout in addition to a file. [Default: %(default)s]")
+    parser.add_argument(
+        "-v", "--version", action="version", version='%(prog)s ' + __version__)
 
     return parser
 
