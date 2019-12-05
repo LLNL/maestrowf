@@ -179,7 +179,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 cmd += ["--reservation", self._batch["reservation"]]
 
         # Append the script path and working directory.
-        cmd += [path, "-D", cwd]
+        cmd += ["-D", cwd, path]
         cmd = " ".join(cmd)
 
         LOGGER.debug("cwd = %s", cwd)
