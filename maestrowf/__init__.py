@@ -51,5 +51,5 @@ except ImportError:
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(NullHandler())
 
-__version_info__ = ("1", "1", "5")
+__version_info__ = ("1", "1", "5a")
 __version__ = '.'.join(__version_info__)
