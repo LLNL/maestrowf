@@ -58,6 +58,10 @@ global.parameters:
 
 Maestro will automatically expand each parameter into its own isolated workspace, generate a script for each parameter, and automatically monitor execution of each task.
 
+And, running the study is still as simple as:
+
+    $ maestro run study.yaml
+
 ## Introduction
 
 Maestro Workflow Conductor is a Python tool and library for specifying and automating multi-step computational workflows both locally and on supercomputers. Maestro parses a human-readable YAML specification that is self-documenting and portable from one user and environment to another.
