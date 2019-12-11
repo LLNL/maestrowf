@@ -48,7 +48,7 @@ study:
       description: Say hello to a planet!
       run:
           cmd: |
-            echo "Hello, $(PLANET)!" > hello.txt
+            echo "Hello, $(PLANET)!" > hello_$(PLANET).txt
 
 global.parameters:
     PLANET:
@@ -61,6 +61,8 @@ Maestro will automatically expand each parameter into its own isolated workspace
 And, running the study is still as simple as:
 
     $ maestro run study.yaml
+
+For other samples, see the [samples](/samples) subfolder.
 
 ## Introduction
 
