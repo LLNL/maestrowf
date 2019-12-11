@@ -1,6 +1,6 @@
 ![](/assets/logo.png?raw=true "Orchestrate your workflows with ease!")
 
-# Maestro Workflow Conductor (MaestroWF)
+# Maestro Workflow Conductor (maestrowf)
 
 [![Build Status](https://travis-ci.org/LLNL/maestrowf.svg?branch=develop)](https://travis-ci.org/LLNL/maestrowf)
 [![PyPI](https://img.shields.io/pypi/v/maestrowf.svg)](https://pypi.python.org/pypi?name=maestrowf&version=1.0.0&:action=display)
@@ -33,6 +33,30 @@ study:
 Running the `hello_world` study is as simple as...
 
     $ maestro run study.yaml
+
+## Creating a Parameter Study is just as Easy!
+
+With the addition of the `global.parameters` block, and a few simple tweaks to your `study` block, the complete specification should look like this:
+
+``` yaml
+description:
+    name: hello_planet
+    description: A simple study to say hello to planets (and Pluto)
+
+study:
+    - name: hello_planet
+      description: Say hello to a planet!
+      run:
+          cmd: |
+            echo "Hello, $(PLANET)!" > hello.txt
+
+global.parameters:
+    PLANET:
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Pluto]
+        label: PLANET.%%
+```
+
+Maestro will automatically expand each parameter into its own isolated workspace, generate a script for each parameter, and automatically monitor execution of each task.
 
 ## Introduction
 
