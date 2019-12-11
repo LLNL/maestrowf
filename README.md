@@ -1,4 +1,7 @@
-# Maestro Workflow Conductor (MaestroWF)
+![](/assets/logo.png?raw=true "Orchestrate your workflows with ease!")
+
+# Maestro Workflow Conductor (maestrowf)
+
 [![Build Status](https://travis-ci.org/LLNL/maestrowf.svg?branch=develop)](https://travis-ci.org/LLNL/maestrowf)
 [![PyPI](https://img.shields.io/pypi/v/maestrowf.svg)](https://pypi.python.org/pypi?name=maestrowf&version=1.0.0&:action=display)
 ![Spack](https://img.shields.io/spack/v/py-maestrowf)
@@ -11,16 +14,7 @@
 [![Downloads](https://pepy.tech/badge/maestrowf/month)](https://pepy.tech/project/maestrowf/month)
 [![Downloads](https://pepy.tech/badge/maestrowf/week)](https://pepy.tech/project/maestrowf/week)
 
-Maestro can be installed via [pip](https://pip.pypa.io/):
-
-    pip install maestrowf
-
-## Documentation
-
-* [Maestro Documentation](https://maestrowf.readthedocs.io)
-* [Maestro Samples](/samples)
-
-## Getting Started is Quick and Easy
+## Getting Started is Quick and Easy!
 
 Create a `YAML` file named `study.yaml` and paste the following content into the file:
 
@@ -30,11 +24,59 @@ description:
     description: A simple 'Hello World' study.
 
 study:
-    - name: say-hello
+    - name: hello_world
       description: Say hello to the world!
       run:
           cmd: |
             echo "Hello, World!" > hello_world.txt
+```
+
+Running the `hello_world` study is as simple as...
+
+    $ maestro run study.yaml
+
+## Creating a Parameter Study is just as Easy!
+
+With the addition of the `global.parameters` block, and a few simple tweaks to your `study` block, the complete specification should look like this:
+
+``` yaml
+description:
+    name: hello_planet
+    description: A simple study to say hello to planets (and Pluto)
+
+study:
+    - name: hello_planet
+      description: Say hello to a planet!
+      run:
+          cmd: |
+            echo "Hello, $(PLANET)!" > hello_$(PLANET).txt
+
+global.parameters:
+    PLANET:
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Pluto]
+        label: PLANET.%%
+```
+
+Maestro will automatically expand each parameter into its own isolated workspace, generate a script for each parameter, and automatically monitor execution of each task.
+
+And, running the study is still as simple as:
+
+    $ maestro run study.yaml
+
+For other samples, see the [samples](/samples) subfolder.
+
+## Introduction
+
+Maestro can be installed via [pip](https://pip.pypa.io/):
+
+    pip install maestrowf
+
+## Documentation
+
+There are many definitions of workflow, so we try to keep it simple and define the term as follows:
+
+``` text
+A set of high level tasks to be executed in some order, with or without dependencies on each other.
 ```
 
 > *PHILOSOPHY*: Maestro believes in the principle of a clearly defined process, specified as a list of tasks, that are self-documenting and clear in their intent.
