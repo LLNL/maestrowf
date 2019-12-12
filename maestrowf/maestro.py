@@ -183,6 +183,11 @@ def run_study(args):
         LOGGER.exception(msg)
         raise ArgumentError(msg)
 
+    # Addition of the $(SPECROOT) to the environment.
+    spec_root = os.path.split(args.specification)[0]
+    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
+    environment.add(spec_root)
+
     # Handle loading a custom ParameterGenerator if specified.
     if args.pgen:
         # 'pgen_args' has a default of an empty list, which should translate
@@ -190,14 +195,11 @@ def run_study(args):
         kwargs = create_dictionary(args.pargs)
         # Copy the Python file used to generate parameters.
         shutil.copy(args.pgen, output_path)
+        kwargs["OUTPUT_PATH"] = output_path
+        kwargs["SPECROOT"] = spec_root
         parameters = load_parameter_generator(args.pgen, kwargs)
     else:
         parameters = spec.get_parameters()
-
-    # Addition of the $(SPECROOT) to the environment.
-    spec_root = os.path.split(args.specification)[0]
-    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
-    environment.add(spec_root)
 
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
