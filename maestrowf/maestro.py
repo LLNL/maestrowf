@@ -90,7 +90,7 @@ def cancel_study(args):
     return 0
 
 
-def load_parameter_generator(path, kwargs):
+def load_parameter_generator(path, env, kwargs):
     """
     Import and load custom parameter Python files.
 
@@ -98,6 +98,7 @@ def load_parameter_generator(path, kwargs):
     'get_custom_generator'.
     :param kwargs: Dictionary containing keyword arguments for the function \
     'get_custom_generator'.
+    :param env: A StudyEnvironment object containing custom information.
     :returns: A populated ParameterGenerator instance.
     """
     path = os.path.abspath(path)
@@ -109,20 +110,20 @@ def load_parameter_generator(path, kwargs):
         spec = importlib.util.spec_from_file_location("custom_gen", path)
         f = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(f)
-        return f.get_custom_generator(**kwargs)
+        return f.get_custom_generator(env, **kwargs)
     except ImportError:
         try:
             # Python 3.3
             from importlib.machinery import SourceFileLoader
             LOGGER.debug("Using Python 3.4 SourceFileLoader...")
             f = SourceFileLoader("custom_gen", path).load_module()
-            return f.get_custom_generator(**kwargs)
+            return f.get_custom_generator(env, **kwargs)
         except ImportError:
             # Python 2
             import imp
             LOGGER.debug("Using Python 2 imp library...")
             f = imp.load_source("custom_gen", path)
-            return f.get_custom_generator(**kwargs)
+            return f.get_custom_generator(env, **kwargs)
     except Exception as e:
         LOGGER.exception(str(e))
         raise e
@@ -195,9 +196,14 @@ def run_study(args):
         kwargs = create_dictionary(args.pargs)
         # Copy the Python file used to generate parameters.
         shutil.copy(args.pgen, output_path)
+
+        # Add keywords and environment from the spec to pgen args.
         kwargs["OUTPUT_PATH"] = output_path
         kwargs["SPECROOT"] = spec_root
-        parameters = load_parameter_generator(args.pgen, kwargs)
+        kwargs["study_env"] = environment
+
+        # Load the parameter generator.
+        parameters = load_parameter_generator(args.pgen, environment, kwargs)
     else:
         parameters = spec.get_parameters()
 
