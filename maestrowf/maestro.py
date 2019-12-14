@@ -200,7 +200,6 @@ def run_study(args):
         # Add keywords and environment from the spec to pgen args.
         kwargs["OUTPUT_PATH"] = output_path
         kwargs["SPECROOT"] = spec_root
-        kwargs["study_env"] = environment
 
         # Load the parameter generator.
         parameters = load_parameter_generator(args.pgen, environment, kwargs)
