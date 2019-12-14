@@ -4,6 +4,12 @@ description:
 
 env:
     variables:
+        # DEFAULTS FOR MONTECARLO PGEN EXAMPLE
+        SMIN:        10
+        SMAX:        30
+        TRIALS:      50
+        ITER:        100
+
         OUTPUT_PATH: ./sample_output/lulesh
 
     labels:
