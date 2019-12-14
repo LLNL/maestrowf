@@ -96,9 +96,9 @@ def load_parameter_generator(path, env, kwargs):
 
     :param path: Path to a Python file containing the function \
     'get_custom_generator'.
+    :param env: A StudyEnvironment object containing custom information.
     :param kwargs: Dictionary containing keyword arguments for the function \
     'get_custom_generator'.
-    :param env: A StudyEnvironment object containing custom information.
     :returns: A populated ParameterGenerator instance.
     """
     path = os.path.abspath(path)
