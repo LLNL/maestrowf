@@ -3,7 +3,7 @@
 from maestrowf.datastructures.core import ParameterGenerator
 
 
-def get_custom_generator():
+def get_custom_generator(env, **kwargs):
     """
     Create a custom populated ParameterGenerator.
 
