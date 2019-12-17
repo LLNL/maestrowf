@@ -5,7 +5,7 @@ from random import randint
 from maestrowf.datastructures.core import ParameterGenerator
 
 
-def get_custom_generator(**kwargs):
+def get_custom_generator(env, **kwargs):
     """
     Create a custom populated ParameterGenerator.
 
@@ -17,10 +17,10 @@ def get_custom_generator(**kwargs):
     :returns: A ParameterGenerator populated with parameters.
     """
     p_gen = ParameterGenerator()
-    trials = int(kwargs.get("trials"))
-    size_min = int(kwargs.get("smin"))
-    size_max = int(kwargs.get("smax"))
-    iterations = int(kwargs.get("iter"))
+    trials = int(kwargs.get("trials", env.find("TRIALS").value))
+    size_min = int(kwargs.get("smin", env.find("SMIN").value))
+    size_max = int(kwargs.get("smax", env.find("SMAX").value))
+    iterations = int(kwargs.get("iter", env.find("ITER").value))
     params = {
         "TRIAL": {
             "values": [i for i in range(1, trials)],
