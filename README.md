@@ -75,7 +75,7 @@ And, running the study is still as simple as:
 
 ## Scheduling Made Simple
 
-But wait there's more! If you want to schedule a study, it's just as simple. With some minor modifications, you are able to run on an [HPC](https://en.wikipedia.org/wiki/HPC) system.
+But wait there's more! If you want to schedule a study, it's just as simple. With some minor modifications, you are able to run on an [HPC](https://en.wikipedia.org/wiki/Supercomputer) system.
 
 ``` yaml
 description:
