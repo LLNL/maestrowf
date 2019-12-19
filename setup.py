@@ -24,6 +24,7 @@ setup(name='maestrowf',
         "enum34 ; python_version<'3.4'"
         ],
       extras_require={},
+      long_description_content_type="text/markdown",
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Operating System :: Unix',
