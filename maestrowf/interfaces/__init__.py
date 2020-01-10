@@ -67,13 +67,7 @@ def iter_adapters():
 
 class ScriptAdapterFactory(object):
     factories = {
-<<<<<<< HEAD
        adapter.key: adapter for adapter in iter_adapters()
-=======
-        "lsf":      LSFScriptAdapter,
-        "slurm":    SlurmScriptAdapter,
-        "local":    LocalScriptAdapter,
->>>>>>> Implementation of a ScriptAdapter for the IBM LSF Scheduler.
     }
 
     @classmethod
