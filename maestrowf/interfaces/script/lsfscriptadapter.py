@@ -38,6 +38,8 @@ from subprocess import PIPE, Popen
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
     SubmissionCode
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -202,10 +204,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            return SubmissionCode.OK, re.search('[0-9]+', output).group(0)
+            return SubmissionRecord(SubmissionCode.OK, re.search('[0-9]+', output).group(0))
         else:
             LOGGER.warning("Submission returned an error.")
-            return SubmissionCode.ERROR, -1
+            return SubmissionRecord(SubmissionCode.ERROR, -1)
 
     def check_jobs(self, joblist):
         """
@@ -319,11 +321,11 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         retcode = p.wait()
 
         if retcode == 0:
-            return CancelCode.OK
+            return CancellationRecord(CancelCode.OK, retcode)
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
                          "encountered.")
-            return CancelCode.ERROR
+            return CancellationRecord(CancelCode.ERROR, retcode)
 
     def _state(self, lsf_state):
         """
