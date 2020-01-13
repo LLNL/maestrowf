@@ -204,7 +204,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            return SubmissionRecord(SubmissionCode.OK, re.search('[0-9]+', output).group(0))
+            return SubmissionRecord(
+                SubmissionCode.OK, re.search('[0-9]+', output).group(0))
         else:
             LOGGER.warning("Submission returned an error.")
             return SubmissionRecord(SubmissionCode.ERROR, -1)
