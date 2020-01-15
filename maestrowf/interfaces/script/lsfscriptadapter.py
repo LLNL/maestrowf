@@ -197,6 +197,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env)
         output, err = p.communicate()
         retcode = p.wait()
+        output = output.decode("utf-8")
 
         # TODO: We need to check for dependencies here. The sbatch is where
         # dependent batch jobs are specified. If we're trying to launch
