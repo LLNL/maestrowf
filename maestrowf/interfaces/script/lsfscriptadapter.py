@@ -234,6 +234,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
+        output = output.decode("utf-8")
 
         status = {}
         for jobid in joblist:
