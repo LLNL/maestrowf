@@ -23,6 +23,7 @@ setup(
     'six',
     "filelock",
     "tabulate",
+    "enum34 ; python_version<'3.4'"
   ],
   extras_require={},
   long_description_content_type='text/markdown',
