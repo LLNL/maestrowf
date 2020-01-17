@@ -328,7 +328,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             return CancellationRecord(CancelCode.OK, retcode)
         else:
             LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.")
+                         "encountered.", retcode)
             return CancellationRecord(CancelCode.ERROR, retcode)
 
     def _state(self, lsf_state):
