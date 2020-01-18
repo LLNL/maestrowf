@@ -571,6 +571,7 @@ class Study(DAG):
                 # here, it's reflected in the ExecutionGraph.
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
+                node.run["restart"] = r_cmd
                 logger.debug("New cmd = %s", cmd)
                 logger.debug("New restart = %s", r_cmd)
 
