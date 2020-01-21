@@ -48,6 +48,7 @@ class _StepRecord(object):
         """
         self.workspace = Variable("WORKSPACE", workspace)
         step.run["cmd"] = self.workspace.substitute(step.run["cmd"])
+        step.run["cmd"] = self.workspace.substitute(step.run["restart"])
 
         self.jobid = kwargs.get("jobid", [])
         self.script = kwargs.get("script", "")
