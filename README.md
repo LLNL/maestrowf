@@ -1,4 +1,4 @@
-![](/assets/logo.png?raw=true "Orchestrate your workflows with ease!")
+![](https://github.com/LLNL/maestrowf/raw/develop/assets/logo.png?raw=true "Orchestrate your workflows with ease!")
 
 # Maestro Workflow Conductor ([maestrowf](https://pypi.org/project/maestrowf/))
 
