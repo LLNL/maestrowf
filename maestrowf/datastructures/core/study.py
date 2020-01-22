@@ -500,7 +500,8 @@ class Study(DAG):
             # Search for workspace matches. These affect the expansion of a
             # node because they may use parameters. These are likely to cause
             # a node to fall into the 'Parameter Dependent' case.
-            used_spaces = re.findall(WSREGEX, node.run["cmd"])
+            used_spaces = re.findall(
+                WSREGEX, "{} {}".format(node.run["cmd"], node.run["restart"]))
             for ws in used_spaces:
                 if ws not in self.used_params:
                     msg = "Workspace for '{}' is being used before it would" \
@@ -571,6 +572,7 @@ class Study(DAG):
                 # here, it's reflected in the ExecutionGraph.
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
+                node.run["restart"] = r_cmd
                 logger.debug("New cmd = %s", cmd)
                 logger.debug("New restart = %s", r_cmd)
 
