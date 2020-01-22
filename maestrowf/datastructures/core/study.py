@@ -575,8 +575,8 @@ class Study(DAG, PickleInterface):
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
                 node.run["restart"] = r_cmd
-                LOGGER.debug("New cmd = %s", cmd)
-                LOGGER.debug("New restart = %s", r_cmd)
+                logger.debug("New cmd = %s", cmd)
+                logger.debug("New restart = %s", r_cmd)
 
                 dag.add_step(step, node, workspace, rlimit)
 
