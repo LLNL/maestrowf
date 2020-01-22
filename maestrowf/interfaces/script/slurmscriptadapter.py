@@ -79,7 +79,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "queue": "#SBATCH -p {queue}",
             "bank": "#SBATCH -A {bank}",
             "walltime": "#SBATCH -t {walltime}",
-            "job-name": "#SBATCH -J {job-name}",
+            "job-name":
+                "#SBATCH -J \"{job-name}\"\n"
+                "#SBATCH -o \"{job-name}.out\"\n"
+                "#SBATCH -e \"{job-name}.err\"",
             "comment": "#SBATCH --comment \"{comment}\""
         }
 
