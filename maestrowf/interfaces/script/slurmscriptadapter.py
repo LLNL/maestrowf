@@ -80,17 +80,15 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
         self._header = {
-            "nodes": "#SBATCH --nodes={nodes}",
-            "queue": "#SBATCH --partition={queue}",
-            "bank": "#SBATCH --account={bank}",
-            "walltime": "#SBATCH --time={walltime}",
+            "nodes": "#SBATCH -N {nodes}",
+            "queue": "#SBATCH -p {queue}",
+            "bank": "#SBATCH -A {bank}",
+            "walltime": "#SBATCH -t {walltime}",
             "job-name":
-                "#SBATCH --job-name=\"{job-name}\"\n"
-                "#SBATCH --output=\"{job-name}.out\"\n"
-                "#SBATCH --error=\"{job-name}.err\"",
-            "comment": "#SBATCH --comment \"{comment}\"",
-            "reservation": "#SBATCH --reservation=\"{reservation}\"",
-            "gpus": "#SBATCH --gres=gpu:{gpus}"
+                "#SBATCH -J \"{job-name}\"\n"
+                "#SBATCH -o \"{job-name}.out\"\n"
+                "#SBATCH -e \"{job-name}.err\"",
+            "comment": "#SBATCH --comment \"{comment}\""
         }
 
         self._cmd_flags = {
