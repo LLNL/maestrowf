@@ -626,7 +626,6 @@ class Study(DAG):
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
                         logger.debug("Workspace: %s", workspace)
-
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 

@@ -163,11 +163,7 @@ If you plan to develop on Maestro, install the repository directly using:
     pip install -r requirements.txt
     pip install -e .
 
-----------------
-
-### Quickstart Example
-
-MaestroWF comes packed with a basic example using LULESH, a proxy application provided by LLNL. You can find the Quick Start guide [here](https://maestrowf.readthedocs.io/en/latest/quick_start.html#).
+Once set up, test the environment. The paths should point to a virtual environment folder.
 
     which python
     which pip
