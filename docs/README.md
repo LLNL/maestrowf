@@ -1,6 +1,6 @@
 # Maestro Workflow Conductor Documentation
 
-[maestrowf.rtfd.io](http://maestrowf.readthedocs.io/en/latest/)
+[maestrowf.rtd.io](http://maestrowf.readthedocs.io/en/latest/)
 
 This documentation is built with Sphinx for ReadTheDocs.
 The contents are automatically generated from the doc strings found in the code.
