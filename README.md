@@ -116,9 +116,7 @@ Maestro comes packed with a basic example using [LULESH](https://github.com/LLNL
 
 ## What is Maestro?
 
-Maestro Workflow Conductor is a Python tool and library for specifying and automating multi-step computational workflows both locally and on supercomputers. Maestro parses a human-readable YAML specification that is self-documenting and portable from one user and environment to another.
-
-On the backend, Maestro implements a set of standard interfaces and data structures for handling "study" construction. These objects offer you the ability to use Maestro as a library, and construct your own workflows that suit your own custom needs. We also offer other structures that make portable execution on various schedulers much easier than porting scripts by hand.
+Maestro is an open-source HPC software tool that defines a YAML-based study specification for defining multistep workflows and automates execution of software flows on HPC resources. The core design tenants of Maestro focus on encouraging clear workflow communication and documentation, while making consistent execution easier to allow users to focus on science. Maestro’s study specification helps users think about complex workflows in a step-wise, intent-oriented, manner that encourages modularity and tool reuse. These principles are becoming increasingly important as computational science is continuously more present in scientific fields and has started to require a similar rigor to physical experiment. Maestro is currently in use for multiple projects at Lawrence Livermore National Laboratory and has been used to run existing codes including ALE3D, MFEM, and Ares. It has also been used in other areas including in the training of machine-learned models and more.
 
 ### Maestro's Foundation and Core Concepts
 
