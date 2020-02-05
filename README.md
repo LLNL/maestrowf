@@ -59,7 +59,7 @@ study:
 
 global.parameters:
     PLANET:
-        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Pluto]
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto]
         label: PLANET.%%
 ```
 
@@ -100,7 +100,7 @@ study:
 
 global.parameters:
     PLANET:
-        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Pluto]
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto]
         label: PLANET.%%
 ```
 
