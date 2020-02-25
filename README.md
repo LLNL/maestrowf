@@ -28,7 +28,7 @@ description:
     description: A simple 'Hello World' study.
 
 study:
-    - name: hello_world
+    - name: say-hello
       description: Say hello to the world!
       run:
           cmd: |
@@ -51,7 +51,7 @@ description:
     description: A simple study to say hello to planets (and Pluto)
 
 study:
-    - name: hello_planet
+    - name: say-hello
       description: Say hello to a planet!
       run:
           cmd: |
@@ -89,7 +89,7 @@ batch:
     bank:  science
 
 study:
-    - name: hello_planet
+    - name: say-hello
       description: Say hello to a planet!
       run:
           cmd: |
