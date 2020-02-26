@@ -34,6 +34,7 @@ import logging
 import os
 import pickle
 import re
+from types import MethodType
 import yaml
 
 from maestrowf.abstracts import SimObject
@@ -119,7 +120,6 @@ class StudyStep(SimObject):
         : returns: True if other is not equal to self, False otherwise.
         """
         return not self.__eq__(other)
-
 
 class Study(DAG):
     """
@@ -830,5 +830,10 @@ class Study(DAG):
             use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         dag.log_description()
+
+        def _pass_detect_cycle(self):
+            pass
+
+        dag.detect_cycle = MethodType(_pass_detect_cycle, dag)
 
         return self._out_path, self._stage(dag)
