@@ -121,6 +121,7 @@ class StudyStep(SimObject):
         """
         return not self.__eq__(other)
 
+
 class Study(DAG):
     """
     Collection of high level objects to perform study construction.
