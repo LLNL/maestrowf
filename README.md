@@ -14,6 +14,8 @@
 [![Downloads](https://pepy.tech/badge/maestrowf/month)](https://pepy.tech/project/maestrowf/month)
 [![Downloads](https://pepy.tech/badge/maestrowf/week)](https://pepy.tech/project/maestrowf/week)
 
+[Maestro ReadTheDocs](https://maestrowf.readthedocs.io)
+
 Maestro can be installed via [pip](https://pip.pypa.io/):
 
     pip install maestrowf
