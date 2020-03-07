@@ -1,11 +1,11 @@
 """Module for the execution of DAG workflows."""
 from collections import deque, OrderedDict
 from datetime import datetime
+import dill
 from filelock import FileLock, Timeout
 import getpass
 import logging
 import os
-import pickle
 import shutil
 import tempfile
 
@@ -447,7 +447,7 @@ class ExecutionGraph(DAG):
         :param path: Path to a ExecutionGraph pickle file.
         """
         with open(path, 'rb') as pkl:
-            dag = pickle.load(pkl)
+            dag = dill.load(pkl)
 
         if not isinstance(dag, cls):
             msg = "Object loaded from {path} is of type {type}. Expected an" \
@@ -472,7 +472,7 @@ class ExecutionGraph(DAG):
             raise Exception(msg)
 
         with open(path, 'wb') as pkl:
-            pickle.dump(self, pkl)
+            dill.dump(self, pkl)
 
     @property
     def name(self):
