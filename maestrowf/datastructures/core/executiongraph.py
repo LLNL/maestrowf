@@ -1,6 +1,8 @@
 """Module for the execution of DAG workflows."""
 from collections import deque, OrderedDict
 from datetime import datetime
+import dill
+from filelock import FileLock, Timeout
 import getpass
 import logging
 import os
@@ -439,6 +441,41 @@ class ExecutionGraph(DAG, PickleInterface):
         self._description["name"] = name
         self._description["description"] = description
         self._description.update(kwargs)
+
+    @classmethod
+    def unpickle(cls, path):
+        """
+        Load an ExecutionGraph instance from a pickle file.
+
+        :param path: Path to a ExecutionGraph pickle file.
+        """
+        with open(path, 'rb') as pkl:
+            dag = dill.load(pkl)
+
+        if not isinstance(dag, cls):
+            msg = "Object loaded from {path} is of type {type}. Expected an" \
+                  " object of type '{cls}.'".format(path=path, type=type(dag),
+                                                    cls=type(cls))
+            logger.error(msg)
+            raise TypeError(msg)
+
+        return dag
+
+    def pickle(self, path):
+        """
+        Generate a pickle file of the graph instance.
+
+        :param path: The path to write the pickle to.
+        """
+        if not self._adapter:
+            msg = "A script adapter must be set before an ExecutionGraph is " \
+                  "pickled. Use the 'set_adapter' method to set a specific" \
+                  " script interface."
+            logger.error(msg)
+            raise Exception(msg)
+
+        with open(path, 'wb') as pkl:
+            dill.dump(self, pkl)
 
     @property
     def name(self):
