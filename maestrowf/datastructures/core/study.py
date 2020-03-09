@@ -34,6 +34,7 @@ import logging
 import os
 import pickle
 import re
+from types import MethodType
 import yaml
 
 from maestrowf.abstracts import SimObject
@@ -830,5 +831,14 @@ class Study(DAG):
             use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         dag.log_description()
+
+        # Because we're working within a Study class whose steps have already
+        # been verified to not contain a cycle, we can override the check for
+        # the execution graph. Because the execution graph is constructed from
+        # the study steps, it won't contain a cycle.
+        def _pass_detect_cycle(self):
+            pass
+
+        dag.detect_cycle = MethodType(_pass_detect_cycle, dag)
 
         return self._out_path, self._stage(dag)
