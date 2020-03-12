@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 
 setup(
   name='maestrowf',
-  description='A tool and library for specifying and conducting general '
-  'workflows.',
+  description='A tool to easily orchestrate general computational workflows '
+  'both locally and on supercomputers.',
   version=__version__,
   author='Francesco Di Natale',
   maintainer='Francesco Di Natale',
