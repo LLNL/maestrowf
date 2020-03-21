@@ -33,13 +33,11 @@ from abc import ABCMeta, abstractmethod
 import logging
 import six
 
-from maestrowf.abstracts.simobject import SimObject
-
 logger = logging.getLogger(__name__)
 
 
 @six.add_metaclass(ABCMeta)
-class EnvObject(SimObject):
+class EnvObject:
     """
     An abstract class representing objects that exist in a study's environment.
 

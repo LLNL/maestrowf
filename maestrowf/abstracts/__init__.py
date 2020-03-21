@@ -33,21 +33,18 @@ The core abstract APIs that define various class behaviors.
 This module contains all of the abstract classes and APIs for defining objects.
 Abstracts include abstract data stuctures (like a graph), APIs for concepts
 such as queueing adapters and environment APIs, as well as fundamental data
-structures like a SimObject.
+structures.
 """
 # NOTE: Some of these abstracts will be moved in the future. The Graph abstract
 # class does not belong here, and should be moved to something more general.
-# NOTE: The SimObject base class may not be required, since it basically
-# just requires objects to be dictionaries.
 
 from maestrowf.abstracts.abstractclassmethod import abstractclassmethod
 from maestrowf.abstracts.envobject import Dependency, Source, Substitution
 from maestrowf.abstracts.graph import Graph
-from maestrowf.abstracts.simobject import SimObject
 from maestrowf.abstracts.specification import Specification
 
 
-__all__ = ("abstractclassmethod", "Dependency", "Graph", "SimObject",
+__all__ = ("abstractclassmethod", "Dependency", "Graph",
            "Singleton", "Source", "Specification", "Substitution")
 
 

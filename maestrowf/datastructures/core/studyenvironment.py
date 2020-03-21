@@ -31,12 +31,12 @@
 
 import logging
 
-from maestrowf.abstracts import SimObject, Dependency, Source, Substitution
+from maestrowf.abstracts import Dependency, Source, Substitution
 
 logger = logging.getLogger(__name__)
 
 
-class StudyEnvironment(SimObject):
+class StudyEnvironment:
     """
     StudyEnvironment for managing a study environment.
 

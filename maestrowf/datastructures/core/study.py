@@ -37,7 +37,6 @@ import re
 from types import MethodType
 import yaml
 
-from maestrowf.abstracts import SimObject
 from maestrowf.datastructures.core import ExecutionGraph
 from maestrowf.datastructures.dag import DAG
 from maestrowf.utils import apply_function, create_parentdir, make_safe_path
@@ -52,7 +51,7 @@ ALL_COMBOS = re.compile(
 )
 
 
-class StudyStep(SimObject):
+class StudyStep:
     """
     Class that represents the data and API for a single study step.
 
