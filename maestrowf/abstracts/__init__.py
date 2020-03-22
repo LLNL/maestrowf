@@ -38,6 +38,7 @@ structures.
 # NOTE: Some of these abstracts will be moved in the future. The Graph abstract
 # class does not belong here, and should be moved to something more general.
 import dill
+import logging
 
 from maestrowf.abstracts.abstractclassmethod import abstractclassmethod
 from maestrowf.abstracts.envobject import Dependency, Source, Substitution
@@ -48,8 +49,11 @@ from maestrowf.abstracts.specification import Specification
 __all__ = ("abstractclassmethod", "Dependency", "Graph", "PickleInterface",
            "Singleton", "Source", "Specification", "Substitution")
 
+LOGGER = logging.getLogger(__name__)
+
 
 class PickleInterface:
+    """A class that implements a general pickle interface using dill."""
     @classmethod
     def unpickle(cls, path):
         """
@@ -58,16 +62,16 @@ class PickleInterface:
         :param path: Path to a ExecutionGraph pickle file.
         """
         with open(path, 'rb') as pkl:
-            dag = dill.load(pkl)
+            obj = dill.load(pkl)
 
-        if not isinstance(dag, cls):
+        if not isinstance(obj, cls):
             msg = "Object loaded from {path} is of type {type}. Expected an" \
-                  " object of type '{cls}.'".format(path=path, type=type(dag),
+                  " object of type '{cls}.'".format(path=path, type=type(obj),
                                                     cls=type(cls))
-            logger.error(msg)
+            LOGGER.error(msg)
             raise TypeError(msg)
 
-        return dag
+        return obj
 
     def pickle(self, path):
         """
@@ -75,13 +79,6 @@ class PickleInterface:
 
         :param path: The path to write the pickle to.
         """
-        if not self._adapter:
-            msg = "A script adapter must be set before an ExecutionGraph is " \
-                  "pickled. Use the 'set_adapter' method to set a specific" \
-                  " script interface."
-            logger.error(msg)
-            raise Exception(msg)
-
         with open(path, 'wb') as pkl:
             dill.dump(self, pkl)
 

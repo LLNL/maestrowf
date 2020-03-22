@@ -33,7 +33,7 @@ import six
 
 
 @six.add_metaclass(ABCMeta)
-class Graph(object):
+class Graph:
     """An abstract graph data structure."""
 
     # NOTE: fdinatal -- 04/07/2017
@@ -50,7 +50,6 @@ class Graph(object):
         :param name: String identifier of the node.
         :param obj: An object representing the value of the node.
         """
-        pass
 
     @abstractmethod
     def add_edge(self, src, dest):
@@ -60,7 +59,6 @@ class Graph(object):
         :param src: Source vertex name.
         :param dest: Destination vertex name.
         """
-        pass
 
     @abstractmethod
     def remove_edge(self, src, dest):
@@ -70,4 +68,3 @@ class Graph(object):
         :param src: Source vertex name.
         :param dest: Destination vertex name.
         """
-        pass
