@@ -6,7 +6,6 @@ import logging
 import os
 import shutil
 import tempfile
-import dill
 from filelock import FileLock, Timeout
 
 from maestrowf.abstracts import PickleInterface
