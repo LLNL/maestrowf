@@ -28,6 +28,7 @@
 ###############################################################################
 
 """Class related to the construction of study campaigns."""
+from collections import defaultdict
 import copy
 from hashlib import md5
 import logging
@@ -68,19 +69,20 @@ class StudyStep:
         """Object that represents a single workflow step."""
         self.name = ""
         self.description = ""
-        self.run = {
-                        "cmd":              "",
-                        "depends":          "",
-                        "pre":              "",
-                        "post":             "",
-                        "restart":          "",
-                        "nodes":            "",
-                        "procs":            "",
-                        "gpus":             "",
-                        "cores per task":   "",
-                        "walltime":         "",
-                        "reservation":      ""
-                    }
+        self.run = \
+            {
+                "cmd":              "",
+                "depends":          "",
+                "pre":              "",
+                "post":             "",
+                "restart":          "",
+                "nodes":            "",
+                "procs":            "",
+                "gpus":             "",
+                "cores per task":   "",
+                "walltime":         "",
+                "reservation":      ""
+            }
 
     def apply_parameters(self, combo):
         """
@@ -426,6 +428,33 @@ class Study(DAG, PickleInterface):
             self._out_path, submission_attempts, restart_limit, throttle,
             use_tmp, hash_ws
         )
+    
+    def check_study(self):
+        """Perform a precheck on the Study instance."""
+
+        # Topologically sort the nodes in the graph
+        t_sorted = self.topological_sort()
+        self.used_spaces = defaultdict(list)
+        self.used_parameters = defaultdict(set)
+
+        for step in t_sorted:
+            # If we're at the ghost SOURCE node, just continue.
+            if step == SOURCE:
+                continue
+
+            # Otherwise, we're at an actual step, we can gather info.
+            node = self.values[step]
+            # Find the workspaces the step uses.
+            self.used_spaces[step] = set(
+                re.findall(
+                    WSREGEX,
+                    "{} {}".format(node.run["cmd"], node.run["restart"])
+                )
+            )
+            # Get the parameters explicitly used by this step.
+            step_params = self.parameters.get_used_parameters(node)
+
+
 
     def _stage(self, dag):
         """
