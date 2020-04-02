@@ -137,8 +137,8 @@ class LocalScriptAdapter(ScriptAdapter):
         output, err = p.communicate()
         retcode = p.wait()
 
-        o_path = os.path.join(cwd, "{}.out".format(step.name))
-        e_path = os.path.join(cwd, "{}.err".format(step.name))
+        o_path = os.path.join(cwd, "{}.{}.out".format(step.name, pid))
+        e_path = os.path.join(cwd, "{}.{}.err".format(step.name, pid))
 
         with open(o_path, "w") as out:
             out.write(output)
