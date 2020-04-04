@@ -427,13 +427,6 @@ class Study(DAG, PickleInterface):
             use_tmp, hash_ws
         )
 
-    def pre_stage(self):
-        """
-        Set up pre-execution structures and run verification on the Study DAG.
-
-        
-        """
-
     def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
