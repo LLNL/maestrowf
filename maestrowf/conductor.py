@@ -38,131 +38,157 @@ import sys
 from time import sleep
 
 from maestrowf.abstracts.enums import StudyStatus
-from maestrowf.datastructures.core import ExecutionGraph
+from maestrowf.datastructures.core import Study
 from maestrowf.utils import create_parentdir
 
 # Logger instantiation
-rootlogger = logging.getLogger(inspect.getmodule(__name__))
-logger = logging.getLogger(__name__)
+ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
+LOGGER = logging.getLogger(__name__)
 
 # Formatting of logger.
 LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
                "%(levelname)s - %(message)s"
 
 
-def setup_argparser():
-    """Set up the program's argument parser."""
-    parser = ArgumentParser(prog="ExecutionManager",
-                            description="An application for checking and "
-                            "managing an ExecutionDAG within an executing"
-                            "study.",
-                            formatter_class=RawTextHelpFormatter)
+class Conductor:
 
-    parser.add_argument("directory", type=str, help="The directory where"
-                        "a study has been set up and where a pickle file"
-                        " of an ExecutionGraph is stored.")
-    parser.add_argument("-s", "--status", action="store_true",
-                        help="Check the status of the ExecutionGraph "
-                        "located as specified by the 'directory' "
-                        "argument.")
-    parser.add_argument("-l", "--logpath", type=str,
-                        help="Alternate path to store program logging.")
-    parser.add_argument("-d", "--debug_lvl", type=int, default=2,
-                        help="Level of logging messages to be output:\n"
-                             "5 - Critical\n"
-                             "4 - Error\n"
-                             "3 - Warning\n"
-                             "2 - Info (Default)\n"
-                             "1 - Debug")
-    parser.add_argument("-c", "--logstdout", action="store_true",
-                        help="Output logging to stdout in addition to a file.")
-    parser.add_argument("-t", "--sleeptime", type=int, default=60,
-                        help="Amount of time (in seconds) for the manager to "
-                        "wait between job status checks.")
+    def __init__(self, study):
+        self._study = study
+        self._setup = False
 
-    return parser
+    @classmethod
+    def from_parser(cls):
+        """Set up the Conductors's argument parser."""
 
+        # Set up the parser for our conductor here.
+        parser = ArgumentParser(prog="Conductor",
+                                description="An application for checking and "
+                                "managing an ExecutionDAG within an executing"
+                                "study.",
+                                formatter_class=RawTextHelpFormatter)
 
-def setup_logging(args, name):
-    """
-    Set up logging in the Main class.
+        parser.add_argument("directory", type=str, help="The directory where"
+                            "a study has been set up and where a pickle file"
+                            " of an ExecutionGraph is stored.")
+        parser.add_argument("-s", "--status", action="store_true",
+                            help="Check the status of the ExecutionGraph "
+                            "located as specified by the 'directory' "
+                            "argument.")
+        parser.add_argument("-l", "--logpath", type=str,
+                            help="Alternate path to store program logging.")
+        parser.add_argument("-d", "--debug_lvl", type=int, default=2,
+                            help="Level of logging messages to be output:\n"
+                                 "5 - Critical\n"
+                                 "4 - Error\n"
+                                 "3 - Warning\n"
+                                 "2 - Info (Default)\n"
+                                 "1 - Debug")
+        parser.add_argument("-c", "--logstdout", action="store_true",
+                            help="Output logging to stdout in addition to a "
+                                 "file.")
+        parser.add_argument("-t", "--sleeptime", type=int, default=60,
+                            help="Amount of time (in seconds) for the manager"
+                                 " to wait between job status checks.")
 
-    :param args: A Namespace object created by a parsed ArgumentParser.
-    :param name: The name of the log file.
-    """
-    # Check if the user has specified a custom log path.
-    if args.logpath:
-        logger.info("Log path overwritten by command line -- %s",
-                    args.logpath)
-        log_path = args.logpath
-    else:
-        log_path = os.path.join(args.directory, "logs")
+        self._parser = parser
+        self._args = self._parser.parse_args()
 
-    loglevel = args.debug_lvl * 10
+    def setup_logging(self, rootlogger, logger):
+        """
+        Set up logging in the Main class.
 
-    # Attempt to create the logging directory.
-    create_parentdir(log_path)
-    formatter = logging.Formatter(LFORMAT)
-    rootlogger.setLevel(loglevel)
+        :param args: A Namespace object created by a parsed ArgumentParser.
+        :param name: The name of the log file.
+        """
+        # Check if the user has specified a custom log path.
+        if self._args.logpath:
+            logger.info("Log path overwritten by command line -- %s",
+                        self._args.logpath)
+            log_path = self._args.logpath
+        else:
+            log_path = os.path.join(self._args.directory, "logs")
 
-    # Set up handlers
-    if args.logstdout:
-        handler = logging.StreamHandler()
+        loglevel = self._args.debug_lvl * 10
+
+        # Attempt to create the logging directory.
+        create_parentdir(log_path)
+        formatter = logging.Formatter(LFORMAT)
+        rootlogger.setLevel(loglevel)
+
+        # Set up handlers
+        if self._args.logstdout:
+            handler = logging.StreamHandler()
+            handler.setFormatter(formatter)
+            rootlogger.addHandler(handler)
+
+        log_file = os.path.join(log_path, "{}.log".format(self._study.name))
+        handler = logging.FileHandler(log_file)
         handler.setFormatter(formatter)
         rootlogger.addHandler(handler)
+        rootlogger.setLevel(loglevel)
 
-    log_file = os.path.join(log_path, "{}.log".format(name))
-    handler = logging.FileHandler(log_file)
-    handler.setFormatter(formatter)
-    rootlogger.addHandler(handler)
-    rootlogger.setLevel(loglevel)
+        # Print the level of logging.
+        logger.info("INFO Logging Level -- Enabled")
+        logger.warning("WARNING Logging Level -- Enabled")
+        logger.critical("CRITICAL Logging Level -- Enabled")
+        logger.debug("DEBUG Logging Level -- Enabled")
 
-    # Print the level of logging.
-    logger.info("INFO Logging Level -- Enabled")
-    logger.warning("WARNING Logging Level -- Enabled")
-    logger.critical("CRITICAL Logging Level -- Enabled")
-    logger.debug("DEBUG Logging Level -- Enabled")
+    def initialize(self):
+        """Initializes the Conductor instance based on the stored study."""
+        if self._setup is False:
+            raise
 
+    def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
+        """Monitor a running study."""
+        logger.debug("\n -------- Calling monitor study -------\n"
+                    "pkl path    = %s"
+                    "cancel path = %s"
+                    "sleep time  = %s",
+                    pickle_path, cancel_lock_path, sleep_time)
 
-def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
-    """Monitor a running study."""
-    logger.debug("\n -------- Calling monitor study -------\n"
-                 "pkl path    = %s"
-                 "cancel path = %s"
-                 "sleep time  = %s",
-                 pickle_path, cancel_lock_path, sleep_time)
+        completion_status = StudyStatus.RUNNING
+        while completion_status == StudyStatus.RUNNING:
+            if os.path.exists(cancel_lock_path):
+                # cancel the study if a cancel lock file is found
+                cancel_lock = FileLock(cancel_lock_path)
+                try:
+                    with cancel_lock.acquire(timeout=10):
+                        # we have the lock
+                        dag.cancel_study()
+                    os.remove(cancel_lock_path)
+                    logger.info("Study '%s' has been cancelled.", dag.name)
+                except Timeout:
+                    logger.error("Failed to acquire cancellation lock.")
+                    pass
 
-    completion_status = StudyStatus.RUNNING
-    while completion_status == StudyStatus.RUNNING:
-        if os.path.exists(cancel_lock_path):
-            # cancel the study if a cancel lock file is found
-            cancel_lock = FileLock(cancel_lock_path)
-            try:
-                with cancel_lock.acquire(timeout=10):
-                    # we have the lock
-                    dag.cancel_study()
-                os.remove(cancel_lock_path)
-                logger.info("Study '%s' has been cancelled.", dag.name)
-            except Timeout:
-                logger.error("Failed to acquire cancellation lock.")
-                pass
+            logger.info("Checking DAG status at %s", str(datetime.now()))
+            # Execute steps that are ready
+            # Recieves StudyStatus enum
+            completion_status = dag.execute_ready_steps()
+            # Re-pickle the ExecutionGraph.
+            dag.pickle(pickle_path)
+            # Write out the state
+            dag.write_status(os.path.split(pickle_path)[0])
+            # Sleep for SLEEPTIME in args if study not complete.
+            if completion_status == StudyStatus.RUNNING:
+                sleep(sleep_time)
 
-        logger.info("Checking DAG status at %s", str(datetime.now()))
-        # Execute steps that are ready
-        # Recieves StudyStatus enum
-        completion_status = dag.execute_ready_steps()
-        # Re-pickle the ExecutionGraph.
-        dag.pickle(pickle_path)
-        # Write out the state
-        dag.write_status(os.path.split(pickle_path)[0])
-        # Sleep for SLEEPTIME in args if study not complete.
-        if completion_status == StudyStatus.RUNNING:
-            sleep(sleep_time)
-
-    return completion_status
+        return completion_status
 
 
 def main():
+    """Run the main segment of the conductor."""
+    try:
+        conductor = Conductor(s)
+        conductor.setup_parser()
+        conductor.initialize()
+
+        sys.exit(0)
+    except Exception as e:
+        logger.error(e.args, exc_info=True)
+        raise e
+
+def main_old():
     """Run the main segment of the conductor."""
     try:
         # Set up and parse the ArgumentParser

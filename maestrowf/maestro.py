@@ -40,7 +40,6 @@ import tabulate
 import time
 
 from maestrowf import __version__
-from maestrowf.conductor import monitor_study
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
@@ -238,18 +237,8 @@ def run_study(args):
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
-    # Stage the study.
-    path, exec_dag = study.stage()
-    # Write metadata
-    study.store_metadata()
-
-    if not spec.batch:
-        exec_dag.set_adapter({"type": "local"})
-    else:
-        if "type" not in spec.batch:
-            spec.batch["type"] = "local"
-
-        exec_dag.set_adapter(spec.batch)
+    # The path is the study's output path.
+    path = study.output_path
 
     # Copy the spec to the output directory
     shutil.copy(args.specification, path)
@@ -258,9 +247,10 @@ def run_study(args):
     if args.dryrun:
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
-    # Pickle up the DAG
+    # Pickle up the Study
     pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-    exec_dag.pickle(pkl_path)
+    print(pkl_path)
+    study.pickle(pkl_path)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -276,14 +266,12 @@ def run_study(args):
             LOGGER.info("Running Maestro Conductor in the foreground.")
             cancel_path = os.path.join(path, ".cancel.lock")
             # capture the StudyStatus enum to return
-            completion_status = monitor_study(exec_dag, pkl_path,
-                                              cancel_path, args.sleeptime)
-            return completion_status.value
+            return 0
         else:
             # Launch manager with nohup
             log_path = make_safe_path(
                 study.output_path,
-                *["{}.txt".format(exec_dag.name)])
+                *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
