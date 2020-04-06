@@ -53,6 +53,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 
 class Conductor:
     _pkl_extension = ".study.pkl"
+    _cancel_lock = ".cancel.lock"
 
     def __init__(self, study):
         self._study = study
@@ -149,11 +150,12 @@ class Conductor:
             ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, args.logstdout)
         return conductor
 
-    def initialize(self):
+    def initialize(self, sleeptime=60):
         """Initializes the Conductor instance based on the stored study."""
- 
+        # Set our conductor's sleep time.
+        self.sleep_time = sleeptime
         # Stage the study.
-        path, exec_dag = self._study.stage()
+        self._pkl_path, self._exec_dag = self._study.stage()
         # Write metadata
         self._study.store_metadata()
 
@@ -201,14 +203,29 @@ class Conductor:
 
         self.logger = logger
 
-    def monitor_study(self, cancel_lock_path, sleep_time):
+    def monitor_study(self):
         """Monitor a running study."""
+
+        if not self._setup:
+            msg = \
+                "Study '{}' located in '{}' not initialized. Initialize " \
+                "study before calling launching. Aborting." \
+                .format(self.study_name, self.output_path)
+            self.logger.error(msg)
+            raise Exception(msg)
+
+        # Set some fixed variables that monitor will use.
+        cancel_lock_path = os.path.join()
+        dag = self._exec_dag
+        pkl_path = self._pkl_path
+        sleep_time = self.sleep_time
+
         self.logger.debug(
             "\n -------- Calling monitor study -------\n"
             "pkl path    = %s"
             "cancel path = %s"
             "sleep time  = %s",
-            pickle_path, cancel_lock_path, sleep_time)
+            pkl_path, cancel_lock_path, sleep_time)
 
         completion_status = StudyStatus.RUNNING
         while completion_status == StudyStatus.RUNNING:
@@ -230,9 +247,9 @@ class Conductor:
             # Recieves StudyStatus enum
             completion_status = dag.execute_ready_steps()
             # Re-pickle the ExecutionGraph.
-            dag.pickle(pickle_path)
+            dag.pickle(pkl_path)
             # Write out the state
-            dag.write_status(os.path.split(pickle_path)[0])
+            dag.write_status(os.path.split(pkl_path)[0])
             # Sleep for SLEEPTIME in args if study not complete.
             if completion_status == StudyStatus.RUNNING:
                 sleep(sleep_time)
