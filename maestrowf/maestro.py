@@ -29,7 +29,6 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
-from filelock import FileLock, Timeout
 import inspect
 import logging
 import os
@@ -45,7 +44,7 @@ from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
-    create_parentdir, create_dictionary, csvtable_to_dict, make_safe_path, \
+    create_parentdir, create_dictionary, make_safe_path, \
     start_process
 
 
@@ -61,20 +60,16 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    study_path = args.directory
-    stat_path = os.path.join(study_path, "status.csv")
-    lock_path = os.path.join(study_path, ".status.lock")
-    if os.path.exists(stat_path):
-        lock = FileLock(lock_path)
-        try:
-            with lock.acquire(timeout=10):
-                with open(stat_path, "r") as stat_file:
-                    _ = csvtable_to_dict(stat_file)
-                    print(tabulate.tabulate(_, headers="keys"))
-        except Timeout:
-            pass
+    status = Conductor.get_status(args.directory)
 
-    return 0
+    if status:
+        print(tabulate.tabulate(status, headers="keys"))
+        return 0
+    else:
+        print(
+            "Status check failed. If the issue persists, please verify that"
+            "you are passing in a path to a study.")
+        return 1
 
 
 def cancel_study(args):

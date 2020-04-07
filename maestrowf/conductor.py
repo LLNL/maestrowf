@@ -40,7 +40,7 @@ import dill
 
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
-from maestrowf.utils import create_parentdir, make_safe_path
+from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
 
 # Logger instantiation
 ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
@@ -106,6 +106,22 @@ class Conductor:
 
         # Return the Study object
         return obj
+
+    @classmethod
+    def get_status(cls, output_path):
+        stat_path = os.path.join(output_path, "status.csv")
+        lock_path = os.path.join(output_path, ".status.lock")
+        _ = {}
+        if os.path.exists(stat_path):
+            lock = FileLock(lock_path)
+            try:
+                with lock.acquire(timeout=10):
+                    with open(stat_path, "r") as stat_file:
+                        _ = csvtable_to_dict(stat_file)
+            except Timeout:
+                pass
+
+        return _
 
     @classmethod
     def mark_cancelled(cls, output_path):
