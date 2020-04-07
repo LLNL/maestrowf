@@ -82,7 +82,8 @@ def cancel_study(args):
     if not os.path.isdir(args.directory):
         return 1
 
-    Conductor.mark_cancelled(args.directory)
+    Conductor.mark_cancelled(args.out)
+
     return 0
 
 
@@ -272,7 +273,7 @@ def run_study(args):
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
                    study.output_path,
-                   "&>", log_path]
+                   ">", log_path, "2>&1"]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
