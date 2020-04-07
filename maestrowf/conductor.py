@@ -61,7 +61,7 @@ class Conductor:
 
     @property
     def output_path(self):
-        return self._study.out_path
+        return self._study.output_path
 
     @property
     def study_name(self):
@@ -109,7 +109,9 @@ class Conductor:
 
     @classmethod
     def mark_cancelled(cls, output_path):
-        pass
+        lock_path = make_safe_path(output_path, cls._cancel_lock)
+        with open(lock_path, 'a'):
+            os.utime(lock_path, None)
 
     @classmethod
     def from_parser(cls):
@@ -150,7 +152,8 @@ class Conductor:
         study = cls.load_study(args.directory)
         conductor = cls(study)
         conductor.setup_logging(
-            ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, args.logstdout)
+            ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, 
+            log_stdout=args.logstdout)
         conductor.set_logger(LOGGER)
         conductor.initialize(args.sleeptime)
         return conductor
@@ -163,6 +166,7 @@ class Conductor:
         self._pkl_path, self._exec_dag = self._study.stage()
         # Write metadata
         self._study.store_metadata()
+        self._setup = True
 
     def setup_logging(self, rootlogger, logger, log_lvl=2, log_path=None, *,
                       log_stdout=False, log_format=None):
@@ -221,7 +225,7 @@ class Conductor:
             raise Exception(msg)
 
         # Set some fixed variables that monitor will use.
-        cancel_lock_path = os.path.join()
+        cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
         dag = self._exec_dag
         pkl_path = self._pkl_path
         sleep_time = self.sleep_time
@@ -268,6 +272,8 @@ class Conductor:
 
 def main():
     """Run the main segment of the conductor."""
+    conductor = None
+
     try:
         conductor = Conductor.from_parser()
         completion_status = conductor.monitor_study()
@@ -278,9 +284,10 @@ def main():
         LOGGER.error(e.args, exc_info=True)
         raise e
     finally:
-        LOGGER.info("Study exiting, cleaning up...")
-        conductor.cleanup()
-        LOGGER.info("Squeaky clean!")
+        if conductor:
+            LOGGER.info("Study exiting, cleaning up...")
+            conductor.cleanup()
+            LOGGER.info("Squeaky clean!")
 
 
 if __name__ == "__main__":
