@@ -40,7 +40,7 @@ import dill
 
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
-from maestrowf.utils import create_parentdir
+from maestrowf.utils import create_parentdir, make_safe_path
 
 # Logger instantiation
 ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
@@ -68,8 +68,11 @@ class Conductor:
         return self._study.name
 
     @classmethod
-    def store_study(cls, study, out_path):
-        pass
+    def store_study(cls, study):
+        # Pickle up the Study
+        pkl_name = "{}{}".format(study.name, cls._pkl_extension)
+        pkl_path = make_safe_path(study.output_path, pkl_name)
+        study.pickle(pkl_path)
 
     @classmethod
     def load_study(cls, out_path):
@@ -148,6 +151,8 @@ class Conductor:
         conductor = cls(study)
         conductor.setup_logging(
             ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, args.logstdout)
+        conductor.set_logger(LOGGER)
+        conductor.initialize(args.sleeptime)
         return conductor
 
     def initialize(self, sleeptime=60):
@@ -201,6 +206,7 @@ class Conductor:
         logger.critical("CRITICAL Logging Level -- Enabled")
         logger.debug("DEBUG Logging Level -- Enabled")
 
+    def set_logger(self, logger):
         self.logger = logger
 
     def monitor_study(self):
@@ -256,62 +262,25 @@ class Conductor:
 
         return completion_status
 
+    def cleanup(self):
+        self._exec_dag.cleanup()
+
 
 def main():
     """Run the main segment of the conductor."""
     try:
         conductor = Conductor.from_parser()
-        conductor.initialize()
+        completion_status = conductor.monitor_study()
 
-        sys.exit(0)
+        LOGGER.info("Study completed with state '%s'.", completion_status)
+        sys.exit(completion_status.value)
     except Exception as e:
         LOGGER.error(e.args, exc_info=True)
         raise e
-
-def main_old():
-    """Run the main segment of the conductor."""
-    try:
-        # Set up and parse the ArgumentParser
-        parser = setup_argparser()
-        args = parser.parse_args()
-
-        # Unpickle the ExecutionGraph
-        study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
-        # We expect only a single pickle file.
-        if len(study_pkl) == 1:
-            dag = ExecutionGraph.unpickle(study_pkl[0])
-        else:
-            if len(study_pkl) > 1:
-                msg = "More than one pickle found. Expected one. Aborting."
-                status = 2
-            else:
-                msg = "No pickle found. Aborting."
-                status = 1
-
-            sys.stderr.write(msg)
-            sys.exit(status)
-
-        # Set up logging
-        setup_logging(args, dag.name)
-        # Use ExecutionGraph API to determine next jobs to be launched.
-        logger.info("Checking the ExecutionGraph for study '%s' located in "
-                    "%s...", dag.name, study_pkl[0])
-        logger.info("Study Description: %s", dag.description)
-
-        cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
-        logger.info("Starting to monitor '%s'", dag.name)
-        completion_status = monitor_study(dag, study_pkl[0],
-                                          cancel_lock_path, args.sleeptime)
-
-        logger.info("Cleaning up...")
-        dag.cleanup()
-        logger.info("Squeaky clean!")
-
-        # Explicitly return a 0 status.
-        sys.exit(completion_status.value)
-    except Exception as e:
-        logger.error(e.args, exc_info=True)
-        raise e
+    finally:
+        LOGGER.info("Study exiting, cleaning up...")
+        conductor.cleanup()
+        LOGGER.info("Squeaky clean!")
 
 
 if __name__ == "__main__":
