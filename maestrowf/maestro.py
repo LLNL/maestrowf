@@ -40,6 +40,7 @@ import tabulate
 import time
 
 from maestrowf import __version__
+from maestrowf.conductor import Conductor
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
@@ -81,11 +82,7 @@ def cancel_study(args):
     if not os.path.isdir(args.directory):
         return 1
 
-    lock_path = os.path.join(args.directory, ".cancel.lock")
-
-    with open(lock_path, 'a'):
-        os.utime(lock_path, None)
-
+    Conductor.mark_cancelled(args.directory)
     return 0
 
 
@@ -237,20 +234,15 @@ def run_study(args):
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
-    # The path is the study's output path.
-    path = study.output_path
-
     # Copy the spec to the output directory
-    shutil.copy(args.specification, path)
+    shutil.copy(args.specification, study.output_path)
 
     # Check for a dry run
     if args.dryrun:
         raise NotImplementedError("The 'dryrun' mode is in development.")
 
-    # Pickle up the Study
-    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-    print(pkl_path)
-    study.pickle(pkl_path)
+    # Use the Conductor's classmethod to store the study.
+    Conductor.store_study(study)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -264,9 +256,12 @@ def run_study(args):
         if args.fg:
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
-            cancel_path = os.path.join(path, ".cancel.lock")
-            # capture the StudyStatus enum to return
-            return 0
+            conductor = Conductor(study)
+            conductor.set_logger(LOGGER)
+            conductor.initialize(args.sleeptime)
+            completion_status = conductor.monitor_study()
+            conductor.cleanup()
+            return completion_status.value
         else:
             # Launch manager with nohup
             log_path = make_safe_path(
@@ -276,7 +271,7 @@ def run_study(args):
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
-                   path,
+                   study.output_path,
                    "&>", log_path]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
