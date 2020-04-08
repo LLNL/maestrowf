@@ -53,13 +53,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PickleInterface:
-    """A class that implements a general pickle interface using dill."""
+    """A mixin class that implements a general pickle interface using dill."""
+
     @classmethod
     def unpickle(cls, path):
         """
-        Load an ExecutionGraph instance from a pickle file.
+        Load a pickled instance from a pickle file.
 
-        :param path: Path to a ExecutionGraph pickle file.
+        :param path: Path to a pickle file containing a class instance.
         """
         with open(path, 'rb') as pkl:
             obj = dill.load(pkl)
@@ -75,7 +76,7 @@ class PickleInterface:
 
     def pickle(self, path):
         """
-        Generate a pickle file of the graph instance.
+        Generate a pickle file of of a class instance.
 
         :param path: The path to write the pickle to.
         """
