@@ -37,6 +37,7 @@ import os
 import sys
 from time import sleep
 import dill
+import yaml
 
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
@@ -54,6 +55,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 class Conductor:
     _pkl_extension = ".study.pkl"
     _cancel_lock = ".cancel.lock"
+    _batch_info = "batch.info"
 
     def __init__(self, study):
         self._study = study
@@ -73,6 +75,33 @@ class Conductor:
         pkl_name = "{}{}".format(study.name, cls._pkl_extension)
         pkl_path = make_safe_path(study.output_path, pkl_name)
         study.pickle(pkl_path)
+
+    @classmethod
+    def load_batch(cls, out_path):
+        batch_path = os.path.join(out_path, cls._batch_info)
+
+        if not os.path.exists(batch_path):
+            msg = "Batch info files is missing. Please re-run Maestro."
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        with open(batch_path, 'r') as data:
+            try:
+                batch_info = yaml.load(data, yaml.FullLoader)
+            except AttributeError:
+                LOGGER.warning(
+                    "*** PyYAML is using an unsafe version with a known "
+                    "load vulnerability. Please upgrade your installation "
+                    "to a more recent version! ***")
+                batch_info = yaml.load(data)
+
+        return batch_info
+
+    @classmethod
+    def store_batch(cls, out_path, batch):
+        path = os.path.join(out_path, cls._batch_info)
+        with open(path, "wb") as batch_info:
+            batch_info.write(yaml.dump(batch).encode("utf-8"))
 
     @classmethod
     def load_study(cls, out_path):
@@ -166,21 +195,24 @@ class Conductor:
         # Parse the command line args and load the study.
         args = parser.parse_args()
         study = cls.load_study(args.directory)
+        batch_info = cls.load_batch(args.directory)
+
         conductor = cls(study)
         conductor.setup_logging(
             ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, 
             log_stdout=args.logstdout)
         conductor.set_logger(LOGGER)
-        conductor.initialize(args.sleeptime)
+        conductor.initialize(batch_info, args.sleeptime)
         return conductor
 
-    def initialize(self, sleeptime=60):
+    def initialize(self, batch_info, sleeptime=60):
         """Initializes the Conductor instance based on the stored study."""
         # Set our conductor's sleep time.
         self.sleep_time = sleeptime
         # Stage the study.
         self._pkl_path, self._exec_dag = self._study.stage()
         # Write metadata
+        self._exec_dag.set_adapter(batch_info)
         self._study.store_metadata()
         self._setup = True
 
@@ -243,14 +275,16 @@ class Conductor:
         # Set some fixed variables that monitor will use.
         cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
         dag = self._exec_dag
-        pkl_path = self._pkl_path
+        pkl_path = \
+            os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
         sleep_time = self.sleep_time
 
         self.logger.debug(
             "\n -------- Calling monitor study -------\n"
-            "pkl path    = %s"
-            "cancel path = %s"
-            "sleep time  = %s",
+            "pkl path    = %s\n"
+            "cancel path = %s\n"
+            "sleep time  = %s\n"
+            "------------------------------------------\n",
             pkl_path, cancel_lock_path, sleep_time)
 
         completion_status = StudyStatus.RUNNING

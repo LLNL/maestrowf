@@ -75,9 +75,10 @@ def status_study(args):
 def cancel_study(args):
     """Flag a study to be cancelled."""
     if not os.path.isdir(args.directory):
+        print("Attempted to cancel a path that was not a directory.")
         return 1
 
-    Conductor.mark_cancelled(args.out)
+    Conductor.mark_cancelled(args.directory)
 
     return 0
 
@@ -230,15 +231,19 @@ def run_study(args):
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
+    batch = {"type": "local"}
+    if spec.batch:
+        batch = spec.batch
+        if "type" not in batch:
+            batch["type"] = "local"
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
-
     # Check for a dry run
     if args.dryrun:
         raise NotImplementedError("The 'dryrun' mode is in development.")
-
     # Use the Conductor's classmethod to store the study.
     Conductor.store_study(study)
+    Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -254,7 +259,7 @@ def run_study(args):
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
             conductor.set_logger(LOGGER)
-            conductor.initialize(args.sleeptime)
+            conductor.initialize(batch, args.sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value
