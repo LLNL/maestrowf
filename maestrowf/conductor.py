@@ -216,7 +216,7 @@ class Conductor:
         self._study.store_metadata()
         self._setup = True
 
-    def setup_logging(self, rootlogger, logger, log_lvl=2, log_path=None, *,
+    def setup_logging(self, rootlogger, logger, log_lvl=2, log_path=None,
                       log_stdout=False, log_format=None):
         """
         Set up logging in the Main class.
