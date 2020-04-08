@@ -199,7 +199,7 @@ class Conductor:
 
         conductor = cls(study)
         conductor.setup_logging(
-            ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath, 
+            ROOTLOGGER, LOGGER, args.debug_lvl, args.logpath,
             log_stdout=args.logstdout)
         conductor.set_logger(LOGGER)
         conductor.initialize(batch_info, args.sleeptime)
