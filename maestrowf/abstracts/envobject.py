@@ -33,13 +33,11 @@ from abc import ABCMeta, abstractmethod
 import logging
 import six
 
-from maestrowf.abstracts.simobject import SimObject
-
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 @six.add_metaclass(ABCMeta)
-class EnvObject(SimObject):
+class EnvObject:
     """
     An abstract class representing objects that exist in a study's environment.
 
@@ -64,7 +62,6 @@ class EnvObject(SimObject):
 
         :returns: True if the EnvObject is verified, False otherwise.
         """
-        pass
 
     def _verification(self, error):
         """
@@ -73,7 +70,7 @@ class EnvObject(SimObject):
         :param error: String containing a custom error message.
         """
         if not self._verify():
-            logger.exception(error)
+            LOGGER.exception(error)
             raise ValueError(error)
 
 
@@ -94,10 +91,8 @@ class Substitution(EnvObject):
         :returns: A string equal to the original string data with substitutions
             made (if any were performed).
         """
-        pass
 
 
-@six.add_metaclass(ABCMeta)
 class Source(EnvObject):
     """
     Abstract class representing classes that alter environment sourcing.
@@ -126,7 +121,6 @@ class Source(EnvObject):
         # NOTE: This functionality has not been settled yet. The use of this
         # class or this design may not be the best for applying script sources
         # to an environment.
-        pass
 
 
 @six.add_metaclass(ABCMeta)
@@ -158,4 +152,3 @@ class Dependency(Substitution):
 
         :param substitutions: List of Substitution objects that can be applied.
         """
-        pass

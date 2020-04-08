@@ -1,14 +1,14 @@
 """Module for the execution of DAG workflows."""
 from collections import deque, OrderedDict
 from datetime import datetime
-import dill
-from filelock import FileLock, Timeout
 import getpass
 import logging
 import os
 import shutil
 import tempfile
+from filelock import FileLock, Timeout
 
+from maestrowf.abstracts import PickleInterface
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode, StudyStatus
 from maestrowf.datastructures.dag import DAG
@@ -16,11 +16,11 @@ from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import create_parentdir, get_duration
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
 
 
-class _StepRecord(object):
+class _StepRecord:
     """
     A simple container object representing a workflow step record.
 
@@ -83,10 +83,10 @@ class _StepRecord(object):
 
         self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
 
-        logger.info("Generating script for %s into %s", self.name, scr_dir)
+        LOGGER.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
             adapter.write_script(scr_dir, self.step)
-        logger.info("Script: %s\nRestart: %s\nScheduled?: %s",
+        LOGGER.info("Script: %s\nRestart: %s\nScheduled?: %s",
                     self.script, self.restart_script, self.to_be_scheduled)
 
     def execute(self, adapter):
@@ -134,7 +134,7 @@ class _StepRecord(object):
 
     def mark_submitted(self):
         """Mark the submission time of the record."""
-        logger.debug(
+        LOGGER.debug(
             "Marking %s as submitted (PENDING) -- previously %s",
             self.name,
             self.status)
@@ -142,14 +142,14 @@ class _StepRecord(object):
         if not self._submit_time:
             self._submit_time = datetime.now()
         else:
-            logger.warning(
+            LOGGER.warning(
                 "Cannot set the submission time of '%s' because it has "
                 "already been set.", self.name
             )
 
     def mark_running(self):
         """Mark the start time of the record."""
-        logger.debug(
+        LOGGER.debug(
             "Marking %s as running (RUNNING) -- previously %s",
             self.name,
             self.status)
@@ -163,7 +163,7 @@ class _StepRecord(object):
 
         :param state: State enum corresponding to termination state.
         """
-        logger.debug(
+        LOGGER.debug(
             "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
@@ -174,7 +174,7 @@ class _StepRecord(object):
 
     def mark_restart(self):
         """Mark the end time of the record."""
-        logger.debug(
+        LOGGER.debug(
             "Marking %s as restarting (TIMEOUT) -- previously %s",
             self.name,
             self.status)
@@ -286,7 +286,7 @@ class _StepRecord(object):
         return self._num_restarts
 
 
-class ExecutionGraph(DAG):
+class ExecutionGraph(DAG, PickleInterface):
     """
     Datastructure that tracks, executes, and reports on study execution.
 
@@ -343,7 +343,7 @@ class ExecutionGraph(DAG):
         # tree or something of that nature to guarantee worst case performance.
         self._dependencies = {}
 
-        logger.info(
+        LOGGER.info(
             "\n------------------------------------------\n"
             "Submission attempts =       %d\n"
             "Submission throttle limit = %d\n"
@@ -357,14 +357,14 @@ class ExecutionGraph(DAG):
         if self._submission_attempts < 1:
             _msg = "Submission attempts should always be greater than 0. " \
                    "Received a value of {}.".format(self._submission_attempts)
-            logger.error(_msg)
+            LOGGER.error(_msg)
             raise ValueError(_msg)
 
         if self._submission_throttle < 0:
             _msg = "Throttling should be 0 for unthrottled or a positive " \
                    "integer for the number of allowed inflight jobs. " \
                    "Received a value of {}.".format(self._submission_throttle)
-            logger.error(_msg)
+            LOGGER.error(_msg)
             raise ValueError(_msg)
 
     def _check_tmp_dir(self):
@@ -416,14 +416,14 @@ class ExecutionGraph(DAG):
 
         if not isinstance(adapter, dict):
             msg = "Adapter settings must be contained in a dictionary."
-            logger.error(msg)
+            LOGGER.error(msg)
             raise TypeError(msg)
 
         # Check to see that the adapter type is something the
         if adapter["type"] not in ScriptAdapterFactory.get_valid_adapters():
             msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
                   .format(adapter)
-            logger.error(msg)
+            LOGGER.error(msg)
             raise TypeError(msg)
 
         self._adapter = adapter
@@ -438,41 +438,6 @@ class ExecutionGraph(DAG):
         self._description["name"] = name
         self._description["description"] = description
         self._description.update(kwargs)
-
-    @classmethod
-    def unpickle(cls, path):
-        """
-        Load an ExecutionGraph instance from a pickle file.
-
-        :param path: Path to a ExecutionGraph pickle file.
-        """
-        with open(path, 'rb') as pkl:
-            dag = dill.load(pkl)
-
-        if not isinstance(dag, cls):
-            msg = "Object loaded from {path} is of type {type}. Expected an" \
-                  " object of type '{cls}.'".format(path=path, type=type(dag),
-                                                    cls=type(cls))
-            logger.error(msg)
-            raise TypeError(msg)
-
-        return dag
-
-    def pickle(self, path):
-        """
-        Generate a pickle file of the graph instance.
-
-        :param path: The path to write the pickle to.
-        """
-        if not self._adapter:
-            msg = "A script adapter must be set before an ExecutionGraph is " \
-                  "pickled. Use the 'set_adapter' method to set a specific" \
-                  " script interface."
-            logger.error(msg)
-            raise Exception(msg)
-
-        with open(path, 'wb') as pkl:
-            dill.dump(self, pkl)
 
     @property
     def name(self):
@@ -515,7 +480,7 @@ class ExecutionGraph(DAG):
         desc = ["{}: {}".format(key, value)
                 for key, value in self._description.items()]
         desc = "\n".join(desc)
-        logger.info(
+        LOGGER.info(
             "\n==================================================\n"
             "%s\n"
             "==================================================\n",
@@ -535,11 +500,11 @@ class ExecutionGraph(DAG):
         if not self._adapter:
             msg = "Adapter not found. Specify a ScriptAdapter using " \
                   "set_adapter."
-            logger.error(msg)
+            LOGGER.error(msg)
             raise ValueError(msg)
 
         # Set up the adapter.
-        logger.info("Generating scripts...")
+        LOGGER.info("Generating scripts...")
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
@@ -562,7 +527,7 @@ class ExecutionGraph(DAG):
         :param restart: True if the record needs restarting, False otherwise.
         """
         # Logging for debugging.
-        logger.info("Calling execute for StepRecord '%s'", record.name)
+        LOGGER.info("Calling execute for StepRecord '%s'", record.name)
 
         num_restarts = 0    # Times this step has temporally restarted.
         retcode = None      # Execution return code.
@@ -573,13 +538,13 @@ class ExecutionGraph(DAG):
         self._check_tmp_dir()
         while retcode != SubmissionCode.OK and \
                 num_restarts < self._submission_attempts:
-            logger.info("Attempting submission of '%s' (attempt %d of %d)...",
+            LOGGER.info("Attempting submission of '%s' (attempt %d of %d)...",
                         record.name, num_restarts + 1,
                         self._submission_attempts)
 
             # We're not restarting -- submit as usual.
             if not restart:
-                logger.debug("Calling 'execute' on '%s' at %s",
+                LOGGER.debug("Calling 'execute' on '%s' at %s",
                              record.name, str(datetime.now()))
                 # Generate the script for execution on the fly.
                 record.setup_workspace()    # Generate the workspace.
@@ -588,21 +553,21 @@ class ExecutionGraph(DAG):
             # Otherwise, it's a restart.
             else:
                 # If the restart is specified, use the record restart script.
-                logger.debug("Calling 'restart' on '%s' at %s",
+                LOGGER.debug("Calling 'restart' on '%s' at %s",
                              record.name, str(datetime.now()))
                 # Generate the script for execution on the fly.
                 record.generate_script(adapter, self._tmp_dir)
                 retcode = record.restart(adapter)
 
             # Increment the number of restarts we've attempted.
-            logger.debug("Completed submission attempt %d", num_restarts)
+            LOGGER.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
 
         if retcode == SubmissionCode.OK:
             self.in_progress.add(record.name)
 
             if record.is_local_step:
-                logger.info("Local step %s executed with status OK. Complete.",
+                LOGGER.info("Local step %s executed with status OK. Complete.",
                             record.name)
                 record.mark_end(State.FINISHED)
                 self.completed_steps.add(record.name)
@@ -610,7 +575,7 @@ class ExecutionGraph(DAG):
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            logger.warning("'%s' failed to submit properly. "
+            LOGGER.warning("'%s' failed to submit properly. "
                            "Step failed.", record.name)
             path, parent = self.bfs_subtree(record.name)
             for node in path:
@@ -618,7 +583,7 @@ class ExecutionGraph(DAG):
                 self.values[node].mark_end(State.FAILED)
 
         # After execution state debug logging.
-        logger.debug("After execution of '%s' -- New state is %s.",
+        LOGGER.debug("After execution of '%s' -- New state is %s.",
                      record.name, record.status)
 
     def write_status(self, path):
@@ -651,7 +616,7 @@ class ExecutionGraph(DAG):
     def _check_study_completion(self):
         # We cancelled, return True marking study as complete.
         if self.is_canceled:
-            logger.info("Cancelled -- completing study.")
+            LOGGER.info("Cancelled -- completing study.")
             return StudyStatus.CANCELLED
 
         # check for completion of all steps
@@ -695,13 +660,13 @@ class ExecutionGraph(DAG):
         adapter = adapter(**self._adapter)
 
         retcode, job_status = self.check_study_status()
-        logger.debug("Checked status (retcode %s)-- %s", retcode, job_status)
+        LOGGER.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
         # For now, if we can't check the status something is wrong.
         # Don't modify the DAG.
         if retcode == JobStatusCode.ERROR:
             msg = "Job status check failed -- Aborting."
-            logger.error(msg)
+            LOGGER.error(msg)
             raise RuntimeError(msg)
         elif retcode == JobStatusCode.OK:
             # For the status of each currently in progress job, check its
@@ -709,20 +674,20 @@ class ExecutionGraph(DAG):
             cleanup_steps = set()  # Steps that are in progress showing failed.
 
             for name, status in job_status.items():
-                logger.debug("Checking job '%s' with status %s.", name, status)
+                LOGGER.debug("Checking job '%s' with status %s.", name, status)
                 record = self.values[name]
 
                 if status == State.FINISHED:
                     # Mark the step complete and notate its end time.
                     record.mark_end(State.FINISHED)
-                    logger.info("Step '%s' marked as finished. Adding to "
+                    LOGGER.info("Step '%s' marked as finished. Adding to "
                                 "complete set.", name)
                     self.completed_steps.add(name)
                     self.in_progress.remove(name)
 
                 elif status == State.RUNNING:
                     # When detect that a step is running, mark it.
-                    logger.info("Step '%s' found to be running.")
+                    LOGGER.info("Step '%s' found to be running.")
                     record.mark_running()
 
                 elif status == State.TIMEDOUT:
@@ -731,13 +696,13 @@ class ExecutionGraph(DAG):
                     # If we're under the restart limit, attempt a restart.
                     if record.can_restart:
                         if record.mark_restart():
-                            logger.info(
+                            LOGGER.info(
                                 "Step '%s' timed out. Restarting (%s of %s).",
                                 name, record.restarts, record.restart_limit
                             )
                             self._execute_record(record, adapter, restart=True)
                         else:
-                            logger.info("'%s' has been restarted %s of %s "
+                            LOGGER.info("'%s' has been restarted %s of %s "
                                         "times. Marking step and all "
                                         "descendents as failed.",
                                         name,
@@ -747,7 +712,7 @@ class ExecutionGraph(DAG):
                             cleanup_steps.update(self.bfs_subtree(name)[0])
                     # Otherwise, we can't restart so mark the step timed out.
                     else:
-                        logger.info("'%s' timed out, but cannot be restarted."
+                        LOGGER.info("'%s' timed out, but cannot be restarted."
                                     " Marked as TIMEDOUT.", name)
                         # Mark that the step ended due to TIMEOUT.
                         record.mark_end(State.TIMEDOUT)
@@ -765,14 +730,14 @@ class ExecutionGraph(DAG):
                     # TODO: Need to make sure that we do this a finite number
                     # of times.
                     # Resubmit the cmd.
-                    logger.warning("Hardware failure detected. Attempting to "
+                    LOGGER.warning("Hardware failure detected. Attempting to "
                                    "resubmit step '%s'.", name)
                     # We can just let the logic below handle submission with
                     # everything else.
                     self.ready_steps.append(name)
 
                 elif status == State.FAILED:
-                    logger.warning(
+                    LOGGER.warning(
                         "Job failure reported. Aborting %s -- flagging all "
                         "dependent jobs as failed.",
                         name
@@ -782,7 +747,7 @@ class ExecutionGraph(DAG):
                     cleanup_steps.update(self.bfs_subtree(name)[0])
 
                 elif status == State.CANCELLED:
-                    logger.info("Step '%s' was cancelled.", name)
+                    LOGGER.info("Step '%s' was cancelled.", name)
                     self.in_progress.remove(name)
                     record.mark_end(State.CANCELLED)
 
@@ -802,17 +767,17 @@ class ExecutionGraph(DAG):
             # A completed step by definition has had its dependencies met.
             # Skip it.
             if key in self.completed_steps:
-                logger.debug("'%s' in completed set, skipping.", key)
+                LOGGER.debug("'%s' in completed set, skipping.", key)
                 continue
 
-            logger.debug("Checking %s -- %s", key, record.jobid)
+            LOGGER.debug("Checking %s -- %s", key, record.jobid)
             # If the record is only INITIALIZED, we have encountered a step
             # that needs consideration.
             if record.status == State.INITIALIZED:
-                logger.debug("'%s' found to be initialized. Checking "
+                LOGGER.debug("'%s' found to be initialized. Checking "
                              "dependencies. ", key)
 
-                logger.debug(
+                LOGGER.debug(
                     "Unfulfilled dependencies: %s",
                     self._dependencies[key])
 
@@ -821,7 +786,7 @@ class ExecutionGraph(DAG):
                     self._dependencies[key])
                 self._dependencies[key] = \
                     self._dependencies[key] - set(s_completed)
-                logger.debug(
+                LOGGER.debug(
                     "Completed dependencies: %s\n"
                     "Remaining dependencies: %s",
                     s_completed, self._dependencies[key])
@@ -829,16 +794,16 @@ class ExecutionGraph(DAG):
                 # If the gating dependencies set is empty, we can execute.
                 if not self._dependencies[key]:
                     if key not in self.ready_steps:
-                        logger.debug("All dependencies completed. Staging.")
+                        LOGGER.debug("All dependencies completed. Staging.")
                         self.ready_steps.append(key)
                     else:
-                        logger.debug("Already staged. Passing.")
+                        LOGGER.debug("Already staged. Passing.")
                         continue
 
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-            logger.info("Launching all ready steps...")
+            LOGGER.info("Launching all ready steps...")
             _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
@@ -851,7 +816,7 @@ class ExecutionGraph(DAG):
             # computed number of slots. We could have free slots, but have less
             # in the queue.
             _available = min(_available, len(self.ready_steps))
-            logger.info("Found %d available slots...", _available)
+            LOGGER.info("Found %d available slots...", _available)
 
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
@@ -859,12 +824,12 @@ class ExecutionGraph(DAG):
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
-                logger.info("Cancelling '%s' -- continuing.", _record.name)
+                LOGGER.info("Cancelling '%s' -- continuing.", _record.name)
                 _record.mark_end(State.CANCELLED)
                 self.cancelled_steps.add(_record.name)
                 continue
 
-            logger.debug("Launching job %d -- %s", i, _record.name)
+            LOGGER.debug("Launching job %d -- %s", i, _record.name)
             self._execute_record(_record, adapter)
 
         # check the status of the study upon finishing this round of execution
@@ -898,14 +863,14 @@ class ExecutionGraph(DAG):
 
         # Based on return code, log something different.
         if retcode == JobStatusCode.OK:
-            logger.info("Jobs found for user '%s'.", getpass.getuser())
+            LOGGER.info("Jobs found for user '%s'.", getpass.getuser())
             return retcode, step_status
         elif retcode == JobStatusCode.NOJOBS:
-            logger.info("No jobs found.")
+            LOGGER.info("No jobs found.")
             return retcode, step_status
         else:
             msg = "Unknown Error (Code = {})".format(retcode)
-            logger.error(msg)
+            LOGGER.error(msg)
             return retcode, step_status
 
     def cancel_study(self):
@@ -924,12 +889,12 @@ class ExecutionGraph(DAG):
         self.is_canceled = True
 
         if crecord.cancel_status == CancelCode.OK:
-            logger.info("Successfully requested to cancel all jobs.")
+            LOGGER.info("Successfully requested to cancel all jobs.")
         elif crecord.cancel_status == CancelCode.ERROR:
-            logger.error(
+            LOGGER.error(
                 "Failed to cancel jobs. (Code = %s)", crecord.return_code)
         else:
-            logger.error("Unknown Error (Code = %s)", crecord.return_code)
+            LOGGER.error("Unknown Error (Code = %s)", crecord.return_code)
 
         return crecord.cancel_status
 

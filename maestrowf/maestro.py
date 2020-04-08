@@ -29,7 +29,6 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
-from filelock import FileLock, Timeout
 import inspect
 import logging
 import os
@@ -40,12 +39,12 @@ import tabulate
 import time
 
 from maestrowf import __version__
-from maestrowf.conductor import monitor_study
+from maestrowf.conductor import Conductor
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
-    create_parentdir, create_dictionary, csvtable_to_dict, make_safe_path, \
+    create_parentdir, create_dictionary, make_safe_path, \
     start_process
 
 
@@ -61,31 +60,25 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    study_path = args.directory
-    stat_path = os.path.join(study_path, "status.csv")
-    lock_path = os.path.join(study_path, ".status.lock")
-    if os.path.exists(stat_path):
-        lock = FileLock(lock_path)
-        try:
-            with lock.acquire(timeout=10):
-                with open(stat_path, "r") as stat_file:
-                    _ = csvtable_to_dict(stat_file)
-                    print(tabulate.tabulate(_, headers="keys"))
-        except Timeout:
-            pass
+    status = Conductor.get_status(args.directory)
 
-    return 0
+    if status:
+        print(tabulate.tabulate(status, headers="keys"))
+        return 0
+    else:
+        print(
+            "Status check failed. If the issue persists, please verify that"
+            "you are passing in a path to a study.")
+        return 1
 
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
     if not os.path.isdir(args.directory):
+        print("Attempted to cancel a path that was not a directory.")
         return 1
 
-    lock_path = os.path.join(args.directory, ".cancel.lock")
-
-    with open(lock_path, 'a'):
-        os.utime(lock_path, None)
+    Conductor.mark_cancelled(args.directory)
 
     return 0
 
@@ -238,29 +231,19 @@ def run_study(args):
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
-    # Stage the study.
-    path, exec_dag = study.stage()
-    # Write metadata
-    study.store_metadata()
-
-    if not spec.batch:
-        exec_dag.set_adapter({"type": "local"})
-    else:
-        if "type" not in spec.batch:
-            spec.batch["type"] = "local"
-
-        exec_dag.set_adapter(spec.batch)
-
+    batch = {"type": "local"}
+    if spec.batch:
+        batch = spec.batch
+        if "type" not in batch:
+            batch["type"] = "local"
     # Copy the spec to the output directory
-    shutil.copy(args.specification, path)
-
+    shutil.copy(args.specification, study.output_path)
     # Check for a dry run
     if args.dryrun:
         raise NotImplementedError("The 'dryrun' mode is in development.")
-
-    # Pickle up the DAG
-    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-    exec_dag.pickle(pkl_path)
+    # Use the Conductor's classmethod to store the study.
+    Conductor.store_study(study)
+    Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes:
@@ -274,22 +257,22 @@ def run_study(args):
         if args.fg:
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
-            cancel_path = os.path.join(path, ".cancel.lock")
-            # capture the StudyStatus enum to return
-            completion_status = monitor_study(exec_dag, pkl_path,
-                                              cancel_path, args.sleeptime)
+            conductor = Conductor(study)
+            conductor.initialize(batch, args.sleeptime)
+            completion_status = conductor.monitor_study()
+            conductor.cleanup()
             return completion_status.value
         else:
             # Launch manager with nohup
             log_path = make_safe_path(
                 study.output_path,
-                *["{}.txt".format(exec_dag.name)])
+                *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
                    "-t", str(args.sleeptime),
                    "-d", str(args.debug_lvl),
-                   path,
-                   "&>", log_path]
+                   study.output_path,
+                   ">", log_path, "2>&1"]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
