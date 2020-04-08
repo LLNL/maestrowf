@@ -29,7 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
-import jsonschema
+import inspect
 import logging
 import os
 import shutil
@@ -39,12 +39,12 @@ import tabulate
 import time
 
 from maestrowf import __version__
-from maestrowf.conductor import monitor_study
+from maestrowf.conductor import Conductor
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
-    create_parentdir, create_dictionary, csvtable_to_dict, make_safe_path, \
+    create_parentdir, create_dictionary, make_safe_path, \
     start_process
 
 
@@ -248,26 +248,19 @@ def run_study(args):
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
 
-    # Stage the study.
-    path, exec_dag = study.stage()
-    # Write metadata
-    study.store_metadata()
-
-    if args.dry:
-        # If performing a dry run, drive sleep time down to generate scripts.
-        sleeptime = 1
-    else:
-        if "type" not in spec.batch:
-            spec.batch["type"] = "local"
-
-        exec_dag.set_adapter(spec.batch)
-
+    batch = {"type": "local"}
+    if spec.batch:
+        batch = spec.batch
+        if "type" not in batch:
+            batch["type"] = "local"
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
-
-    # Pickle up the DAG
-    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-    exec_dag.pickle(pkl_path)
+    # Check for a dry run
+    if args.dryrun:
+        raise NotImplementedError("The 'dryrun' mode is in development.")
+    # Use the Conductor's classmethod to store the study.
+    Conductor.store_study(study)
+    Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes or args.dry:
@@ -282,7 +275,7 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.initialize(batch, sleeptime)
+            conductor.initialize(batch, args.sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value
@@ -290,13 +283,13 @@ def run_study(args):
             # Launch manager with nohup
             log_path = make_safe_path(
                 study.output_path,
-                *["{}.txt".format(exec_dag.name)])
+                *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
                    "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
-                   path,
-                   "&>", log_path]
+                   study.output_path,
+                   ">", log_path, "2>&1"]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 

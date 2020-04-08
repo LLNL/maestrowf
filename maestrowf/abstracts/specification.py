@@ -48,7 +48,6 @@ class Specification:
         :returns: A specification object containing the information loaded
         from path.
         """
-        pass
 
     @abstractclassmethod
     def load_specification_from_stream(cls, stream):

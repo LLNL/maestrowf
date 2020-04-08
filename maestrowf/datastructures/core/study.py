@@ -196,7 +196,7 @@ class Study(DAG, PickleInterface):
         self._out_path = out_path
         self._meta_path = os.path.join(out_path, "meta")
 
-        LOGGER.debug("OUTPUT_PATH = %s", out_path)
+        LOGGER.info("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
         self.is_configured = False
@@ -378,7 +378,7 @@ class Study(DAG, PickleInterface):
     def setup_workspace(self):
         """Set up the study's main workspace directory."""
         try:
-            LOGGER.debug("Setting up study workspace in '%s'", self._out_path)
+            LOGGER.info("Setting up study workspace in '%s'", self._out_path)
             create_parentdir(self._out_path)
         except Exception as e:
             LOGGER.error(e.args)
@@ -388,7 +388,7 @@ class Study(DAG, PickleInterface):
         """Set up the environment by acquiring outside dependencies."""
         # Set up the environment if it hasn't been already.
         if not self.environment.is_set_up:
-            LOGGER.debug("Environment is setting up.")
+            LOGGER.info("Environment is setting up.")
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
@@ -565,7 +565,7 @@ class Study(DAG, PickleInterface):
                         # the workspace is the folder that contains all of
                         # the outputs of all combinations for the step.
                         ws = make_safe_path(self._out_path, *[match])
-                        logger.info("Found funnel workspace -- %s", ws)
+                        LOGGER.info("Found funnel workspace -- %s", ws)
                     else:
                         ws = self.workspaces[match]
                     cmd = cmd.replace(workspace_var, ws)
@@ -575,8 +575,8 @@ class Study(DAG, PickleInterface):
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
                 node.run["restart"] = r_cmd
-                logger.debug("New cmd = %s", cmd)
-                logger.debug("New restart = %s", r_cmd)
+                LOGGER.debug("New cmd = %s", cmd)
+                LOGGER.debug("New restart = %s", r_cmd)
 
                 dag.add_step(step, node, workspace, rlimit)
 
@@ -627,7 +627,7 @@ class Study(DAG, PickleInterface):
                     else:
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
-                        logger.debug("Workspace: %s", workspace)
+                        LOGGER.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
@@ -653,7 +653,7 @@ class Study(DAG, PickleInterface):
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
                             ws = make_safe_path(self._out_path, *[match])
-                            logger.info("Found funnel workspace -- %s", ws)
+                            LOGGER.info("Found funnel workspace -- %s", ws)
                         elif not self.used_params[match]:
                             # If it's not a funneled dependency and the match
                             # is not parameterized, then the workspace is just

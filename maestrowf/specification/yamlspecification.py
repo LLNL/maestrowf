@@ -118,30 +118,6 @@ class YAMLSpecification(Specification):
 
         :param stream: Raw text stream to study YAML specification data.
         :returns: A specification object containing the information from the
-                  passed stream.
-        """
-
-        try:
-            spec = yaml.load(stream, yaml.FullLoader)
-        except AttributeError:
-            logger.warning(
-                "*** PyYAML is using an unsafe version with a known "
-                "load vulnerability. Please upgrade your installation "
-                "to a more recent version! ***"
-            )
-            spec = yaml.load(stream)
-
-        # Populate the path to the specification that populated this instance.
-        specification.path = path
-        return specification
-
-    @classmethod
-    def load_specification_from_stream(cls, stream):
-        """
-        Load a study specification.
-
-        :param stream: Raw text stream to study YAML specification data.
-        :returns: A specification object containing the information from the
         passed stream.
         """
 

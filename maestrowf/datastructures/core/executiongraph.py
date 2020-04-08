@@ -1,8 +1,6 @@
 """Module for the execution of DAG workflows."""
 from collections import deque, OrderedDict
 from datetime import datetime
-import dill
-from filelock import FileLock, Timeout
 import getpass
 import logging
 import os
@@ -165,7 +163,7 @@ class _StepRecord:
 
         :param state: State enum corresponding to termination state.
         """
-        logger.debug(
+        LOGGER.debug(
             "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
@@ -442,41 +440,6 @@ class ExecutionGraph(DAG, PickleInterface):
         self._description["description"] = description
         self._description.update(kwargs)
 
-    @classmethod
-    def unpickle(cls, path):
-        """
-        Load an ExecutionGraph instance from a pickle file.
-
-        :param path: Path to a ExecutionGraph pickle file.
-        """
-        with open(path, 'rb') as pkl:
-            dag = dill.load(pkl)
-
-        if not isinstance(dag, cls):
-            msg = "Object loaded from {path} is of type {type}. Expected an" \
-                  " object of type '{cls}.'".format(path=path, type=type(dag),
-                                                    cls=type(cls))
-            logger.error(msg)
-            raise TypeError(msg)
-
-        return dag
-
-    def pickle(self, path):
-        """
-        Generate a pickle file of the graph instance.
-
-        :param path: The path to write the pickle to.
-        """
-        if not self._adapter:
-            msg = "A script adapter must be set before an ExecutionGraph is " \
-                  "pickled. Use the 'set_adapter' method to set a specific" \
-                  " script interface."
-            logger.error(msg)
-            raise Exception(msg)
-
-        with open(path, 'wb') as pkl:
-            dill.dump(self, pkl)
-
     @property
     def name(self):
         """
@@ -624,7 +587,7 @@ class ExecutionGraph(DAG, PickleInterface):
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            logger.warning("'%s' failed to submit properly. "
+            LOGGER.warning("'%s' failed to submit properly. "
                            "Step failed.", record.name)
             path, parent = self.bfs_subtree(record.name)
             for node in path:
@@ -708,14 +671,7 @@ class ExecutionGraph(DAG, PickleInterface):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        if not self.dry_run:
-            LOGGER.debug("Checking status check...")
-            retcode, job_status = self.check_study_status()
-        else:
-            LOGGER.debug("DRYRUN: Skipping status check...")
-            retcode = JobStatusCode.OK
-            job_status = {}
-
+        retcode, job_status = self.check_study_status()
         LOGGER.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
         # For now, if we can't check the status something is wrong.
@@ -869,7 +825,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
-            logger.info("Launching all ready steps...")
+            LOGGER.info("Launching all ready steps...")
             _available = len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
@@ -955,12 +911,12 @@ class ExecutionGraph(DAG, PickleInterface):
         self.is_canceled = True
 
         if crecord.cancel_status == CancelCode.OK:
-            logger.info("Successfully requested to cancel all jobs.")
+            LOGGER.info("Successfully requested to cancel all jobs.")
         elif crecord.cancel_status == CancelCode.ERROR:
-            logger.error(
+            LOGGER.error(
                 "Failed to cancel jobs. (Code = %s)", crecord.return_code)
         else:
-            logger.error("Unknown Error (Code = %s)", crecord.return_code)
+            LOGGER.error("Unknown Error (Code = %s)", crecord.return_code)
 
         return crecord.cancel_status
 

@@ -295,7 +295,7 @@ class Conductor:
 
         :param batch_info: A dict containing batch information.
         :param sleeptime: The amount of sleep time between polling loops
-                          [Default: 60s].
+        [Default: 60s].
         """
         # Set our conductor's sleep time.
         self.sleep_time = sleeptime
