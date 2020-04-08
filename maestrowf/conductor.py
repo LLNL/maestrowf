@@ -96,7 +96,11 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
 
 
 def setup_parser():
-    """Set up the Conductors's argument parser."""
+    """
+    Set up the Conductors's argument parser.
+    
+    :returns: A ArgumentParser that's initialized with the conductor's CLI.
+    """
 
     # Set up the parser for our conductor here.
     parser = ArgumentParser(prog="Conductor",
@@ -132,24 +136,44 @@ def setup_parser():
 
 
 class Conductor:
+    """A class that provides an API for interacting with the Conductor."""
+
     _pkl_extension = ".study.pkl"
     _cancel_lock = ".cancel.lock"
     _batch_info = "batch.info"
 
     def __init__(self, study):
+        """
+        Create a new instance of a Conductor class.
+
+        :param study: An instance of a populated Maestro study.
+        """
         self._study = study
         self._setup = False
 
     @property
     def output_path(self):
+        """
+        Return the path representing the root of the study workspace.
+
+        :returns: A string containing the path to the study's root.
+        """
         return self._study.output_path
 
     @property
     def study_name(self):
+        """
+        Return the name of the study this Conductor instance is managing.
+
+        :returns: A string containing the name of the study.
+        """
         return self._study.name
 
     @classmethod
     def store_study(cls, study):
+        """
+        Store a Maestro study instance in a way the Conductor can read it.
+        """
         # Pickle up the Study
         pkl_name = "{}{}".format(study.name, cls._pkl_extension)
         pkl_path = make_safe_path(study.output_path, pkl_name)
@@ -157,6 +181,12 @@ class Conductor:
 
     @classmethod
     def load_batch(cls, out_path):
+        """
+        Load the batch information for the study rooted in 'out_path'.
+
+        :param out_path: A string containing the path to a study root.
+        :returns: A dict containing the batch information for the study.
+        """
         batch_path = os.path.join(out_path, cls._batch_info)
 
         if not os.path.exists(batch_path):
@@ -178,12 +208,23 @@ class Conductor:
 
     @classmethod
     def store_batch(cls, out_path, batch):
+        """
+        Store the specified batch information to the study in 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        """
         path = os.path.join(out_path, cls._batch_info)
         with open(path, "wb") as batch_info:
             batch_info.write(yaml.dump(batch).encode("utf-8"))
 
     @classmethod
     def load_study(cls, out_path):
+        """
+        Load the Study instance in the study root specified by 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A string containing the path to the study's root.
+        """
         study_glob = \
             glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
 
@@ -217,6 +258,12 @@ class Conductor:
 
     @classmethod
     def get_status(cls, output_path):
+        """
+        Retrieve the status of the study rooted at 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A dictionary containing the status of the study.
+        """
         stat_path = os.path.join(output_path, "status.csv")
         lock_path = os.path.join(output_path, ".status.lock")
         _ = {}
@@ -233,12 +280,24 @@ class Conductor:
 
     @classmethod
     def mark_cancelled(cls, output_path):
+        """
+        Mark the study rooted at 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A dictionary containing the status of the study.
+        """
         lock_path = make_safe_path(output_path, cls._cancel_lock)
         with open(lock_path, 'a'):
             os.utime(lock_path, None)
 
     def initialize(self, batch_info, sleeptime=60):
-        """Initializes the Conductor instance based on the stored study."""
+        """
+        Initializes the Conductor instance based on the stored study.
+
+        :param batch_info: A dict containing batch information.
+        :param sleeptime: The amount of sleep time between polling loops
+        [Default: 60s].
+        """
         # Set our conductor's sleep time.
         self.sleep_time = sleeptime
         # Stage the study.
@@ -250,7 +309,6 @@ class Conductor:
 
     def monitor_study(self):
         """Monitor a running study."""
-
         if not self._setup:
             msg = \
                 "Study '{}' located in '{}' not initialized. Initialize " \
