@@ -98,7 +98,7 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
 def setup_parser():
     """
     Set up the Conductors's argument parser.
-    
+
     :returns: A ArgumentParser that's initialized with the conductor's CLI.
     """
 
