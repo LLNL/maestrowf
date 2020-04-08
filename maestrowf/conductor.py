@@ -52,7 +52,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
                "%(levelname)s - %(message)s"
 
 
-def setup_logging(name, output_path, log_lvl=2, log_path=None, 
+def setup_logging(name, output_path, log_lvl=2, log_path=None,
                   log_stdout=False, log_format=None):
     """
     Set up logging in the Main class.
@@ -116,17 +116,17 @@ def setup_parser():
                         help="Alternate path to store program logging.")
     parser.add_argument("-d", "--debug_lvl", type=int, default=2,
                         help="Level of logging messages to be output:\n"
-                                "5 - Critical\n"
-                                "4 - Error\n"
-                                "3 - Warning\n"
-                                "2 - Info (Default)\n"
-                                "1 - Debug")
+                             "5 - Critical\n"
+                             "4 - Error\n"
+                             "3 - Warning\n"
+                             "2 - Info (Default)\n"
+                             "1 - Debug")
     parser.add_argument("-c", "--logstdout", action="store_true",
                         help="Output logging to stdout in addition to a "
-                                "file.")
+                             "file.")
     parser.add_argument("-t", "--sleeptime", type=int, default=60,
                         help="Amount of time (in seconds) for the manager"
-                                " to wait between job status checks.")
+                             " to wait between job status checks.")
 
     return parser
 
@@ -316,7 +316,7 @@ def main():
         parser = setup_parser()
         args = parser.parse_args()
         study = Conductor.load_study(args.directory)
-        setup_logging(study.name, args.directory, args.debug_lvl, 
+        setup_logging(study.name, args.directory, args.debug_lvl,
                       args.logpath, args.logstdout)
         batch_info = Conductor.load_batch(args.directory)
 
