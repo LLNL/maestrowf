@@ -258,7 +258,6 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.set_logger(LOGGER)
             conductor.initialize(batch, args.sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
