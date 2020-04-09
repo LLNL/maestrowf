@@ -41,6 +41,42 @@ from maestrowf.datastructures import environment
 
 logger = logging.getLogger(__name__)
 
+STUDY_STEP_KEYS = {
+    "name": None,
+    "description": None,
+    "run": {
+        "cmd": None,
+        "restart": None,
+        "depends": None,
+        "nodes": None,
+        "procs": None,
+        "cores per task": None,
+        "gpus per task": None,
+        "walltime": None,
+        "num resource set": None,
+    },
+}
+
+ENV_KEYS = {
+    "variables": None,
+    "labels": None,
+    "sources": None,
+    "dependencies": {
+        "path": {"name": None, "path": None},
+        "git": {"name": None, "path": None, "url": None},
+        "spack": {"name": None, "package_name": None},
+    },
+}
+
+def check_keys(parent_key, section, valid_keys):
+    diff = set(section.keys()).difference(set(valid_keys.keys()))
+    for extra in diff:
+        logger.warning(
+            "Unrecognized key '{0}' found in spec section '{1}'.".format(extra, parent_key)
+        )
+    for key, val in section.items():
+        if isinstance(val, dict) and key in valid_keys:
+            check_keys(parent_key + "." + key, val, valid_keys[key])
 
 class YAMLSpecification(Specification):
     """
@@ -176,6 +212,9 @@ class YAMLSpecification(Specification):
             logger.exception(e.args)
             raise
 
+        # check description for invalid keys
+        check_keys("description", self.description, {"name": None, "description": None})
+
         logger.info("Study description verified -- \n%s", self.description)
 
     def _verify_variables(self):
@@ -284,6 +323,8 @@ class YAMLSpecification(Specification):
         self._verify_sources()
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
+        # check environment for invalid keys
+        check_keys("env", self.environment, ENV_KEYS)
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""
@@ -333,6 +374,10 @@ class YAMLSpecification(Specification):
                     raise ValueError("Missing {} keys from the run "
                                      "configuration for step named '{}'."
                                      .format(missing_attrs, step["name"]))
+
+                # check step for invalid keys
+                check_keys("study.{}".format(step["name"]), step, STUDY_STEP_KEYS)
+
         except Exception as e:
             logger.exception(e.args)
             raise
@@ -400,6 +445,9 @@ class YAMLSpecification(Specification):
                         raise ValueError("Global parameter '{}' is not the "
                                          "same length as other parameters."
                                          .format(name))
+
+                    # check parameter for invalid keys
+                    check_keys("global.params.{}".format(name), value, {"values": None, "label": None})
 
         except Exception as e:
             logger.exception(e.args)
