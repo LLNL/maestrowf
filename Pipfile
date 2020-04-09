@@ -4,23 +4,28 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"enum34" = "*"
-filelock = "*"
+PyYAML = ">=4.2b1"
 six = "*"
+filelock = "*"
 tabulate = "*"
-Fabric = "*"
-PyYAML = ">= 4.2b1"
+dill = "*"
 maestrowf = {path = "."}
 
 [dev-packages]
-"flake8" = "*"
+flake8 = "*"
 pydocstyle = "*"
 pylint = "*"
 tox = "*"
 coverage = "*"
-sphinx_rtd_theme = "*"
-Sphinx = "*"
 pytest = "*"
+fabric = "*"
+Sphinx = "*"
+pytest-cov = "*"
+pre-commit = "*"
+sphinx-rtd-theme = "*"
+
+[pipenv]
+allow_prereleases = true
 
 [requires]
 python_version = "3.6"
