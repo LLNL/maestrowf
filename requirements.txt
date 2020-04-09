@@ -4,6 +4,7 @@ filelock
 tabulate
 enum34; python_version<'3.4'
 dill
+jsonschema>=3.2.0
 -e .
 
 fabric

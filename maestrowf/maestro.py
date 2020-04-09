@@ -29,6 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
+import jsonschema
 import logging
 import os
 import shutil
@@ -124,7 +125,11 @@ def load_parameter_generator(path, env, kwargs):
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
-    spec = YAMLSpecification.load_specification(args.specification)
+    try:
+        spec = YAMLSpecification.load_specification(args.specification)
+    except jsonschema.ValidationError as e:
+        LOGGER.error(e.message)
+        sys.exit(1)
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
 
