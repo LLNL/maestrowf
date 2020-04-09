@@ -25,6 +25,7 @@ setup(
     "tabulate",
     "enum34 ; python_version<'3.4'",
     "dill",
+    "jsonschema>=3.2.0",
   ],
   extras_require={},
   long_description_content_type='text/markdown',
@@ -44,4 +45,8 @@ setup(
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
   ],
+  package_data={
+        'maestrowf': ['maestrowf/datastructures/schemas.json'],
+  },
+  include_package_data=True,
 )

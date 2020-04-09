@@ -1,0 +1,116 @@
+{
+  "DESCRIPTION": {
+    "type": "object",
+    "properties": {
+      "name": {"type": "string", "minLength": 1},
+      "description": {"type": "string", "minLength": 1}
+    },
+    "required": [
+      "name",
+      "description"
+    ]
+  },
+  "PARAM": {
+    "type": "object",
+    "properties": {
+      "values": {
+        "type": "array"
+      },
+      "label": {"type": "string", "minLength": 1}
+    },
+    "additionalProperties": false,
+    "required": [
+      "values",
+      "label"
+    ]
+  },
+  "STUDY_STEP": {
+    "type": "object",
+    "properties": {
+      "name": {"type": "string", "minLength": 1},
+      "description": {"type": "string", "minLength": 1},
+      "run": {
+        "type": "object",
+        "properties": {
+          "cmd": {"type": "string", "minLength": 1},
+          "depends": {"type": "array", "uniqueItems": true},
+          "pre": {"type": "string", "minLength": 1},
+          "post": {"type": "string", "minLength": 1},
+          "restart": {"type": "string", "minLength": 1},
+          "nodes": {"type": "integer"},
+          "procs": {"type": "integer"},
+          "gpus": {"type": "integer"},
+          "cores per task": {"type": "integer"},
+          "walltime": {"type": "string", "minLength": 1},
+          "reservation": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false,
+        "required": [
+          "cmd"
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "description",
+      "run"
+    ]
+  },
+  "ENV": {
+    "type": "object",
+    "properties": {
+      "variables": {"type": "object"},
+      "labels": {"type": "object"},
+      "sources": {"type": "object"},
+      "dependencies": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "path": {"type": "string", "minLength": 1}
+              },
+              "required": [
+                "name",
+                "path"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "git": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "path": {"type": "string", "minLength": 1},
+                "url": {"type": "string", "minLength": 1},
+                "tag": {"type": "string", "minLength": 1}
+              },
+              "required": [
+                "name",
+                "path",
+                "url"
+              ]
+            }
+          },
+          "spack": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "package_name": {"type": "string", "minLength": 1}
+            },
+            "required": [
+              "type",
+              "package_name"
+            ]
+          }
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

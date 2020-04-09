@@ -1,1 +1,1 @@
-include maestrowf/specification/schemas/yamlspecification.json
+include maestrowf/datastructures/schemas.json

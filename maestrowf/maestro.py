@@ -29,6 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
+import jsonschema
 import logging
 import os
 import shutil
