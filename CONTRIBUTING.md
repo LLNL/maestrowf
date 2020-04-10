@@ -1,5 +1,16 @@
+<p align="center">
+<a href="http://mfem.org/"><img width="40%" alt="Orchestrate your workflows with ease!" src="assets/maestroicon.png"></a>
+</p>
+<p align="center">
+<a href="https://travis-ci.org/LLNL/maestrowf"><img alt="Build Status" src="https://travis-ci.org/LLNL/maestrowf.svg?branch=develop"></a>
+<a href="https://github.com/LLNL/maestrowf/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/LLNL/maestrowf.svg"></a>
+<a href="https://raw.githubusercontent.com/LLNL/maestrowf/master/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+<a href="https://maestrowf.readthedocs.io/en/latest/"><img alt="Docs" src="https://img.shields.io/badge/docs-readthedocs-blue"></a>
+</p>
+
 # Contributing to Maestro Workflow
 
+The Maestro team welcomes all contributions: bugfixes, code additions, refactors,
 *Thank you for taking the time to contribute!*
 
 ## Table of Contents
