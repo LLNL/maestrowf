@@ -39,6 +39,7 @@ import tabulate
 import time
 
 from maestrowf import __version__
+from maestrowf import LOGGER as ROOTLOGGER
 from maestrowf.conductor import Conductor
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
@@ -168,8 +169,9 @@ def run_study(args):
         output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
 
-    # Now that we know outpath, set up logging.
-    setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
+    # Set up file logging
+    log_path = os.path.join(output_path, "logs", "{}.log".format(spec.name))
+    setup_file_logging(LOGGER, log_path, args.debug_lvl, LFORMAT)
 
     # Check for pargs without the matching pgen
     if args.pargs and not args.pgen:
@@ -389,47 +391,44 @@ def setup_argparser():
     return parser
 
 
-def setup_logging(args, path, name):
+def setup_root_logging(rootlogger, logger_lvl, formatter):
+    formatter = logging.Formatter(formatter)
+    rootlogger.setLevel(logger_lvl * 10)
+
+
+def setup_stream_logging(logger, logger_lvl, formatter):
     """
-    Set up logging based on the ArgumentParser.
+    Set up stream logging based on the ArgumentParser.
 
     :param args: A Namespace object created by a parsed ArgumentParser.
     :param path: A default path to be used if a log path is not specified by
         user command line arguments.
     :param name: The name of the log file.
     """
-    # If the user has specified a path, use that.
-    if args.logpath:
-        logpath = args.logpath
-    # Otherwise, we should just output to the OUTPUT_PATH.
-    else:
-        logpath = make_safe_path(path, *["logs"])
+    # Add the StreamHandler
+    sh = logging.StreamHandler()
+    sh.setLevel(logger_lvl * 10)
+    sh.setFormatter(logging.Formatter(formatter))
+    logger.addHandler(sh)
 
-    loglevel = args.debug_lvl * 10
 
+def setup_file_logging(logger, log_path, logger_lvl, formatter):
+    """
+    Set up stream logging based on the ArgumentParser.
+
+    :param args: A Namespace object created by a parsed ArgumentParser.
+    :param path: A default path to be used if a log path is not specified by
+        user command line arguments.
+    :param name: The name of the log file.
+    """
     # Create the FileHandler and add it to the logger.
-    create_parentdir(logpath)
-    formatter = logging.Formatter(LFORMAT)
-    ROOTLOGGER.setLevel(loglevel)
+    create_parentdir(os.path.split(log_path)[0])
+    formatter = logging.Formatter(formatter)
 
-    log_path = make_safe_path(logpath, *["{}.log".format(name)])
     fh = logging.FileHandler(log_path)
-    fh.setLevel(loglevel)
-    fh.setFormatter(formatter)
-    ROOTLOGGER.addHandler(fh)
-
-    if args.logstdout:
-        # Add the StreamHandler
-        sh = logging.StreamHandler()
-        sh.setLevel(loglevel)
-        sh.setFormatter(formatter)
-        ROOTLOGGER.addHandler(sh)
-
-    # Print the level of logging.
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
+    fh.setLevel(logger_lvl * 10)
+    fh.setFormatter(logging.Formatter(formatter))
+    logger.addHandler(fh)
 
 
 def main():
@@ -443,6 +442,13 @@ def main():
     # Set up the necessary base data structures to begin study set up.
     parser = setup_argparser()
     args = parser.parse_args()
+    setup_root_logging(ROOTLOGGER, args.debug_lvl, LFORMAT)
+    setup_stream_logging(LOGGER, args.debug_lvl, LFORMAT)
+
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
     rc = args.func(args)
     sys.exit(rc)
