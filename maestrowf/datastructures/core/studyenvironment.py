@@ -31,12 +31,12 @@
 
 import logging
 
-from maestrowf.abstracts import SimObject, Dependency, Source, Substitution
+from maestrowf.abstracts import Dependency, Source, Substitution
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
-class StudyEnvironment(SimObject):
+class StudyEnvironment:
     """
     StudyEnvironment for managing a study environment.
 
@@ -58,7 +58,7 @@ class StudyEnvironment(SimObject):
         # Boolean that tracks if dependencies have been acquired.
         self._is_set_up = False
 
-        logger.debug("Initialized an empty StudyEnvironment.")
+        LOGGER.debug("Initialized an empty StudyEnvironment.")
 
     def __bool__(self):
         """
@@ -88,44 +88,44 @@ class StudyEnvironment(SimObject):
         # because the necessary variable could have not been added yet
         # and there's too much of a need to process a dependency first.
         name = None
-        logger.debug("Calling add with %s", str(item))
+        LOGGER.debug("Calling add with %s", str(item))
         if isinstance(item, Dependency):
-            logger.debug("Adding %s of type %s.", item.name, type(item))
-            logger.debug("Value: %s.", item.__dict__)
+            LOGGER.debug("Adding %s of type %s.", item.name, type(item))
+            LOGGER.debug("Value: %s.", item.__dict__)
             self.dependencies[item.name] = item
             name = item.name
             self._is_set_up = False
         elif isinstance(item, Substitution):
-            logger.debug("Value: %s", item.value)
-            logger.debug("Tokens: %s", self._tokens)
+            LOGGER.debug("Value: %s", item.value)
+            LOGGER.debug("Tokens: %s", self._tokens)
             name = item.name
-            logger.debug("Adding %s of type %s.", item.name, type(item))
+            LOGGER.debug("Adding %s of type %s.", item.name, type(item))
             if (
                     isinstance(item.value, str) and
                     any(token in item.value for token in self._tokens)):
-                logger.debug("Label detected. Adding %s to labels", item.name)
+                LOGGER.debug("Label detected. Adding %s to labels", item.name)
                 self.labels[item.name] = item
             else:
                 self._tokens.add(item.token)
                 self.substitutions[item.name] = item
         elif isinstance(item, Source):
-            logger.debug("Adding source %s", item.source)
-            logger.debug("Item source: %s", item.source)
+            LOGGER.debug("Adding source %s", item.source)
+            LOGGER.debug("Item source: %s", item.source)
             self.sources.append(item)
         else:
             error = "Received an item of type {}. Expected an item of base " \
                     "type Substitution, Source, or Dependency." \
                     .format(type(item))
-            logger.exception(error)
+            LOGGER.exception(error)
             raise TypeError(error)
 
         if name and name in self._names:
             error = "A duplicate name '{}' has been detected. All names " \
                     "must be unique. Aborting.".format(name)
-            logger.exception(error)
+            LOGGER.exception(error)
             raise ValueError(error)
         else:
-            logger.debug("{} added to set of names.".format(name))
+            LOGGER.debug("{} added to set of names.".format(name))
             self._names.add(name)
 
     def find(self, key):
@@ -136,20 +136,20 @@ class StudyEnvironment(SimObject):
         :returns: The environment object labeled by key, None if key is not
             found.
         """
-        logger.debug("Looking for '%s'...", key)
+        LOGGER.debug("Looking for '%s'...", key)
         if key in self.dependencies:
-            logger.debug("Found '%s' in environment dependencies.", key)
+            LOGGER.debug("Found '%s' in environment dependencies.", key)
             return self.dependencies[key]
 
         if key in self.substitutions:
-            logger.debug("Found '%s' in environment substitutions.", key)
+            LOGGER.debug("Found '%s' in environment substitutions.", key)
             return self.substitutions[key]
 
         if key in self.labels:
-            logger.debug("Found '%s' in environment labels.", key)
+            LOGGER.debug("Found '%s' in environment labels.", key)
             return self.labels[key]
 
-        logger.debug("'%s' not found -- \n%s", key, self)
+        LOGGER.debug("'%s' not found -- \n%s", key, self)
         return None
 
     def remove(self, key):
@@ -159,7 +159,7 @@ class StudyEnvironment(SimObject):
         :param key: Name of the environment object to remove.
         :returns: The environment object labeled by key.
         """
-        logger.debug("Looking to remove '%s'...", key)
+        LOGGER.debug("Looking to remove '%s'...", key)
 
         if key not in self._names:
             return None
@@ -179,18 +179,18 @@ class StudyEnvironment(SimObject):
             self._names.remove(key)
             return _
 
-        logger.debug("'%s' not found -- \n%s", key, self)
+        LOGGER.debug("'%s' not found -- \n%s", key, self)
         return None
 
     def acquire_environment(self):
         """Acquire any environment items that may be stored remotely."""
         if self._is_set_up:
-            logger.info("Environment already set up. Returning.")
+            LOGGER.info("Environment already set up. Returning.")
             return
 
-        logger.info("Acquiring dependencies")
+        LOGGER.info("Acquiring dependencies")
         for dependency, value in self.dependencies.items():
-            logger.info("Acquiring -- %s", dependency)
+            LOGGER.info("Acquiring -- %s", dependency)
             value.acquire(substitutions=self.substitutions.values())
 
         self._is_set_up = True
@@ -205,24 +205,24 @@ class StudyEnvironment(SimObject):
         if not item:
             return item
 
-        logger.debug("Applying environment to %s", item)
-        logger.debug("Processing labels...")
+        LOGGER.debug("Applying environment to %s", item)
+        LOGGER.debug("Processing labels...")
         for label, value in self.labels.items():
-            logger.debug("Looking for %s in %s", label, item)
+            LOGGER.debug("Looking for %s in %s", label, item)
             item = value.substitute(item)
-            logger.debug("After substitution: %s", item)
+            LOGGER.debug("After substitution: %s", item)
 
-        logger.debug("Processing dependencies...")
+        LOGGER.debug("Processing dependencies...")
         for label, dependency in self.dependencies.items():
-            logger.debug("Looking for %s in %s", label, item)
+            LOGGER.debug("Looking for %s in %s", label, item)
             item = dependency.substitute(item)
-            logger.debug("After substitution: %s", item)
-            logger.debug("Acquiring %s.", label)
+            LOGGER.debug("After substitution: %s", item)
+            LOGGER.debug("Acquiring %s.", label)
 
-        logger.debug("Processing substitutions...")
+        LOGGER.debug("Processing substitutions...")
         for substitution, value in self.substitutions.items():
-            logger.debug("Looking for %s in %s", substitution, item)
+            LOGGER.debug("Looking for %s in %s", substitution, item)
             item = value.substitute(item)
-            logger.debug("After substitution: %s", item)
+            LOGGER.debug("After substitution: %s", item)
 
         return item

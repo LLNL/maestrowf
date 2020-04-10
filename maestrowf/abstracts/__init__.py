@@ -33,22 +33,55 @@ The core abstract APIs that define various class behaviors.
 This module contains all of the abstract classes and APIs for defining objects.
 Abstracts include abstract data stuctures (like a graph), APIs for concepts
 such as queueing adapters and environment APIs, as well as fundamental data
-structures like a SimObject.
+structures.
 """
 # NOTE: Some of these abstracts will be moved in the future. The Graph abstract
 # class does not belong here, and should be moved to something more general.
-# NOTE: The SimObject base class may not be required, since it basically
-# just requires objects to be dictionaries.
+import dill
+import logging
 
 from maestrowf.abstracts.abstractclassmethod import abstractclassmethod
 from maestrowf.abstracts.envobject import Dependency, Source, Substitution
 from maestrowf.abstracts.graph import Graph
-from maestrowf.abstracts.simobject import SimObject
 from maestrowf.abstracts.specification import Specification
 
 
-__all__ = ("abstractclassmethod", "Dependency", "Graph", "SimObject",
+__all__ = ("abstractclassmethod", "Dependency", "Graph", "PickleInterface",
            "Singleton", "Source", "Specification", "Substitution")
+
+LOGGER = logging.getLogger(__name__)
+
+
+class PickleInterface:
+    """A mixin class that implements a general pickle interface using dill."""
+
+    @classmethod
+    def unpickle(cls, path):
+        """
+        Load a pickled instance from a pickle file.
+
+        :param path: Path to a pickle file containing a class instance.
+        """
+        with open(path, 'rb') as pkl:
+            obj = dill.load(pkl)
+
+        if not isinstance(obj, cls):
+            msg = "Object loaded from {path} is of type {type}. Expected an" \
+                  " object of type '{cls}.'".format(path=path, type=type(obj),
+                                                    cls=type(cls))
+            LOGGER.error(msg)
+            raise TypeError(msg)
+
+        return obj
+
+    def pickle(self, path):
+        """
+        Generate a pickle file of of a class instance.
+
+        :param path: The path to write the pickle to.
+        """
+        with open(path, 'wb') as pkl:
+            dill.dump(self, pkl)
 
 
 class _Singleton(type):

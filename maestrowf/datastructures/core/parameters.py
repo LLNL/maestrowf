@@ -39,8 +39,6 @@ from collections import OrderedDict
 import logging
 import re
 
-from maestrowf.abstracts import SimObject
-
 logger = logging.getLogger(__name__)
 
 
@@ -161,7 +159,7 @@ class Combination(object):
         return item
 
 
-class ParameterGenerator(SimObject):
+class ParameterGenerator:
     """
     Class for containing parameters and generating combinations.
 
