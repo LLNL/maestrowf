@@ -236,7 +236,8 @@ def run_study(args):
     study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+        local_procs=args.local_procs)
 
     # Stage the study.
     path, exec_dag = study.stage()
@@ -331,6 +332,9 @@ def setup_argparser():
     run.add_argument("-t", "--throttle", type=int, default=0,
                      help="Maximum number of inflight jobs allowed to execute "
                      "simultaneously (0 denotes not throttling)."
+                     "[Default: %(default)d]")
+    run.add_argument("-lp", "--local_procs", type=int, default=1,
+                     help="Max number of processors to use simultaneously."
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "

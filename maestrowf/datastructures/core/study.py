@@ -390,7 +390,7 @@ class Study(DAG):
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False, hash_ws=False):
+                        throttle=0, use_tmp=False, hash_ws=False, local_procs=1):
         """
         Perform initial configuration of a study. \
 
@@ -411,6 +411,7 @@ class Study(DAG):
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
+        self._local_procs = local_procs
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
 
@@ -828,6 +829,7 @@ class Study(DAG):
         dag = ExecutionGraph(
             submission_attempts=self._submission_attempts,
             submission_throttle=self._submission_throttle,
+            local_procs=self._local_procs,
             use_tmp=self._use_tmp)
         dag.add_description(**self.description)
         dag.log_description()
