@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 from filelock import FileLock, Timeout
+from concurrent import futures
 
 from maestrowf.abstracts import PickleInterface
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
@@ -338,6 +339,8 @@ class ExecutionGraph(DAG, PickleInterface):
         self._submission_throttle = submission_throttle
         self.dry_run = dry_run
 
+        self._local_procs = local_procs
+
         # A map that tracks the dependencies of a step.
         # NOTE: I don't know how performant the Python dict structure is, but
         # we'll use it for now. I think this may want to be changed to an AVL
@@ -427,6 +430,7 @@ class ExecutionGraph(DAG, PickleInterface):
             LOGGER.error(msg)
             raise TypeError(msg)
 
+        print("Adapter set to: {}".format(adapter))
         self._adapter = adapter
 
     def add_description(self, name, description, **kwargs):
@@ -821,6 +825,15 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
+        # Check requested resources -> nprocs
+        nthreads = 1
+        if self._local_procs > 0:
+            nthreads = self._local_procs
+
+        if adapter.total_procs != nthreads:
+            adapter.total_procs = nthreads
+            adapter.avail_procs = nthreads
+
         if self._submission_throttle == 0:
             LOGGER.info("Launching all ready steps...")
             _available = len(self.ready_steps)
@@ -837,6 +850,44 @@ class ExecutionGraph(DAG, PickleInterface):
             _available = min(_available, len(self.ready_steps))
             LOGGER.info("Found %d available slots...", _available)
 
+        # print("Num threads: {}".format(nthreads))
+        # with futures.ThreadPoolExecutor(max_workers=nthreads) as executor:
+        #     steps_to_do = []
+        #     for i in range(0, _available):
+        #         # Pop the record and execute using the helper method.
+        #         _record = self.values[self.ready_steps.popleft()]
+
+        #         # If we get to this point and we've cancelled, cancel the record.
+        #         if self.is_canceled:
+        #             logger.info("Cancelling '%s' -- continuing.", _record.name)
+        #             _record.mark_end(State.CANCELLED)
+        #             self.cancelled_steps.add(_record.name)
+        #             continue
+
+        #         logger.debug("Launching job %d -- %s", i, _record.name)
+        #         steps_to_do.append(executor.submit(self._execute_record, _record, adapter))
+
+        #     for step_future in futures.as_completed(steps_to_do):
+        #         if not step_future:
+        #             print("Encountered None instead of a future.")
+        #         else:
+        #             res = step_future.result()
+
+        
+        # for i in range(0, _available):
+        #     # Pop the record and execute using the helper method.
+        #     _record = self.values[self.ready_steps.popleft()]
+
+        #     # If we get to this point and we've cancelled, cancel the record.
+        #     if self.is_canceled:
+        #         logger.info("Cancelling '%s' -- continuing.", _record.name)
+        #         _record.mark_end(State.CANCELLED)
+        #         self.cancelled_steps.add(_record.name)
+        #         continue
+
+        #     logger.debug("Launching job %d -- %s", i, _record.name)
+        #     self._execute_record(_record, adapter)
+
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
             _record = self.values[self.ready_steps.popleft()]
@@ -848,8 +899,10 @@ class ExecutionGraph(DAG, PickleInterface):
                 self.cancelled_steps.add(_record.name)
                 continue
 
-            LOGGER.debug("Launching job %d -- %s", i, _record.name)
-            self._execute_record(_record, adapter)
+            avail_procs = adapter.avail_procs
+            if _record.step._procs <= avail_procs:
+                logger.debug("Launching job %d -- %s", i, _record.name)
+                self._execute_record(_record, adapter)
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
