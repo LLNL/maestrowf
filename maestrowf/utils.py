@@ -258,3 +258,40 @@ def create_dictionary(list_keyvalues, token=":"):
             raise ValueError(msg)
 
     return _dict
+
+
+class LoggerUtility:
+    def __init__(self, logger):
+        self._logger = logger
+
+    def configure(self, log_format, log_lvl=2):
+        logging.basicConfig(level=self.map_level(log_lvl), format=log_format)
+
+    def add_stream_handler(self, log_format, log_lvl=2):
+        # Create the FileHandler and add it to the logger.
+        sh = logging.StreamHandler()
+        sh.setLevel(self.map_level(log_lvl))
+        sh.setFormatter(logging.Formatter(log_format))
+        self._logger.addHandler(sh)
+
+    def add_file_handler(self, log_path, log_format, log_lvl=2):
+        # Create the FileHandler and add it to the logger.
+        formatter = logging.Formatter(log_format)
+
+        fh = logging.FileHandler(log_path)
+        fh.setLevel(self.map_level(log_lvl))
+        fh.setFormatter(formatter)
+        self._logger.addHandler(fh)
+
+    @staticmethod
+    def map_level(logger_level):
+        if logger_level == 1:
+            return logging.DEBUG
+        elif logger_level == 2:
+            return logging.INFO
+        elif logger_level == 3:
+            return logging.WARNING
+        elif logger_level == 4:
+            return logging.ERROR
+        else:
+            return logging.CRITICAL
