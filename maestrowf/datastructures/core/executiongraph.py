@@ -428,6 +428,7 @@ class ExecutionGraph(DAG, PickleInterface):
             msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
                   .format(adapter)
             LOGGER.error(msg)
+            LOGGER.error("Valid adapters: {}".format(ScriptAdapterFactory.get_valid_adapters()))
             raise TypeError(msg)
 
         print("Adapter set to: {}".format(adapter))
@@ -900,8 +901,19 @@ class ExecutionGraph(DAG, PickleInterface):
                 continue
 
             avail_procs = adapter.avail_procs
-            if _record.step._procs <= avail_procs:
-                logger.debug("Launching job %d -- %s", i, _record.name)
+            step_procs = _record.step.run.get("procs")
+            if not step_procs:
+                step_procs = 1
+            else:
+                try:
+                    step_procs = int(step_procs)
+                except ValueError:
+                    step_procs = 1
+                    LOGGER.error("Setting step {} with no 'procs' attribute to use 1 processor.".format(_record.step.name))
+                    
+            # NOTE: better place to set this default, and do type conversions?
+            if step_procs <= avail_procs:
+                LOGGER.debug("Launching job %d -- %s", i, _record.name)
                 self._execute_record(_record, adapter)
 
         # check the status of the study upon finishing this round of execution
