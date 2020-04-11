@@ -31,28 +31,28 @@
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue  # priority queue too?
-from threading import Thread
+from functools import partial as func_partial
+from threading import Thread, RLock
 
 from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
-    CancelCode
+    CancelCode, State
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
-from maestrowf.abstracts.interfaces import ScriptAdapter
+from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts import Singleton
 from maestrowf.utils import start_process
+
 
 LOGGER = logging.getLogger(__name__)
 
 
-class LocalParallelScriptAdapter(ScriptAdapter):
+class LocalParallelScriptAdapter(SchedulerScriptAdapter):
     """A ScriptAdapter class for interfacing for parallel local execution."""
 
     key = "local_parallel"
 
     executor = None
-    scheduler_thread = None
     running_steps = {}          # needs to be singleton, threadsafe
-    submit_queue = None
+    tasks_lock = RLock()
     total_procs = 1
     avail_procs = 1
 
@@ -73,8 +73,9 @@ class LocalParallelScriptAdapter(ScriptAdapter):
         super(LocalParallelScriptAdapter, self).__init__(**kwargs)
 
         # Register keys
-        self.add_batch_parameter("procs", kwargs.pop("procs", "1"))
-        self.add_batch_parameter("walltime")
+        self.add_batch_parameter("procs", int(kwargs.pop("procs", "1")))
+        #self.add_batch_parameter("walltime", kwargs.pop("walltime", )
+        # NOTE: add walltime, use this as a timeout on the futures?
 
         self._header = {
             "procs": "# procs = {procs}",
@@ -85,14 +86,83 @@ class LocalParallelScriptAdapter(ScriptAdapter):
         self.CANCEL = 1
         self.DONE = 2
         
-        self.total_procs = kwargs.pop("proc_count", "1")
+        self.total_procs = int(kwargs.pop("proc_count", "1"))
         self.avail_procs = self.total_procs
-        self.submit_queue = Queue()
-        self.submit_queue.put(self.START)
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
-        self.scheduler_thread = Thread(target=self._scheduler_loop())
+        #self.scheduler_thread = Thread(target=self._scheduler_loop())
 
-    
+    def _update_running_steps(self, add_tasks=None, rm_tasks=None):
+        """Thread safe addition/removal of tasks from running_steps dict"""
+        if not add_tasks:
+            add_tasks = []
+
+        if not rm_tasks:
+            rm_tasks = []
+
+        with self.tasks_lock:
+            for task_id in rm_tasks:
+                if task_id in self.running_steps:
+                    LOGGER.debug("Removing task {} from running_steps".format(
+                        self.running_steps.pop(task_id)))
+                else:
+                    LOGGER.error("Tried removing task {} from running_steps, "
+                                 "but it was not found.".format(task_id))
+
+            for task in add_tasks:
+                for task_id in task:
+                    if task_id in self.running_steps:
+                        LOGGER.error("Tried adding already tracked task {} "
+                                     "to running_steps.".format(task_id))
+                    else:
+                        LOGGER.debug("Adding task {} to running_steps".format(task_id))
+                        self.running_steps[task_id] = task[task_id]
+
+        # Want any status codes returned here if errors triggered?
+
+    def get_header(self, step):
+        """
+        Generate the header present at the top of execution scripts.
+
+        :param step: A StudyStep instance.
+        :returns: A string of the header based on internal batch parameters and
+            the parameter step.
+        """
+        return ""
+
+    def get_parallelize_command(self, procs, nodes, **kwargs):
+        """
+        Generate the parallelization segement of the command line.
+
+        :param procs: Number of processors to allocate to the parallel call.
+        :param nodes: Number of nodes to allocate to the parallel call
+            (default = 1).
+        :returns: A string of the parallelize command configured using nodes
+            and procs.
+        :NOTE: this is currently a dummy method -> rework to add user specified replacements later
+        """
+        return ""
+
+    def _state(self, fut):
+        """
+        Map a scheduler specific job state to a Study.State enum.
+
+        :param fut: Future instance representing a task
+        :returns: A Study.State enum corresponding to parameter job_state.
+        """
+        # NOTE: should all of this replace what's in check_jobs -> what about error code there?
+        if fut.running():
+            return State.RUNNING
+        elif fut.done():
+            if fut in self.running_steps:
+                return State.FINISHING
+            else:
+                return State.FINISHED
+        elif fut.cancelled():
+            return State.CANCELLED
+
+        else:
+            return State.UNKNOWN
+
     def _write_script(self, ws_path, step):
         """
         Write a shell script to the workspace of a workflow step.
@@ -109,9 +179,10 @@ class LocalParallelScriptAdapter(ScriptAdapter):
             written script for run["cmd"], and the path to the script written
             for run["restart"] (if it exists).
         """
+        # THIS IS A HACK FOR NOW: make better use of get_scheduler_command later
         cmd = step.run["cmd"]
         restart = step.run["restart"]
-        to_be_scheduled = False
+        to_be_scheduled, _, _ = self.get_scheduler_command(step)
 
         fname = "{}.sh".format(step.name)
         script_path = os.path.join(ws_path, fname)
@@ -279,20 +350,36 @@ class LocalParallelScriptAdapter(ScriptAdapter):
         """
         try:
             p = start_process(path, shell=False, cwd=cwd, env=env)
-            fut = executor.submit(self._submit, p, step, path, cwd, job_map=None, env=None)
+            fut = self.executor.submit(self._submit, p, step, path, cwd, job_map=None, env=None)
+            try:
+                step_procs = step.run.get("procs")
+                if not step_procs:
+                    step_procs = 1
+                else:
+                    step_procs = int(step_procs)
+            except ValueError:
+                step_procs = 1
+                LOGGER.error("Starting step {} with no 'procs' attribute with 1 processor.".format(_record.step.name))
+
+            self.avail_procs -= step_procs
 
         except:                 # add some relevant exceptions here..
             LOGGER.warning("Execution returned an error")
 
             _record = SubmissionRecord(SubmissionCode.ERROR, -1)
-            self.avail_procs += step._procs
+            self.avail_procs += step_procs
             return _record
 
             #     self.avail_procs -= step._procs
             # except:
 
         # Update running task list.  Thread safe list be better?
-        self.running_steps[fut] = (p, step._procs)
+
+        self._update_running_steps(add_tasks=[{fut:(p, step_procs)}])
+        fut.add_done_callback(func_partial(self._task_callback, rm_func=self._update_running_steps))
 
         LOGGER.info("Execution returned status OK.")
         return SubmissionRecord(SubmissionCode.OK, 0, fut)
+
+    def _task_callback(fut, rm_func):
+        rm_func(add_tasks=None, rm_tasks=[fut])

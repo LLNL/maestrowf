@@ -52,6 +52,7 @@ def iter_adapters():
     mods = [(name, ispkg) for finder, name, ispkg in pkgutil.iter_modules(
             loader.load_module('maestrowf.interfaces.script').__path__,
             loader.load_module('maestrowf.interfaces.script').__name__ + ".")]
+
     cs = []
     for name, _ in mods:
         # get loader for every module
