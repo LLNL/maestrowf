@@ -30,7 +30,9 @@
 """Module containing all things needed for a YAML Study Specification."""
 
 from copy import deepcopy
+import json
 import logging
+import os
 import re
 import yaml
 
@@ -45,6 +47,10 @@ from maestrowf.datastructures import environment
 
 logger = logging.getLogger(__name__)
 
+
+schemas_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas.json")
+with open(schemas_file, "r")  as json_file:
+    schemas = json.load(json_file)
 
 class YAMLSpecification(Specification):
     """
@@ -152,7 +158,7 @@ class YAMLSpecification(Specification):
         self.verify_study()
         self.verify_parameters()
 
-        logger.info("Specification %s - Verified. No apparent issues.",
+        logger.debug("Specification %s - Verified. No apparent issues.",
                     self.name)
 
     def verify_description(self):
@@ -168,7 +174,7 @@ class YAMLSpecification(Specification):
         # study.
 
         # check description
-        YAMLSpecification.validate_schema("description", self.description, YAMLSpecification.DESCRIPTION_SCHEMA)
+        YAMLSpecification.validate_schema("description", self.description, schemas["DESCRIPTION_SCHEMA"])
 
         logger.debug("Study description verified -- \n%s", self.description)
 
@@ -278,8 +284,8 @@ class YAMLSpecification(Specification):
         self._verify_sources()
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
-        # check environment for invalid keys
-        Specification.validate_schema("env", self.environment, YAMLSpecification.ENV_SCHEMA)
+        # validate environment
+        Specification.validate_schema("env", self.environment, schemas["ENV_SCHEMA"])
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""
@@ -306,35 +312,15 @@ class YAMLSpecification(Specification):
         If any are missing, the specification is considered invalid.
         """
         try:
-                """
-            req_study = set(["name", "description", "run"])
-            req_run = set(["cmd"])
             for step in self.study:
-                logger.debug("Verifying -- \n%s" % step)
-                # Missing attributes in a study step.
-                missing_attrs = req_study - set(step.keys())
-                if missing_attrs:
-                    raise ValueError("Missing required keys {} from study step"
-                                     " containing following: {}"
-                                     .format(missing_attrs, step))
-
-                # Each step's 'run' requires a command and dependency.
-                # Missing keys in the 'run' attribute of a step.
-                missing_attrs = req_run - set(step["run"].keys())
-                if missing_attrs:
-                    raise ValueError("Missing {} keys from the run "
-                                     "configuration for step named '{}'."
-                                     .format(missing_attrs, step["name"]))
-                """
-
-                # check step for invalid keys
-                YAMLSpecification.validate_schema("study.{}".format(step["name"]), step, YAMLSpecification.STUDY_STEP_SCHEMA)
+                # validate step
+                YAMLSpecification.validate_schema("study.{}".format(step["name"]), step, schemas["STUDY_STEP_SCHEMA"])
 
         except Exception as e:
             logger.exception(e.args)
             raise
 
-        logger.debug("Verified")
+        logger.debug("Verified steps")
 
     def verify_parameters(self):
         """
@@ -358,22 +344,11 @@ class YAMLSpecification(Specification):
                 global_names = set()
                 values_len = -1
                 for name, value in self.globals.items():
-                    """
                     # Check if the name is in the set
                     if name in global_names:
                         raise ValueError("Parameter '{}' is not unique in the "
                                          "set of global parameters."
                                          .format(name))
-                    """
-
-                    """
-                    # Check to make sure the required info is in the parameter.
-                    missing_attrs = req_global - set(value.keys())
-                    if missing_attrs:
-                        raise ValueError("Missing {} keys in the global "
-                                         "parameter named {}"
-                                         .format(missing_attrs, name))
-                    """
 
                     # If label is a list, check its length against values.
                     values = value["values"]
@@ -403,100 +378,12 @@ class YAMLSpecification(Specification):
                                          "same length as other parameters."
                                          .format(name))
 
-                    # check parameter for invalid keys
-                    YAMLSpecification.validate_schema("global.params.{}".format(name), value, YAMLSpecification.PARAM_SCHEMA)
+                    # validate parameters
+                    YAMLSpecification.validate_schema("global.params.{}".format(name), value, schemas["PARAM_SCHEMA"])
 
         except Exception as e:
             logger.exception(e.args)
             raise
-
-    DESCRIPTION_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "name": {"type":"string"},
-            "description": {"type":"string"},
-        },
-        "additionalProperties": False,
-        "required": ["name", "description"]
-    }
-
-    PARAM_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "values": {"type":"array", "uniqueItems": True},
-            "label": {"type":"array", "uniqueItems": True},
-        },
-        "additionalProperties": False,
-        "required": ["values", "label"]
-    }
-
-    STUDY_STEP_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "name": {"type":"string"},
-            "description": {"type":"string"},
-            "run": {
-                "type": "object",
-                "properties": {
-                    "cmd": {"type":"string"},
-                    "depends": {"type":"array", "uniqueItems": True},
-                    "pre": {"type":"string"},
-                    "post": {"type":"string"},
-                    "restart": {"type":"string"},
-                    "nodes": {"type":"number"},
-                    "procs": {"type":"number"},
-                    "gpus": {"type":"number"},
-                    "cores per task": {"type":"number"},
-                    "walltime": {"type":"string"},
-                    "reservation": {"type":"string"},
-                    "required": ["cmd"],
-                },
-            "additionalProperties": False,
-            "required": ["cmd"]
-            },
-        },
-        "additionalProperties": False,
-        "required": ["name", "description", "run"]
-    }
-
-    ENV_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "variables": {"type":"object"},
-            "labels": {"type":"object"},
-            "sources": {"type":"object"},
-            "dependencies": {
-                "type": "object",
-                "properties": {
-                    "path": 
-                        "type": "object",
-                        "properties": {
-                            {"name": {"type": "string"}, "path": {"type": "string"}}
-                        },
-                        "required": ["name", "path"],
-                        "additionalProperties": False
-                    },
-                    "git": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type":"string"}, "path": {"type":"string"}, "url": {"type":"string"}
-                        },
-                        "required": ["name", "path", "url"],
-                        "additionalProperties": False
-                    },
-                    "spack": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type":"string"}, "package_name": {"type":"string"}
-                        },
-                        "required": ["type", "package_name"],
-                        "additionalProperties": False
-                    },
-                },
-            },
-        },
-        "additionalProperties": False
-    }
 
     @staticmethod
     def validate_schema(parent_key, instance, schema):
@@ -517,9 +404,6 @@ class YAMLSpecification(Specification):
             except ValueError as e:
                 logger.exception(e.args)
                 raise
-        #for key, val in instance.items():
-        #    if isinstance(val, dict) and "properties" in schema and key in schema["properties"].keys():
-        #        YAMLSpecification.validate_schema(parent_key + "." + key, val, schema["properties"][key])
 
     @property
     def output_path(self):

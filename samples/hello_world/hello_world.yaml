@@ -10,4 +10,5 @@ study:
     - name: hello_world
       description: Say hello to the world!
       run:
+          cmd: echo "hi"
           benj_key: bad key!
