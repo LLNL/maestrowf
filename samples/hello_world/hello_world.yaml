@@ -11,4 +11,4 @@ study:
       description: Say hello to the world!
       run:
           cmd: |
-              echo "Hello, World!" > hello_world.txt
+            echo "Hello, World!" > hello_world.txt
