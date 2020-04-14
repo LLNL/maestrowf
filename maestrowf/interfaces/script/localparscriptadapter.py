@@ -91,6 +91,17 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
         #self.scheduler_thread = Thread(target=self._scheduler_loop())
 
+    def __getstate__(self):
+        """Helper for excluding threadpool from pickling"""
+        state = self.__dict__.copy()
+        del state["executor"]
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Add baz back since it doesn't exist in the pickle
+        self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
+
     def _update_running_steps(self, add_tasks=None, rm_tasks=None):
         """Thread safe addition/removal of tasks from running_steps dict"""
         if not add_tasks:
@@ -102,6 +113,8 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         with self.tasks_lock:
             for task_id in rm_tasks:
                 if task_id in self.running_steps:
+                    self.avail_procs += self.running_steps[task_id][1]  # give back resources
+                    
                     LOGGER.debug("Removing task {} from running_steps".format(
                         self.running_steps.pop(task_id)))
                 else:
@@ -215,29 +228,31 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         status = {}
         status_code = JobStatusCode.OK
         
-        for fut in joblist:     # Note, 
-            LOGGER.debug("Looking for job with Future id %s", fut.id)
+        for fut in joblist:
+            LOGGER.debug("Looking for job with Future %s", fut)
 
             # Future states: running, done, cancelled
             if fut.done():
                 # Check result/process retcode: subprocess errors caught here
                 if fut in self.running_steps:
-                    result=fut.get_result()  # this the right place to catch this?
+                    # NOTE: does the avail_procs in update_running_steps always catch ending or
+                    # is there some other check needed here?
+                    result=fut.result()  # this the right place to catch this?
 
-                    status[fut.id] = State.FINISHING
+                    status[fut] = State.FINISHING
 
                 else:
-                    status[fut.id] = State.FINISHED
+                    status[fut] = State.FINISHED
 
             elif fut.running():
-                status[fut.id] = State.RUNNING
+                status[fut] = State.RUNNING
 
             elif fut.cancelled():
                 # What about cancelled pid's? that would show up under fut.done()...
-                status[fut.id] = State.CANCELLED
+                status[fut] = State.CANCELLED
 
             else:
-                status[fut.id] = State.UNKNOWN  # this ever reached, and if so how
+                status[fut] = State.UNKNOWN  # this ever reached, and if so how
                 status_code = JobStatusCode.ERROR
 
         return status_code, status
@@ -376,10 +391,21 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         # Update running task list.  Thread safe list be better?
 
         self._update_running_steps(add_tasks=[{fut:(p, step_procs)}])
-        fut.add_done_callback(func_partial(self._task_callback, rm_func=self._update_running_steps))
+        # fut.add_done_callback(func_partial(self._task_callback, fut, rm_func=self._update_running_steps))
+        fut.add_done_callback(self.wrap_callback(self._update_running_steps))
 
         LOGGER.info("Execution returned status OK.")
         return SubmissionRecord(SubmissionCode.OK, 0, fut)
 
+    @staticmethod
+    def wrap_callback(rm_func):
+        def task_callback(fut):
+            fut.result()
+            rm_func(add_tasks=None, rm_tasks=[fut])
+
+        return task_callback
+
+    @staticmethod
     def _task_callback(fut, rm_func):
+        fut.get_result()
         rm_func(add_tasks=None, rm_tasks=[fut])
