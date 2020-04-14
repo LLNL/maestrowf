@@ -31,8 +31,10 @@
 
 from copy import deepcopy
 import logging
+import re
 import yaml
 
+import jsonschema
 from jsonschema import validate, ValidationError
 
 from maestrowf.abstracts import Specification
@@ -164,6 +166,7 @@ class YAMLSpecification(Specification):
         # and study.
         # We're REQUIRING that user specify a name and description for the
         # study.
+        """
         try:
             if not self.description:
                 raise ValueError("The 'description' key is required in the "
@@ -177,9 +180,10 @@ class YAMLSpecification(Specification):
         except Exception as e:
             logger.exception(e.args)
             raise
+        """
 
         # check description for invalid keys
-        YAMLSpecification.check_keys2("description", self.description, YAMLSpecification.DESCRIPTION_SCHEMA)
+        YAMLSpecification.check_keys("description", self.description, YAMLSpecification.DESCRIPTION_SCHEMA)
 
         logger.info("Study description verified -- \n%s", self.description)
 
@@ -290,7 +294,7 @@ class YAMLSpecification(Specification):
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
         # check environment for invalid keys
-        Specification.check_keys2("env", self.environment, YAMLSpecification.ENV_SCHEMA)
+        Specification.check_keys("env", self.environment, YAMLSpecification.ENV_SCHEMA)
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""
@@ -342,7 +346,7 @@ class YAMLSpecification(Specification):
                                      .format(missing_attrs, step["name"]))
 
                 # check step for invalid keys
-                YAMLSpecification.check_keys2("study.{}".format(step["name"]), step, YAMLSpecification.STUDY_STEP_SCHEMA)
+                YAMLSpecification.check_keys("study.{}".format(step["name"]), step, YAMLSpecification.STUDY_STEP_SCHEMA)
 
         except Exception as e:
             logger.exception(e.args)
@@ -413,38 +417,11 @@ class YAMLSpecification(Specification):
                                          .format(name))
 
                     # check parameter for invalid keys
-                    YAMLSpecification.check_keys2("global.params.{}".format(name), value, YAMLSpecification.PARAM_SCHEMA)
+                    YAMLSpecification.check_keys("global.params.{}".format(name), value, YAMLSpecification.PARAM_SCHEMA)
 
         except Exception as e:
             logger.exception(e.args)
             raise
-
-    STUDY_STEP_KEYS = {
-        "name": None,
-        "description": None,
-        "run": {
-            "cmd": None,
-            "restart": None,
-            "depends": None,
-            "nodes": None,
-            "procs": None,
-            "cores per task": None,
-            "gpus per task": None,
-            "walltime": None,
-            "num resource set": None,
-        },
-    }
-
-    ENV_KEYS = {
-        "variables": None,
-        "labels": None,
-        "sources": None,
-        "dependencies": {
-            "path": {"name": None, "path": None},
-            "git": {"name": None, "path": None, "url": None},
-            "spack": {"name": None, "package_name": None},
-        },
-    }
 
     DESCRIPTION_SCHEMA = {
         "type": "object",
@@ -452,7 +429,8 @@ class YAMLSpecification(Specification):
             "name": {"type":"string"},
             "description": {"type":"string"},
         },
-        "additionalProperties": False
+        "additionalProperties": False,
+        "required": ["name", "description"]
     }
 
     PARAM_SCHEMA = {
@@ -461,7 +439,8 @@ class YAMLSpecification(Specification):
             "values": {"type":"object"},
             "label": {"type":"string"},
         },
-        "additionalProperties": False
+        "additionalProperties": False,
+        "required": ["values", "label"]
     }
 
     STUDY_STEP_SCHEMA = {
@@ -471,17 +450,20 @@ class YAMLSpecification(Specification):
             "description": {"type":"string"},
             "run": {
                 "cmd": {"type":"string"},
-                "restart": {"type":"string"},
                 "depends": {"type":"object"},
+                "pre": {"type":"string"},
+                "post": {"type":"string"},
+                "restart": {"type":"string"},
                 "nodes": {"type":"number"},
                 "procs": {"type":"number"},
+                "gpus": {"type":"number"},
                 "cores per task": {"type":"number"},
-                "gpus per task": {"type":"number"},
                 "walltime": {"type":"string"},
-                "num resource set": {"type":"number"},
+                "reservation": {"type":"string"},
             },
         },
-        "additionalProperties": False
+        "additionalProperties": False,
+        "required": ["name", "description", "run"]
     }
 
     ENV_SCHEMA = {
@@ -500,40 +482,27 @@ class YAMLSpecification(Specification):
     }
 
     @staticmethod
-    def check_keys2(parent_key, instance, schema):
-        print(instance)
-        print(schema)
-        try:
-            validate(instance=instance, schema=schema)
-        except ValidationError as e:
-            if e.validator == "additionalProperties":
-                print("Unrecognized key '{0}' found in spec section '{1}'.".format("???", parent_key))
-            elif e.validator == "type":
-                print("Incorrect type found in spec section {}".format(parent_key))
-            print(e)
-            print("\nInstance:")
-            print(e.instance)
-            print("\nParent:")
-            print(e.parent)
-            print("\nCause:")
-            print(e.cause)
-            print("\nContext:")
-            print(e.context)
-            print("\nValidator:")
-            print(e.validator)
-            print("\nValidator value:")
-            print(e.validator_value)
-
-    @staticmethod
-    def check_keys(parent_key, section, valid_keys):
-        diff = set(section.keys()).difference(set(valid_keys.keys()))
-        for extra in diff:
-            print(
-                "Unrecognized key '{0}' found in spec section '{1}'.".format(extra, parent_key)
-            )
-        for key, val in section.items():
-            if isinstance(val, dict) and key in valid_keys:
-                YAMLSpecification.check_keys(parent_key + "." + key, val, valid_keys[key])
+    def check_keys(parent_key, instance, schema):
+        validator = jsonschema.Draft7Validator(schema)
+        errors = validator.iter_errors(instance)
+        for error in errors:
+            try:
+                if error.validator == "additionalProperties":
+                    unrecognized = re.search(r"'.+'", error.message).group(0).strip("'")
+                    logger.warning("WARNING: Unrecognized key '{0}' found in spec section '{1}'.".format(unrecognized, parent_key))
+                elif error.validator == "type":
+                    bad_val = re.search(r".+ is not of type", error.message).group(0).strip(" is not of type")
+                    expected_type = re.search(r"'.+'", error.message).group(0).strip("'")
+                    raise ValueError("Value {0} in spec section '{1}' must be of type '{2}'.".format(bad_val, parent_key, expected_type))
+                elif error.validator == "required":
+                    missing = re.search(r"'.+'", error.message).group(0).strip("'")
+                    raise ValueError("Key '{0}' is missing from spec section '{1}'.".format(missing, parent_key))
+            except:
+                logger.exception(e.args)
+                raise
+        for key, val in instance.items():
+            if isinstance(val, dict) and key in schema["properties"].keys():
+                YAMLSpecification.check_keys(parent_key + "." + key, val, {"type":"object", "additionalProperties":False, "properties" : schema["properties"][key]})
 
     @property
     def output_path(self):
