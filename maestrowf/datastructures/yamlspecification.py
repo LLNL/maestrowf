@@ -103,7 +103,7 @@ class YAMLSpecification(Specification):
 
         except Exception as e:
             logger.exception(e.args)
-            raise
+            raise e
 
         # Populate the path to the specification that populated this instance.
         specification.path = path

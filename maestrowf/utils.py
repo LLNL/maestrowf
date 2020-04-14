@@ -258,3 +258,71 @@ def create_dictionary(list_keyvalues, token=":"):
             raise ValueError(msg)
 
     return _dict
+
+
+class LoggerUtility:
+    """Utility class for setting up logging consistently."""
+
+    def __init__(self, logger):
+        """
+        Initialize a new LoggerUtility class instance.
+
+        :param logger: An instance of a logger to configure.
+        """
+        self._logger = logger
+
+    def configure(self, log_format, log_lvl=2):
+        """
+        Configures the general logging facility.
+
+        :param log_format: String containing the desired logging format.
+        :param log_lvl: Integer level (1-5) to set the logger to.
+        """
+        logging.basicConfig(level=self.map_level(log_lvl), format=log_format)
+
+    def add_stream_handler(self, log_format, log_lvl=2):
+        """
+        Add a stream handler to logging.
+
+        :param log_format: String containing the desired logging format.
+        :param log_lvl: Integer level (1-5) to set the logger to.
+        """
+        # Create the FileHandler and add it to the logger.
+        sh = logging.StreamHandler()
+        sh.setLevel(self.map_level(log_lvl))
+        sh.setFormatter(logging.Formatter(log_format))
+        self._logger.addHandler(sh)
+
+    def add_file_handler(self, log_path, log_format, log_lvl=2):
+        """
+        Add a file handler to logging.
+
+        :param log_path: String containing the file path to store logging.
+        :param log_format: String containing the desired logging format.
+        :param log_lvl: Integer level (1-5) to set the logger to.
+        """
+        # Create the FileHandler and add it to the logger.
+        formatter = logging.Formatter(log_format)
+
+        fh = logging.FileHandler(log_path)
+        fh.setLevel(self.map_level(log_lvl))
+        fh.setFormatter(formatter)
+        self._logger.addHandler(fh)
+
+    @staticmethod
+    def map_level(log_lvl):
+        """
+        Map level 1-5 to their respective logging enumerations.
+
+        :param log_lvl: Integer level (1-5) representing logging verbosity.
+        """
+        if log_lvl == 1:
+            return logging.DEBUG
+        elif log_lvl == 2:
+            return logging.INFO
+        elif log_lvl == 3:
+            return logging.WARNING
+        elif log_lvl == 4:
+            return logging.ERROR
+        else:
+            return logging.CRITICAL

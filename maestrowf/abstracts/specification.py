@@ -30,11 +30,11 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 import six
 
-from maestrowf.abstracts import abstractclassmethod
+from . import abstractclassmethod
 
 
 @six.add_metaclass(ABCMeta)
-class Specification(object):
+class Specification:
     """
     Abstract class for loading and verifying a Study Specification
     """
@@ -48,7 +48,6 @@ class Specification(object):
         :returns: A specification object containing the information loaded
         from path.
         """
-        pass
 
     @abstractclassmethod
     def load_specification_from_stream(cls, stream):
@@ -58,14 +57,12 @@ class Specification(object):
         :param stream: Raw text stream containing specification data.
         :returns: A specification object containing the information in string.
         """
-        pass
 
     @abstractmethod
     def verify(self):
         """
         Verify the whole specification.
         """
-        pass
 
     @abstractmethod
     def get_study_environment(self):
@@ -74,7 +71,6 @@ class Specification(object):
 
         :returns: A StudyEnvironment object with the data in the specification.
         """
-        pass
 
     @abstractmethod
     def get_parameters(self):
@@ -83,7 +79,6 @@ class Specification(object):
 
         :returns: A ParameterGenerator with data from the specification.
         """
-        pass
 
     @abstractmethod
     def get_study_steps(self):
@@ -92,7 +87,6 @@ class Specification(object):
 
         :returns: A list of StudyStep objects.
         """
-        pass
 
     @abstractproperty
     def output_path(self):
@@ -101,7 +95,6 @@ class Specification(object):
 
         :returns: Returns OUTPUT_PATH if it exists, empty string otherwise.
         """
-        pass
 
     @abstractproperty
     def name(self):
@@ -110,7 +103,6 @@ class Specification(object):
 
         :returns: The name of the study described by the specification.
         """
-        pass
 
     @name.setter
     def name(self, value):
@@ -119,7 +111,6 @@ class Specification(object):
 
         :param value: String value representing the new name.
         """
-        pass
 
     @abstractproperty
     def desc(self):
@@ -129,7 +120,6 @@ class Specification(object):
         :returns: A string containing the description of the study
             specification.
         """
-        pass
 
     @desc.setter
     def desc(self, value):
@@ -138,4 +128,3 @@ class Specification(object):
 
         :param value: String value representing the new description.
         """
-        pass
