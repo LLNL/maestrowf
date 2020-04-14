@@ -1,6 +1,7 @@
 description:
     name: hello_world
-    description: A simple 'Hello World' study.
+    description: 1234
+    benj: hi
 
 env:
     variables:
@@ -12,3 +13,4 @@ study:
       run:
           cmd: |
             echo "Hello, World!" > hello_world.txt
+          benj_key: hi
