@@ -1,0 +1,171 @@
+{
+  "DESCRIPTION_SCHEMA": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "description"
+    ]
+  },
+  "PARAM_SCHEMA": {
+    "type": "object",
+    "properties": {
+      "values": {
+        "type": "array",
+        "uniqueItems": true
+      },
+      "label": {
+        "type": "array",
+        "uniqueItems": true
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "values",
+      "label"
+    ]
+  },
+  "STUDY_STEP_SCHEMA": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "run": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string"
+          },
+          "depends": {
+            "type": "array",
+            "uniqueItems": true
+          },
+          "pre": {
+            "type": "string"
+          },
+          "post": {
+            "type": "string"
+          },
+          "restart": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "number"
+          },
+          "procs": {
+            "type": "number"
+          },
+          "gpus": {
+            "type": "number"
+          },
+          "cores per task": {
+            "type": "number"
+          },
+          "walltime": {
+            "type": "string"
+          },
+          "reservation": {
+            "type": "string"
+          },
+          "required": [
+            "cmd"
+          ]
+        },
+        "additionalProperties": false,
+        "required": [
+          "cmd"
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "description",
+      "run"
+    ]
+  },
+  "ENV_SCHEMA": {
+    "type": "object",
+    "properties": {
+      "variables": {
+        "type": "object"
+      },
+      "labels": {
+        "type": "object"
+      },
+      "sources": {
+        "type": "object"
+      },
+      "dependencies": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          "git": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "path",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "spack": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "package_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "package_name"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

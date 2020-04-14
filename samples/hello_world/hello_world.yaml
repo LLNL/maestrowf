@@ -1,5 +1,6 @@
 description:
     name: hello_world
+    description: hi
 
 env:
     variables:
@@ -9,5 +10,4 @@ study:
     - name: hello_world
       description: Say hello to the world!
       run:
-          cmd: |
-            echo "Hello, World!" > hello_world.txt
+          benj_key: bad key!

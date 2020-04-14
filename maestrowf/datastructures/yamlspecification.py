@@ -166,26 +166,11 @@ class YAMLSpecification(Specification):
         # and study.
         # We're REQUIRING that user specify a name and description for the
         # study.
-        """
-        try:
-            if not self.description:
-                raise ValueError("The 'description' key is required in the "
-                                 "YAML study for user sanity. Provide a "
-                                 "description.")
-            else:
-                if not (self.description["name"] and
-                   self.description["description"]):
-                    raise ValueError("Both 'name' and 'description' must be "
-                                     "provided for a valid study description.")
-        except Exception as e:
-            logger.exception(e.args)
-            raise
-        """
 
-        # check description for invalid keys
-        YAMLSpecification.check_keys("description", self.description, YAMLSpecification.DESCRIPTION_SCHEMA)
+        # check description
+        YAMLSpecification.validate_schema("description", self.description, YAMLSpecification.DESCRIPTION_SCHEMA)
 
-        logger.info("Study description verified -- \n%s", self.description)
+        logger.debug("Study description verified -- \n%s", self.description)
 
     def _verify_variables(self):
         """
@@ -294,7 +279,7 @@ class YAMLSpecification(Specification):
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
         # check environment for invalid keys
-        Specification.check_keys("env", self.environment, YAMLSpecification.ENV_SCHEMA)
+        Specification.validate_schema("env", self.environment, YAMLSpecification.ENV_SCHEMA)
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""
@@ -320,12 +305,8 @@ class YAMLSpecification(Specification):
         A study step is required to have a name, description, and a command.
         If any are missing, the specification is considered invalid.
         """
-        # Verify that each step has the minimum required information.
-        # Each step in the 'study' section must at least specify three things.
-        # 1. name
-        # 2. description
-        # 3. run
         try:
+                """
             req_study = set(["name", "description", "run"])
             req_run = set(["cmd"])
             for step in self.study:
@@ -344,9 +325,10 @@ class YAMLSpecification(Specification):
                     raise ValueError("Missing {} keys from the run "
                                      "configuration for step named '{}'."
                                      .format(missing_attrs, step["name"]))
+                """
 
                 # check step for invalid keys
-                YAMLSpecification.check_keys("study.{}".format(step["name"]), step, YAMLSpecification.STUDY_STEP_SCHEMA)
+                YAMLSpecification.validate_schema("study.{}".format(step["name"]), step, YAMLSpecification.STUDY_STEP_SCHEMA)
 
         except Exception as e:
             logger.exception(e.args)
@@ -376,18 +358,23 @@ class YAMLSpecification(Specification):
                 global_names = set()
                 values_len = -1
                 for name, value in self.globals.items():
+                    """
                     # Check if the name is in the set
                     if name in global_names:
                         raise ValueError("Parameter '{}' is not unique in the "
                                          "set of global parameters."
                                          .format(name))
+                    """
 
+                    """
                     # Check to make sure the required info is in the parameter.
                     missing_attrs = req_global - set(value.keys())
                     if missing_attrs:
                         raise ValueError("Missing {} keys in the global "
                                          "parameter named {}"
                                          .format(missing_attrs, name))
+                    """
+
                     # If label is a list, check its length against values.
                     values = value["values"]
                     label = value["label"]
@@ -417,7 +404,7 @@ class YAMLSpecification(Specification):
                                          .format(name))
 
                     # check parameter for invalid keys
-                    YAMLSpecification.check_keys("global.params.{}".format(name), value, YAMLSpecification.PARAM_SCHEMA)
+                    YAMLSpecification.validate_schema("global.params.{}".format(name), value, YAMLSpecification.PARAM_SCHEMA)
 
         except Exception as e:
             logger.exception(e.args)
@@ -436,8 +423,8 @@ class YAMLSpecification(Specification):
     PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "values": {"type":"object"},
-            "label": {"type":"string"},
+            "values": {"type":"array", "uniqueItems": True},
+            "label": {"type":"array", "uniqueItems": True},
         },
         "additionalProperties": False,
         "required": ["values", "label"]
@@ -449,17 +436,23 @@ class YAMLSpecification(Specification):
             "name": {"type":"string"},
             "description": {"type":"string"},
             "run": {
-                "cmd": {"type":"string"},
-                "depends": {"type":"object"},
-                "pre": {"type":"string"},
-                "post": {"type":"string"},
-                "restart": {"type":"string"},
-                "nodes": {"type":"number"},
-                "procs": {"type":"number"},
-                "gpus": {"type":"number"},
-                "cores per task": {"type":"number"},
-                "walltime": {"type":"string"},
-                "reservation": {"type":"string"},
+                "type": "object",
+                "properties": {
+                    "cmd": {"type":"string"},
+                    "depends": {"type":"array", "uniqueItems": True},
+                    "pre": {"type":"string"},
+                    "post": {"type":"string"},
+                    "restart": {"type":"string"},
+                    "nodes": {"type":"number"},
+                    "procs": {"type":"number"},
+                    "gpus": {"type":"number"},
+                    "cores per task": {"type":"number"},
+                    "walltime": {"type":"string"},
+                    "reservation": {"type":"string"},
+                    "required": ["cmd"],
+                },
+            "additionalProperties": False,
+            "required": ["cmd"]
             },
         },
         "additionalProperties": False,
@@ -473,16 +466,40 @@ class YAMLSpecification(Specification):
             "labels": {"type":"object"},
             "sources": {"type":"object"},
             "dependencies": {
-                "path": {"name": {"type": "string"}, "path": {"type": "string"}},
-                "git": {"name": {"type":"string"}, "path": {"type":"string"}, "url": {"type":"string"}},
-                "spack": {"name": {"type":"string"}, "package_name": {"type":"string"}},
+                "type": "object",
+                "properties": {
+                    "path": 
+                        "type": "object",
+                        "properties": {
+                            {"name": {"type": "string"}, "path": {"type": "string"}}
+                        },
+                        "required": ["name", "path"],
+                        "additionalProperties": False
+                    },
+                    "git": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type":"string"}, "path": {"type":"string"}, "url": {"type":"string"}
+                        },
+                        "required": ["name", "path", "url"],
+                        "additionalProperties": False
+                    },
+                    "spack": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type":"string"}, "package_name": {"type":"string"}
+                        },
+                        "required": ["type", "package_name"],
+                        "additionalProperties": False
+                    },
+                },
             },
         },
         "additionalProperties": False
     }
 
     @staticmethod
-    def check_keys(parent_key, instance, schema):
+    def validate_schema(parent_key, instance, schema):
         validator = jsonschema.Draft7Validator(schema)
         errors = validator.iter_errors(instance)
         for error in errors:
@@ -497,12 +514,12 @@ class YAMLSpecification(Specification):
                 elif error.validator == "required":
                     missing = re.search(r"'.+'", error.message).group(0).strip("'")
                     raise ValueError("Key '{0}' is missing from spec section '{1}'.".format(missing, parent_key))
-            except:
+            except ValueError as e:
                 logger.exception(e.args)
                 raise
-        for key, val in instance.items():
-            if isinstance(val, dict) and key in schema["properties"].keys():
-                YAMLSpecification.check_keys(parent_key + "." + key, val, {"type":"object", "additionalProperties":False, "properties" : schema["properties"][key]})
+        #for key, val in instance.items():
+        #    if isinstance(val, dict) and "properties" in schema and key in schema["properties"].keys():
+        #        YAMLSpecification.validate_schema(parent_key + "." + key, val, schema["properties"][key])
 
     @property
     def output_path(self):
