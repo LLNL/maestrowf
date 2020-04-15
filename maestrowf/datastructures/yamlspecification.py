@@ -393,14 +393,20 @@ class YAMLSpecification(Specification):
             try:
                 if error.validator == "additionalProperties":
                     unrecognized = re.search(r"'.+'", error.message).group(0).strip("'")
-                    logger.warning("WARNING: Unrecognized key '{0}' found in spec section '{1}'.".format(unrecognized, parent_key))
+                    raise ValueError("WARNING: Unrecognized key '{0}' found in spec section '{1}'.".format(unrecognized, parent_key))
+
                 elif error.validator == "type":
                     bad_val = re.search(r".+ is not of type", error.message).group(0).strip(" is not of type")
-                    expected_type = re.search(r"'.+'", error.message).group(0).strip("'")
+                    expected_type = re.search(r"is not of type '.+'", error.message).group(0).strip("is not of type ").strip("'")
                     raise ValueError("Value {0} in spec section '{1}' must be of type '{2}'.".format(bad_val, parent_key, expected_type))
+
                 elif error.validator == "required":
                     missing = re.search(r"'.+'", error.message).group(0).strip("'")
                     raise ValueError("Key '{0}' is missing from spec section '{1}'.".format(missing, parent_key))
+
+                elif error.validator == "uniqueItems":
+                    raise ValueError("Non-unique step names found in spec section '{0}.depends'.".format(parent_key))
+
             except ValueError as e:
                 logger.exception(e.args)
                 raise
