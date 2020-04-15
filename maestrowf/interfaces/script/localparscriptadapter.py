@@ -31,6 +31,8 @@
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures._base import PENDING as future_PENDING
+
 from functools import partial as func_partial
 from threading import Thread, RLock
 
@@ -172,7 +174,8 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                 return State.FINISHED
         elif fut.cancelled():
             return State.CANCELLED
-
+        elif fut._state == future_PENDING:
+            return State.PENDING
         else:
             return State.UNKNOWN
 
@@ -238,7 +241,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                     # NOTE: does the avail_procs in update_running_steps always catch ending or
                     # is there some other check needed here?
                     result=fut.result()  # this the right place to catch this?
-
+                    LOGGER.debug("Fut {} has result: {}".format(fut, result))
                     status[fut] = State.FINISHING
 
                 else:
@@ -251,7 +254,16 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                 # What about cancelled pid's? that would show up under fut.done()...
                 status[fut] = State.CANCELLED
 
+            elif fut._state == future_PENDING:
+                LOGGER.debug("Fut {} is pending".format(fut))
+                status[fut] = State.PENDING
+
             else:
+                print("Fut {} with unknown state".format(fut))
+                if fut in self.running_steps:
+                    LOGGER.debug("Fut {} is running?".format(fut))
+                    LOGGER.debug("Fut {} state: running {}, done {}, cancelled {}".format(
+                        fut, fut.done(), fut.running(), fut.cancelled()))
                 status[fut] = State.UNKNOWN  # this ever reached, and if so how
                 status_code = JobStatusCode.ERROR
 
@@ -400,7 +412,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
     @staticmethod
     def wrap_callback(rm_func):
         def task_callback(fut):
-            fut.result()
+            #fut.result()
             rm_func(add_tasks=None, rm_tasks=[fut])
 
         return task_callback
