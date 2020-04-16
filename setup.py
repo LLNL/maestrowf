@@ -47,6 +47,6 @@ setup(
   ],
   package_data={
         'maestrowf': ['maestrowf/datastructures/schemas.json'],
-               },
+  },
   include_package_data=True,
 )

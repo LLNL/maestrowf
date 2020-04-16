@@ -2,8 +2,8 @@
   "DESCRIPTION_SCHEMA": {
     "type": "object",
     "properties": {
-      "name": {"type": "string"},
-      "description": {"type": "string"}
+      "name": {"type": "string", "minLength": 1},
+      "description": {"type": "string", "minLength": 1}
     },
     "additionalProperties": false,
     "required": [
@@ -17,7 +17,7 @@
       "values": {
         "type": "array"
       },
-      "label": {"type": "string"}
+      "label": {"type": "string", "minLength": 1}
     },
     "additionalProperties": false,
     "required": [
@@ -28,22 +28,22 @@
   "STUDY_STEP_SCHEMA": {
     "type": "object",
     "properties": {
-      "name": {"type": "string"},
-      "description": {"type": "string"},
+      "name": {"type": "string", "minLength": 1},
+      "description": {"type": "string", "minLength": 1},
       "run": {
         "type": "object",
         "properties": {
-          "cmd": {"type": "string"},
+          "cmd": {"type": "string", "minLength": 1},
           "depends": {"type": "array", "uniqueItems": true},
-          "pre": {"type": "string"},
-          "post": {"type": "string"},
-          "restart": {"type": "string"},
+          "pre": {"type": "string", "minLength": 1},
+          "post": {"type": "string", "minLength": 1},
+          "restart": {"type": "string", "minLength": 1},
           "nodes": {"type": "number"},
           "procs": {"type": "number"},
           "gpus": {"type": "number"},
           "cores per task": {"type": "number"},
-          "walltime": {"type": "string"},
-          "reservation": {"type": "string"},
+          "walltime": {"type": "string", "minLength": 1},
+          "reservation": {"type": "string", "minLength": 1},
           "required": [
             "cmd"
           ]
@@ -73,8 +73,8 @@
           "path": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"},
-              "path": {"type": "string"}
+              "name": {"type": "string", "minLength": 1},
+              "path": {"type": "string", "minLength": 1}
             },
             "required": [
               "name",
@@ -85,9 +85,9 @@
           "git": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"},
-              "path": {"type": "string"},
-              "url": {"type": "string"}
+              "name": {"type": "string", "minLength": 1},
+              "path": {"type": "string", "minLength": 1},
+              "url": {"type": "string", "minLength": 1}
             },
             "required": [
               "name",
@@ -99,8 +99,8 @@
           "spack": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"},
-              "package_name": {"type": "string"}
+              "name": {"type": "string", "minLength": 1},
+              "package_name": {"type": "string", "minLength": 1}
             },
             "required": [
               "type",

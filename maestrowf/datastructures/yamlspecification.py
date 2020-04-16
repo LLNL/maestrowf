@@ -49,6 +49,7 @@ from maestrowf.datastructures import environment
 logger = logging.getLogger(__name__)
 
 
+# load the schemas.json file
 dirpath = os.path.dirname(os.path.abspath(__file__))
 schemas_file = os.path.join(dirpath, "schemas.json")
 with open(schemas_file, "r") as json_file:
@@ -177,7 +178,7 @@ class YAMLSpecification(Specification):
         # We're REQUIRING that user specify a name and description for the
         # study.
 
-        # check description
+        # validate description against json schema
         YAMLSpecification.validate_schema(
             "description", self.description, schemas["DESCRIPTION_SCHEMA"]
         )
@@ -302,7 +303,7 @@ class YAMLSpecification(Specification):
         self._verify_sources()
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
-        # validate environment
+        # validate environment against json schema
         Specification.validate_schema(
             "env", self.environment, schemas["ENV_SCHEMA"]
         )
@@ -336,7 +337,7 @@ class YAMLSpecification(Specification):
         """
         try:
             for step in self.study:
-                # validate step
+                # validate step against json schema
                 YAMLSpecification.validate_schema(
                     "study.{}".format(step["name"]),
                     step,
@@ -408,7 +409,7 @@ class YAMLSpecification(Specification):
                             "same length as other parameters.".format(name)
                         )
 
-                    # validate parameters
+                    # validate parameters against json schema
                     YAMLSpecification.validate_schema(
                         "global.params.{}".format(name),
                         value,
@@ -421,61 +422,64 @@ class YAMLSpecification(Specification):
 
     @staticmethod
     def validate_schema(parent_key, instance, schema):
+        """
+        Given a parent key, an instance of a spec section, and a json schema
+        for that section, validate the instance against the schema.
+        """
         validator = jsonschema.Draft7Validator(schema)
         errors = validator.iter_errors(instance)
         for error in errors:
-            try:
-                if error.validator == "additionalProperties":
-                    unrecognized = (
-                        re.search(r"'.+'", error.message).group(0).strip("'")
-                    )
-                    raise ValueError(
-                        "Unrecognized key '{0}' found in spec section ",
-                        "'{1}'.".format(
-                            unrecognized, parent_key
-                        )
-                    )
+            if error.validator == "additionalProperties":
+                unrecognized = (
+                    re.search(r"'.+'", error.message).group(0).strip("'")
+                )
+                logger.error(
+                    "Unrecognized key '{0}' found in spec section '{1}'."
+                    .format(unrecognized, parent_key)
+                )
 
-                elif error.validator == "type":
-                    bad_val = (
-                        re.search(r".+ is not of type", error.message)
-                        .group(0)
-                        .strip(" is not of type")
-                    )
-                    expected_type = (
-                        re.search(r"is not of type '.+'", error.message)
-                        .group(0)
-                        .strip("is not of type ")
-                        .strip("'")
-                    )
-                    raise ValueError(
-                        "Value {0} in spec section '{1}' must be of type ",
-                        "'{2}'.".format(
-                            bad_val, parent_key, expected_type
-                        )
-                    )
+            elif error.validator == "type":
+                bad_val = (
+                    re.search(r".+ is not of type", error.message)
+                    .group(0)
+                    .strip(" is not of type")
+                )
+                expected_type = (
+                    re.search(r"is not of type '.+'", error.message)
+                    .group(0)
+                    .strip("is not of type ")
+                    .strip("'")
+                )
+                raise logger.error(
+                    "Value {0} in spec section '{1}' must be of type '{2}'."
+                    .format(bad_val, parent_key, expected_type)
+                )
 
-                elif error.validator == "required":
-                    missing = (
-                        re.search(r"'.+'", error.message).group(0).strip("'")
-                    )
-                    raise ValueError(
-                        "Key '{0}' is missing from spec section '{1}'.".format(
-                            missing, parent_key
-                        )
-                    )
+            elif error.validator == "required":
+                missing = (
+                    re.search(r"'.+'", error.message)
+                    .group(0)
+                    .strip("'")
+                )
+                logger.error(
+                    "Key '{0}' is missing from spec section '{1}'."
+                    .format(missing, parent_key)
+                )
 
-                elif error.validator == "uniqueItems":
-                    raise ValueError(
-                        "Non-unique step names found in spec section ",
-                        "'{0}.depends'.".format(
-                            parent_key
-                        )
-                    )
+            elif error.validator == "uniqueItems":
+                logger.error(
+                    "Non-unique step names in spec section '{0}.run.depends'."
+                    .format(parent_key)
+                )
 
-            except ValueError as e:
-                logger.exception(e.args)
-                raise
+            elif error.validator == "minLength":
+                logger.error(
+                    "Empty string found in value in spec section '{0}'."
+                    .format(parent_key)
+                )
+
+            else:
+                raise ValueError(error.message)
 
     @property
     def output_path(self):
