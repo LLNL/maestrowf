@@ -45,5 +45,8 @@ setup(
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
   ],
+  package_data={
+        'maestrowf': ['maestrowf/maestrowf/schemas.json'],
+               },
   include_package_data=True,
 )
