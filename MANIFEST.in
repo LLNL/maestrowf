@@ -1,1 +1,1 @@
-include maestrowf/maestrowf/schemas.json
+include maestrowf/maestrowf/datastructures/schemas.json
