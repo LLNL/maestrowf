@@ -2,12 +2,8 @@
   "DESCRIPTION_SCHEMA": {
     "type": "object",
     "properties": {
-      "name": {
-        "type": "string"
-      },
-      "description": {
-        "type": "string"
-      }
+      "name": {"type": "string"},
+      "description": {"type": "string"}
     },
     "additionalProperties": false,
     "required": [
@@ -21,9 +17,7 @@
       "values": {
         "type": "array"
       },
-      "label": {
-        "type": "string"
-      }
+      "label": {"type": "string"}
     },
     "additionalProperties": false,
     "required": [
@@ -34,46 +28,22 @@
   "STUDY_STEP_SCHEMA": {
     "type": "object",
     "properties": {
-      "name": {
-        "type": "string"
-      },
-      "description": {
-        "type": "string"
-      },
+      "name": {"type": "string"},
+      "description": {"type": "string"},
       "run": {
         "type": "object",
         "properties": {
-          "cmd": {
-            "type": "string"
-          },
+          "cmd": {"type": "string"},
           "depends": {"type": "array", "uniqueItems": true},
-          "pre": {
-            "type": "string"
-          },
-          "post": {
-            "type": "string"
-          },
-          "restart": {
-            "type": "string"
-          },
-          "nodes": {
-            "type": "number"
-          },
-          "procs": {
-            "type": "number"
-          },
-          "gpus": {
-            "type": "number"
-          },
-          "cores per task": {
-            "type": "number"
-          },
-          "walltime": {
-            "type": "string"
-          },
-          "reservation": {
-            "type": "string"
-          },
+          "pre": {"type": "string"},
+          "post": {"type": "string"},
+          "restart": {"type": "string"},
+          "nodes": {"type": "number"},
+          "procs": {"type": "number"},
+          "gpus": {"type": "number"},
+          "cores per task": {"type": "number"},
+          "walltime": {"type": "string"},
+          "reservation": {"type": "string"},
           "required": [
             "cmd"
           ]
@@ -94,27 +64,17 @@
   "ENV_SCHEMA": {
     "type": "object",
     "properties": {
-      "variables": {
-        "type": "object"
-      },
-      "labels": {
-        "type": "object"
-      },
-      "sources": {
-        "type": "object"
-      },
+      "variables": {"type": "object"},
+      "labels": {"type": "object"},
+      "sources": {"type": "object"},
       "dependencies": {
         "type": "object",
         "properties": {
           "path": {
             "type": "object",
             "properties": {
-              "name": {
-                "type": "string"
-              },
-              "path": {
-                "type": "string"
-              }
+              "name": {"type": "string"},
+              "path": {"type": "string"}
             },
             "required": [
               "name",
@@ -125,15 +85,9 @@
           "git": {
             "type": "object",
             "properties": {
-              "name": {
-                "type": "string"
-              },
-              "path": {
-                "type": "string"
-              },
-              "url": {
-                "type": "string"
-              }
+              "name": {"type": "string"},
+              "path": {"type": "string"},
+              "url": {"type": "string"}
             },
             "required": [
               "name",
@@ -145,12 +99,8 @@
           "spack": {
             "type": "object",
             "properties": {
-              "name": {
-                "type": "string"
-              },
-              "package_name": {
-                "type": "string"
-              }
+              "name": {"type": "string"},
+              "package_name": {"type": "string"}
             },
             "required": [
               "type",
