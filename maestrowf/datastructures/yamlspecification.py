@@ -34,6 +34,7 @@ import json
 import logging
 import os
 import re
+import sys
 import yaml
 
 import jsonschema
@@ -158,9 +159,13 @@ class YAMLSpecification(Specification):
 
     def verify(self):
         """Verify the whole specification."""
-        self.verify_description()
-        self.verify_study()
-        self.verify_parameters()
+        try:
+            self.verify_description()
+            self.verify_study()
+            self.verify_parameters()
+        except jsonschema.ValidationError as e:
+            logger.error(e.message)
+            sys.exit(1)
 
         logger.debug(
             "Specification %s - Verified. No apparent issues.", self.name
@@ -433,7 +438,7 @@ class YAMLSpecification(Specification):
                 unrecognized = (
                     re.search(r"'.+'", error.message).group(0).strip("'")
                 )
-                logger.error(
+                raise jsonschema.ValidationError(
                     "Unrecognized key '{0}' found in spec section '{1}'."
                     .format(unrecognized, parent_key)
                 )
@@ -450,36 +455,35 @@ class YAMLSpecification(Specification):
                     .strip("is not of type ")
                     .strip("'")
                 )
-                raise logger.error(
+                raise jsonschema.ValidationError(
                     "Value {0} in spec section '{1}' must be of type '{2}'."
                     .format(bad_val, parent_key, expected_type)
                 )
 
             elif error.validator == "required":
-                missing = (
-                    re.search(r"'.+'", error.message)
-                    .group(0)
-                    .strip("'")
-                )
-                logger.error(
-                    "Key '{0}' is missing from spec section '{1}'."
-                    .format(missing, parent_key)
+                missing = re.search(r"'.+'", error.message)
+                missing = missing.group(0)
+                missing = missing.strip("'")
+                raise jsonschema.ValidationError(
+                    "Key '{0}' is missing from spec section '{1}'.".format(
+                        missing, parent_key
+                    )
                 )
 
             elif error.validator == "uniqueItems":
-                logger.error(
+                raise jsonschema.ValidationError(
                     "Non-unique step names in spec section '{0}.run.depends'."
                     .format(parent_key)
                 )
 
             elif error.validator == "minLength":
-                logger.error(
+                raise jsonschema.ValidationError(
                     "Empty string found in value in spec section '{0}'."
                     .format(parent_key)
                 )
 
             else:
-                raise ValueError(error.message)
+                raise ValueError("Unknown validation error: " + error.message)
 
     @property
     def output_path(self):
