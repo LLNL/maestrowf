@@ -37,20 +37,23 @@ import re
 import yaml
 
 import jsonschema
-from jsonschema import validate, ValidationError
 
 from maestrowf.abstracts import Specification
-from maestrowf.datastructures.core import ParameterGenerator, \
-                                           StudyEnvironment, \
-                                           StudyStep
+from maestrowf.datastructures.core import (
+    ParameterGenerator,
+    StudyEnvironment,
+    StudyStep,
+)
 from maestrowf.datastructures import environment
 
 logger = logging.getLogger(__name__)
 
 
-schemas_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas.json")
-with open(schemas_file, "r")  as json_file:
+dirpath = os.path.dirname(os.path.abspath(__file__))
+schemas_file = os.path.join(dirpath, "schemas.json")
+with open(schemas_file, "r") as json_file:
     schemas = json.load(json_file)
+
 
 class YAMLSpecification(Specification):
     """
@@ -104,7 +107,7 @@ class YAMLSpecification(Specification):
         logger.info("Loading specification -- path = %s", path)
         try:
             # Load the YAML spec from the file.
-            with open(path, 'r') as data:
+            with open(path, "r") as data:
                 specification = cls.load_specification_from_stream(data)
 
         except Exception as e:
@@ -131,18 +134,18 @@ class YAMLSpecification(Specification):
             logger.warning(
                 "*** PyYAML is using an unsafe version with a known "
                 "load vulnerability. Please upgrade your installation "
-                "to a more recent version! ***")
+                "to a more recent version! ***"
+            )
             spec = yaml.load(stream)
 
         logger.debug("Loaded specification -- \n%s", spec["description"])
         specification = cls()
         specification.path = None
         specification.description = spec.pop("description", {})
-        specification.environment = spec.pop("env",
-                                             {'variables': {},
-                                              'sources': [],
-                                              'labels': {},
-                                              'dependencies': {}})
+        specification.environment = spec.pop(
+            "env",
+            {"variables": {}, "sources": [], "labels": {}, "dependencies": {}},
+        )
         specification.batch = spec.pop("batch", {})
         specification.study = spec.pop("study", [])
         specification.globals = spec.pop("global.parameters", {})
@@ -158,8 +161,9 @@ class YAMLSpecification(Specification):
         self.verify_study()
         self.verify_parameters()
 
-        logger.debug("Specification %s - Verified. No apparent issues.",
-                    self.name)
+        logger.debug(
+            "Specification %s - Verified. No apparent issues.", self.name
+        )
 
     def verify_description(self):
         """
@@ -174,7 +178,9 @@ class YAMLSpecification(Specification):
         # study.
 
         # check description
-        YAMLSpecification.validate_schema("description", self.description, schemas["DESCRIPTION_SCHEMA"])
+        YAMLSpecification.validate_schema(
+            "description", self.description, schemas["DESCRIPTION_SCHEMA"]
+        )
 
         logger.debug("Study description verified -- \n%s", self.description)
 
@@ -189,23 +195,29 @@ class YAMLSpecification(Specification):
         :returns: A set of keys encountered in the variables section.
         """
         keys_seen = set()
-        for key, value in self.environment['variables'].items():
+        for key, value in self.environment["variables"].items():
             logger.debug("Verifying %s...", key)
             if not key:
-                msg = "All variables must have a valid name. Empty strings " \
-                      "are not allowed."
+                msg = (
+                    "All variables must have a valid name. Empty strings "
+                    "are not allowed."
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
             if not value:
-                msg = "All variables must have a valid value. Empty strings " \
-                      "are not allowed."
+                msg = (
+                    "All variables must have a valid value. Empty strings "
+                    "are not allowed."
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
             if key in self.keys_seen:
-                msg = "Variable name '{}' is already taken. All variable " \
-                      "names must be unique.".format(key)
+                msg = (
+                    "Variable name '{}' is already taken. All variable "
+                    "names must be unique.".format(key)
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -255,9 +267,12 @@ class YAMLSpecification(Specification):
                     # Check that the name and path attributes are populated.
                     missing_keys = req_keys[dep_type] - set(item.keys())
                     if missing_keys:
-                        msg = "Incomplete %s dependency detected -- missing" \
-                              " %s required keys. Value: %s" \
-                              .format(dep_type, missing_keys, item)
+                        msg = (
+                            "Incomplete %s dependency detected -- missing"
+                            " %s required keys. Value: %s".format(
+                                dep_type, missing_keys, item
+                            )
+                        )
                         logger.error(msg)
                         raise ValueError(msg)
 
@@ -266,9 +281,12 @@ class YAMLSpecification(Specification):
                     # substituting itself into data, they are required to have
                     # a name field.
                     if item["name"] in keys_seen:
-                        msg = "Variable name '{}' is already taken. All " \
-                              "variable names must be unique." \
-                              .format(item["name"])
+                        msg = (
+                            "Variable name '{}' is already taken. All "
+                            "variable names must be unique.".format(
+                                item["name"]
+                            )
+                        )
                         logger.error(msg)
                         raise ValueError(msg)
 
@@ -285,7 +303,9 @@ class YAMLSpecification(Specification):
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
         # validate environment
-        Specification.validate_schema("env", self.environment, schemas["ENV_SCHEMA"])
+        Specification.validate_schema(
+            "env", self.environment, schemas["ENV_SCHEMA"]
+        )
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""
@@ -293,11 +313,14 @@ class YAMLSpecification(Specification):
         # not a workflow...
         try:
             if not self.study:
-                raise ValueError("A study specification MUST contain at least "
-                                 "one step in its workflow.")
+                raise ValueError(
+                    "A study specification MUST contain at least "
+                    "one step in its workflow."
+                )
 
-            logger.debug("Verified that a study block exists. -- verifying "
-                         "steps.")
+            logger.debug(
+                "Verified that a study block exists. -- verifying " "steps."
+            )
             self._verify_steps()
 
         except Exception as e:
@@ -314,7 +337,11 @@ class YAMLSpecification(Specification):
         try:
             for step in self.study:
                 # validate step
-                YAMLSpecification.validate_schema("study.{}".format(step["name"]), step, schemas["STUDY_STEP_SCHEMA"])
+                YAMLSpecification.validate_schema(
+                    "study.{}".format(step["name"]),
+                    step,
+                    schemas["STUDY_STEP_SCHEMA"],
+                )
 
         except Exception as e:
             logger.exception(e.args)
@@ -340,30 +367,32 @@ class YAMLSpecification(Specification):
         """
         try:
             if self.globals:
-                req_global = set(["values", "label"])
                 global_names = set()
                 values_len = -1
                 for name, value in self.globals.items():
                     # Check if the name is in the set
                     if name in global_names:
-                        raise ValueError("Parameter '{}' is not unique in the "
-                                         "set of global parameters."
-                                         .format(name))
+                        raise ValueError(
+                            "Parameter '{}' is not unique in the "
+                            "set of global parameters.".format(name)
+                        )
 
                     # If label is a list, check its length against values.
                     values = value["values"]
                     label = value["label"]
                     if isinstance(label, list):
                         if len(values) != len(label):
-                            raise ValueError("Global parameter '{}' the "
-                                             "values length does not "
-                                             "match the label list length."
-                                             .format(name))
+                            raise ValueError(
+                                "Global parameter '{}' the "
+                                "values length does not "
+                                "match the label list length.".format(name)
+                            )
                         if len(label) != len(set(label)):
-                            raise ValueError("Global parameter '{}' the "
-                                             "label does not contain "
-                                             "unique labels."
-                                             .format(name))
+                            raise ValueError(
+                                "Global parameter '{}' the "
+                                "label does not contain "
+                                "unique labels.".format(name)
+                            )
                     # Add the name to global parameters encountered, check if
                     # length of values is the same as previously encountered.
                     global_names.add(name)
@@ -374,12 +403,17 @@ class YAMLSpecification(Specification):
 
                     # Check length. Exception if doesn't match.
                     if len(values) != values_len:
-                        raise ValueError("Global parameter '{}' is not the "
-                                         "same length as other parameters."
-                                         .format(name))
+                        raise ValueError(
+                            "Global parameter '{}' is not the "
+                            "same length as other parameters.".format(name)
+                        )
 
                     # validate parameters
-                    YAMLSpecification.validate_schema("global.params.{}".format(name), value, schemas["PARAM_SCHEMA"])
+                    YAMLSpecification.validate_schema(
+                        "global.params.{}".format(name),
+                        value,
+                        schemas["PARAM_SCHEMA"],
+                    )
 
         except Exception as e:
             logger.exception(e.args)
@@ -392,20 +426,52 @@ class YAMLSpecification(Specification):
         for error in errors:
             try:
                 if error.validator == "additionalProperties":
-                    unrecognized = re.search(r"'.+'", error.message).group(0).strip("'")
-                    raise ValueError("WARNING: Unrecognized key '{0}' found in spec section '{1}'.".format(unrecognized, parent_key))
+                    unrecognized = (
+                        re.search(r"'.+'", error.message).group(0).strip("'")
+                    )
+                    raise ValueError(
+                        "Unrecognized key '{0}' found in spec section ",
+                        "'{1}'.".format(
+                            unrecognized, parent_key
+                        )
+                    )
 
                 elif error.validator == "type":
-                    bad_val = re.search(r".+ is not of type", error.message).group(0).strip(" is not of type")
-                    expected_type = re.search(r"is not of type '.+'", error.message).group(0).strip("is not of type ").strip("'")
-                    raise ValueError("Value {0} in spec section '{1}' must be of type '{2}'.".format(bad_val, parent_key, expected_type))
+                    bad_val = (
+                        re.search(r".+ is not of type", error.message)
+                        .group(0)
+                        .strip(" is not of type")
+                    )
+                    expected_type = (
+                        re.search(r"is not of type '.+'", error.message)
+                        .group(0)
+                        .strip("is not of type ")
+                        .strip("'")
+                    )
+                    raise ValueError(
+                        "Value {0} in spec section '{1}' must be of type ",
+                        "'{2}'.".format(
+                            bad_val, parent_key, expected_type
+                        )
+                    )
 
                 elif error.validator == "required":
-                    missing = re.search(r"'.+'", error.message).group(0).strip("'")
-                    raise ValueError("Key '{0}' is missing from spec section '{1}'.".format(missing, parent_key))
+                    missing = (
+                        re.search(r"'.+'", error.message).group(0).strip("'")
+                    )
+                    raise ValueError(
+                        "Key '{0}' is missing from spec section '{1}'.".format(
+                            missing, parent_key
+                        )
+                    )
 
                 elif error.validator == "uniqueItems":
-                    raise ValueError("Non-unique step names found in spec section '{0}.depends'.".format(parent_key))
+                    raise ValueError(
+                        "Non-unique step names found in spec section ",
+                        "'{0}.depends'.".format(
+                            parent_key
+                        )
+                    )
 
             except ValueError as e:
                 logger.exception(e.args)
@@ -420,8 +486,9 @@ class YAMLSpecification(Specification):
         """
         if "variables" in self.environment:
             if "OUTPUT_PATH" in self.environment["variables"]:
-                logger.debug("OUTPUT_PATH found in %s.",
-                             self.description["name"])
+                logger.debug(
+                    "OUTPUT_PATH found in %s.", self.description["name"]
+                )
                 return self.environment["variables"]["OUTPUT_PATH"]
             else:
                 return ""
@@ -490,7 +557,7 @@ class YAMLSpecification(Specification):
         if "dependencies" in self.environment:
             if "paths" in self.environment["dependencies"]:
                 for path in self.environment["dependencies"]["paths"]:
-                    _ = environment.PathDependency(path['name'], path['path'])
+                    _ = environment.PathDependency(path["name"], path["path"])
                     env.add(_)
 
             if "git" in self.environment["dependencies"]:
@@ -499,8 +566,9 @@ class YAMLSpecification(Specification):
                     optionals.pop("name")
                     optionals.pop("url")
                     optionals.pop("path")
-                    _ = environment.GitDependency(repo["name"], repo["url"],
-                                                  repo["path"], **optionals)
+                    _ = environment.GitDependency(
+                        repo["name"], repo["url"], repo["path"], **optionals
+                    )
                     env.add(_)
 
         return env
@@ -516,8 +584,9 @@ class YAMLSpecification(Specification):
             if "name" not in value:
                 params.add_parameter(key, value["values"], value["label"])
             else:
-                params.add_parameter(key, value["values"], value["label"],
-                                     value["name"])
+                params.add_parameter(
+                    key, value["values"], value["label"], value["name"]
+                )
 
         return params
 
@@ -530,9 +599,9 @@ class YAMLSpecification(Specification):
         steps = []
         for step in self.study:
             _ = StudyStep()
-            _.name = step['name']
-            _.description = step['description']
-            for key, value in step['run'].items():
+            _.name = step["name"]
+            _.description = step["description"]
+            for key, value in step["run"].items():
                 _.run[key] = value
             steps.append(_)
 
