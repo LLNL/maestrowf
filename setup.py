@@ -25,7 +25,7 @@ setup(
     "tabulate",
     "enum34 ; python_version<'3.4'",
     "dill",
-    "jsonschema",
+    "jsonschema>=3.2.0",
   ],
   extras_require={},
   long_description_content_type='text/markdown',
