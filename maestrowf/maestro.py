@@ -128,7 +128,7 @@ def run_study(args):
     try:
         spec = YAMLSpecification.load_specification(args.specification)
     except jsonschema.ValidationError as e:
-        logger.error(e.message)
+        LOGGER.error(e.message)
         sys.exit(1)
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
