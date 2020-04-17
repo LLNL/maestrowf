@@ -159,13 +159,9 @@ class YAMLSpecification(Specification):
 
     def verify(self):
         """Verify the whole specification."""
-        try:
-            self.verify_description()
-            self.verify_study()
-            self.verify_parameters()
-        except jsonschema.ValidationError as e:
-            logger.error(e.message)
-            sys.exit(1)
+        self.verify_description()
+        self.verify_study()
+        self.verify_parameters()
 
         logger.debug(
             "Specification %s - Verified. No apparent issues.", self.name
@@ -185,7 +181,7 @@ class YAMLSpecification(Specification):
 
         # validate description against json schema
         YAMLSpecification.validate_schema(
-            "description", self.description, schemas["DESCRIPTION_SCHEMA"]
+            "description", self.description, schemas["DESCRIPTION"]
         )
 
         logger.debug("Study description verified -- \n%s", self.description)
@@ -309,8 +305,8 @@ class YAMLSpecification(Specification):
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
         # validate environment against json schema
-        Specification.validate_schema(
-            "env", self.environment, schemas["ENV_SCHEMA"]
+        YAMLSpecification.validate_schema(
+            "env", self.environment, schemas["ENV"]
         )
 
     def verify_study(self):
@@ -346,7 +342,7 @@ class YAMLSpecification(Specification):
                 YAMLSpecification.validate_schema(
                     "study.{}".format(step["name"]),
                     step,
-                    schemas["STUDY_STEP_SCHEMA"],
+                    schemas["STUDY_STEP"],
                 )
 
         except Exception as e:
@@ -383,6 +379,13 @@ class YAMLSpecification(Specification):
                             "set of global parameters.".format(name)
                         )
 
+                    # validate parameters against json schema
+                    YAMLSpecification.validate_schema(
+                        "global.params.{}".format(name),
+                        value,
+                        schemas["PARAM"],
+                    )
+
                     # If label is a list, check its length against values.
                     values = value["values"]
                     label = value["label"]
@@ -413,13 +416,6 @@ class YAMLSpecification(Specification):
                             "Global parameter '{}' is not the "
                             "same length as other parameters.".format(name)
                         )
-
-                    # validate parameters against json schema
-                    YAMLSpecification.validate_schema(
-                        "global.params.{}".format(name),
-                        value,
-                        schemas["PARAM_SCHEMA"],
-                    )
 
         except Exception as e:
             logger.exception(e.args)

@@ -1,5 +1,5 @@
 {
-  "DESCRIPTION_SCHEMA": {
+  "DESCRIPTION": {
     "type": "object",
     "properties": {
       "name": {"type": "string", "minLength": 1},
@@ -11,7 +11,7 @@
       "description"
     ]
   },
-  "PARAM_SCHEMA": {
+  "PARAM": {
     "type": "object",
     "properties": {
       "values": {
@@ -25,7 +25,7 @@
       "label"
     ]
   },
-  "STUDY_STEP_SCHEMA": {
+  "STUDY_STEP": {
     "type": "object",
     "properties": {
       "name": {"type": "string", "minLength": 1},
@@ -61,7 +61,7 @@
       "run"
     ]
   },
-  "ENV_SCHEMA": {
+  "ENV": {
     "type": "object",
     "properties": {
       "variables": {"type": "object"},
