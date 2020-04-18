@@ -1,0 +1,38 @@
+description:
+    name: compute_gravity
+    description: A simple study to compute gravity
+ 
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/gravity
+        G: 6.67430E-11
+        SAMPLES: 10
+    labels:
+        MASS_FILE:  $(SPECROOT)/mass.info
+        DIST_FILE:  $(SPECROOT)/dist.info
+        SIM_SCRIPT: $(SPECROOT)/compute_gravity.py
+
+study:
+    - name: calc-gravity
+      description: Compute the force of gravity between two celestial bodies!
+      run:
+          cmd: |
+            P1=$(PLANET1)
+            P2=$(PLANET2)
+            G=$(G)
+
+            M1=$(grep $P1 $(MASS_FILE) | awk '{print $2}')
+            M2=$(grep $P2 $(MASS_FILE) | awk '{print $2}')
+
+            D1=$(grep $P1 $(DIST_FILE) | awk '{print $2}')
+            D2=$(grep $P2 $(DIST_FILE) | awk '{print $2}')
+
+            python $(SIM_SCRIPT) --mass1 $M1 --mass2 $M2 -d1 $D1 -d2 $D2 -g $(G)
+ 
+global.parameters:
+    PLANET1:
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto]
+        label: PLANET1.%%
+    PLANET2:
+        values: [Sun, Sun, Sun, Sun, Sun, Sun, Sun, Sun, Sun]
+        label: PLANET2.%%
