@@ -35,8 +35,6 @@ import re
 import json
 import subprocess as sp
 
-from flux import Flux, job
-from flux.job import JobspecV1, job_list
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
@@ -504,6 +502,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param **kwargs: A dictionary with default settings for the adapter.
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
+        self.flux = __import__("flux")
+        self.flux_job = __import__("flux.job")
 
         self.add_batch_parameter("flux_uri", kwargs.pop("uri", None))
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
@@ -629,16 +629,16 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = Flux()
+            self.h = self.flux.Flux()
 
-        jobspec = JobspecV1.from_command(
+        jobspec = self.flux_job.JobspecV1.from_command(
             cmd_line, num_tasks=ncores, num_nodes=nodes,
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
 
         # Submit our job spec.
-        jobid = job.submit(self.h, jobspec, waitable=True)
+        jobid = self.flux_job.submit(self.h, jobspec, waitable=True)
 
         LOGGER.info("Submission returned status OK. -- "
                     "Assigned identifier (%s)", jobid)
@@ -674,8 +674,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                          "instance.")
             self.h = self.flux.Flux()
 
-        resp = job_list(self.h)
-        paths = resp["paths"]
+        resp = self.flux_job.job_list(self.h)
+        paths = resp.get_jobs()
         status = {}
         for jobid in joblist:
             status[jobid] = None
@@ -773,7 +773,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 if retcode != 0:
                     LOGGER.debug("'flux wreck kill' failed, checking status.")
                     retcode, status = self.check_jobs([_job])
-                    if status and status.get(job, None) in term_status:
+                    if status and status.get(_job, None) in term_status:
                         retcode = 0
 
                 if retcode != 0:
