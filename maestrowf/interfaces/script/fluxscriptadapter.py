@@ -36,6 +36,8 @@ import re
 import json
 import subprocess as sp
 
+from flux import Flux, job
+from flux.job import JobspecV1, job_list
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
