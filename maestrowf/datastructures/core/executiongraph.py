@@ -827,13 +827,13 @@ class ExecutionGraph(DAG, PickleInterface):
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         # Check requested resources -> nprocs
-        nthreads = 1
-        if self._local_procs > 0:
-            nthreads = self._local_procs
+        # nthreads = 1
+        # if self._local_procs > 0:
+        #     nthreads = self._local_procs
 
-        if adapter.total_procs != nthreads:
-            adapter.total_procs = nthreads
-            adapter.avail_procs = nthreads
+        # if adapter.total_procs != nthreads:
+        #     adapter.total_procs = nthreads
+        #     adapter.avail_procs = nthreads
 
         if self._submission_throttle == 0:
             LOGGER.info("Launching all ready steps...")
@@ -900,6 +900,8 @@ class ExecutionGraph(DAG, PickleInterface):
                 self.cancelled_steps.add(_record.name)
                 continue
 
+            # NOTE: verify this actually updates avail_procs on the fly, thus allowing the
+            # available tasks to be fully consumed before going back to sleep
             avail_procs = adapter.avail_procs
             step_procs = _record.step.run.get("procs")
             if not step_procs:
