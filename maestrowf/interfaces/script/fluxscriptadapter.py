@@ -35,6 +35,8 @@ import re
 import json
 import subprocess as sp
 
+from flux import Flux, job
+from flux.job import JobspecV1, job_list
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
@@ -380,24 +382,24 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
-            for job in joblist:
-                LOGGER.debug("Cancelling JobID = %s", job)
+            for _job in joblist:
+                LOGGER.debug("Cancelling JobID = %s", _job)
                 retcode = sp.call(
-                    ["flux", "wreck", "cancel", str(job)],
+                    ["flux", "wreck", "cancel", str(_job)],
                     stdout=FNULL, stderr=FNULL
                 )
 
                 if retcode != 0:
                     LOGGER.debug("'flux wreck cancel' failed, trying kill.")
                     retcode = sp.call(
-                        ["flux", "wreck", "kill", str(job)],
+                        ["flux", "wreck", "kill", str(_job)],
                         stdout=FNULL, stderr=FNULL
                     )
 
                 if retcode != 0:
                     LOGGER.debug("'flux wreck kill' failed, checking status.")
-                    retcode, status = self.check_jobs([job])
-                    if status and status.get(job, None) in term_status:
+                    retcode, status = self.check_jobs([_job])
+                    if status and status.get(_job, None) in term_status:
                         retcode = 0
 
                 if retcode != 0:
@@ -503,11 +505,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
 
-        # NOTE: These libraries are compiled at runtime when an allocation
-        # is spun up.
-        self.flux = __import__("flux")
-        self.kvs = __import__("flux.kvs", globals(), locals(), ["kvs"])
-
+        self.add_batch_parameter("flux_uri", kwargs.pop("uri", None))
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
@@ -517,6 +515,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self._header = {
             "nodes": "#INFO (nodes) {nodes}",
             "walltime": "#INFO (walltime) {walltime}",
+            "URI": "#INFO (flux_uri) {flux_uri}"
         }
 
         self._cmd_flags = {
@@ -595,7 +594,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
                   identiifer.
         """
-        walltime = self._convert_walltime_to_seconds(step.run["walltime"])
+        # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
 
@@ -626,50 +625,24 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
-        jobspec = {
-            "nnodes": step.run["nodes"],
-            # NOTE: interface doesn"t allow multiple here yet
-            "ntasks":   nodes,
-            "ncores":   ncores,
-            "ngpus":    ngpus,
-            "environ":  get_environment(),          # TODO: revisit
-            "options":  {"stdio-delay-commit": 1},
-            "opts": {
-                "nnodes": nodes,
-                "ntasks": nodes,
-                "cores-per-task": cores_per_task,
-                "tasks-per-node": 1,
-            },
-            # "environ": {"PATH" : os.environ["PATH"]},
-            "cwd": cwd,
-            "walltime": walltime,
-            # "output" : {
-            #   "files" : {
-            #     "stdout" : os.path.join(cwd,step.name + "-{{id}}.out"),
-            #     "stderr" : os.path.join(cwd,step.name + "-{{id}}.err"),
-            #     },
-            #   },
-        }
-        LOGGER.debug("Submission Spec -- \n%s", jobspec)
-        jobspec["cmdline"] = ["flux", "broker", path]
+        # Set up with a broker, that is likely the general use case.
+        cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = self.flux.Flux()
-        resp = self.h.rpc_send("job.submit", json.dumps(jobspec))
-        if resp is None:
-            LOGGER.warning("RPC response invalid")
-            return SubmissionCode.ERROR, -1
-        if resp.get("errnum", None) is not None:
-            LOGGER.warning("Job creation failed with error code {}".format(
-                resp["errnum"]))
-            return SubmissionCode.ERROR, -1
-        if resp.get("state", None) != "submitted":
-            LOGGER.warning("Job creation failed")
-            return SubmissionCode.ERROR, -1
+            self.h = Flux()
+
+        jobspec = JobspecV1.from_command(
+            cmd_line, num_tasks=ncores, num_nodes=nodes,
+            cores_per_task=cores_per_task, gpus_per_task=ngpus)
+        jobspec.cwd = cwd
+        jobspec.environment = dict(os.environ)
+
+        # Submit our job spec.
+        jobid = job.submit(self.h, jobspec, waitable=True)
 
         LOGGER.info("Submission returned status OK. -- "
-                    "Assigned identifier (%s)", resp["jobid"])
-        return SubmissionCode.OK, resp["jobid"]
+                    "Assigned identifier (%s)", jobid)
+        return SubmissionCode.OK, jobid
 
     def check_jobs(self, joblist):
         """
@@ -701,7 +674,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                          "instance.")
             self.h = self.flux.Flux()
 
-        resp = self.h.rpc_send("job.kvspath", json.dumps({"ids": joblist}))
+        resp = job_list(self.h)
         paths = resp["paths"]
         status = {}
         for jobid in joblist:
@@ -783,23 +756,23 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
         with open(os.devnull, "w") as FNULL:
-            for job in joblist:
-                LOGGER.debug("Cancelling JobID = %s", job)
+            for _job in joblist:
+                LOGGER.debug("Cancelling JobID = %s", _job)
                 retcode = sp.call(
-                    ["flux", "wreck", "cancel", str(job)],
+                    ["flux", "wreck", "cancel", str(_job)],
                     stdout=FNULL, stderr=FNULL
                 )
 
                 if retcode != 0:
                     LOGGER.debug("'flux wreck cancel' failed, trying kill.")
                     retcode = sp.call(
-                        ["flux", "wreck", "kill", str(job)],
+                        ["flux", "wreck", "kill", str(_job)],
                         stdout=FNULL, stderr=FNULL
                     )
 
                 if retcode != 0:
                     LOGGER.debug("'flux wreck kill' failed, checking status.")
-                    retcode, status = self.check_jobs([job])
+                    retcode, status = self.check_jobs([_job])
                     if status and status.get(job, None) in term_status:
                         retcode = 0
 
