@@ -53,8 +53,9 @@ LOGGER = logging.getLogger(__name__)
 LOG_UTIL = LoggerUtility(LOGGER)
 
 # Configuration globals
-LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
-          "%(levelname)s - %(message)s"
+DEBUG_FORMAT = "[%(asctime)s: %(levelname)s] " \
+               "[%(module)s: %(lineno)d] %(message)s"
+LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
 ACCEPTED_INPUT = set(["yes", "y"])
 
 
@@ -409,7 +410,11 @@ def main():
 
     # If we have requested to log stdout, set it up to be logged.
     if args.logstdout:
-        LOG_UTIL.configure(LFORMAT, args.debug_lvl)
+        if args.debug_lvl == 1:
+            lformat = DEBUG_FORMAT
+        else:
+            lformat = LFORMAT
+        LOG_UTIL.configure(lformat, args.debug_lvl)
 
     LOGGER.info("INFO Logging Level -- Enabled")
     LOGGER.warning("WARNING Logging Level -- Enabled")
