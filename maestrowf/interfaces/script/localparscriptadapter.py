@@ -30,6 +30,9 @@
 """Local interface implementation."""
 import logging
 import os
+import psutil
+import signal
+
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import PENDING as future_PENDING
 
@@ -75,23 +78,15 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         super(LocalParallelScriptAdapter, self).__init__(**kwargs)
 
         # Register keys
-        self.add_batch_parameter("procs", int(kwargs.pop("procs", "1")))
-        #self.add_batch_parameter("walltime", kwargs.pop("walltime", )
-        # NOTE: add walltime, use this as a timeout on the futures?
+        self.add_batch_parameter("proc_count", int(kwargs.pop("proc_count", "1")))
 
         self._header = {
             "procs": "# procs = {procs}",
         }
 
-        # Maybe need better types here for populating the queues?
-        self.START = 0
-        self.CANCEL = 1
-        self.DONE = 2
-        
-        self.total_procs = int(kwargs.pop("proc_count", "1"))
+        self.total_procs = self._batch['proc_count']
         self.avail_procs = self.total_procs
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
-        #self.scheduler_thread = Thread(target=self._scheduler_loop())
 
     def __getstate__(self):
         """Helper for excluding threadpool from pickling"""
@@ -116,7 +111,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
             for task_id in rm_tasks:
                 if task_id in self.running_steps:
                     self.avail_procs += self.running_steps[task_id][1]  # give back resources
-                    
+
                     LOGGER.debug("Removing task {} from running_steps".format(
                         self.running_steps.pop(task_id)))
                 else:
@@ -290,14 +285,14 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                     # Interrupt running subprocesses
                     try:
                         process, procs = self.running_steps[fut]
-                        process.kill()    # better way to kill it?
-                        fut.get_result()  # wait on future to exit
+                        self._kill(process.pid) #process.kill()    # better way to kill it?
+                        fut.result()  # wait on future to exit
                     except KeyError:
                         LOGGER.error("Error, future {}, no longer in running step list".format(fut))
                         retcode += 1
 
                     except:     # TODO: catch exceptions from kill(), get_result()
-                        LOGGER.error("Error, unexpected behavior trying to cancel future {}, "
+                        LOGGER.exception("Error, unexpected behavior trying to cancel future {}, "
                                      "and subprocess with id {}".format(fut, process.pid))
                         retcode += 1
                         
@@ -314,6 +309,31 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
             _record = CancellationRecord(CancelCode.ERROR, retcode)
 
         return _record
+
+    @staticmethod
+    def _kill(subprocess_pid, sig=signal.SIGTERM, include_parent=True):
+        """Kill a process tree (including grandchildren) with signal
+        "sig" and return a (gone, still_alive) tuple.
+        "on_terminate", if specified, is a callabck function which is
+        called as soon as a child terminates.
+        
+        NOTE: borrowed from recipe in psutil docs
+        """
+        assert subprocess_pid != os.getpid(), "won't kill myself"
+        parent = psutil.Process(subprocess_pid)
+        children = parent.children(recursive=True)
+        if include_parent:
+            children.append(parent)
+
+        for p in children:
+            p.send_signal(sig)
+            LOGGER.debug("Killing process {}".format(p.name()))
+
+        gone, alive = psutil.wait_procs(children, timeout=5,
+                                        callback=None)
+
+        LOGGER.debug("  Gone, alive = {}, {}".format(gone, alive))
+        # return (gone, alive)
 
     def _submit(self, p, step, path, cwd, job_map=None, env=None):
         """
