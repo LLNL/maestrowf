@@ -431,7 +431,6 @@ class ExecutionGraph(DAG, PickleInterface):
             LOGGER.error("Valid adapters: {}".format(ScriptAdapterFactory.get_valid_adapters()))
             raise TypeError(msg)
 
-        print("Adapter set to: {}".format(adapter))
         self._adapter = adapter
 
     def add_description(self, name, description, **kwargs):
@@ -838,6 +837,7 @@ class ExecutionGraph(DAG, PickleInterface):
         if self._submission_throttle == 0:
             LOGGER.info("Launching all ready steps...")
             _available = len(self.ready_steps)
+            LOGGER.info("Ready steps: {}".format(self.ready_steps))
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
@@ -902,6 +902,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
             # NOTE: verify this actually updates avail_procs on the fly, thus allowing the
             # available tasks to be fully consumed before going back to sleep
+            LOGGER.debug("Attempting to submit step {} with total procs = {}, available procs = {}".format(_record.step.name, adapter.total_procs, adapter.avail_procs))
             avail_procs = adapter.avail_procs
             step_procs = _record.step.run.get("procs")
             if not step_procs:
@@ -917,6 +918,7 @@ class ExecutionGraph(DAG, PickleInterface):
             if step_procs <= avail_procs:
                 LOGGER.debug("Launching job %d -- %s", i, _record.name)
                 self._execute_record(_record, adapter)
+            
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
