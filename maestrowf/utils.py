@@ -30,6 +30,7 @@
 """A collection of more general utility functions."""
 
 from collections import OrderedDict
+import coloredlogs
 import logging
 import os
 import string
@@ -271,7 +272,7 @@ class LoggerUtility:
         """
         self._logger = logger
 
-    def configure(self, log_format, log_lvl=2):
+    def configure(self, log_format, log_lvl=2, colors=True):
         """
         Configures the general logging facility.
 
@@ -279,6 +280,9 @@ class LoggerUtility:
         :param log_lvl: Integer level (1-5) to set the logger to.
         """
         logging.basicConfig(level=self.map_level(log_lvl), format=log_format)
+        if colors:
+            coloredlogs.install(level=self.map_level(log_lvl),
+                                logger=self._logger, fmt=log_format)
 
     def add_stream_handler(self, log_format, log_lvl=2):
         """

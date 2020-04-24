@@ -196,7 +196,7 @@ class Study(DAG, PickleInterface):
         self._out_path = out_path
         self._meta_path = os.path.join(out_path, "meta")
 
-        LOGGER.info("OUTPUT_PATH = %s", out_path)
+        LOGGER.debug("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
         self.add_node(SOURCE, None)
@@ -376,7 +376,7 @@ class Study(DAG, PickleInterface):
     def setup_workspace(self):
         """Set up the study's main workspace directory."""
         try:
-            LOGGER.info("Setting up study workspace in '%s'", self._out_path)
+            LOGGER.debug("Setting up study workspace in '%s'", self._out_path)
             create_parentdir(self._out_path)
         except Exception as e:
             LOGGER.error(e.args)
@@ -386,7 +386,7 @@ class Study(DAG, PickleInterface):
         """Set up the environment by acquiring outside dependencies."""
         # Set up the environment if it hasn't been already.
         if not self.environment.is_set_up:
-            LOGGER.info("Environment is setting up.")
+            LOGGER.debug("Environment is setting up.")
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
