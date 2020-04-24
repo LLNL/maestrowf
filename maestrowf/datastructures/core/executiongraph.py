@@ -904,6 +904,8 @@ class ExecutionGraph(DAG, PickleInterface):
             # available tasks to be fully consumed before going back to sleep
             LOGGER.debug("Attempting to submit step {} with total procs = {}, available procs = {}".format(_record.step.name, adapter.total_procs, adapter.avail_procs))
             avail_procs = adapter.avail_procs
+            LOGGER.debug("avail_procs from the adapter = %d", avail_procs)
+            LOGGER.debug("total_procs from the adapter = %d", adapter.total_procs)
             step_procs = _record.step.run.get("procs")
             if not step_procs:
                 step_procs = 1
@@ -918,7 +920,8 @@ class ExecutionGraph(DAG, PickleInterface):
             if step_procs <= avail_procs:
                 LOGGER.debug("Launching job %d -- %s", i, _record.name)
                 self._execute_record(_record, adapter)
-            
+            else:
+                LOGGER.debug("step_procs thought > avail_procs: %d : %d", step_procs, avail_procs)
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
