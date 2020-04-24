@@ -26,6 +26,7 @@ setup(
     "enum34 ; python_version<'3.4'",
     "dill",
     "jsonschema>=3.2.0",
+    "coloredlogs",
   ],
   extras_require={},
   long_description_content_type='text/markdown',

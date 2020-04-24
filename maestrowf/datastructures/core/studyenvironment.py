@@ -188,7 +188,7 @@ class StudyEnvironment:
             LOGGER.info("Environment already set up. Returning.")
             return
 
-        LOGGER.info("Acquiring dependencies")
+        LOGGER.debug("Acquiring dependencies")
         for dependency, value in self.dependencies.items():
             LOGGER.info("Acquiring -- %s", dependency)
             value.acquire(substitutions=self.substitutions.values())

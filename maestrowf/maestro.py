@@ -409,7 +409,11 @@ def main():
 
     # If we have requested to log stdout, set it up to be logged.
     if args.logstdout:
-        LOG_UTIL.configure(LFORMAT, args.debug_lvl)
+        if args.debug_lvl == 1:
+            lformat = DEBUG_FORMAT
+        else:
+            lformat = LFORMAT
+        LOG_UTIL.configure(lformat, args.debug_lvl)
 
     LOGGER.info("INFO Logging Level -- Enabled")
     LOGGER.warning("WARNING Logging Level -- Enabled")
