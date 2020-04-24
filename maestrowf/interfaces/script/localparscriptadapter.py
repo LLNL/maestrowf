@@ -89,7 +89,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         self.DONE = 2
         
         self.total_procs = int(kwargs.pop("proc_count", "1"))
-        self.avail_procs = self.total_procs
+        self.avail_procs = int(kwargs.pop("avail_procs", "1"))
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
         #self.scheduler_thread = Thread(target=self._scheduler_loop())
 
