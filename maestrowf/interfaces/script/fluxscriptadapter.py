@@ -754,32 +754,19 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         cancelcode = CancelCode.OK
 
-        term_status = set([State.FINISHED, State.CANCELLED, State.FAILED])
-        with open(os.devnull, "w") as FNULL:
-            for _job in joblist:
-                LOGGER.debug("Cancelling JobID = %s", _job)
-                retcode = sp.call(
-                    ["flux", "wreck", "cancel", str(_job)],
-                    stdout=FNULL, stderr=FNULL
-                )
+        if self.h is None:
+            LOGGER.debug("Class instance is None. Initializing a new Flux "
+                         "instance.")
+            self.h = self.flux.Flux()
 
-                if retcode != 0:
-                    LOGGER.debug("'flux wreck cancel' failed, trying kill.")
-                    retcode = sp.call(
-                        ["flux", "wreck", "kill", str(_job)],
-                        stdout=FNULL, stderr=FNULL
-                    )
+        for _job in joblist:
+            LOGGER.debug("Cancelling JobID = %s", _job)
+            try:
+                self.flux_job.RAW.cancel(self.h)
+            except Exception:
+                cancelcode = CancelCode.ERROR
+                continue
 
-                if retcode != 0:
-                    LOGGER.debug("'flux wreck kill' failed, checking status.")
-                    retcode, status = self.check_jobs([_job])
-                    if status and status.get(_job, None) in term_status:
-                        retcode = 0
-
-                if retcode != 0:
-                    LOGGER.warning("Error code '{}' seen. Unexpected behavior "
-                                   "encountered.".format(retcode))
-                    cancelcode = CancelCode.ERROR
         return cancelcode
 
     def _state(self, flux_state):
