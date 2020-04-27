@@ -783,6 +783,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
             try:
+<<<<<<< HEAD
                 self.flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
@@ -790,6 +791,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 continue
 
         return CancellationRecord(cancelcode, retcode)
+=======
+                self.flux_job.RAW.cancel(self.h)
+            except Exception:
+                cancelcode = CancelCode.ERROR
+                continue
+
+        return cancelcode
+>>>>>>> 15becd2... Updates to cancel to use the new Flux0.16.0 interface.
 
     def _state(self, flux_state):
         """
