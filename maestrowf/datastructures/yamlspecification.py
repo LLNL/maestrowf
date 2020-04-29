@@ -197,6 +197,8 @@ class YAMLSpecification(Specification):
         :returns: A set of keys encountered in the variables section.
         """
         keys_seen = set()
+        if "variables" not in self.environment:
+            return keys_seen
         for key, value in self.environment["variables"].items():
             logger.debug("Verifying %s...", key)
             if not key:
