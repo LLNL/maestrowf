@@ -62,7 +62,7 @@
     "properties": {
       "variables": {"type": "object"},
       "labels": {"type": "object"},
-      "sources": {"type": "object"},
+      "sources": {"type": "array"},
       "dependencies": {
         "type": "object",
         "properties": {
