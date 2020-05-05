@@ -851,30 +851,6 @@ class ExecutionGraph(DAG, PickleInterface):
             _available = min(_available, len(self.ready_steps))
             LOGGER.info("Found %d available slots...", _available)
 
-        # print("Num threads: {}".format(nthreads))
-        # with futures.ThreadPoolExecutor(max_workers=nthreads) as executor:
-        #     steps_to_do = []
-        #     for i in range(0, _available):
-        #         # Pop the record and execute using the helper method.
-        #         _record = self.values[self.ready_steps.popleft()]
-
-        #         # If we get to this point and we've cancelled, cancel the record.
-        #         if self.is_canceled:
-        #             logger.info("Cancelling '%s' -- continuing.", _record.name)
-        #             _record.mark_end(State.CANCELLED)
-        #             self.cancelled_steps.add(_record.name)
-        #             continue
-
-        #         logger.debug("Launching job %d -- %s", i, _record.name)
-        #         steps_to_do.append(executor.submit(self._execute_record, _record, adapter))
-
-        #     for step_future in futures.as_completed(steps_to_do):
-        #         if not step_future:
-        #             print("Encountered None instead of a future.")
-        #         else:
-        #             res = step_future.result()
-
-        
         # for i in range(0, _available):
         #     # Pop the record and execute using the helper method.
         #     _record = self.values[self.ready_steps.popleft()]

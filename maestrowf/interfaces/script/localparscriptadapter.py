@@ -32,6 +32,7 @@ import logging
 import os
 import psutil
 import signal
+import uuid
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import PENDING as future_PENDING
@@ -57,6 +58,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
 
     executor = None
     running_steps = {}          # needs to be singleton, threadsafe
+    done_steps = {}             # storing completed futures/results to avoid losing them
     tasks_lock = RLock()
     total_procs = 1
     avail_procs = 1
@@ -115,10 +117,12 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         with self.tasks_lock:
             for task_id in rm_tasks:
                 if task_id in self.running_steps:
-                    self.avail_procs += self.running_steps[task_id][1]  # give back resources
+                    self.avail_procs += self.running_steps[task_id][2]  # give back resources
 
-                    LOGGER.debug("Removing task {} from running_steps".format(
-                        self.running_steps.pop(task_id)))
+                    self.done_steps[task_id] = self.running_steps.pop(task_id)
+                    
+                    LOGGER.debug("Removing task {}, {} from running_steps".format(
+                        task_id, self.done_steps[task_id]))
                 else:
                     LOGGER.error("Tried removing task {} from running_steps, "
                                  "but it was not found.".format(task_id))
@@ -230,41 +234,56 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
 
         status = {}
         status_code = JobStatusCode.OK
-        
-        for fut in joblist:
-            LOGGER.debug("Looking for job with Future %s", fut)
+        LOGGER.debug("Checking jobs {}".format(joblist))
+        LOGGER.debug("  Currently running steps: {}".format(self.running_steps))
+        for jid in joblist:
+            LOGGER.debug("Looking for job with id {}".format(jid))
+            
+            if jid in self.running_steps:
+                LOGGER.debug("Job with id {} is in running steps".format(jid))
+                fut, pid, step_procs = self.running_steps[jid]
+                LOGGER.debug("Job with id {} has future {} with states: done = {}, running = {}, _state = {}".format(
+                    jid, fut, fut.done(), fut.running(), fut._state))
+                
+            elif jid in self.done_steps:
+                fut, pid, step_procs = self.done_steps.pop(jid)
+                LOGGER.debug("Job with id {} has future {} with states: done = {}, running = {}, _state = {}".format(
+                    jid, fut, fut.done(), fut.running(), fut._state))
+                #status[jid] = State.FINISHED
+
+            else:
+                LOGGER.debug("Job with id {} is not found in running steps".format(jid))
+                # what state reaches this, and what's an appropriate return code?
+                continue
 
             # Future states: running, done, cancelled
             if fut.done():
                 # Check result/process retcode: subprocess errors caught here
-                if fut in self.running_steps:
-                    # NOTE: does the avail_procs in update_running_steps always catch ending or
-                    # is there some other check needed here?
-                    result=fut.result()  # this the right place to catch this?
-                    LOGGER.debug("Fut {} has result: {}".format(fut, result))
-                    status[fut] = State.FINISHING
-
-                else:
-                    status[fut] = State.FINISHED
+                # if fut in self.running_steps:
+                # NOTE: does the avail_procs in update_running_steps always catch ending or
+                # is there some other check needed here? -> save jid and remove from running steps?
+                result = fut.result()  # this the right place to catch this?
+                LOGGER.debug("Job {}, has result: {}".format(jid, result))
+                status[jid] = State.FINISHED
 
             elif fut.running():
-                status[fut] = State.RUNNING
+                status[jid] = State.RUNNING
 
             elif fut.cancelled():
                 # What about cancelled pid's? that would show up under fut.done()...
-                status[fut] = State.CANCELLED
+                status[jid] = State.CANCELLED
 
             elif fut._state == future_PENDING:
-                LOGGER.debug("Fut {} is pending".format(fut))
-                status[fut] = State.PENDING
+                LOGGER.debug("Job {}, with Fut {} is pending".format(jid, fut))
+                status[jid] = State.PENDING
 
             else:
-                print("Fut {} with unknown state".format(fut))
-                if fut in self.running_steps:
-                    LOGGER.debug("Fut {} is running?".format(fut))
-                    LOGGER.debug("Fut {} state: running {}, done {}, cancelled {}".format(
-                        fut, fut.done(), fut.running(), fut.cancelled()))
-                status[fut] = State.UNKNOWN  # this ever reached, and if so how
+                print("Job {}, with Fut {} with unknown state".format(jid, fut))
+                if jid in self.running_steps:
+                    LOGGER.debug("Job {}, with Fut {} is running?".format(jid, fut))
+                    LOGGER.debug("Job {}, Fut {} state: running {}, done {}, cancelled {}".format(
+                        jid, fut, fut.done(), fut.running(), fut.cancelled()))
+                status[jid] = State.UNKNOWN  # this ever reached, and if so how
                 status_code = JobStatusCode.ERROR
 
         return status_code, status
@@ -281,29 +300,33 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
 
         retcode = 0
 
-        for fut in joblist:
-            if fut in self.running_steps:
+        for jid in joblist:
+            if jid in self.running_steps:
+                fut, pid, step_procs = self.running_steps[jid]
                 if fut.done():  # cleanup
-                    # Really need _submit to return submission record vs retcode/err?                    
-                    result = fut.get_result()
+                    # Really need _submit to return submission record vs retcode/err?
+                    result = fut.result()
+                    LOGGER.debug("Removing job {} from running steps. result = {}".format(jid, result))
+
                 else:
                     # Interrupt running subprocesses
                     try:
-                        process, procs = self.running_steps[fut]
-                        self._kill(process.pid) #process.kill()    # better way to kill it?
-                        fut.result()  # wait on future to exit
+                        self._kill(pid) #process.kill()    # better way to kill it?
+                        result=fut.result()  # wait on future to exit
+                        LOGGER.debug("Removing job {} from running steps. result = {}".format(jid, result))
                     except KeyError:
                         LOGGER.error("Error, future {}, no longer in running step list".format(fut))
                         retcode += 1
 
                     except:     # TODO: catch exceptions from kill(), get_result()
                         LOGGER.exception("Error, unexpected behavior trying to cancel future {}, "
-                                     "and subprocess with id {}".format(fut, process.pid))
+                                     "and subprocess with id {}".format(fut, pid))
                         retcode += 1
-                        
-            if not fut.done() and not fut.running():
+
+            else:           # What state occurs when executiongraph knows of jobs that aren't here?
+            # if not fut.done() and not fut.running():
                 # This shouldn't be hit since execution graph only submits if resources available
-                LOGGER.error("Error, encounterd future {} in unexpected state".format(fut))
+                LOGGER.error("Error, encounterd job with id {} in unexpected state".format(jid))
                 retcode += 1
 
         if retcode == 0:
@@ -376,6 +399,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Execution returned status OK.")
+            # REPLACE PID WITH UUID?
             return SubmissionRecord(SubmissionCode.OK, retcode, pid)
         else:
             LOGGER.warning("Execution returned an error: %s", str(err))
@@ -419,30 +443,25 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
             LOGGER.warning("Execution returned an error")
 
             _record = SubmissionRecord(SubmissionCode.ERROR, -1)
-            self.avail_procs += step_procs
+            #self.avail_procs += step_procs
             return _record
 
             #     self.avail_procs -= step._procs
             # except:
 
-        # Update running task list.  Thread safe list be better?
-
-        self._update_running_steps(add_tasks=[{fut:(p, step_procs)}])
+        # Update running task list.
+        jid = uuid.uuid4()
+        self._update_running_steps(add_tasks=[{jid: (fut, p.pid, step_procs)}])
         # fut.add_done_callback(func_partial(self._task_callback, fut, rm_func=self._update_running_steps))
-        fut.add_done_callback(self.wrap_callback(self._update_running_steps))
+        fut.add_done_callback(self.wrap_callback(self._update_running_steps, jid))
 
         LOGGER.info("Execution returned status OK.")
-        return SubmissionRecord(SubmissionCode.OK, 0, fut)
+        return SubmissionRecord(SubmissionCode.OK, 0, jid)
 
     @staticmethod
-    def wrap_callback(rm_func):
+    def wrap_callback(rm_func, jid):
         def task_callback(fut):
             #fut.result()
-            rm_func(add_tasks=None, rm_tasks=[fut])
+            rm_func(add_tasks=None, rm_tasks=[jid])
 
         return task_callback
-
-    @staticmethod
-    def _task_callback(fut, rm_func):
-        fut.get_result()
-        rm_func(add_tasks=None, rm_tasks=[fut])
