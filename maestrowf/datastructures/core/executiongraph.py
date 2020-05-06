@@ -867,7 +867,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.values[self.ready_steps.popleft()]
+            _record = self.values[self.ready_steps[0]]
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
@@ -895,9 +895,13 @@ class ExecutionGraph(DAG, PickleInterface):
             # NOTE: better place to set this default, and do type conversions?
             if step_procs <= avail_procs:
                 LOGGER.debug("Launching job %d -- %s", i, _record.name)
+                self.ready_steps.popleft()  # remove key now that it's sure to run
                 self._execute_record(_record, adapter)
             else:
                 LOGGER.debug("step_procs thought > avail_procs: %d : %d", step_procs, avail_procs)
+                if avail_procs == 0:
+                    break       # exit loop early to avoid needless churn
+                
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
