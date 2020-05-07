@@ -178,7 +178,7 @@ And, running the study is still as simple as:
 ## Setting up your Python Environment
 
 To get started, we recommend using virtual environments. If you do not have the
-Python `virtualenv` package installed, take a look at their official [documentation](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/) to get started.
+Python `virtualenv` package installed, take a look at their official [documentation](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) to get started.
 
 To create a new virtual environment:
 
