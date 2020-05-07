@@ -512,6 +512,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 "Flux URI must be specified in batch or stored in the "
                 "environment under 'FLUX_URI'")
 
+        uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
+        if not uri:
+            raise ValueError(
+                "Flux URI must be specified in batch or stored in the "
+                "environment under 'FLUX_URI'")
+
         self.add_batch_parameter("flux_uri", uri)
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
@@ -783,7 +789,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
             try:
-<<<<<<< HEAD
                 self.flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
@@ -791,14 +796,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 continue
 
         return CancellationRecord(cancelcode, retcode)
-=======
-                self.flux_job.RAW.cancel(self.h)
-            except Exception:
-                cancelcode = CancelCode.ERROR
-                continue
-
-        return cancelcode
->>>>>>> 15becd2... Updates to cancel to use the new Flux0.16.0 interface.
 
     def _state(self, flux_state):
         """
