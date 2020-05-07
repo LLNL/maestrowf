@@ -505,7 +505,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.flux = __import__("flux")
         self.flux_job = __import__("flux.job")
 
-        self.add_batch_parameter("flux_uri", kwargs.pop("uri", None))
+        uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
+        if not uri:
+            raise ValueError(
+                "Flux URI must be specified in batch or stored in the "
+                "environment under 'FLUX_URI'")
+
+        self.add_batch_parameter("flux_uri", uri)
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
