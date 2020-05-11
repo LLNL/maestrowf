@@ -38,6 +38,7 @@ import subprocess as sp
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 
 LOGGER = logging.getLogger(__name__)
 status_re = re.compile(r"Job \d+ status: (.*)$")
@@ -643,12 +644,20 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
 
-        # Submit our job spec.
-        jobid = self.flux_job.submit(self.h, jobspec, waitable=True)
+        try:
+            # Submit our job spec.
+            jobid = self.flux_job.submit(self.h, jobspec, waitable=True)
+            submit_status = SubmissionCode.OK
 
-        LOGGER.info("Submission returned status OK. -- "
-                    "Assigned identifier (%s)", jobid)
-        return SubmissionCode.OK, jobid
+            LOGGER.info("Submission returned status OK. -- "
+                        "Assigned identifier (%s)", jobid)
+        except Exception as exception:
+            LOGGER.error(
+                "Submission failed -- Message (%s).", exception.message)
+            jobid = -1
+            submit_status = SubmissionCode.ERRROR
+
+        return SubmissionRecord(submit_status, jobid)
 
     def check_jobs(self, joblist):
         """
