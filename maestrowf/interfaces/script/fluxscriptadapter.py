@@ -547,8 +547,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["walltime"] = \
-            str(self._convert_walltime_to_seconds(step.run["walltime"]))
+        if "walltime" in step.run:
+            batch_header["walltime"] = \
+                str(self._convert_walltime_to_seconds(step.run["walltime"]))
 
         if run["nodes"]:
             batch_header["nodes"] = run.pop("nodes")
