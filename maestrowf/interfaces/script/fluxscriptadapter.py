@@ -547,7 +547,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        if "walltime" in step.run:
+        if step.run["walltime"]:
             batch_header["walltime"] = \
                 str(self._convert_walltime_to_seconds(step.run["walltime"]))
 
