@@ -558,8 +558,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
-            # If we"re looking at the bank and the reservation header exists,
-            # skip the bank to prefer the reservation.
+            if key not in batch_header:
+                continue
+
             if key == "bank" and "reservation" in self._batch:
                 continue
             modified_header.append(value.format(**batch_header))
