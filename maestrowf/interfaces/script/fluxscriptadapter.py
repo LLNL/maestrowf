@@ -831,11 +831,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         fname = "{}.flux.sh".format(step.name)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
-            if to_be_scheduled:
-                script.write(self.get_header(step))
-            else:
-                script.write(self._exec)
-
+            script.write(self.get_header(step))
             cmd = "\n\n{}\n".format(cmd)
             script.write(cmd)
 
