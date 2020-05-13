@@ -259,7 +259,7 @@ def run_study(args):
     Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
-    if args.autoyes:
+    if args.autoyes or args.dry:
         uinput = "y"
     elif args.autono:
         uinput = "n"
