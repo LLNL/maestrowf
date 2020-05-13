@@ -235,7 +235,16 @@ def run_study(args):
     study.setup_workspace()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+        dry_run=args.dry)
+    study.setup_environment()
+
+    if args.dry:
+        # If performing a dry run, drive sleep time down to generate scripts.
+        sleeptime = 1
+    else:
+        # else, use args to decide sleeptime
+        sleeptime = args.sleeptime
 
     batch = {"type": "local"}
     if spec.batch:
@@ -244,9 +253,7 @@ def run_study(args):
             batch["type"] = "local"
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
-    # Check for a dry run
-    if args.dryrun:
-        raise NotImplementedError("The 'dryrun' mode is in development.")
+
     # Use the Conductor's classmethod to store the study.
     Conductor.store_study(study)
     Conductor.store_batch(study.output_path, batch)
@@ -264,7 +271,7 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.initialize(batch, args.sleeptime)
+            conductor.initialize(batch, sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value

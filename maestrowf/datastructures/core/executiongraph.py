@@ -671,7 +671,14 @@ class ExecutionGraph(DAG, PickleInterface):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        retcode, job_status = self.check_study_status()
+        if not self.dry_run:
+            LOGGER.debug("Checking status check...")
+            retcode, job_status = self.check_study_status()
+        else:
+            LOGGER.debug("DRYRUN: Skipping status check...")
+            retcode = JobStatusCode.OK
+            job_status = {}
+
         LOGGER.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
         # For now, if we can't check the status something is wrong.
