@@ -547,7 +547,7 @@ class ExecutionGraph(DAG, PickleInterface):
             record.generate_script(adapter, self._tmp_dir)
 
         if self.dry_run:
-            record.mark_end(State.FINISHED)
+            record.mark_end(State.DRYRUN)
             self.completed_steps.add(record.name)
             return
 
