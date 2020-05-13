@@ -233,10 +233,11 @@ def run_study(args):
 
     # Set up the study workspace and configure it for execution.
     study.setup_workspace()
-    study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+        dry_run=args.dryrun)
+    study.setup_environment()
 
     batch = {"type": "local"}
     if spec.batch:
@@ -245,9 +246,7 @@ def run_study(args):
             batch["type"] = "local"
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
-    # Check for a dry run
-    if args.dryrun:
-        raise NotImplementedError("The 'dryrun' mode is in development.")
+
     # Use the Conductor's classmethod to store the study.
     Conductor.store_study(study)
     Conductor.store_batch(study.output_path, batch)

@@ -199,12 +199,14 @@ class Study(DAG, PickleInterface):
         LOGGER.debug("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
+        self.is_configured = False
         self.add_node(SOURCE, None)
 
         # Settings for handling restarts and submission attempts.
         self._restart_limit = 0
         self._submission_attempts = 0
         self._use_tmp = False
+        self._dry_run = False
 
         # Management structures
         # The workspace used by each step.
@@ -390,7 +392,8 @@ class Study(DAG, PickleInterface):
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False, hash_ws=False):
+                        throttle=0, use_tmp=False, hash_ws=False,
+                        dry_run=False):
         """
         Perform initial configuration of a study. \
 
@@ -405,6 +408,8 @@ class Study(DAG, PickleInterface):
         denotes no cap].\
         :param use_tmp: Boolean value specifying if the generated \
         ExecutionGraph dumps its information into a temporary directory. \
+        :param dry_run: Boolean value that toggles dry run to just generate \
+        study workspaces and scripts without execution or status checking. \
         :returns: True if the Study is successfully setup, False otherwise. \
         """
 
@@ -413,19 +418,23 @@ class Study(DAG, PickleInterface):
         self._submission_throttle = throttle
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
+        self._dry_run = dry_run
 
         LOGGER.info(
             "\n------------------------------------------\n"
-            "Output path =               %s\n"
             "Submission attempts =       %d\n"
             "Submission restart limit =  %d\n"
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
+            "Dry run enabled =           %s\n"
+            "Output path =               %s\n"
             "------------------------------------------",
-            self._out_path, submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws
+            submission_attempts, restart_limit, throttle,
+            use_tmp, hash_ws, dry_run, self._out_path
         )
+
+        self.is_configured = True
 
     def _stage(self, dag):
         """
@@ -828,7 +837,7 @@ class Study(DAG, PickleInterface):
         dag = ExecutionGraph(
             submission_attempts=self._submission_attempts,
             submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp)
+            use_tmp=self._use_tmp, dry_run=self._dry_run)
         dag.add_description(**self.description)
         dag.log_description()
 
