@@ -236,10 +236,10 @@ def run_study(args):
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dryrun)
+        dry_run=args.dry)
     study.setup_environment()
 
-    if args.dryrun:
+    if args.dry:
         # If performing a dry run, drive sleep time down to generate scripts.
         sleeptime = 1
     else:
@@ -331,7 +331,7 @@ def setup_argparser():
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
-    run.add_argument("-d", "--dryrun", action="store_true", default=False,
+    run.add_argument("--dry", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
