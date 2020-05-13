@@ -239,6 +239,13 @@ def run_study(args):
         dry_run=args.dryrun)
     study.setup_environment()
 
+    if args.dryrun:
+        # If performing a dry run, drive sleep time down to generate scripts.
+        sleeptime = 1
+    else:
+        # else, use args to decide sleeptime
+        sleeptime = args.sleeptime
+
     batch = {"type": "local"}
     if spec.batch:
         batch = spec.batch
@@ -264,7 +271,7 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.initialize(batch, args.sleeptime)
+            conductor.initialize(batch, sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value
@@ -275,7 +282,7 @@ def run_study(args):
                 *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
-                   "-t", str(args.sleeptime),
+                   "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
                    study.output_path,
                    ">", log_path, "2>&1"]
