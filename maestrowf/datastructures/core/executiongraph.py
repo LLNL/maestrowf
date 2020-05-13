@@ -302,7 +302,7 @@ class ExecutionGraph(DAG, PickleInterface):
     """
 
     def __init__(self, submission_attempts=1, submission_throttle=0,
-                 use_tmp=False):
+                 use_tmp=False, dry_run=False):
         """
         Initialize a new instance of an ExecutionGraph.
 
@@ -336,6 +336,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
         self._submission_throttle = submission_throttle
+        self.dry_run = dry_run
 
         # A map that tracks the dependencies of a step.
         # NOTE: I don't know how performant the Python dict structure is, but
@@ -536,6 +537,20 @@ class ExecutionGraph(DAG, PickleInterface):
         # 1. If the JobStatus is not OK.
         # 2. num_restarts is less than self._submission_attempts
         self._check_tmp_dir()
+
+        # Only set up the workspace the initial iteration.
+        if not restart:
+            LOGGER.debug("Setting up workspace for '%s' at %s",
+                         record.name, str(datetime.now()))
+            # Generate the script for execution on the fly.
+            record.setup_workspace()    # Generate the workspace.
+            record.generate_script(adapter, self._tmp_dir)
+
+        if self.dry_run:
+            record.mark_end(State.DRYRUN)
+            self.completed_steps.add(record.name)
+            return
+
         while retcode != SubmissionCode.OK and \
                 num_restarts < self._submission_attempts:
             LOGGER.info("Attempting submission of '%s' (attempt %d of %d)...",
@@ -546,9 +561,6 @@ class ExecutionGraph(DAG, PickleInterface):
             if not restart:
                 LOGGER.debug("Calling 'execute' on '%s' at %s",
                              record.name, str(datetime.now()))
-                # Generate the script for execution on the fly.
-                record.setup_workspace()    # Generate the workspace.
-                record.generate_script(adapter, self._tmp_dir)
                 retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
@@ -659,7 +671,14 @@ class ExecutionGraph(DAG, PickleInterface):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        retcode, job_status = self.check_study_status()
+        if not self.dry_run:
+            LOGGER.debug("Checking status check...")
+            retcode, job_status = self.check_study_status()
+        else:
+            LOGGER.debug("DRYRUN: Skipping status check...")
+            retcode = JobStatusCode.OK
+            job_status = {}
+
         LOGGER.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
         # For now, if we can't check the status something is wrong.

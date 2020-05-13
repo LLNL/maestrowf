@@ -233,10 +233,18 @@ def run_study(args):
 
     # Set up the study workspace and configure it for execution.
     study.setup_workspace()
-    study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+        dry_run=args.dry)
+    study.setup_environment()
+
+    if args.dry:
+        # If performing a dry run, drive sleep time down to generate scripts.
+        sleeptime = 1
+    else:
+        # else, use args to decide sleeptime
+        sleeptime = args.sleeptime
 
     batch = {"type": "local"}
     if spec.batch:
@@ -245,15 +253,13 @@ def run_study(args):
             batch["type"] = "local"
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
-    # Check for a dry run
-    if args.dryrun:
-        raise NotImplementedError("The 'dryrun' mode is in development.")
+
     # Use the Conductor's classmethod to store the study.
     Conductor.store_study(study)
     Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
-    if args.autoyes:
+    if args.autoyes or args.dry:
         uinput = "y"
     elif args.autono:
         uinput = "n"
@@ -265,7 +271,7 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.initialize(batch, args.sleeptime)
+            conductor.initialize(batch, sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value
@@ -276,7 +282,7 @@ def run_study(args):
                 *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
-                   "-t", str(args.sleeptime),
+                   "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
                    study.output_path,
                    ">", log_path, "2>&1"]
@@ -325,7 +331,7 @@ def setup_argparser():
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
-    run.add_argument("-d", "--dryrun", action="store_true", default=False,
+    run.add_argument("--dry", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
