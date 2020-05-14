@@ -200,8 +200,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             jid = re.search('[0-9]+', output).group(0)
             return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
-            LOGGER.warning("Submission returned an error (see next line).")
-            LOGGER.warning(output)
+            LOGGER.warning("Submission returned an error (see next line).\n%s", err) 
             return SubmissionRecord(SubmissionCode.ERROR, retcode)
 
     def check_jobs(self, joblist):
