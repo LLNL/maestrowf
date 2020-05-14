@@ -416,7 +416,6 @@ class Study(DAG, PickleInterface):
         self._submission_attempts = submission_attempts
         self._restart_limit = restart_limit
         self._submission_throttle = throttle
-        self._local_procs = local_procs
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
         self._dry_run = dry_run
