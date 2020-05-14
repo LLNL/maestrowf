@@ -85,7 +85,6 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
             "procs": "# procs = {procs}",
         }
 
-        # Maybe need better types here for populating the queues?
         self.total_procs = self._batch['proc_count']
         self.avail_procs = self.total_procs
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)

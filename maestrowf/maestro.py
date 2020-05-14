@@ -328,6 +328,9 @@ def setup_argparser():
                      help="Maximum number of inflight jobs allowed to execute "
                      "simultaneously (0 denotes not throttling)."
                      "[Default: %(default)d]")
+    run.add_argument("-lp", "--local_procs", type=int, default=1,
+                     help="Max number of processors to use simultaneously."
+                     "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
