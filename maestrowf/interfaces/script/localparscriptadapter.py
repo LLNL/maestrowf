@@ -36,7 +36,6 @@ import uuid
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import PENDING as future_PENDING
-
 from functools import partial as func_partial
 from threading import Thread, RLock
 
@@ -87,12 +86,8 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
         }
 
         # Maybe need better types here for populating the queues?
-        self.START = 0
-        self.CANCEL = 1
-        self.DONE = 2
-        
-        self.total_procs = int(kwargs.pop("proc_count", "1"))
-        self.avail_procs = int(kwargs.pop("avail_procs", "1"))
+        self.total_procs = self._batch['proc_count']
+        self.avail_procs = self.total_procs
         self.executor = ThreadPoolExecutor(max_workers=self.total_procs)
 
     def __getstate__(self):
