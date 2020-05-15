@@ -201,7 +201,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
             LOGGER.warning(
-                "Submission returned an error (see next line).\n%s", err) 
+                "Submission returned an error (see next line).\n%s", err)
             return SubmissionRecord(SubmissionCode.ERROR, retcode)
 
     def check_jobs(self, joblist):
