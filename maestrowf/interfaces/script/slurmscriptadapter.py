@@ -32,7 +32,11 @@ import getpass
 import logging
 import os
 import re
-from collections import ChainMap
+# In order to support Python2.7, we need to catch the import error.
+try:
+    from collections import ChainMap
+except ImportError:
+    from chainmap import ChainMap
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
