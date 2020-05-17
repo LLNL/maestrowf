@@ -6,6 +6,7 @@ enum34; python_version<'3.4'
 dill
 jsonschema>=3.2.0
 coloredlogs
+chainmap; python_version<'3'
 -e .
 
 fabric
