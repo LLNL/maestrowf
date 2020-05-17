@@ -776,18 +776,19 @@ class ExecutionGraph(DAG, PickleInterface):
                             "Step '%s' marked as finished. Found to be in "
                             "UNKNOWN state when previously in FINISHING.",
                             " Adding to completed set.", name)
+                        self.completed_steps.add(name)
                     else:
-                        # We don't know the current state, and previously it
-                        # might have finished successfully. We'll mark it
-                        # unknown, and let the next step fail if this errored.
-                        record.mark_end(State.UNKNOWN)
+                        # We don't know the current state, so we mark it as
+                        # failed. It appears that if something happens in the
+                        # completion hooks, a scheduler can abort.
+                        record.mark_end(State.FAILED)
                         LOGGER.info(
                             "Step '%s' found in UNKNOWN state. Step was found "
                             "in '%s' state previously, making as UNKNOWN. "
                             "Adding to completed step in the event that step "
-                            "succeeded. Adding to completed set.",
+                            "succeeded. Adding to failed set.",
                             name, record.status)
-                    self.completed_steps.add(name)
+                        cleanup_steps.update(self.bfs_subtree(name)[0])
                     self.in_progress.remove(name)
 
                 elif status == State.CANCELLED:
