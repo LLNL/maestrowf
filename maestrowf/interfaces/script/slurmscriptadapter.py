@@ -32,6 +32,11 @@ import getpass
 import logging
 import os
 import re
+# In order to support Python2.7, we need to catch the import error.
+try:
+    from collections import ChainMap
+except ImportError:
+    from chainmap import ChainMap
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
@@ -74,16 +79,24 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
+        # Check for procs separately, as we don't want it in the header if it's
+        # not present.
+        procs = kwargs.get("procs", None)
+        if procs:
+            self.add_batch_parameter("procs", procs)
+
         self._header = {
-            "nodes": "#SBATCH -N {nodes}",
-            "queue": "#SBATCH -p {queue}",
-            "bank": "#SBATCH -A {bank}",
-            "walltime": "#SBATCH -t {walltime}",
+            "nodes": "#SBATCH --nodes={nodes}",
+            "queue": "#SBATCH --partition={queue}",
+            "bank": "#SBATCH --account={bank}",
+            "walltime": "#SBATCH --time={walltime}",
             "job-name":
-                "#SBATCH -J \"{job-name}\"\n"
-                "#SBATCH -o \"{job-name}.out\"\n"
-                "#SBATCH -e \"{job-name}.err\"",
-            "comment": "#SBATCH --comment \"{comment}\""
+                "#SBATCH --job-name=\"{job-name}\"\n"
+                "#SBATCH --output=\"{job-name}.out\"\n"
+                "#SBATCH --error=\"{job-name}.err\"",
+            "comment": "#SBATCH --comment \"{comment}\"",
+            "reservation": "#SBATCH --reservation=\"{reservation}\"",
+            "gpus": "#SBATCH --gres=gpu:{gpus}"
         }
 
         self._cmd_flags = {
@@ -91,7 +104,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "depends": "--dependency",
             "ntasks": "-n",
             "nodes": "-N",
-            "reservation": "--reservation",
             "cores per task": "-c",
         }
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
@@ -104,22 +116,26 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
             the parameter step.
         """
-        run = dict(step.run)
-        batch_header = dict(self._batch)
-        batch_header["walltime"] = run.pop("walltime")
-        if run["nodes"]:
-            batch_header["nodes"] = run.pop("nodes")
-        batch_header["job-name"] = step.name.replace(" ", "_")
-        batch_header["comment"] = step.description.replace("\n", " ")
+        resources = ChainMap(step.run, self._batch)
+        resources["job-name"] = step.name.replace(" ", "_")
+        resources["comment"] = step.description.replace("\n", " ")
 
         modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
-            # If we're looking at the bank and the reservation header exists,
-            # skip the bank to prefer the reservation.
-            if key == "bank" and "reservation" in self._batch:
-                if self._batch["reservation"]:
-                    continue
-            modified_header.append(value.format(**batch_header))
+            if key not in resources:
+                continue
+
+            if resources[key]:
+                modified_header.append(value.format(**resources))
+
+        if "procs" in self._batch:
+            modified_header.append(
+                "#SBATCH --ntasks={}".format(resources["procs"])
+            )
+
+        exclusive = resources.get("exclusive", False)
+        if exclusive:
+            modified_header.append("#SBATCH --exclusive")
 
         return "\n".join(modified_header)
 

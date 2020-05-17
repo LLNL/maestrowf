@@ -42,7 +42,8 @@
           "gpus": {"type": "integer"},
           "cores per task": {"type": "integer"},
           "walltime": {"type": "string", "minLength": 1},
-          "reservation": {"type": "string", "minLength": 1}
+          "reservation": {"type": "string", "minLength": 1},
+          "exclusive": {"type": "boolean"}
         },
         "additionalProperties": false,
         "required": [
