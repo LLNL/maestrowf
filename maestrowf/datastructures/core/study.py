@@ -34,14 +34,15 @@ import logging
 import os
 import pickle
 import re
+from types import MethodType
 import yaml
 
-from maestrowf.abstracts import SimObject
-from maestrowf.datastructures.core import ExecutionGraph
+from maestrowf.abstracts import PickleInterface
 from maestrowf.datastructures.dag import DAG
 from maestrowf.utils import apply_function, create_parentdir, make_safe_path
+from .executiongraph import ExecutionGraph
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
 WSREGEX = re.compile(
     r"\$\(([-!\$%\^&\*\(\)_\+\|~=`{}\[\]:;<>\?,\.\/\w]+)\.workspace\)"
@@ -51,7 +52,7 @@ ALL_COMBOS = re.compile(
 )
 
 
-class StudyStep(SimObject):
+class StudyStep:
     """
     Class that represents the data and API for a single study step.
 
@@ -121,7 +122,7 @@ class StudyStep(SimObject):
         return not self.__eq__(other)
 
 
-class Study(DAG):
+class Study(DAG, PickleInterface):
     """
     Collection of high level objects to perform study construction.
 
@@ -195,15 +196,17 @@ class Study(DAG):
         self._out_path = out_path
         self._meta_path = os.path.join(out_path, "meta")
 
-        logger.info("OUTPUT_PATH = %s", out_path)
+        LOGGER.debug("OUTPUT_PATH = %s", out_path)
         # Flag the study as not having been set up and add the source node.
         self._issetup = False
+        self.is_configured = False
         self.add_node(SOURCE, None)
 
         # Settings for handling restarts and submission attempts.
         self._restart_limit = 0
         self._submission_attempts = 0
         self._use_tmp = False
+        self._dry_run = False
 
         # Management structures
         # The workspace used by each step.
@@ -308,7 +311,7 @@ class Study(DAG):
             msg = "Object loaded from {path} is of type {type}. Expected an" \
                   " object of type '{cls}.'".format(path=path, type=type(env),
                                                     cls=type(self))
-            logger.error(msg)
+            LOGGER.error(msg)
             raise TypeError(msg)
 
         metapath = os.path.join(self._meta_path, "metadata.yaml")
@@ -335,7 +338,7 @@ class Study(DAG):
         """
         # Add the node to the DAG.
         self.add_node(step.name, step)
-        logger.info(
+        LOGGER.info(
             "Adding step '%s' to study '%s'...", step.name, self.name)
         # Apply the environment to the incoming step.
         step.__dict__ = \
@@ -344,7 +347,7 @@ class Study(DAG):
         # If the step depends on a prior step, create an edge.
         if "depends" in step.run and step.run["depends"]:
             for dependency in step.run["depends"]:
-                logger.info("{0} is dependent on {1}. Creating edge ("
+                LOGGER.info("{0} is dependent on {1}. Creating edge ("
                             "{1}, {0})...".format(step.name, dependency))
                 if "*" not in dependency:
                     self.add_edge(dependency, step.name)
@@ -375,21 +378,22 @@ class Study(DAG):
     def setup_workspace(self):
         """Set up the study's main workspace directory."""
         try:
-            logger.info("Setting up study workspace in '%s'", self._out_path)
+            LOGGER.debug("Setting up study workspace in '%s'", self._out_path)
             create_parentdir(self._out_path)
         except Exception as e:
-            logger.error(e.args)
+            LOGGER.error(e.args)
             return False
 
     def setup_environment(self):
         """Set up the environment by acquiring outside dependencies."""
         # Set up the environment if it hasn't been already.
         if not self.environment.is_set_up:
-            logger.info("Environment is setting up.")
+            LOGGER.debug("Environment is setting up.")
             self.environment.acquire_environment()
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False, hash_ws=False):
+                        throttle=0, use_tmp=False, hash_ws=False,
+                        dry_run=False):
         """
         Perform initial configuration of a study. \
 
@@ -404,6 +408,8 @@ class Study(DAG):
         denotes no cap].\
         :param use_tmp: Boolean value specifying if the generated \
         ExecutionGraph dumps its information into a temporary directory. \
+        :param dry_run: Boolean value that toggles dry run to just generate \
+        study workspaces and scripts without execution or status checking. \
         :returns: True if the Study is successfully setup, False otherwise. \
         """
 
@@ -412,19 +418,23 @@ class Study(DAG):
         self._submission_throttle = throttle
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
+        self._dry_run = dry_run
 
-        logger.info(
+        LOGGER.info(
             "\n------------------------------------------\n"
-            "Output path =               %s\n"
             "Submission attempts =       %d\n"
             "Submission restart limit =  %d\n"
             "Submission throttle limit = %d\n"
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
+            "Dry run enabled =           %s\n"
+            "Output path =               %s\n"
             "------------------------------------------",
-            self._out_path, submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws
+            submission_attempts, restart_limit, throttle,
+            use_tmp, hash_ws, dry_run, self._out_path
         )
+
+        self.is_configured = True
 
     def _stage(self, dag):
         """
@@ -436,7 +446,7 @@ class Study(DAG):
             steps.
         """
         # Items to store that should be reset.
-        logger.info(
+        LOGGER.info(
             "\n==================================================\n"
             "Constructing parameter study '%s'\n"
             "==================================================\n",
@@ -462,7 +472,7 @@ class Study(DAG):
         # used parameters of the step, and then adding all parameterized
         # combinations of funneled steps.
         for step in t_sorted:
-            logger.info(
+            LOGGER.info(
                 "\n==================================================\n"
                 "Processing step '%s'\n"
                 "==================================================\n",
@@ -470,7 +480,7 @@ class Study(DAG):
             )
             # If we encounter SOURCE, just add it and continue.
             if step == SOURCE:
-                logger.info("Encountered '%s'. Adding and continuing.", SOURCE)
+                LOGGER.info("Encountered '%s'. Adding and continuing.", SOURCE)
                 dag.add_node(SOURCE, None)
                 continue
 
@@ -484,15 +494,15 @@ class Study(DAG):
             s_params = self.parameters.get_used_parameters(node)
             p_params = set()    # Used parameters excluding the current step.
             # Iterate through dependencies to update the p_params
-            logger.debug("\n*** Processing dependencies ***")
+            LOGGER.debug("\n*** Processing dependencies ***")
             for parent in node.run["depends"]:
                 # If we have a dependency that is parameter independent, add
                 # it to the hub dependency set.
                 if "*" in parent:
-                    logger.debug("Found funnel dependency -- %s", parent)
+                    LOGGER.debug("Found funnel dependency -- %s", parent)
                     self.hub_depends[step].add(re.sub(ALL_COMBOS, "", parent))
                 else:
-                    logger.debug("Found dependency -- %s", parent)
+                    LOGGER.debug("Found dependency -- %s", parent)
                     # Otherwise, just note the parameters used by the step.
                     self.depends[step].add(parent)
                     p_params |= self.used_params[parent]
@@ -500,24 +510,25 @@ class Study(DAG):
             # Search for workspace matches. These affect the expansion of a
             # node because they may use parameters. These are likely to cause
             # a node to fall into the 'Parameter Dependent' case.
-            used_spaces = re.findall(WSREGEX, node.run["cmd"])
+            used_spaces = re.findall(
+                WSREGEX, "{} {}".format(node.run["cmd"], node.run["restart"]))
             for ws in used_spaces:
                 if ws not in self.used_params:
                     msg = "Workspace for '{}' is being used before it would" \
                           " be generated.".format(ws)
-                    logger.error(msg)
+                    LOGGER.error(msg)
                     raise Exception(msg)
 
                 # We have the case that if we're using a workspace of a step
                 # that is a parameter independent dependency, we can skip it.
                 # The parameters don't affect the combinations.
                 if ws in self.hub_depends[step]:
-                    logger.info(
+                    LOGGER.info(
                         "'%s' parameter independent association found. "
                         "Skipping.", ws)
                     continue
 
-                logger.debug(
+                LOGGER.debug(
                     "Found workspace '%s' using parameters %s",
                     ws, self.used_params[ws])
                 p_params |= self.used_params[ws]
@@ -534,7 +545,7 @@ class Study(DAG):
 
             # 1. The step and all its preceding parents use no parameters.
             if not self.used_params[step]:
-                logger.info(
+                LOGGER.info(
                     "\n-------------------------------------------------\n"
                     "Adding step '%s' (No parameters used)\n"
                     "-------------------------------------------------\n",
@@ -546,23 +557,23 @@ class Study(DAG):
 
                 workspace = make_safe_path(self._out_path, *[step])
                 self.workspaces[step] = workspace
-                logger.debug("Workspace: %s", workspace)
+                LOGGER.debug("Workspace: %s", workspace)
 
                 # NOTE: I don't think it's valid to have a specific workspace
                 # since a step with no parameters operates at the global level.
                 # NOTE: Opting to save the old command for provenence reasons.
                 cmd = node.run["cmd"]
                 r_cmd = node.run["restart"]
-                logger.info("Searching for workspaces...\ncmd = %s", cmd)
+                LOGGER.info("Searching for workspaces...\ncmd = %s", cmd)
                 for match in used_spaces:
-                    logger.info("Workspace found -- %s", match)
+                    LOGGER.info("Workspace found -- %s", match)
                     workspace_var = "$({}.workspace)".format(match)
                     if match in self.hub_depends[step]:
                         # If we're looking at a parameter independent match
                         # the workspace is the folder that contains all of
                         # the outputs of all combinations for the step.
                         ws = make_safe_path(self._out_path, *[match])
-                        logger.info("Found funnel workspace -- %s", ws)
+                        LOGGER.info("Found funnel workspace -- %s", ws)
                     else:
                         ws = self.workspaces[match]
                     cmd = cmd.replace(workspace_var, ws)
@@ -571,35 +582,36 @@ class Study(DAG):
                 # here, it's reflected in the ExecutionGraph.
                 node = copy.deepcopy(node)
                 node.run["cmd"] = cmd
-                logger.debug("New cmd = %s", cmd)
-                logger.debug("New restart = %s", r_cmd)
+                node.run["restart"] = r_cmd
+                LOGGER.debug("New cmd = %s", cmd)
+                LOGGER.debug("New restart = %s", r_cmd)
 
                 dag.add_step(step, node, workspace, rlimit)
 
                 if self.depends[step] or self.hub_depends[step]:
                     # So, because we don't have used parameters, we can just
                     # loop over the dependencies and add them.
-                    logger.debug("Processing regular dependencies.")
+                    LOGGER.debug("Processing regular dependencies.")
                     for parent in self.depends[step]:
-                        logger.info("Adding edge (%s, %s)...", parent, step)
+                        LOGGER.info("Adding edge (%s, %s)...", parent, step)
                         dag.add_connection(parent, step)
 
                     # We can still have a case where we have steps that do
                     # funnel into this one even though this particular step
                     # is not parameterized.
-                    logger.debug("Processing hub dependencies.")
+                    LOGGER.debug("Processing hub dependencies.")
                     for parent in self.hub_depends[step]:
                         for item in self.step_combos[parent]:
-                            logger.info("Adding edge (%s, %s)...", item, step)
+                            LOGGER.info("Adding edge (%s, %s)...", item, step)
                             dag.add_connection(item, step)
                 else:
                     # Otherwise, just add source since we're not dependent.
-                    logger.debug("Adding edge (%s, %s)...", SOURCE, step)
+                    LOGGER.debug("Adding edge (%s, %s)...", SOURCE, step)
                     dag.add_connection(SOURCE, step)
 
             # 2. The step has used parameters.
             else:
-                logger.info(
+                LOGGER.info(
                     "\n==================================================\n"
                     "Expanding step '%s'\n"
                     "==================================================\n"
@@ -610,7 +622,7 @@ class Study(DAG):
                 )
                 # Now we iterate over the combinations and expand the step.
                 for combo in self.parameters:
-                    logger.info("\n**********************************\n"
+                    LOGGER.info("\n**********************************\n"
                                 "Combo [%s]\n"
                                 "**********************************",
                                 str(combo))
@@ -623,7 +635,7 @@ class Study(DAG):
                     else:
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
-                        logger.debug("Workspace: %s", workspace)
+                        LOGGER.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
 
@@ -639,23 +651,23 @@ class Study(DAG):
                     # Substitute workspaces into the combination.
                     cmd = step_exp.run["cmd"]
                     r_cmd = step_exp.run["restart"]
-                    logger.info("Searching for workspaces...\ncmd = %s", cmd)
+                    LOGGER.info("Searching for workspaces...\ncmd = %s", cmd)
                     for match in used_spaces:
                         # Construct the workspace variable.
-                        logger.info("Workspace found -- %s", ws)
+                        LOGGER.info("Workspace found -- %s", ws)
                         workspace_var = "$({}.workspace)".format(match)
                         if match in self.hub_depends[step]:
                             # If we're looking at a parameter independent match
                             # the workspace is the folder that contains all of
                             # the outputs of all combinations for the step.
                             ws = make_safe_path(self._out_path, *[match])
-                            logger.info("Found funnel workspace -- %s", ws)
+                            LOGGER.info("Found funnel workspace -- %s", ws)
                         elif not self.used_params[match]:
                             # If it's not a funneled dependency and the match
                             # is not parameterized, then the workspace is just
                             # the unparameterized match.
                             ws = self.workspaces[match]
-                            logger.info(
+                            LOGGER.info(
                                 "Found unparameterized workspace -- %s", match)
                         else:
                             # Otherwise, we're dealing with a combination.
@@ -663,14 +675,14 @@ class Study(DAG):
                                 match,
                                 combo.get_param_string(self.used_params[match])
                             )
-                            logger.info(
+                            LOGGER.info(
                                 "Found parameterized workspace -- %s", ws)
                             ws = self.workspaces[ws]
 
                         # Replace in both the command and restart command.
                         cmd = cmd.replace(workspace_var, ws)
                         r_cmd = r_cmd.replace(workspace_var, ws)
-                    logger.info("New cmd = %s", cmd)
+                    LOGGER.info("New cmd = %s", cmd)
 
                     step_exp.run["cmd"] = cmd
                     step_exp.run["restart"] = r_cmd
@@ -680,14 +692,14 @@ class Study(DAG):
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can
                         # just loop over the dependencies and add them.
-                        logger.info("Processing regular dependencies.")
+                        LOGGER.info("Processing regular dependencies.")
                         for p in self.depends[step]:
                             if self.used_params[p]:
                                 p = "{}_{}".format(
                                     p,
                                     combo.get_param_string(self.used_params[p])
                                 )
-                            logger.info(
+                            LOGGER.info(
                                 "Adding edge (%s, %s)...", p, combo_str
                             )
                             dag.add_connection(p, combo_str)
@@ -695,16 +707,16 @@ class Study(DAG):
                         # We can still have a case where we have steps that do
                         # funnel into this one even though this particular step
                         # is not parameterized.
-                        logger.debug("Processing hub dependencies.")
+                        LOGGER.debug("Processing hub dependencies.")
                         for parent in self.hub_depends[step]:
                             for item in self.step_combos[parent]:
-                                logger.info(
+                                LOGGER.info(
                                     "Adding edge (%s, %s)...", item, combo_str
                                 )
                                 dag.add_connection(item, combo_str)
                     else:
                         # Otherwise, just add source since we're not dependent.
-                        logger.debug(
+                        LOGGER.debug(
                             "Adding edge (%s, %s)...", SOURCE, combo_str
                         )
                         dag.add_connection(SOURCE, combo_str)
@@ -725,7 +737,7 @@ class Study(DAG):
         for step in t_sorted:
             # If we find the source node, we can just add it and continue.
             if step == SOURCE:
-                logger.debug("Source node found.")
+                LOGGER.debug("Source node found.")
                 dag.add_node(SOURCE, None)
                 continue
 
@@ -748,12 +760,12 @@ class Study(DAG):
 
             cmd = node.run["cmd"]
             r_cmd = node.run["restart"]
-            logger.info("Searching for workspaces...\ncmd = %s", cmd)
+            LOGGER.info("Searching for workspaces...\ncmd = %s", cmd)
             used_spaces = re.findall(WSREGEX, cmd)
             for match in used_spaces:
                 # In this case we don't need to look for any parameters, or
                 # combination depdendent ("funnel") steps. It's a simple sub.
-                logger.info("Workspace found -- %s", match)
+                LOGGER.info("Workspace found -- %s", match)
                 workspace_var = "$({}.workspace)".format(match)
                 ws = self.workspaces[match]
                 cmd = cmd.replace(workspace_var, ws)
@@ -792,14 +804,14 @@ class Study(DAG):
         if not os.path.exists(self._out_path):
             msg = "Study {} is not set up for staging. Workspace does not " \
                   "exists (Output Dir = {}).".format(self.name, self._out_path)
-            logger.error(msg)
+            LOGGER.error(msg)
             raise Exception(msg)
 
         # If the environment isn't set up, raise an exception.
         if not self.environment.is_set_up:
             msg = "Study {} is not set up for staging. Environment is not " \
                   "set up. Aborting.".format(self.name)
-            logger.error(msg)
+            LOGGER.error(msg)
             raise Exception(msg)
 
         # After substituting, we should start getting combinations and
@@ -825,8 +837,17 @@ class Study(DAG):
         dag = ExecutionGraph(
             submission_attempts=self._submission_attempts,
             submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp)
+            use_tmp=self._use_tmp, dry_run=self._dry_run)
         dag.add_description(**self.description)
         dag.log_description()
+
+        # Because we're working within a Study class whose steps have already
+        # been verified to not contain a cycle, we can override the check for
+        # the execution graph. Because the execution graph is constructed from
+        # the study steps, it won't contain a cycle.
+        def _pass_detect_cycle(self):
+            pass
+
+        dag.detect_cycle = MethodType(_pass_detect_cycle, dag)
 
         return self._out_path, self._stage(dag)

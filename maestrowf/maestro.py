@@ -29,8 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
-from filelock import FileLock, Timeout
-import inspect
+import jsonschema
 import logging
 import os
 import shutil
@@ -40,62 +39,58 @@ import tabulate
 import time
 
 from maestrowf import __version__
-from maestrowf.conductor import monitor_study
+from maestrowf.conductor import Conductor
 from maestrowf.datastructures import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
-    create_parentdir, create_dictionary, csvtable_to_dict, make_safe_path, \
+    create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
 
 
 # Program Globals
-ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
 LOGGER = logging.getLogger(__name__)
+LOG_UTIL = LoggerUtility(LOGGER)
 
 # Configuration globals
-LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
-          "%(levelname)s - %(message)s"
+DEBUG_FORMAT = "[%(asctime)s: %(levelname)s] " \
+               "[%(module)s: %(lineno)d] %(message)s"
+LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
 ACCEPTED_INPUT = set(["yes", "y"])
 
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    study_path = args.directory
-    stat_path = os.path.join(study_path, "status.csv")
-    lock_path = os.path.join(study_path, ".status.lock")
-    if os.path.exists(stat_path):
-        lock = FileLock(lock_path)
-        try:
-            with lock.acquire(timeout=10):
-                with open(stat_path, "r") as stat_file:
-                    _ = csvtable_to_dict(stat_file)
-                    print(tabulate.tabulate(_, headers="keys"))
-        except Timeout:
-            pass
+    status = Conductor.get_status(args.directory)
 
-    return 0
+    if status:
+        print(tabulate.tabulate(status, headers="keys"))
+        return 0
+    else:
+        print(
+            "Status check failed. If the issue persists, please verify that"
+            "you are passing in a path to a study.")
+        return 1
 
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
     if not os.path.isdir(args.directory):
+        print("Attempted to cancel a path that was not a directory.")
         return 1
 
-    lock_path = os.path.join(args.directory, ".cancel.lock")
-
-    with open(lock_path, 'a'):
-        os.utime(lock_path, None)
+    Conductor.mark_cancelled(args.directory)
 
     return 0
 
 
-def load_parameter_generator(path, kwargs):
+def load_parameter_generator(path, env, kwargs):
     """
     Import and load custom parameter Python files.
 
     :param path: Path to a Python file containing the function \
     'get_custom_generator'.
+    :param env: A StudyEnvironment object containing custom information.
     :param kwargs: Dictionary containing keyword arguments for the function \
     'get_custom_generator'.
     :returns: A populated ParameterGenerator instance.
@@ -109,20 +104,20 @@ def load_parameter_generator(path, kwargs):
         spec = importlib.util.spec_from_file_location("custom_gen", path)
         f = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(f)
-        return f.get_custom_generator(**kwargs)
+        return f.get_custom_generator(env, **kwargs)
     except ImportError:
         try:
             # Python 3.3
             from importlib.machinery import SourceFileLoader
             LOGGER.debug("Using Python 3.4 SourceFileLoader...")
             f = SourceFileLoader("custom_gen", path).load_module()
-            return f.get_custom_generator(**kwargs)
+            return f.get_custom_generator(env, **kwargs)
         except ImportError:
             # Python 2
             import imp
             LOGGER.debug("Using Python 2 imp library...")
             f = imp.load_source("custom_gen", path)
-            return f.get_custom_generator(**kwargs)
+            return f.get_custom_generator(env, **kwargs)
     except Exception as e:
         LOGGER.exception(str(e))
         raise e
@@ -131,7 +126,11 @@ def load_parameter_generator(path, kwargs):
 def run_study(args):
     """Run a Maestro study."""
     # Load the Specification
-    spec = YAMLSpecification.load_specification(args.specification)
+    try:
+        spec = YAMLSpecification.load_specification(args.specification)
+    except jsonschema.ValidationError as e:
+        LOGGER.error(e.message)
+        sys.exit(1)
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
 
@@ -174,14 +173,21 @@ def run_study(args):
         output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
 
-    # Now that we know outpath, set up logging.
-    setup_logging(args, output_path, spec.name.replace(" ", "_").lower())
+    # Set up file logging
+    create_parentdir(os.path.join(output_path, "logs"))
+    log_path = os.path.join(output_path, "logs", "{}.log".format(spec.name))
+    LOG_UTIL.add_file_handler(log_path, LFORMAT, args.debug_lvl)
 
     # Check for pargs without the matching pgen
     if args.pargs and not args.pgen:
         msg = "Cannot use the 'pargs' parameter without specifying a 'pgen'!"
         LOGGER.exception(msg)
         raise ArgumentError(msg)
+
+    # Addition of the $(SPECROOT) to the environment.
+    spec_root = os.path.split(args.specification)[0]
+    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
+    environment.add(spec_root)
 
     # Handle loading a custom ParameterGenerator if specified.
     if args.pgen:
@@ -190,14 +196,15 @@ def run_study(args):
         kwargs = create_dictionary(args.pargs)
         # Copy the Python file used to generate parameters.
         shutil.copy(args.pgen, output_path)
-        parameters = load_parameter_generator(args.pgen, kwargs)
+
+        # Add keywords and environment from the spec to pgen args.
+        kwargs["OUTPUT_PATH"] = output_path
+        kwargs["SPECROOT"] = spec_root
+
+        # Load the parameter generator.
+        parameters = load_parameter_generator(args.pgen, environment, kwargs)
     else:
         parameters = spec.get_parameters()
-
-    # Addition of the $(SPECROOT) to the environment.
-    spec_root = os.path.split(args.specification)[0]
-    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
-    environment.add(spec_root)
 
     # Setup the study.
     study = Study(spec.name, spec.description, studyenv=environment,
@@ -226,37 +233,33 @@ def run_study(args):
 
     # Set up the study workspace and configure it for execution.
     study.setup_workspace()
-    study.setup_environment()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws)
+        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+        dry_run=args.dry)
+    study.setup_environment()
 
-    # Stage the study.
-    path, exec_dag = study.stage()
-    # Write metadata
-    study.store_metadata()
-
-    if not spec.batch:
-        exec_dag.set_adapter({"type": "local"})
+    if args.dry:
+        # If performing a dry run, drive sleep time down to generate scripts.
+        sleeptime = 1
     else:
-        if "type" not in spec.batch:
-            spec.batch["type"] = "local"
+        # else, use args to decide sleeptime
+        sleeptime = args.sleeptime
 
-        exec_dag.set_adapter(spec.batch)
-
+    batch = {"type": "local"}
+    if spec.batch:
+        batch = spec.batch
+        if "type" not in batch:
+            batch["type"] = "local"
     # Copy the spec to the output directory
-    shutil.copy(args.specification, path)
+    shutil.copy(args.specification, study.output_path)
 
-    # Check for a dry run
-    if args.dryrun:
-        raise NotImplementedError("The 'dryrun' mode is in development.")
-
-    # Pickle up the DAG
-    pkl_path = make_safe_path(path, *["{}.pkl".format(study.name)])
-    exec_dag.pickle(pkl_path)
+    # Use the Conductor's classmethod to store the study.
+    Conductor.store_study(study)
+    Conductor.store_batch(study.output_path, batch)
 
     # If we are automatically launching, just set the input as yes.
-    if args.autoyes:
+    if args.autoyes or args.dry:
         uinput = "y"
     elif args.autono:
         uinput = "n"
@@ -267,22 +270,22 @@ def run_study(args):
         if args.fg:
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
-            cancel_path = os.path.join(path, ".cancel.lock")
-            # capture the StudyStatus enum to return
-            completion_status = monitor_study(exec_dag, pkl_path,
-                                              cancel_path, args.sleeptime)
+            conductor = Conductor(study)
+            conductor.initialize(batch, sleeptime)
+            completion_status = conductor.monitor_study()
+            conductor.cleanup()
             return completion_status.value
         else:
             # Launch manager with nohup
             log_path = make_safe_path(
                 study.output_path,
-                *["{}.txt".format(exec_dag.name)])
+                *["{}.txt".format(study.name)])
 
             cmd = ["nohup", "conductor",
-                   "-t", str(args.sleeptime),
+                   "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
-                   path,
-                   "&>", log_path]
+                   study.output_path,
+                   ">", log_path, "2>&1"]
             LOGGER.debug(" ".join(cmd))
             start_process(" ".join(cmd))
 
@@ -328,7 +331,7 @@ def setup_argparser():
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
-    run.add_argument("-d", "--dryrun", action="store_true", default=False,
+    run.add_argument("--dry", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
@@ -399,49 +402,6 @@ def setup_argparser():
     return parser
 
 
-def setup_logging(args, path, name):
-    """
-    Set up logging based on the ArgumentParser.
-
-    :param args: A Namespace object created by a parsed ArgumentParser.
-    :param path: A default path to be used if a log path is not specified by
-        user command line arguments.
-    :param name: The name of the log file.
-    """
-    # If the user has specified a path, use that.
-    if args.logpath:
-        logpath = args.logpath
-    # Otherwise, we should just output to the OUTPUT_PATH.
-    else:
-        logpath = make_safe_path(path, *["logs"])
-
-    loglevel = args.debug_lvl * 10
-
-    # Create the FileHandler and add it to the logger.
-    create_parentdir(logpath)
-    formatter = logging.Formatter(LFORMAT)
-    ROOTLOGGER.setLevel(loglevel)
-
-    log_path = make_safe_path(logpath, *["{}.log".format(name)])
-    fh = logging.FileHandler(log_path)
-    fh.setLevel(loglevel)
-    fh.setFormatter(formatter)
-    ROOTLOGGER.addHandler(fh)
-
-    if args.logstdout:
-        # Add the StreamHandler
-        sh = logging.StreamHandler()
-        sh.setLevel(loglevel)
-        sh.setFormatter(formatter)
-        ROOTLOGGER.addHandler(sh)
-
-    # Print the level of logging.
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
-
-
 def main():
     """
     Execute the main program's functionality.
@@ -453,6 +413,19 @@ def main():
     # Set up the necessary base data structures to begin study set up.
     parser = setup_argparser()
     args = parser.parse_args()
+
+    # If we have requested to log stdout, set it up to be logged.
+    if args.logstdout:
+        if args.debug_lvl == 1:
+            lformat = DEBUG_FORMAT
+        else:
+            lformat = LFORMAT
+        LOG_UTIL.configure(lformat, args.debug_lvl)
+
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
     rc = args.func(args)
     sys.exit(rc)

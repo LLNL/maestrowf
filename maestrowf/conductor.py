@@ -36,23 +36,73 @@ import logging
 import os
 import sys
 from time import sleep
+import dill
+import yaml
 
 from maestrowf.abstracts.enums import StudyStatus
-from maestrowf.datastructures.core import ExecutionGraph
-from maestrowf.utils import create_parentdir
+from maestrowf.datastructures.core import Study
+from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
 
 # Logger instantiation
-rootlogger = logging.getLogger(inspect.getmodule(__name__))
-logger = logging.getLogger(__name__)
+ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
+LOGGER = logging.getLogger(__name__)
 
 # Formatting of logger.
-LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
-               "%(levelname)s - %(message)s"
+LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
 
 
-def setup_argparser():
-    """Set up the program's argument parser."""
-    parser = ArgumentParser(prog="ExecutionManager",
+def setup_logging(name, output_path, log_lvl=2, log_path=None,
+                  log_stdout=False, log_format=None):
+    """
+    Set up logging in the Main class.
+    :param args: A Namespace object created by a parsed ArgumentParser.
+    :param name: The name of the log file.
+    """
+    # Check if the user has specified a custom log path.
+    if log_path:
+        LOGGER.info(
+            "Log path overwritten by command line -- %s", log_path)
+    else:
+        log_path = os.path.join(output_path, "logs")
+
+    if not log_format:
+        log_format = LFORMAT
+
+    loglevel = log_lvl * 10
+
+    # Attempt to create the logging directory.
+    create_parentdir(log_path)
+    formatter = logging.Formatter(LFORMAT)
+    ROOTLOGGER.setLevel(loglevel)
+
+    # Set up handlers
+    if log_stdout:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        ROOTLOGGER.addHandler(handler)
+
+    log_file = os.path.join(log_path, "{}.log".format(name))
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(formatter)
+    ROOTLOGGER.addHandler(handler)
+    ROOTLOGGER.setLevel(loglevel)
+
+    # Print the level of logging.
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
+
+
+def setup_parser():
+    """
+    Set up the Conductors's argument parser.
+
+    :returns: A ArgumentParser that's initialized with the conductor's CLI.
+    """
+
+    # Set up the parser for our conductor here.
+    parser = ArgumentParser(prog="Conductor",
                             description="An application for checking and "
                             "managing an ExecutionDAG within an executing"
                             "study.",
@@ -75,137 +125,272 @@ def setup_argparser():
                              "2 - Info (Default)\n"
                              "1 - Debug")
     parser.add_argument("-c", "--logstdout", action="store_true",
-                        help="Output logging to stdout in addition to a file.")
+                        help="Output logging to stdout in addition to a "
+                             "file.")
     parser.add_argument("-t", "--sleeptime", type=int, default=60,
-                        help="Amount of time (in seconds) for the manager to "
-                        "wait between job status checks.")
+                        help="Amount of time (in seconds) for the manager"
+                             " to wait between job status checks.")
 
     return parser
 
 
-def setup_logging(args, name):
-    """
-    Set up logging in the Main class.
+class Conductor:
+    """A class that provides an API for interacting with the Conductor."""
 
-    :param args: A Namespace object created by a parsed ArgumentParser.
-    :param name: The name of the log file.
-    """
-    # Check if the user has specified a custom log path.
-    if args.logpath:
-        logger.info("Log path overwritten by command line -- %s",
-                    args.logpath)
-        log_path = args.logpath
-    else:
-        log_path = os.path.join(args.directory, "logs")
+    _pkl_extension = ".study.pkl"
+    _cancel_lock = ".cancel.lock"
+    _batch_info = "batch.info"
 
-    loglevel = args.debug_lvl * 10
+    def __init__(self, study):
+        """
+        Create a new instance of a Conductor class.
 
-    # Attempt to create the logging directory.
-    create_parentdir(log_path)
-    formatter = logging.Formatter(LFORMAT)
-    rootlogger.setLevel(loglevel)
+        :param study: An instance of a populated Maestro study.
+        """
+        self._study = study
+        self._setup = False
 
-    # Set up handlers
-    if args.logstdout:
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        rootlogger.addHandler(handler)
+    @property
+    def output_path(self):
+        """
+        Return the path representing the root of the study workspace.
 
-    log_file = os.path.join(log_path, "{}.log".format(name))
-    handler = logging.FileHandler(log_file)
-    handler.setFormatter(formatter)
-    rootlogger.addHandler(handler)
-    rootlogger.setLevel(loglevel)
+        :returns: A string containing the path to the study's root.
+        """
+        return self._study.output_path
 
-    # Print the level of logging.
-    logger.info("INFO Logging Level -- Enabled")
-    logger.warning("WARNING Logging Level -- Enabled")
-    logger.critical("CRITICAL Logging Level -- Enabled")
-    logger.debug("DEBUG Logging Level -- Enabled")
+    @property
+    def study_name(self):
+        """
+        Return the name of the study this Conductor instance is managing.
 
+        :returns: A string containing the name of the study.
+        """
+        return self._study.name
 
-def monitor_study(dag, pickle_path, cancel_lock_path, sleep_time):
-    """Monitor a running study."""
-    logger.debug("\n -------- Calling monitor study -------\n"
-                 "pkl path    = %s"
-                 "cancel path = %s"
-                 "sleep time  = %s",
-                 pickle_path, cancel_lock_path, sleep_time)
+    @classmethod
+    def store_study(cls, study):
+        """
+        Store a Maestro study instance in a way the Conductor can read it.
+        """
+        # Pickle up the Study
+        pkl_name = "{}{}".format(study.name, cls._pkl_extension)
+        pkl_path = make_safe_path(study.output_path, pkl_name)
+        study.pickle(pkl_path)
 
-    completion_status = StudyStatus.RUNNING
-    while completion_status == StudyStatus.RUNNING:
-        if os.path.exists(cancel_lock_path):
-            # cancel the study if a cancel lock file is found
-            cancel_lock = FileLock(cancel_lock_path)
+    @classmethod
+    def load_batch(cls, out_path):
+        """
+        Load the batch information for the study rooted in 'out_path'.
+
+        :param out_path: A string containing the path to a study root.
+        :returns: A dict containing the batch information for the study.
+        """
+        batch_path = os.path.join(out_path, cls._batch_info)
+
+        if not os.path.exists(batch_path):
+            msg = "Batch info files is missing. Please re-run Maestro."
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        with open(batch_path, 'r') as data:
             try:
-                with cancel_lock.acquire(timeout=10):
-                    # we have the lock
-                    dag.cancel_study()
-                os.remove(cancel_lock_path)
-                logger.info("Study '%s' has been cancelled.", dag.name)
+                batch_info = yaml.load(data, yaml.FullLoader)
+            except AttributeError:
+                LOGGER.warning(
+                    "*** PyYAML is using an unsafe version with a known "
+                    "load vulnerability. Please upgrade your installation "
+                    "to a more recent version! ***")
+                batch_info = yaml.load(data)
+
+        return batch_info
+
+    @classmethod
+    def store_batch(cls, out_path, batch):
+        """
+        Store the specified batch information to the study in 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        """
+        path = os.path.join(out_path, cls._batch_info)
+        with open(path, "wb") as batch_info:
+            batch_info.write(yaml.dump(batch).encode("utf-8"))
+
+    @classmethod
+    def load_study(cls, out_path):
+        """
+        Load the Study instance in the study root specified by 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A string containing the path to the study's root.
+        """
+        study_glob = \
+            glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
+
+        print(study_glob)
+        if len(study_glob) == 1:
+            # We only expect one result.If we only get one, let's assume and
+            # check after.
+            path = study_glob[0]
+
+            with open(path, 'rb') as pkl:
+                obj = dill.load(pkl)
+
+            if not isinstance(obj, Study):
+                msg = \
+                    "Object loaded from {path} is of type {type}. Expected " \
+                    "an object of type '{cls}.'" \
+                    .format(path=path, type=type(obj), cls=type(Study))
+                LOGGER.error(msg)
+                raise TypeError(msg)
+        else:
+            if len(study_glob) > 1:
+                msg = "More than one pickle found. Expected one. Aborting."
+            else:
+                msg = "No pickle found. Aborting."
+
+            msg = "Corrupted study directory found. {}".format(msg)
+            raise Exception(msg)
+
+        # Return the Study object
+        return obj
+
+    @classmethod
+    def get_status(cls, output_path):
+        """
+        Retrieve the status of the study rooted at 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A dictionary containing the status of the study.
+        """
+        stat_path = os.path.join(output_path, "status.csv")
+        lock_path = os.path.join(output_path, ".status.lock")
+        _ = {}
+        if os.path.exists(stat_path):
+            lock = FileLock(lock_path)
+            try:
+                with lock.acquire(timeout=10):
+                    with open(stat_path, "r") as stat_file:
+                        _ = csvtable_to_dict(stat_file)
             except Timeout:
-                logger.error("Failed to acquire cancellation lock.")
                 pass
 
-        logger.info("Checking DAG status at %s", str(datetime.now()))
-        # Execute steps that are ready
-        # Recieves StudyStatus enum
-        completion_status = dag.execute_ready_steps()
-        # Re-pickle the ExecutionGraph.
-        dag.pickle(pickle_path)
-        # Write out the state
-        dag.write_status(os.path.split(pickle_path)[0])
-        # Sleep for SLEEPTIME in args if study not complete.
-        if completion_status == StudyStatus.RUNNING:
-            sleep(sleep_time)
+        return _
 
-    return completion_status
+    @classmethod
+    def mark_cancelled(cls, output_path):
+        """
+        Mark the study rooted at 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A dictionary containing the status of the study.
+        """
+        lock_path = make_safe_path(output_path, cls._cancel_lock)
+        with open(lock_path, 'a'):
+            os.utime(lock_path, None)
+
+    def initialize(self, batch_info, sleeptime=60):
+        """
+        Initializes the Conductor instance based on the stored study.
+
+        :param batch_info: A dict containing batch information.
+        :param sleeptime: The amount of sleep time between polling loops
+        [Default: 60s].
+        """
+        # Set our conductor's sleep time.
+        self.sleep_time = sleeptime
+        # Stage the study.
+        self._pkl_path, self._exec_dag = self._study.stage()
+        # Write metadata
+        self._exec_dag.set_adapter(batch_info)
+        self._study.store_metadata()
+        self._setup = True
+
+    def monitor_study(self):
+        """Monitor a running study."""
+        if not self._setup:
+            msg = \
+                "Study '{}' located in '{}' not initialized. Initialize " \
+                "study before calling launching. Aborting." \
+                .format(self.study_name, self.output_path)
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        # Set some fixed variables that monitor will use.
+        cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
+        dag = self._exec_dag
+        pkl_path = \
+            os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
+        sleep_time = self.sleep_time
+
+        LOGGER.debug(
+            "\n -------- Calling monitor study -------\n"
+            "pkl path    = %s\n"
+            "cancel path = %s\n"
+            "sleep time  = %s\n"
+            "------------------------------------------\n",
+            pkl_path, cancel_lock_path, sleep_time)
+
+        completion_status = StudyStatus.RUNNING
+        while completion_status == StudyStatus.RUNNING:
+            if os.path.exists(cancel_lock_path):
+                # cancel the study if a cancel lock file is found
+                cancel_lock = FileLock(cancel_lock_path)
+                try:
+                    with cancel_lock.acquire(timeout=10):
+                        # we have the lock
+                        dag.cancel_study()
+                    os.remove(cancel_lock_path)
+                    LOGGER.info("Study '%s' has been cancelled.", dag.name)
+                except Timeout:
+                    LOGGER.error("Failed to acquire cancellation lock.")
+                    pass
+
+            LOGGER.info("Checking DAG status at %s", str(datetime.now()))
+            # Execute steps that are ready
+            # Recieves StudyStatus enum
+            completion_status = dag.execute_ready_steps()
+            # Re-pickle the ExecutionGraph.
+            dag.pickle(pkl_path)
+            # Write out the state
+            dag.write_status(os.path.split(pkl_path)[0])
+            # Sleep for SLEEPTIME in args if study not complete.
+            if completion_status == StudyStatus.RUNNING:
+                sleep(sleep_time)
+
+        return completion_status
+
+    def cleanup(self):
+        self._exec_dag.cleanup()
 
 
 def main():
     """Run the main segment of the conductor."""
+    conductor = None
+
     try:
-        # Set up and parse the ArgumentParser
-        parser = setup_argparser()
+        # Parse the command line args and load the study.
+        parser = setup_parser()
         args = parser.parse_args()
+        study = Conductor.load_study(args.directory)
+        setup_logging(study.name, args.directory, args.debug_lvl,
+                      args.logpath, args.logstdout)
+        batch_info = Conductor.load_batch(args.directory)
 
-        # Unpickle the ExecutionGraph
-        study_pkl = glob.glob(os.path.join(args.directory, "*.pkl"))
-        # We expect only a single pickle file.
-        if len(study_pkl) == 1:
-            dag = ExecutionGraph.unpickle(study_pkl[0])
-        else:
-            if len(study_pkl) > 1:
-                msg = "More than one pickle found. Expected one. Aborting."
-                status = 2
-            else:
-                msg = "No pickle found. Aborting."
-                status = 1
+        conductor = Conductor(study)
+        conductor.initialize(batch_info, args.sleeptime)
+        completion_status = conductor.monitor_study()
 
-            sys.stderr.write(msg)
-            sys.exit(status)
-
-        # Set up logging
-        setup_logging(args, dag.name)
-        # Use ExecutionGraph API to determine next jobs to be launched.
-        logger.info("Checking the ExecutionGraph for study '%s' located in "
-                    "%s...", dag.name, study_pkl[0])
-        logger.info("Study Description: %s", dag.description)
-
-        cancel_lock_path = os.path.join(args.directory, ".cancel.lock")
-        logger.info("Starting to monitor '%s'", dag.name)
-        completion_status = monitor_study(dag, study_pkl[0],
-                                          cancel_lock_path, args.sleeptime)
-
-        logger.info("Cleaning up...")
-        dag.cleanup()
-        logger.info("Squeaky clean!")
-
-        # Explicitly return a 0 status.
+        LOGGER.info("Study completed with state '%s'.", completion_status)
         sys.exit(completion_status.value)
     except Exception as e:
-        logger.error(e.args, exc_info=True)
+        LOGGER.error(e.args, exc_info=True)
         raise e
+    finally:
+        if conductor:
+            LOGGER.info("Study exiting, cleaning up...")
+            conductor.cleanup()
+            LOGGER.info("Squeaky clean!")
 
 
 if __name__ == "__main__":
