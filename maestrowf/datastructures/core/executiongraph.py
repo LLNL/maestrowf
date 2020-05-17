@@ -766,29 +766,13 @@ class ExecutionGraph(DAG, PickleInterface):
                     cleanup_steps.update(self.bfs_subtree(name)[0])
 
                 elif status == State.UNKNOWN:
-                    LOGGER.info("Statue found to be UNKNOWN...")
-                    if record.status == State.FINISHING:
-                        # If we don't know what the state is, but we know
-                        # it was previously finishing chances are it finished
-                        # successfully.
-                        record.mark_end(State.FINISHED)
-                        LOGGER.info(
-                            "Step '%s' marked as finished. Found to be in "
-                            "UNKNOWN state when previously in FINISHING.",
-                            " Adding to completed set.", name)
-                        self.completed_steps.add(name)
-                    else:
-                        # We don't know the current state, so we mark it as
-                        # failed. It appears that if something happens in the
-                        # completion hooks, a scheduler can abort.
-                        record.mark_end(State.FAILED)
-                        LOGGER.info(
-                            "Step '%s' found in UNKNOWN state. Step was found "
-                            "in '%s' state previously, making as UNKNOWN. "
-                            "Adding to completed step in the event that step "
-                            "succeeded. Adding to failed set.",
-                            name, record.status)
-                        cleanup_steps.update(self.bfs_subtree(name)[0])
+                    record.mark_end(State.UNKNOWN)
+                    LOGGER.info(
+                        "Step '%s' found in UNKNOWN state. Step was found "
+                        "in '%s' state previously, marking as UNKNOWN. "
+                        "Adding to failed steps.",
+                        name, record.status)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
                     self.in_progress.remove(name)
 
                 elif status == State.CANCELLED:
