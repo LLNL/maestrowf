@@ -766,7 +766,8 @@ class ExecutionGraph(DAG, PickleInterface):
                     cleanup_steps.update(self.bfs_subtree(name)[0])
 
                 elif status == State.UNKNOWN:
-                    if record.state == State.FINISHING:
+                    LOGGER.info("Statue found to be UNKNOWN...")
+                    if record.status == State.FINISHING:
                         # If we don't know what the state is, but we know
                         # it was previously finishing chances are it finished
                         # successfully.
@@ -785,7 +786,7 @@ class ExecutionGraph(DAG, PickleInterface):
                             "in '%s' state previously, making as UNKNOWN. "
                             "Adding to completed step in the event that step "
                             "succeeded. Adding to completed set.",
-                            name, record.state)
+                            name, record.status)
                     self.completed_steps.add(name)
                     self.in_progress.remove(name)
 
