@@ -14,7 +14,8 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration, round_datetime_seconds
+from maestrowf.utils import create_parentdir, get_duration, \
+    round_datetime_seconds
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -764,6 +765,16 @@ class ExecutionGraph(DAG, PickleInterface):
                     self.in_progress.remove(name)
                     record.mark_end(State.FAILED)
                     cleanup_steps.update(self.bfs_subtree(name)[0])
+
+                elif status == State.UNKNOWN:
+                    record.mark_end(State.UNKNOWN)
+                    LOGGER.info(
+                        "Step '%s' found in UNKNOWN state. Step was found "
+                        "in '%s' state previously, marking as UNKNOWN. "
+                        "Adding to failed steps.",
+                        name, record.status)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
+                    self.in_progress.remove(name)
 
                 elif status == State.CANCELLED:
                     LOGGER.info("Step '%s' was cancelled.", name)

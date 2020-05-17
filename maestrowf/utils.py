@@ -59,9 +59,13 @@ def get_duration(time_delta):
     return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
            .format(days, hours, minutes, seconds)
 
+
 def round_datetime_seconds(input_datetime):
     """
     Round datetime to the nearest whole second.
+
+    Solution referenced from: https://stackoverflow.com/questions/47792242/
+    rounding-time-off-to-the-nearest-second-python.
 
     :params input_datetime: A datetime in datatime format.
     :returns: ``input_datetime`` rounded to the nearest whole second
