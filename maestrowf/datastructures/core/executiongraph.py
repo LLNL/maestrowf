@@ -14,7 +14,7 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration
+from maestrowf.utils import create_parentdir, get_duration, round_datetime_seconds
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -140,7 +140,7 @@ class _StepRecord:
             self.status)
         self.status = State.PENDING
         if not self._submit_time:
-            self._submit_time = datetime.now()
+            self._submit_time = round_datetime_seconds(datetime.now())
         else:
             LOGGER.warning(
                 "Cannot set the submission time of '%s' because it has "
@@ -155,7 +155,7 @@ class _StepRecord:
             self.status)
         self.status = State.RUNNING
         if not self._start_time:
-            self._start_time = datetime.now()
+            self._start_time = round_datetime_seconds(datetime.now())
 
     def mark_end(self, state):
         """
@@ -170,7 +170,7 @@ class _StepRecord:
             self.status)
         self.status = state
         if not self._end_time:
-            self._end_time = datetime.now()
+            self._end_time = round_datetime_seconds(datetime.now())
 
     def mark_restart(self):
         """Mark the end time of the record."""
