@@ -14,7 +14,8 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration, round_datetime_seconds
+from maestrowf.utils import create_parentdir, get_duration, \
+    round_datetime_seconds
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
