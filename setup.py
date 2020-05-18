@@ -10,7 +10,7 @@ def load_readme():
     :returns: A string containing the contents of README.md.
     """
     pkg_path = path.abspath(path.dirname(__file__))
-    with open(path.join(pkg_path, 'README.md'), encoding='utf-8') as f:
+    with open(path.join(pkg_path, 'README.md')) as f:
         long_description = f.read()
 
     return long_description
