@@ -1,0 +1,24 @@
+# run with 'maestro run -y --pgen ./pgen_sample.py sample_list.yaml'
+
+description:
+    name: sample_list
+    description: simple sampling of multi variables (X1, X2, X3)
+
+env:
+    variables:
+        OUTPUT_PATH: ./output
+        SAMPLE_DICTIONARY:
+            sample_type: list
+            constants:
+                MASS_3: 20
+            parameters:
+                MASS_1: [ 5, 10 ]
+                MASS_2: [ 5, 10 ]
+
+study:
+    - name: sample
+      description: produce a sample
+      run:
+          cmd: |
+            echo "{$(X1), $(X2), $(X3)}" > out.txt
+

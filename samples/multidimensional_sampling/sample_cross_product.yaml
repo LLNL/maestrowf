@@ -1,0 +1,25 @@
+# run with 'maestro run -y --pgen ./pgen_sample.py sample_cross_product.yaml'
+
+description:
+    name: sample_list
+    description: simple sampling of multi variables (X1, X2, X3, X4)
+
+env:
+    variables:
+        OUTPUT_PATH: ./output
+        SAMPLE_DICTIONARY:
+            sample_type: cross_product
+            parameters:
+                X1: [ 1, 2 ]
+                X2: [ 1, 2 ]
+                X3: [ 1, 2 ]
+            constants:
+                X4: 4
+
+study:
+    - name: sample
+      description: produce a sample
+      run:
+          cmd: |
+            echo "{$(X1), $(X2), $(X3), $(X4)}" > out.txt
+
