@@ -610,12 +610,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # Compute cores per task
         cores_per_task = \
-            step.run.get("cores per task", ceil(processors / nodes))
+            step.run.get("cores per task", None)
         if not cores_per_task:
-            msg = "Cores per task is set to a non-value (value = {}). " \
-                  "Aborting.".format(cores_per_task)
-            LOGGER.error(msg)
-            raise ValueError(msg)
+            cores_per_task = ceil(processors / nodes)
+            LOGGER.warn(
+                "'cores per task' set to a non-value. Populating with a "
+                "sensible default. (cores per task = %d", cores_per_task)
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
