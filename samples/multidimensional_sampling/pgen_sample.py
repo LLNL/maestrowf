@@ -385,7 +385,7 @@ def best_candidate_sample(sampling_dict, over_sample_rate=10):
     """
     _log_assert(
         PANDAS_PLUS,
-        "This function requires pandas, numpy, scipy & sklearn packages")
+        "This function requires pandas, numpy, & scipy packages")
     _validate_best_candidate_dictionary(sampling_dict)
     new_sampling_dict = sampling_dict.copy()
     new_sampling_dict["num_samples"] *= over_sample_rate
