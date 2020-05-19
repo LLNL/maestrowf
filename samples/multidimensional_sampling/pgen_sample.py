@@ -1,5 +1,7 @@
 """This file implements several sampling methods"""
 
+# original best candidate coding done by Cody Raskin in 2019.
+
 import random
 import logging
 from contextlib import suppress
