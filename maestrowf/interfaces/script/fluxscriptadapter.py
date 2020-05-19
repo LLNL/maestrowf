@@ -632,7 +632,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # is specified.
         if processors > 0 and processors > ncores:
             msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
+                  "-- procs = {}. Cannot request more than is available." \
+                  .format(ncores, processors)
             LOGGER.error(msg)
             raise ValueError(msg)
 
