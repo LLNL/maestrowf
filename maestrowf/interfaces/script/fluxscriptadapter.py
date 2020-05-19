@@ -30,6 +30,7 @@
 """Flux Scheduler interface implementation."""
 from datetime import datetime
 import logging
+from math import ceil
 import os
 import re
 import json
@@ -608,9 +609,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         processors = step.run.get("procs", 0)
 
         # Compute cores per task
-        cores_per_task = step.run.get("cores per task", 1)
+        cores_per_task = \
+            step.run.get("cores per task", ceil(processors / nodes))
         if not cores_per_task:
-            cores_per_task = 1
+            msg = "Cores per task is set to a non-value (value = {}). " \
+                  "Aborting.".format(cores_per_task)
+            LOGGER.error(msg)
+            raise ValueError(msg)
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
