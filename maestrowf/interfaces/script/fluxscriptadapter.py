@@ -621,9 +621,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         ncores = cores_per_task * nodes
         # Check to make sure that cores_per_task matches if processors
         # is specified.
-        if processors > 0 and processors != ncores:
+        if processors > 0 and processors > ncores:
             msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
+                  "-- procs = {}. Cannot request more than is available." \
+                  .format(ncores, processors)
             LOGGER.error(msg)
             raise ValueError(msg)
 
@@ -770,6 +771,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cancelcode = CancelCode.OK
+        retcode = 0
 
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
@@ -782,9 +784,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 self.flux_job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
+                retcode = -1
                 continue
 
-        return cancelcode
+        return CancellationRecord(cancelcode, retcode)
 
     def _state(self, flux_state):
         """
