@@ -648,7 +648,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
         jobspec = self.flux.job.JobspecV1.from_command(
             cmd_line, num_tasks=nodes, num_nodes=nodes,
@@ -699,7 +699,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
         resp = self.flux.job.job_list(self.h)
         paths = resp.get_jobs()
@@ -785,7 +785,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
