@@ -30,7 +30,6 @@
 """Flux Scheduler interface implementation."""
 from datetime import datetime
 import logging
-from math import ceil
 import os
 import re
 import json
@@ -512,12 +511,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 "Flux URI must be specified in batch or stored in the "
                 "environment under 'FLUX_URI'")
 
-        uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
-        if not uri:
-            raise ValueError(
-                "Flux URI must be specified in batch or stored in the "
-                "environment under 'FLUX_URI'")
-
         self.add_batch_parameter("flux_uri", uri)
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
@@ -583,7 +576,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
-        args = ["flux", "mini", "run", "-n", str(procs)]
+        args = ["flux", "wreckrun", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         args.append("-N")
@@ -616,10 +609,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
         if not cores_per_task:
-            cores_per_task = ceil(processors / nodes)
-            LOGGER.warn(
-                "'cores per task' set to a non-value. Populating with a "
-                "sensible default. (cores per task = %d", cores_per_task)
+            cores_per_task = 1
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
@@ -632,8 +622,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # is specified.
         if processors > 0 and processors > ncores:
             msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}. Cannot request more than is available." \
-                  .format(ncores, processors)
+                  "-- procs = {}".format(ncores, processors)
             LOGGER.error(msg)
             raise ValueError(msg)
 
@@ -648,10 +637,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
         jobspec = self.flux.job.JobspecV1.from_command(
+<<<<<<< HEAD
             cmd_line, num_tasks=nodes, num_nodes=nodes,
+=======
+            cmd_line, num_tasks=ncores, num_nodes=nodes,
+>>>>>>> 5fba8c9... Correction to __import__ for Flux.
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
@@ -699,7 +692,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
         resp = self.flux.job.job_list(self.h)
         paths = resp.get_jobs()
@@ -780,12 +773,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cancelcode = CancelCode.OK
-        retcode = 0
 
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
@@ -793,10 +785,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 self.flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
-                retcode = -1
                 continue
 
-        return CancellationRecord(cancelcode, retcode)
+        return cancelcode
 
     def _state(self, flux_state):
         """
