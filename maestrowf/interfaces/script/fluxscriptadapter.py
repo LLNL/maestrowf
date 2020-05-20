@@ -504,8 +504,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param **kwargs: A dictionary with default settings for the adapter.
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
-        self.flux = __import__("flux")
-        self.flux_job = __import__("flux.job")
+        import flux
 
         uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
         if not uri:
@@ -578,7 +577,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
-        args = ["flux", "wreckrun", "-n", str(procs)]
+        args = ["flux", "mini", "run", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         args.append("-N")
@@ -644,9 +643,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
-        jobspec = self.flux_job.JobspecV1.from_command(
+        jobspec = flux.job.JobspecV1.from_command(
             cmd_line, num_tasks=ncores, num_nodes=nodes,
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
@@ -654,7 +653,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         try:
             # Submit our job spec.
-            jobid = self.flux_job.submit(self.h, jobspec, waitable=True)
+            jobid = flux.job.submit(self.h, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
 
             LOGGER.info("Submission returned status OK. -- "
@@ -695,9 +694,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
-        resp = self.flux_job.job_list(self.h)
+        resp = flux.job.job_list(self.h)
         paths = resp.get_jobs()
         status = {}
         for jobid in joblist:
@@ -781,12 +780,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = self.flux.Flux()
+            self.h = flux.Flux()
 
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
             try:
-                self.flux_job.RAW.cancel(self.h)
+                flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
                 retcode = -1
