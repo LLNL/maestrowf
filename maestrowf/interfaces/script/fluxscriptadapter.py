@@ -30,7 +30,6 @@
 """Flux Scheduler interface implementation."""
 from datetime import datetime
 import logging
-from math import ceil
 import os
 import re
 import json
@@ -504,7 +503,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param **kwargs: A dictionary with default settings for the adapter.
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
-        import flux
+        self.flux = __import__("flux", fromlist=["job", "Flux"])
 
         uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
         if not uri:
@@ -577,7 +576,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
-        args = ["flux", "mini", "run", "-n", str(procs)]
+        args = ["flux", "wreckrun", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         args.append("-N")
@@ -608,13 +607,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         processors = step.run.get("procs", 0)
 
         # Compute cores per task
-        cores_per_task = \
-            step.run.get("cores per task", None)
+        cores_per_task = step.run.get("cores per task", 1)
         if not cores_per_task:
-            cores_per_task = ceil(processors / nodes)
-            LOGGER.warn(
-                "'cores per task' set to a non-value. Populating with a "
-                "sensible default. (cores per task = %d", cores_per_task)
+            cores_per_task = 1
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
@@ -627,8 +622,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # is specified.
         if processors > 0 and processors > ncores:
             msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}. Cannot request more than is available." \
-                  .format(ncores, processors)
+                  "-- procs = {}".format(ncores, processors)
             LOGGER.error(msg)
             raise ValueError(msg)
 
@@ -643,9 +637,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         cmd_line = ["flux", "start", path]
 
         if self.h is None:
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
-        jobspec = flux.job.JobspecV1.from_command(
+        jobspec = self.flux.job.JobspecV1.from_command(
             cmd_line, num_tasks=ncores, num_nodes=nodes,
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
@@ -653,7 +647,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         try:
             # Submit our job spec.
-            jobid = flux.job.submit(self.h, jobspec, waitable=True)
+            jobid = self.flux.job.submit(self.h, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
 
             LOGGER.info("Submission returned status OK. -- "
@@ -694,9 +688,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
-        resp = flux.job.job_list(self.h)
+        resp = self.flux.job.job_list(self.h)
         paths = resp.get_jobs()
         status = {}
         for jobid in joblist:
@@ -775,23 +769,21 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cancelcode = CancelCode.OK
-        retcode = 0
 
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
                          "instance.")
-            self.h = flux.Flux()
+            self.h = self.flux.Flux()
 
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
             try:
-                flux.job.RAW.cancel(self.h)
+                self.flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
-                retcode = -1
                 continue
 
-        return CancellationRecord(cancelcode, retcode)
+        return cancelcode
 
     def _state(self, flux_state):
         """
