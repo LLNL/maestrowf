@@ -52,7 +52,7 @@ First, lets use the excellent built in package itertools to generate the paramet
 
 .. code-block:: python
    :name: itertools_pgen.py
-   :caption: itertools.pgen.py
+   :caption: itertools_pgen.py
    :linenos:
 
    from maestrowf.datastructures.core import ParameterGenerator
@@ -106,4 +106,74 @@ This results in the following set of parameters, matching the lulesh sample work
    ----------- ---- ---- ---- ---- ---- ---- ---- ---- ----
     ITER        10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ====
- 
+
+There is an additional pgen feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the itertools_pgen.py file to change that.  Maestro supports passing arguments to these generator functions on the command line:
+
+
+.. code-block:: bash
+
+   $ maestro run study.yaml --pgen pgen.py --parg "SIZE_MIN:10" --parg "SIZE_STEP: 10" --parg "NUM_SIZES:4"
+
+Each argument is a string in key:val form, which can be accessed in the generator function as shown below:
+
+.. code-block:: python
+   :name: itertools_pgen_pargs.py
+   :caption: itertools_pgen_pargs.py
+   :linenos:
+
+   from maestrowf.datastructures.core import ParameterGenerator
+   import itertools as iter
+   
+   def get_custom_generator(env, **kwargs):
+       p_gen = ParameterGenerator()
+
+       # Unpack any pargs passed in
+       size_min = int(kwargs.get('SIZE_MIN', '10'))
+       size_step = int(kwargs.get('SIZE_STEP', '10'))
+       num_sizes = int(kwargs.get('NUM_SIZES', '3'))
+       
+       sizes = range(size_min, size_min+num_sizes*size_step, size_step)
+       iterations = (10, 20, 30)
+
+       size_values = []
+       iteration_values = []
+       trial_values = []
+       
+       for trial, param_combo in enumerate(iter.product(sizes, iterations)):
+           size_values.append(param_combo[0])
+           iteration_values.append(param_combo[1])
+           trial_values.append(trial)
+       
+       params = {
+           "TRIAL": {
+               "values": trial_values,
+               "label": "TRIAL.%%"
+           },       
+           "SIZE": {
+               "values": size_values,
+               "label": "SIZE.%%"
+           },
+           "ITER": {
+               "values": iteration_values,
+               "label": "ITER.%%"
+           },           
+       }
+
+       for key, value in params.items():
+           p_gen.add_parameter(key, value["values"], value["label"])
+    
+       return p_gen      
+
+Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields the expanded parameter set:
+
+.. table:: Sample parameters from itertools_pgen_pargs.py
+
+   =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
+    Parameter   Values
+   ----------- -----------------------------------------------------------
+    TRIAL        0    1    2    3    4    5    6    7    8    9   10   11
+   ----------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+    SIZE        10   10   10   20   20   20   30   30   30   40   40   40
+   ----------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+    ITER        10   20   30   10   20   30   10   20   30   10   20   30
+   =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
