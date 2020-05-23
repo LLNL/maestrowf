@@ -59,7 +59,7 @@ class SubmissionRecord(Record):
         Property for the job identifier for the record.
 
         :returns: A string representing the job identifer assigned by the
-        scheduler.
+                  scheduler.
         """
         return self._info.get("jobid", None)
 
@@ -69,7 +69,7 @@ class SubmissionRecord(Record):
         Property for submission state for the record.
 
         :returns: A SubmissionCode enum representing the state of the
-        submission call.
+                  submission call.
         """
         return self._subcode
 
@@ -79,7 +79,7 @@ class SubmissionRecord(Record):
         Property for the raw return code returned from submission.
 
         :returns: An integer representing the state of the raw return code
-        from submission.
+                  from submission.
         """
         return self._info["retcode"]
 
@@ -111,7 +111,7 @@ class CancellationRecord(Record):
 
         :param jobid: Unique job identifier for the job status to be added.
         :param cancel_status: CancelCode designating how cancellation
-        terminated.
+                              terminated.
         """
         if not isinstance(cancel_status, CancelCode):
             raise TypeError(

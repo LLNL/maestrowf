@@ -126,7 +126,7 @@ class YAMLSpecification(Specification):
 
         :param stream: Raw text stream to study YAML specification data.
         :returns: A specification object containing the information from the
-        passed stream.
+                  passed stream.
         """
 
         try:

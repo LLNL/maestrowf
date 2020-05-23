@@ -101,8 +101,9 @@ class Source(EnvObject):
     The Source environment class is meant to provide a way to programmatically
     set environment settings that binaries or other scripts may require in the
     workflow. Such settings that are intended to be captured are:
-        - Exporting of shell/environment variables (using 'export')
-        - Setting of an environment package with the 'use' command
+
+        * Exporting of shell/environment variables (using 'export')
+        * Setting of an environment package with the 'use' command
     """
 
     @abstractmethod
@@ -130,11 +131,12 @@ class Dependency(Substitution):
 
     The Dependency base class is intended to be used to capture external items
     the workflow is dependent on. These items include (but are not limited to):
-        - Remotely stored repositories (such as bitbucket)
-        - Paths located on the filesystem that hold required files or binaries
-        - Binaries that are required to be installed using a specific package
+
+        * Remotely stored repositories (such as bitbucket)
+        * Paths located on the filesystem that hold required files or binaries
+        * Binaries that are required to be installed using a specific package
           manager
-        - External APIs that a workflow needs to pull data from
+        * External APIs that a workflow needs to pull data from
 
     The goal of this base class is to make it so that this package is able to
     pull exernal dependencies in a consistent manner.
