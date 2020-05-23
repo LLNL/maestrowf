@@ -37,12 +37,6 @@ The object simply builds the same nested key:value pairs seen in the global.para
 For this simple example above, this may not offer compelling advantages over writing out the flattened list in the yaml specification directly.  This programmatic approach becomes preferable when expanding studies to use hundreds of parameters and parameter values or requiring non-trivial parameter value distributions.  The following examples will demonstrate these scenarios using both standard python library tools and additional 3rd party packages from the larger python ecosystem.
 
 EXAMPLES:
-  Simple for loops and Itertools for pure python work (side by side with lulesh example)
-  products, permutations and combinations
-  pargs for dynamic generators
-
-  section on 3rd party tools: note on virtualenvironments to make it work
-  numpy/scipy for chebyshev distribution: use extra function in the pgen file
   find another sampling algorithm: latin hypercube, or something else from scikit-learn? what about stats models?
 
 What about adding reference of env block in pgen? (not modifying, just referencing)
@@ -107,12 +101,15 @@ This results in the following set of parameters, matching the lulesh sample work
     ITER        10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
+Pgen Arguments
+**************
+
 There is an additional pgen feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the itertools_pgen.py file to change that.  Maestro supports passing arguments to these generator functions on the command line:
 
 
 .. code-block:: bash
 
-   $ maestro run study.yaml --pgen pgen.py --parg "SIZE_MIN:10" --parg "SIZE_STEP: 10" --parg "NUM_SIZES:4"
+   $ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP: 10" --parg "NUM_SIZES:4"
 
 Each argument is a string in key:val form, which can be accessed in the generator function as shown below:
 
@@ -162,7 +159,7 @@ Each argument is a string in key:val form, which can be accessed in the generato
        for key, value in params.items():
            p_gen.add_parameter(key, value["values"], value["label"])
     
-       return p_gen      
+       return p_gen
 
 Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields the expanded parameter set:
 
@@ -177,3 +174,55 @@ Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields t
    ----------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
     ITER        10   20   30   10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
+
+The next few examples demonstrate using 3rd party librarys and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The first is a simple parameter distribution for single variables that's encounterd in polynomial interpolation and designed to suppress the Runge and Gibbs phenomena: chebyshev points.
+
+.. code-block:: python
+   :name: np_cheb_pgen_pargs.py
+   :caption: np_cheb_pgen_pargs.py
+   :linenos:
+   
+   from maestrowf.datastructures.core import ParameterGenerator
+   import numpy as np
+
+   def chebyshev_dist(var_range, num_pts):
+       r = 0.5*(var_range[1] - var_range[0])
+
+       angles = np.linspace(np.pi, 0.0, num_pts)
+       xpts = r*np.cos(angles) + r
+       ypts = r*np.sin(angles)
+   
+       return xpts
+   
+   def get_custom_generator(env, **kwargs):
+       p_gen = ParameterGenerator()
+
+       # Unpack any pargs passed in
+       x_min = int(kwargs.get('X_MIN', '0'))
+       x_max = int(kwargs.get('X_MAX', '1'))
+       num_pts = int(kwargs.get('NUM_PTS', '10'))
+       
+       x_pts = chebyshev_dist([x_min, x_max], num_pts)
+
+       params = {
+           "X": {
+               "values": list(x_pts),
+               "label": "X.%%"
+           },       
+       }
+
+       for key, value in params.items():
+           p_gen.add_parameter(key, value["values"], value["label"])
+    
+       return p_gen
+
+       
+Running this parameter generator with the following pargs
+ 
+.. code-block:: bash
+
+   $ maestro run study.yaml --pgen np_cheb_pgen.py --parg "X_MIN:0" --parg "X_MAX:3" --parg "NUM_PTS:11"
+
+Results in the following distribution of points for the ``X`` parameter:
+
+.. image:: pgen_images/cheb_map.png
