@@ -577,7 +577,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
-        args = ["flux", "wreckrun", "-n", str(procs)]
+        args = ["flux", "mini", "run", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         args.append("-N")
@@ -644,11 +644,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             self.h = self.flux.Flux()
 
         jobspec = self.flux.job.JobspecV1.from_command(
-<<<<<<< HEAD
             cmd_line, num_tasks=nodes, num_nodes=nodes,
-=======
-            cmd_line, num_tasks=ncores, num_nodes=nodes,
->>>>>>> 5fba8c9... Correction to __import__ for Flux.
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
@@ -777,6 +773,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             return CancelCode.OK
 
         cancelcode = CancelCode.OK
+        retcode = 0
 
         if self.h is None:
             LOGGER.debug("Class instance is None. Initializing a new Flux "
@@ -789,9 +786,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 self.flux.job.RAW.cancel(self.h)
             except Exception:
                 cancelcode = CancelCode.ERROR
+                retcode = -1
                 continue
 
-        return cancelcode
+        return CancellationRecord(cancelcode, retcode)
 
     def _state(self, flux_state):
         """
