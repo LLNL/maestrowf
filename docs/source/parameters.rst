@@ -42,7 +42,7 @@ EXAMPLES:
 What about adding reference of env block in pgen? (not modifying, just referencing)
 
 
-First, lets use the excellent built in package itertools to generate the parameters in the lulesh example specification:
+First, lets use the excellent built-in package itertools to progammatically generate the parameters in the lulesh example specification:
 
 .. code-block:: python
    :name: itertools_pgen.py
@@ -109,7 +109,7 @@ There is an additional pgen feature that can be used to make them more dynamic. 
 
 .. code-block:: bash
 
-   $ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP: 10" --parg "NUM_SIZES:4"
+   $ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP:10" --parg "NUM_SIZES:4"
 
 Each argument is a string in key:val form, which can be accessed in the generator function as shown below:
 
@@ -223,6 +223,6 @@ Running this parameter generator with the following pargs
 
    $ maestro run study.yaml --pgen np_cheb_pgen.py --parg "X_MIN:0" --parg "X_MAX:3" --parg "NUM_PTS:11"
 
-Results in the following distribution of points for the ``X`` parameter:
+results in the 1D distribution of points for the ``X`` parameter shown by the orange circles:
 
 .. image:: pgen_images/cheb_map.png
