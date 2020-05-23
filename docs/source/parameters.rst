@@ -365,6 +365,8 @@ Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields t
     ITER        10   20   30   10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
+Notice that using the pgen input method makes it trivially easy to add 1000's of parameters, something which would be cumbersome via manual editing of the global.parameters block in the study specification file.
+
 The next example demonstrates using 3rd party librarys and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the maestro executable you are using.  There are no requirements to cram all of the logic into the ``get_custom_generator`` function, so we'll build the sampling logic into a helper function instead.  The simple parameter distribution demoed in this example is for single variables and is encounterd in polynomial interpolation applications and is designed to suppress the Runge and Gibbs phenomena by sampling the funciton at the chebyshev points.
 
 .. code-block:: python
@@ -416,3 +418,60 @@ Running this parameter generator with the following pargs
 results in the 1D distribution of points for the ``X`` parameter shown by the orange circles:
 
 .. image:: pgen_images/cheb_map.png
+
+
+Env Block
+*********
+
+In addition to command line arguments via ``pargs``, the variables defined in the env block in the workflow specification file can be accessed inside the ParameterGenerator objects, which is passed in to ``get_custom_generator`` as the first argument.  The lulesh sample specification can be extended to store the default values for the pgen, enhancing the reproducability of the generator.  The following example extends the lulesh_monte_carlo_args.py sample generator and adds one additional env var, `seed`, which can be overriden via ``pargs``, making the default configuration a fully repeatable study specification.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
+
+.. note
+   possible to link the sample files directly? -> also, might be good to have them pulled into the docs automatically
+   somewhere..
+
+.. code-block:: python
+   :linenos:
+   :caption: lulesh_monte_carlo_args_mod.py
+
+   from random import randint
+   
+   from maestrowf.datastructures.core import ParameterGenerator
+   
+   
+   def get_custom_generator(env, **kwargs):
+       """
+       Create a custom populated ParameterGenerator.
+       This function recreates the exact same parameter set as the sample LULESH
+       specifications. The point of this file is to present an example of how to
+       generate custom parameters.
+       :params kwargs: A dictionary of keyword arguments this function uses.
+       :returns: A ParameterGenerator populated with parameters.
+       """
+       p_gen = ParameterGenerator()
+       trials = int(kwargs.get("trials", env.find("TRIALS").value))
+       size_min = int(kwargs.get("smin", env.find("SMIN").value))
+       size_max = int(kwargs.get("smax", env.find("SMAX").value))
+       iterations = int(kwargs.get("iter", env.find("ITER").value))
+       seed = kwargs.get("seed", env.find("SEED").value)
+
+       random.seed(a=seed)
+       
+       params = {
+           "TRIAL": {
+               "values": [i for i in range(1, trials)],
+               "label": "TRIAL.%%"
+           },
+           "SIZE": {
+               "values": [randint(size_min, size_max) for i in range(1, trials)],
+               "label": "SIZE.%%"
+           },
+           "ITERATIONS": {
+               "values": [iterations for i in range(1, trials)],
+               "label": "ITERATIONS.%%"
+           }
+       }
+   
+       for key, value in params.items():
+           p_gen.add_parameter(key, value["values"], value["label"])
+   
+       return p_gen   
