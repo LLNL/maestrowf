@@ -1,6 +1,196 @@
 Parameters
 ==========
 
+Maestro supports parameterization as a means of iterating over steps in a study with varying information.  Maestro uses token replacement to define variables in the study specification to be replaced when executing the study.  Token replacement can be used in various context in Maestro ; however Maestro implements specific features for managing parameters.
+
+.. note
+   add (as described in Maestro Token Replacement) reference before the ; when section is added
+
+Maestro makes no assumptions about how parameters are defined or used in a study; this makes Maestro very flexible in regard to how a study may be configured with parameters.
+
+There are two ways Maestro supports parameters:
+
+  * Directly in the study specification as the global.parameters block
+    
+  * Through the use of a user created Python module called Parameter Generator (pgen)
+
+.. note
+   add reference to this section from the hello_world examples (ref here for more thorough discussion of parameters)
+   similar for the token replacement sections: hello_world should be the quick start, not the exhaustive  discussion
+
+Maestro Parameter Block
+***********************
+
+The quickest and easiest way to setup parameters in a Maestro study is by defining a the global.parameters block directly in the specification
+
+.. code-block:: yaml
+   :linenos:
+
+   global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
+    SIZE:
+        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%
+
+The above example defines the parameters TRIAL, SIZE, and ITERATIONS. Parameters can be used in study steps to vary information. When a parameter is defined in a study, Maestro will automatically detect the usage of a parameter moniker and handle the substitution automatically in the study expansion. This ensures that each set of parameters are run as part of the study. 
+
+The `label` key in the block specifies the pattern to use for the directory name when the workspace is created. By default, Maestro constructs a unique workspace for each parameter combination.
+
+Defining multiple parameters in the parameter block will share a 1:1 mapping. Maestro requires all combinations be resolved when using the parameter block. The combinations in the above example will be expanded as follows:
+
+  * TRIAL.1.SIZE.10.ITERATIONS.10
+
+  * TRIAL.2.SIZE.10.ITERATIONS.20
+
+  * TRIAL.3.SIZE.10.ITERATIONS.30
+
+  * ...
+
+Maestro does not do any additional operations on parameters such as cross products. If more complex methodologies are required to define parameters then the use of Maestro's Parameter Generator (pgen) is recommended.
+
+Defined parameters can be used in steps directly:
+
+.. code-block:: yaml
+   :linenos:
+
+   - name: run-lulesh
+     description: Run LULESH.
+     run:
+       cmd: |
+           $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+       depends: [make-lulesh]
+
+Even though this is defined in Maestro as a single step, Maestro will automatically run this step with each parameter combinations. This makes it very easy to setup studies and apply parameters to be run.
+
+.. note::
+
+   Maestro will only use parameters if they've been defined in at least one step
+
+.. note
+   add example with using the label in steps too
+
+What can be Parameterized in Maestro?
+*************************************
+
+A common use case for Maestro is to use the parameter block to specify samples to iterate over for a simulation parameter study; however, Maestro does not make any assumptions about this use case. This makes the use of Maestro's parameter block very flexible. For example, Maestro does not require the parameter variations to be numeric.
+
+.. code-block:: yaml
+   :linenos:
+   :caption: study.yaml
+
+   study:
+    - name: run-simulation
+      description: Run a simulation.
+      run:
+        cmd: |
+            $(CODE) -in $(SPECROOT)/$(INPUT)
+      depends: []
+ 
+   global.parameters:
+       INPUT:
+           values  : [input1.in, input2.in, input3.in]
+           label   : INPUT.%%
+
+The above example highlights a partial study spec that defines a parameter block of simulation inputs that will be varied when the study runs. The ``run-simulation`` will run three times, once for each defined input file.
+
+.. code-block:: yaml
+   :linenos:
+   :caption: study.yaml
+              
+   study:
+       - name: run-simulation
+         description: Run a simulation.
+         run:
+           cmd: |
+               $(CODE_PATH)/$(VERSION)/code.exe -in $(SPECROOT)/$(INPUT)
+         depends: []
+    
+   global.parameters:
+       INPUT:
+           values  : [input1.in, input2.in, input3.in, input1.in, input2.in, input3.in]
+           label   : INPUT.%%
+       VERSION:
+           values  : [4.0.0, 4.0.0, 4.0.0, 5.0.0, 5.0.0, 5.0.0]
+           label   : VERSION.%%
+
+This example parameterizes the inputs and the version of the code being run.  Maestro will run each input with the different code version.  The above example assumes that all the code versions share a base path, ``$(CODE_PATH)`` which is inserted via the token replacment mechanism to yeild the full paths (e.g. /usr/gapps/code/4.0.0/code.exe).
+
+Where can Parameters be used in Study Steps?
+********************************************
+
+Maestro uses monikers to reference parameters in study steps, and will automatically perform token replacement on used parameters when the study is run. The page Maestro Token Replacement goes into detail about how token replacement works in Maestro.
+
+.. note
+   add maestro token replacement section reference
+
+Maestro is very flexible in the way it manages token replacement for parameters and as such tokens can be used in a variety of ways in a study.
+
+Cmd block
+*********
+
+Parameters can be defined in the Maestro `cmd` block in the study step. Everything in Maestro's `cmd` block will be written to a bash shell or batch script (if batch is configured). Any shell commands should be valid in the `cmd` block. A common way to use parameters is to pass them in via arguments to a code, script, or tool.
+
+.. code-block:: yaml
+   :linenos:
+   :caption: study.yaml
+
+   ...
+   
+   - name: run-simulation
+     description: Run a simulation.
+       run:
+           cmd: |
+               /usr/gapps/code/bin/code -in input.in -def param $(PARAM)
+           depends: []
+
+   ...
+                
+The specific syntax for using a parameter with a specific code, script, or tool will depend on how the application supports command line arguments.
+
+Batch Configuration Keys
+************************
+
+Step based batch configurations can also be parameterized in Maestro. This provides an easy way to configure scaling studies or to manage studies where batch settings are dependent on the parameter values.
+
+.. code-block:: yaml
+   :linenos:
+   :caption: study.yaml
+
+   study:
+       - name: run-simulation
+         description: Run a simulation.
+         run:
+           cmd: |
+               $(CODE_PATH)/$(VERSION)/code.exe -in input.in -def RES $(RES)
+           procs: $(PROC)
+           nodes: $(NODE)
+           walltime: $(WALLTIME)
+           depends: []
+    
+   global.parameters:
+       RES:
+           values  : [2, 4, 6, 8]
+           label   : RES.%%
+       PROC:
+           values  : [8, 8, 16, 32]
+           label   : PROC.%%
+       NODE:
+           values  : [1, 1, 2, 4]
+           label   : NODE.%%
+       WALLTIME:  
+           values  : ["00:10:00", "00:15:00", "00:30:00", "01:00:00"]
+           label   : PROC.%%
+
+.. note
+   Make the sub sections appear as subsections for the relevent blocks (cmd block, batch configurations..)
+
+   Add some dag graphs in here at some point?
+
 Parameter Generator (pgen)
 **************************
 
@@ -175,7 +365,7 @@ Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields t
     ITER        10   20   30   10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
-The next few examples demonstrate using 3rd party librarys and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The first is a simple parameter distribution for single variables that's encounterd in polynomial interpolation and designed to suppress the Runge and Gibbs phenomena: chebyshev points.
+The next example demonstrates using 3rd party librarys and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the maestro executable you are using.  There are no requirements to cram all of the logic into the ``get_custom_generator`` function, so we'll build the sampling logic into a helper function instead.  The simple parameter distribution demoed in this example is for single variables and is encounterd in polynomial interpolation applications and is designed to suppress the Runge and Gibbs phenomena by sampling the funciton at the chebyshev points.
 
 .. code-block:: python
    :name: np_cheb_pgen_pargs.py
