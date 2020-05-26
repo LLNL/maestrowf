@@ -3,6 +3,16 @@ import itertools as iter
 
 
 def get_custom_generator(env, **kwargs):
+    """
+    Create a custom populated ParameterGenerator.
+    This function recreates the exact same parameter set as the sample LULESH
+    specifications. The difference here is that itertools is employed to 
+    programatically generate the samples instead of manually writing out
+    all of the combinations.
+    :params env: A StudyEnvironment object containing custom information.
+    :params kwargs: A dictionary of keyword arguments this function uses.
+    :returns: A ParameterGenerator populated with parameters.
+    """
     p_gen = ParameterGenerator()
 
     sizes = (10, 20, 30)
