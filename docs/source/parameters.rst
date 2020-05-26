@@ -1,5 +1,5 @@
-Parameters
-==========
+Specifying Study Parameters
+===========================
 
 Maestro supports parameterization as a means of iterating over steps in a study with varying information.  Maestro uses token replacement to define variables in the study specification to be replaced when executing the study.  Token replacement can be used in various context in Maestro ; however Maestro implements specific features for managing parameters.
 
@@ -11,7 +11,7 @@ Maestro makes no assumptions about how parameters are defined or used in a study
 There are two ways Maestro supports parameters:
 
   * Directly in the study specification as the global.parameters block
-    
+
   * Through the use of a user created Python module called Parameter Generator (pgen)
 
 .. note
@@ -37,7 +37,7 @@ The quickest and easiest way to setup parameters in a Maestro study is by defini
         values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
         label   : ITER.%%
 
-The above example defines the parameters TRIAL, SIZE, and ITERATIONS. Parameters can be used in study steps to vary information. When a parameter is defined in a study, Maestro will automatically detect the usage of a parameter moniker and handle the substitution automatically in the study expansion. This ensures that each set of parameters are run as part of the study. 
+The above example defines the parameters TRIAL, SIZE, and ITERATIONS. Parameters can be used in study steps to vary information. When a parameter is defined in a study, Maestro will automatically detect the usage of a parameter moniker and handle the substitution automatically in the study expansion. This ensures that each set of parameters are run as part of the study.
 
 The `label` key in the block specifies the pattern to use for the directory name when the workspace is created. By default, Maestro constructs a unique workspace for each parameter combination.
 
@@ -90,7 +90,7 @@ A common use case for Maestro is to use the parameter block to specify samples t
         cmd: |
             $(CODE) -in $(SPECROOT)/$(INPUT)
       depends: []
- 
+
    global.parameters:
        INPUT:
            values  : [input1.in, input2.in, input3.in]
@@ -101,7 +101,7 @@ The above example highlights a partial study spec that defines a parameter block
 .. code-block:: yaml
    :linenos:
    :caption: study.yaml
-              
+
    study:
        - name: run-simulation
          description: Run a simulation.
@@ -109,7 +109,7 @@ The above example highlights a partial study spec that defines a parameter block
            cmd: |
                $(CODE_PATH)/$(VERSION)/code.exe -in $(SPECROOT)/$(INPUT)
          depends: []
-    
+
    global.parameters:
        INPUT:
            values  : [input1.in, input2.in, input3.in, input1.in, input2.in, input3.in]
@@ -131,7 +131,7 @@ Maestro uses monikers to reference parameters in study steps, and will automatic
 Maestro is very flexible in the way it manages token replacement for parameters and as such tokens can be used in a variety of ways in a study.
 
 Cmd block
-*********
+---------
 
 Parameters can be defined in the Maestro `cmd` block in the study step. Everything in Maestro's `cmd` block will be written to a bash shell or batch script (if batch is configured). Any shell commands should be valid in the `cmd` block. A common way to use parameters is to pass them in via arguments to a code, script, or tool.
 
@@ -140,7 +140,7 @@ Parameters can be defined in the Maestro `cmd` block in the study step. Everythi
    :caption: study.yaml
 
    ...
-   
+
    - name: run-simulation
      description: Run a simulation.
        run:
@@ -149,11 +149,11 @@ Parameters can be defined in the Maestro `cmd` block in the study step. Everythi
            depends: []
 
    ...
-                
+
 The specific syntax for using a parameter with a specific code, script, or tool will depend on how the application supports command line arguments.
 
 Batch Configuration Keys
-************************
+------------------------
 
 Step based batch configurations can also be parameterized in Maestro. This provides an easy way to configure scaling studies or to manage studies where batch settings are dependent on the parameter values.
 
@@ -171,7 +171,7 @@ Step based batch configurations can also be parameterized in Maestro. This provi
            nodes: $(NODE)
            walltime: $(WALLTIME)
            depends: []
-    
+
    global.parameters:
        RES:
            values  : [2, 4, 6, 8]
@@ -182,7 +182,7 @@ Step based batch configurations can also be parameterized in Maestro. This provi
        NODE:
            values  : [1, 1, 2, 4]
            label   : NODE.%%
-       WALLTIME:  
+       WALLTIME:
            values  : ["00:10:00", "00:15:00", "00:30:00", "01:00:00"]
            label   : PROC.%%
 
@@ -206,7 +206,7 @@ The minimum requirements for making a valid pgen file is to make a function call
    :linenos:
 
    from maestrowf.datastructures.core import ParameterGenerator
- 
+
    def get_custom_generator(env, **kwargs):
        p_gen = ParameterGenerator()
        params = {
@@ -215,10 +215,10 @@ The minimum requirements for making a valid pgen file is to make a function call
                "label": "COUNT.%%"
            },
        }
-    
+
        for key, value in params.items():
            p_gen.add_parameter(key, value["values"], value["label"])
-    
+
        return p_gen
 
 
@@ -226,50 +226,13 @@ The object simply builds the same nested key:value pairs seen in the global.para
 
 For this simple example above, this may not offer compelling advantages over writing out the flattened list in the yaml specification directly.  This programmatic approach becomes preferable when expanding studies to use hundreds of parameters and parameter values or requiring non-trivial parameter value distributions.  The following examples will demonstrate these scenarios using both standard python library tools and additional 3rd party packages from the larger python ecosystem.
 
-First, lets use the excellent built-in package itertools to progammatically generate the parameters in the lulesh example specification:
+EXAMPLE:
+  Using Python's standard ``itertools`` package to perform a Cartesian Product of parameters in the lulesh example specification.
 
-.. code-block:: python
-   :name: itertools_pgen.py
-   :caption: itertools_pgen.py
+.. literalinclude:: ../../samples/parameterization/lulesh_itertools_pgen.py
+   :language: python
+   :caption: lulesh_itertools_pgen.py
    :linenos:
-
-   from maestrowf.datastructures.core import ParameterGenerator
-   import itertools as iter
-   
-   def get_custom_generator(env, **kwargs):
-       p_gen = ParameterGenerator()
-
-       sizes = (10, 20, 30)
-       iterations = (10, 20, 30)
-
-       size_values = []
-       iteration_values = []
-       trial_values = []
-       
-       for trial, param_combo in enumerate(iter.product(sizes, iterations)):
-           size_values.append(param_combo[0])
-           iteration_values.append(param_combo[1])
-           trial_values.append(trial)
-       
-       params = {
-           "TRIAL": {
-               "values": trial_values,
-               "label": "TRIAL.%%"
-           },       
-           "SIZE": {
-               "values": size_values,
-               "label": "SIZE.%%"
-           },
-           "ITER": {
-               "values": iteration_values,
-               "label": "ITER.%%"
-           },           
-       }
-
-       for key, value in params.items():
-           p_gen.add_parameter(key, value["values"], value["label"])
-    
-       return p_gen      
 
 This results in the following set of parameters, matching the lulesh sample workflow:
 
@@ -285,8 +248,8 @@ This results in the following set of parameters, matching the lulesh sample work
     ITER        10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
-Pgen Arguments
-**************
+Pgen Arguments (pargs)
+**********************
 
 There is an additional pgen feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the itertools_pgen.py file to change that.  Maestro supports passing arguments to these generator functions on the command line:
 
@@ -295,7 +258,7 @@ There is an additional pgen feature that can be used to make them more dynamic. 
 
    $ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP:10" --parg "NUM_SIZES:4"
 
-Each argument is a string in key:val form, which can be accessed in the generator function as shown below:
+Each argument is a string in ``key:value`` form, which can be accessed in the generator function as shown below:
 
 .. code-block:: python
    :name: itertools_pgen_pargs.py
@@ -304,7 +267,7 @@ Each argument is a string in key:val form, which can be accessed in the generato
 
    from maestrowf.datastructures.core import ParameterGenerator
    import itertools as iter
-   
+
    def get_custom_generator(env, **kwargs):
        p_gen = ParameterGenerator()
 
@@ -312,24 +275,24 @@ Each argument is a string in key:val form, which can be accessed in the generato
        size_min = int(kwargs.get('SIZE_MIN', '10'))
        size_step = int(kwargs.get('SIZE_STEP', '10'))
        num_sizes = int(kwargs.get('NUM_SIZES', '3'))
-       
+
        sizes = range(size_min, size_min+num_sizes*size_step, size_step)
        iterations = (10, 20, 30)
 
        size_values = []
        iteration_values = []
        trial_values = []
-       
+
        for trial, param_combo in enumerate(iter.product(sizes, iterations)):
            size_values.append(param_combo[0])
            iteration_values.append(param_combo[1])
            trial_values.append(trial)
-       
+
        params = {
            "TRIAL": {
                "values": trial_values,
                "label": "TRIAL.%%"
-           },       
+           },
            "SIZE": {
                "values": size_values,
                "label": "SIZE.%%"
@@ -337,12 +300,12 @@ Each argument is a string in key:val form, which can be accessed in the generato
            "ITER": {
                "values": iteration_values,
                "label": "ITER.%%"
-           },           
+           },
        }
 
        for key, value in params.items():
            p_gen.add_parameter(key, value["values"], value["label"])
-    
+
        return p_gen
 
 Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields the expanded parameter set:
@@ -361,50 +324,19 @@ Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields t
 
 Notice that using the pgen input method makes it trivially easy to add 1000's of parameters, something which would be cumbersome via manual editing of the global.parameters block in the study specification file.
 
-The next example demonstrates using 3rd party librarys and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the maestro executable you are using.  There are no requirements to cram all of the logic into the ``get_custom_generator`` function, so we'll build the sampling logic into a helper function instead.  The simple parameter distribution demoed in this example is for single variables and is encounterd in polynomial interpolation applications and is designed to suppress the Runge and Gibbs phenomena by sampling the funciton at the chebyshev points.
+The next example demonstrates using 3rd party libraries and breaking out the actual parameter generation algorithm into separate helper functions that the ``get_custom_generator`` function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the maestro executable you are using.  There are no requirements to cram all of the logic into the ``get_custom_generator`` function, so we'll build the sampling logic into a helper function instead.  The simple parameter distribution demoed in this example is for single variables and is encountered in polynomial interpolation applications and is designed to suppress the Runge and Gibbs phenomena by sampling the function at the Chebyshev nodes.
 
-.. code-block:: python
-   :name: np_cheb_pgen_pargs.py
+EXAMPLE:
+  Using ``numpy`` to calculate a sampling of a function at the Chebyshev nodes.
+
+.. literalinclude:: ../../samples/parameterization/np_cheb_pgen_pargs.py
+   :language: python
    :caption: np_cheb_pgen_pargs.py
    :linenos:
-   
-   from maestrowf.datastructures.core import ParameterGenerator
-   import numpy as np
 
-   def chebyshev_dist(var_range, num_pts):
-       r = 0.5*(var_range[1] - var_range[0])
 
-       angles = np.linspace(np.pi, 0.0, num_pts)
-       xpts = r*np.cos(angles) + r
-       ypts = r*np.sin(angles)
-   
-       return xpts
-   
-   def get_custom_generator(env, **kwargs):
-       p_gen = ParameterGenerator()
-
-       # Unpack any pargs passed in
-       x_min = int(kwargs.get('X_MIN', '0'))
-       x_max = int(kwargs.get('X_MAX', '1'))
-       num_pts = int(kwargs.get('NUM_PTS', '10'))
-       
-       x_pts = chebyshev_dist([x_min, x_max], num_pts)
-
-       params = {
-           "X": {
-               "values": list(x_pts),
-               "label": "X.%%"
-           },       
-       }
-
-       for key, value in params.items():
-           p_gen.add_parameter(key, value["values"], value["label"])
-    
-       return p_gen
-
-       
 Running this parameter generator with the following pargs
- 
+
 .. code-block:: bash
 
    $ maestro run study.yaml --pgen np_cheb_pgen.py --parg "X_MIN:0" --parg "X_MAX:3" --parg "NUM_PTS:11"
@@ -414,8 +346,8 @@ results in the 1D distribution of points for the ``X`` parameter shown by the or
 .. image:: pgen_images/cheb_map.png
 
 
-Env Block
-*********
+Referencing Values from a Specification's Env Block
+***************************************************
 
 In addition to command line arguments via ``pargs``, the variables defined in the env block in the workflow specification file can be accessed inside the ParameterGenerator objects, which is passed in to ``get_custom_generator`` as the first argument.  The lulesh sample specification can be extended to store the default values for the pgen, enhancing the reproducability of the generator.  The following example extends the lulesh_monte_carlo_args.py sample generator and adds one additional env var, `seed`, which can be overriden via ``pargs``, making the default configuration a fully repeatable study specification.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
 
@@ -423,49 +355,7 @@ In addition to command line arguments via ``pargs``, the variables defined in th
    possible to link the sample files directly? -> also, might be good to have them pulled into the docs automatically
    somewhere..
 
-.. code-block:: python
+.. literalinclude:: ../../samples/parameterization/lulesh_montecarlo_args.py
+   :language: python
    :linenos:
-   :caption: lulesh_monte_carlo_args_mod.py
-
-   from random import randint
-   
-   from maestrowf.datastructures.core import ParameterGenerator
-   
-   
-   def get_custom_generator(env, **kwargs):
-       """
-       Create a custom populated ParameterGenerator.
-       This function recreates the exact same parameter set as the sample LULESH
-       specifications. The point of this file is to present an example of how to
-       generate custom parameters.
-       :params kwargs: A dictionary of keyword arguments this function uses.
-       :returns: A ParameterGenerator populated with parameters.
-       """
-       p_gen = ParameterGenerator()
-       trials = int(kwargs.get("trials", env.find("TRIALS").value))
-       size_min = int(kwargs.get("smin", env.find("SMIN").value))
-       size_max = int(kwargs.get("smax", env.find("SMAX").value))
-       iterations = int(kwargs.get("iter", env.find("ITER").value))
-       seed = kwargs.get("seed", env.find("SEED").value)
-
-       random.seed(a=seed)
-       
-       params = {
-           "TRIAL": {
-               "values": [i for i in range(1, trials)],
-               "label": "TRIAL.%%"
-           },
-           "SIZE": {
-               "values": [randint(size_min, size_max) for i in range(1, trials)],
-               "label": "SIZE.%%"
-           },
-           "ITERATIONS": {
-               "values": [iterations for i in range(1, trials)],
-               "label": "ITERATIONS.%%"
-           }
-       }
-   
-       for key, value in params.items():
-           p_gen.add_parameter(key, value["values"], value["label"])
-   
-       return p_gen   
+   :caption: lulesh_montecarlo_args.py
