@@ -131,7 +131,7 @@ Maestro uses monikers to reference parameters in study steps, and will automatic
 Maestro is very flexible in the way it manages token replacement for parameters and as such tokens can be used in a variety of ways in a study.
 
 Cmd block
-*********
+---------
 
 Parameters can be defined in the Maestro `cmd` block in the study step. Everything in Maestro's `cmd` block will be written to a bash shell or batch script (if batch is configured). Any shell commands should be valid in the `cmd` block. A common way to use parameters is to pass them in via arguments to a code, script, or tool.
 
@@ -153,7 +153,7 @@ Parameters can be defined in the Maestro `cmd` block in the study step. Everythi
 The specific syntax for using a parameter with a specific code, script, or tool will depend on how the application supports command line arguments.
 
 Batch Configuration Keys
-************************
+------------------------
 
 Step based batch configurations can also be parameterized in Maestro. This provides an easy way to configure scaling studies or to manage studies where batch settings are dependent on the parameter values.
 
@@ -290,8 +290,8 @@ This results in the following set of parameters, matching the lulesh sample work
     ITER        10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
-Pgen Arguments
-**************
+Pgen Arguments (pargs)
+**********************
 
 There is an additional pgen feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the itertools_pgen.py file to change that.  Maestro supports passing arguments to these generator functions on the command line:
 
@@ -388,8 +388,8 @@ results in the 1D distribution of points for the ``X`` parameter shown by the or
 .. image:: pgen_images/cheb_map.png
 
 
-Env Block
-*********
+Referencing Values from a Specification's Env Block
+***************************************************
 
 In addition to command line arguments via ``pargs``, the variables defined in the env block in the workflow specification file can be accessed inside the ParameterGenerator objects, which is passed in to ``get_custom_generator`` as the first argument.  The lulesh sample specification can be extended to store the default values for the pgen, enhancing the reproducability of the generator.  The following example extends the lulesh_monte_carlo_args.py sample generator and adds one additional env var, `seed`, which can be overriden via ``pargs``, making the default configuration a fully repeatable study specification.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
 
