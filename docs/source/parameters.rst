@@ -226,10 +226,6 @@ The object simply builds the same nested key:value pairs seen in the global.para
 
 For this simple example above, this may not offer compelling advantages over writing out the flattened list in the yaml specification directly.  This programmatic approach becomes preferable when expanding studies to use hundreds of parameters and parameter values or requiring non-trivial parameter value distributions.  The following examples will demonstrate these scenarios using both standard python library tools and additional 3rd party packages from the larger python ecosystem.
 
-EXAMPLES:
-  find another sampling algorithm: latin hypercube, or something else from scikit-learn? what about stats models?
-
-
 EXAMPLE:
   Using Python's standard ``itertools`` package to perform a Cartesian Product of parameters in the lulesh example specification.
 
