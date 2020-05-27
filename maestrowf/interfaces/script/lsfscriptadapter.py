@@ -60,10 +60,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         The expected keyword arguments that are expected when the Slurm adapter
         is instantiated are as follows:
-        - host: The cluster to execute scripts on.
-        - bank: The account to charge computing time to.
-        - queue: Scheduler queue scripts should be submitted to.
-        - tasks: The number of compute nodes to be reserved for computing.
+        * host: The cluster to execute scripts on.
+        * bank: The account to charge computing time to.
+        * queue: Scheduler queue scripts should be submitted to.
+        * tasks: The number of compute nodes to be reserved for computing.
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
@@ -101,7 +101,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+                  the parameter step.
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -138,9 +138,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+                      (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+                  and procs.
         """
         args = [self._cmd_flags["cmd"]]
 
@@ -177,10 +177,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+                        identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+                  identiifer.
         """
         args = ["bsub"]
 
@@ -221,7 +221,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+                  identifiers to their status.
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
@@ -376,8 +376,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if to be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+                  written script for run["cmd"], and the path to the script
+                  written for run["restart"] (if it exists).
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
