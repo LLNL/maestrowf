@@ -11,9 +11,9 @@ Maestro makes no assumptions about how parameters are defined or used in a study
 
 There are two ways Maestro supports parameters:
 
-  * Directly in the study specification as the global.parameters block
+  * Directly in the study specification as the ``global.parameters`` block
 
-  * Through the use of a user created Python module called Parameter Generator (pgen)
+  * Through the use of a user created Python module called :ref:`pgen_section`
 
 .. note
    add reference to this section from the hello_world examples (ref here for more thorough discussion of parameters)
@@ -22,7 +22,7 @@ There are two ways Maestro supports parameters:
 Maestro Parameter Block
 =======================
 
-The quickest and easiest way to setup parameters in a Maestro study is by defining a **global.parameters** block directly in the specification
+The quickest and easiest way to setup parameters in a Maestro study is by defining a ``global.parameters`` block directly in the specification
 
 .. code-block:: yaml
    :linenos:
@@ -38,9 +38,9 @@ The quickest and easiest way to setup parameters in a Maestro study is by defini
         values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
         label   : ITER.%%
 
-The above example defines the parameters TRIAL, SIZE, and ITERATIONS. Parameters can be used in study steps to vary information. When a parameter is defined in a study, Maestro will automatically detect the usage of a parameter moniker and handle the substitution automatically in the study expansion. This ensures that each set of parameters are run as part of the study.
+The above example defines the parameters ``TRIAL``, ``SIZE``, and ``ITERATIONS``. Parameters can be used in study steps to vary information. When a parameter is defined in a study, Maestro will automatically detect the usage of a parameter moniker and handle the substitution automatically in the study expansion. This ensures that each set of parameters are run as part of the study.
 
-The **label** key in the block specifies the pattern to use for the directory name when the workspace is created. By default, Maestro constructs a unique workspace for each parameter combination.
+The ``label`` key in the block specifies the pattern to use for the directory name when the workspace is created. By default, Maestro constructs a unique workspace for each parameter combination.
 
 Defining multiple parameters in the parameter block will share a 1:1 mapping. Maestro requires all combinations be resolved when using the parameter block. The combinations in the above example will be expanded as follows:
 
@@ -52,7 +52,7 @@ Defining multiple parameters in the parameter block will share a 1:1 mapping. Ma
 
   * ...
 
-Maestro does not do any additional operations on parameters such as cross products. If more complex methodologies are required to define parameters then the use of Maestro's Parameter Generator (pgen) is recommended.
+Maestro does not do any additional operations on parameters such as cross products. If more complex methodologies are required to define parameters then the use of Maestro's :ref:`pgen_section` is recommended.
 
 Defined parameters can be used in steps directly:
 
@@ -72,7 +72,7 @@ Even though this is defined in Maestro as a single step, Maestro will automatica
 
    Maestro will only use parameters if they've been defined in at least one step
 
-In addition to direct access to parameter values, parameter labels can also be used in steps:
+In addition to direct access to parameter values, a parameter label can be used in steps by appending the ``.label`` moniker to the name (as seen below with ``$(ITERATIONS.label)``):
 
 .. code-block:: yaml
    :linenos:
@@ -85,8 +85,6 @@ In addition to direct access to parameter values, parameter labels can also be u
            $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
        depends: [make-lulesh]
 
-.. note
-   add example with using the label in steps too
 
 What can be Parameterized in Maestro?
 =====================================
@@ -110,7 +108,7 @@ A common use case for Maestro is to use the parameter block to specify values to
            values  : [input1.in, input2.in, input3.in]
            label   : INPUT.%%
 
-The above example highlights a partial study spec that defines a parameter block of simulation inputs that will be varied when the study runs. The **run-simulation** step  will run three times, once for each defined input file.
+The above example highlights a partial study spec that defines a parameter block of simulation inputs that will be varied when the study runs. The ``run-simulation`` step  will run three times, once for each defined input file.
 
 .. code-block:: yaml
    :linenos:
@@ -132,7 +130,7 @@ The above example highlights a partial study spec that defines a parameter block
            values  : [4.0.0, 4.0.0, 4.0.0, 5.0.0, 5.0.0, 5.0.0]
            label   : VERSION.%%
 
-This example parameterizes the inputs and the version of the code being run.  Maestro will run each input with the different code version.  The above example assumes that all the code versions share a base path, **$(CODE_PATH)** which is inserted via the token replacment mechanism to yeild the full paths (e.g. /usr/gapps/code/4.0.0/code.exe).
+This example parameterizes the inputs and the version of the code being run.  Maestro will run each input with the different code version.  The above example assumes that all the code versions share a base path, ``$(CODE_PATH)`` which is inserted via the token replacment mechanism to yeild the full paths (e.g. /usr/gapps/code/4.0.0/code.exe).
 
 Where can Parameters be used in Study Steps?
 ============================================
@@ -147,7 +145,7 @@ Maestro is very flexible in the way it manages token replacement for parameters 
 Cmd block
 ---------
 
-Parameters can be defined in the Maestro **cmd** block in the study step. Everything in Maestro's **cmd** block will be written to a bash shell or batch script (if batch is configured). Any shell commands should be valid in the **cmd** block. A common way to use parameters is to pass them in via arguments to a code, script, or tool.
+Parameters can be defined in the Maestro ``cmd`` block in the study step. Everything in Maestro's ``cmd`` block will be written to a bash shell or batch script (if batch is configured). Any shell commands should be valid in the ``cmd`` block. A common way to use parameters is to pass them in via arguments to a code, script, or tool.
 
 .. code-block:: yaml
    :linenos:
@@ -203,16 +201,18 @@ Step based batch configurations can also be parameterized in Maestro. This provi
 .. note
    Add some dag graphs in here at some point?
 
+.. _pgen_section:
+   
 Parameter Generator (pgen)
 ==========================
 
-Maestro's Parameter Generator (pgen) supports setting up more flexible and complex parameter generation.  Maestro's pgen is a user supplied python file that contains the parameter generation logic, overriding the **global.parameters** block in the yaml specification file.  To run a Maestro study using a parameter generator just pass in the path to the pgen file to Maestro on the command line when launching the study, such as this example where the study specification file and pgen file live in the same directory:
+Maestro's Parameter Generator (**pgen**) supports setting up more flexible and complex parameter generation.  Maestro's pgen is a user supplied python file that contains the parameter generation logic, overriding the ``global.parameters`` block in the yaml specification file.  To run a Maestro study using a parameter generator just pass in the path to the **pgen** file to Maestro on the command line when launching the study, such as this example where the study specification file and **pgen** file live in the same directory:
 
 .. code-block:: bash
 
    $ maestro run study.yaml --pgen pgen.py
 
-The minimum requirements for making a valid pgen file is to make a function called **get_custom_generator** which returns a Maestro :py:class:`~maestrowf.datastructures.core.ParameterGenerator` object as demonstrated in the simple example below:
+The minimum requirements for making a valid pgen file is to make a function called :py:func:`get_custom_generator` which returns a Maestro :py:class:`~maestrowf.datastructures.core.ParameterGenerator` object as demonstrated in the simple example below:
 
 .. code-block:: python
    :linenos:
@@ -234,7 +234,7 @@ The minimum requirements for making a valid pgen file is to make a function call
        return p_gen
 
 
-The object simply builds the same nested key:value pairs seen in the **global.parameters** block available in the yaml specification.
+The object simply builds the same nested key:value pairs seen in the ``global.parameters`` block available in the yaml specification.
 
 For this simple example above, this may not offer compelling advantages over writing out the flattened list in the yaml specification directly.  This programmatic approach becomes preferable when expanding studies to use hundreds of parameters and parameter values or requiring non-trivial parameter value distributions.  The following examples will demonstrate these scenarios using both standard python library tools and additional 3rd party packages from the larger python ecosystem.
 
@@ -264,16 +264,16 @@ This results in the following set of parameters, matching the lulesh sample work
 .. _pargs_section:
 
 Pgen Arguments (pargs)
-======================
+----------------------
 
-There is an additional pgen feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the :ref:`lulesh_itertools_pgen` file to change that.  Maestro supports passing arguments to these generator functions on the command line:
+There is an additional :ref:`pgen <pgen_section>` feature that can be used to make them more dynamic.  The above example generates a fixed set of parameters, requiring editing the :ref:`lulesh_itertools_pgen` file to change that.  Maestro supports passing arguments to these generator functions on the command line:
 
 
 .. code-block:: bash
 
    $ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP:10" --parg "NUM_SIZES:4"
 
-Each argument is a string in **key:value** form, which can be accessed in the parameter generator function as shown below:
+Each argument is a string in ``key:value`` form, which can be accessed in the parameter generator function as shown below:
 
 .. code-block:: python
    :name: itertools_pgen_pargs.py
@@ -323,7 +323,7 @@ Each argument is a string in **key:value** form, which can be accessed in the pa
 
        return p_gen
 
-Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields the expanded parameter set:
+Passing the **pargs** ```SIZE_MIN:10'``, ``'SIZE_STEP:10'``, and ``'NUM_SIZES:4'`` then yields the expanded parameter set:
 
 .. table:: Sample parameters from itertools_pgen_pargs.py
 
@@ -337,12 +337,12 @@ Passing the pargs 'SIZE_MIN:10', 'SIZE_STEP:10', and 'NUM_SIZES:4' then yields t
     ITER        10   20   30   10   20   30   10   20   30   10   20   30
    =========== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ==== ====
 
-Notice that using the pgen input method makes it trivially easy to add 1000's of parameters, something which would be cumbersome via manual editing of the global.parameters block in the study specification file.
+Notice that using the pgen input method makes it trivially easy to add 1000's of parameters, something which would be cumbersome via manual editing of the ``global.parameters`` block in the study specification file.
 
-There are no requirements to cram all of the logic into the **get_custom_generator** function.  The next example demonstrates using 3rd party libraries and breaking out the actual parameter generation algorithm into separate helper functions that the **get_custom_generator** function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the maestro executable you are using.  The simple parameter distribution demoed in here is for single variables and is often encountered in polynomial interpolation applications and is designed to suppress the Runge phenomena by sampling the function to be interpolated at the Chebyshev nodes.
+There are no requirements to cram all of the logic into the :py:func:`get_custom_generator` function.  The next example demonstrates using 3rd party libraries and breaking out the actual parameter generation algorithm into separate helper functions that the :py:func:`get_custom_generator` function uses to get some more complicated distributions.  The only concerns with this approach will be to ensure the library is installed in the same virtual environment as the Maestro executable you are using.  The simple parameter distribution demoed in here is often encountered in polynomial interpolation applications and is designed to suppress the Runge phenomena by sampling the function to be interpolated at the Chebyshev nodes.
 
 EXAMPLE:
-  Using ``numpy`` to calculate a sampling of a function at the Chebyshev nodes.
+  Using `numpy <https://numpy.org/>`_ to calculate a sampling of a function at the Chebyshev nodes.
 
 .. literalinclude:: ../../samples/parameterization/np_cheb_pgen_pargs.py
    :language: python
@@ -356,15 +356,15 @@ Running this parameter generator with the following pargs
 
    $ maestro run study.yaml --pgen np_cheb_pgen.py --parg "X_MIN:0" --parg "X_MAX:3" --parg "NUM_PTS:11"
 
-results in the 1D distribution of points for the **X** parameter shown by the orange circles:
+results in the 1D distribution of points for the ``X`` parameter shown by the orange circles:
 
 .. image:: pgen_images/cheb_map.png
 
 
 Referencing Values from a Specification's Env Block
-===================================================
+---------------------------------------------------
 
-In addition to command line arguments via :ref:`pargs_section`, the variables defined in the **env** block in the workflow specification file can be accessed inside the :py:class:`~maestrowf.datastructures.core.ParameterGenerator` objects, which is passed in to **get_custom_generator** as the first argument.  The lulesh sample specification can be extended to store the default values for the **pgen**, enhancing the reproducability of the generator.  The following example makes use of an optional **seed** parameter which can be added to the **env** block or set via **pargs** to make a repeatable study specification, while omitting it can enable fully randomized workflows upon every instantiation.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
+In addition to command line arguments via :ref:`pargs <pargs_section>`, the variables defined in the ``env`` block in the workflow specification file can be accessed inside the :py:class:`~maestrowf.datastructures.core.ParameterGenerator` objects, which is passed in to :py:func:`get_custom_generator` as the first argument.  The lulesh sample specification can be extended to store the default values for the :ref:`pgen <pgen_section>`, enhancing the reproducability of the generator.  The following example makes use of an optional ``seed`` parameter which can be added to the ``env`` block or set via :ref:`pargs <pargs_section>` to make a repeatable study specification, while omitting it can enable fully randomized workflows upon every instantiation.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
 
 
 .. literalinclude:: ../../samples/parameterization/lulesh_montecarlo_args.py
