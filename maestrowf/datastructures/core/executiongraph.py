@@ -14,7 +14,8 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration
+from maestrowf.utils import create_parentdir, get_duration, \
+    round_datetime_seconds
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -140,7 +141,7 @@ class _StepRecord:
             self.status)
         self.status = State.PENDING
         if not self._submit_time:
-            self._submit_time = datetime.now()
+            self._submit_time = round_datetime_seconds(datetime.now())
         else:
             LOGGER.warning(
                 "Cannot set the submission time of '%s' because it has "
@@ -155,7 +156,7 @@ class _StepRecord:
             self.status)
         self.status = State.RUNNING
         if not self._start_time:
-            self._start_time = datetime.now()
+            self._start_time = round_datetime_seconds(datetime.now())
 
     def mark_end(self, state):
         """
@@ -170,7 +171,7 @@ class _StepRecord:
             self.status)
         self.status = state
         if not self._end_time:
-            self._end_time = datetime.now()
+            self._end_time = round_datetime_seconds(datetime.now())
 
     def mark_restart(self):
         """Mark the end time of the record."""
@@ -302,7 +303,7 @@ class ExecutionGraph(DAG, PickleInterface):
     """
 
     def __init__(self, submission_attempts=1, submission_throttle=0,
-                 use_tmp=False):
+                 use_tmp=False, dry_run=False):
         """
         Initialize a new instance of an ExecutionGraph.
 
@@ -336,6 +337,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
         self._submission_throttle = submission_throttle
+        self.dry_run = dry_run
 
         # A map that tracks the dependencies of a step.
         # NOTE: I don't know how performant the Python dict structure is, but
@@ -536,6 +538,20 @@ class ExecutionGraph(DAG, PickleInterface):
         # 1. If the JobStatus is not OK.
         # 2. num_restarts is less than self._submission_attempts
         self._check_tmp_dir()
+
+        # Only set up the workspace the initial iteration.
+        if not restart:
+            LOGGER.debug("Setting up workspace for '%s' at %s",
+                         record.name, str(datetime.now()))
+            # Generate the script for execution on the fly.
+            record.setup_workspace()    # Generate the workspace.
+            record.generate_script(adapter, self._tmp_dir)
+
+        if self.dry_run:
+            record.mark_end(State.DRYRUN)
+            self.completed_steps.add(record.name)
+            return
+
         while retcode != SubmissionCode.OK and \
                 num_restarts < self._submission_attempts:
             LOGGER.info("Attempting submission of '%s' (attempt %d of %d)...",
@@ -546,9 +562,6 @@ class ExecutionGraph(DAG, PickleInterface):
             if not restart:
                 LOGGER.debug("Calling 'execute' on '%s' at %s",
                              record.name, str(datetime.now()))
-                # Generate the script for execution on the fly.
-                record.setup_workspace()    # Generate the workspace.
-                record.generate_script(adapter, self._tmp_dir)
                 retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
@@ -659,7 +672,14 @@ class ExecutionGraph(DAG, PickleInterface):
         adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
         adapter = adapter(**self._adapter)
 
-        retcode, job_status = self.check_study_status()
+        if not self.dry_run:
+            LOGGER.debug("Checking status check...")
+            retcode, job_status = self.check_study_status()
+        else:
+            LOGGER.debug("DRYRUN: Skipping status check...")
+            retcode = JobStatusCode.OK
+            job_status = {}
+
         LOGGER.debug("Checked status (retcode %s)-- %s", retcode, job_status)
 
         # For now, if we can't check the status something is wrong.
@@ -745,6 +765,16 @@ class ExecutionGraph(DAG, PickleInterface):
                     self.in_progress.remove(name)
                     record.mark_end(State.FAILED)
                     cleanup_steps.update(self.bfs_subtree(name)[0])
+
+                elif status == State.UNKNOWN:
+                    record.mark_end(State.UNKNOWN)
+                    LOGGER.info(
+                        "Step '%s' found in UNKNOWN state. Step was found "
+                        "in '%s' state previously, marking as UNKNOWN. "
+                        "Adding to failed steps.",
+                        name, record.status)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
+                    self.in_progress.remove(name)
 
                 elif status == State.CANCELLED:
                     LOGGER.info("Step '%s' was cancelled.", name)

@@ -159,6 +159,7 @@ class YAMLSpecification(Specification):
     def verify(self):
         """Verify the whole specification."""
         self.verify_description()
+        self.verify_environment()
         self.verify_study()
         self.verify_parameters()
 
@@ -196,6 +197,8 @@ class YAMLSpecification(Specification):
         :returns: A set of keys encountered in the variables section.
         """
         keys_seen = set()
+        if "variables" not in self.environment:
+            return keys_seen
         for key, value in self.environment["variables"].items():
             logger.debug("Verifying %s...", key)
             if not key:
@@ -214,7 +217,7 @@ class YAMLSpecification(Specification):
                 logger.error(msg)
                 raise ValueError(msg)
 
-            if key in self.keys_seen:
+            if key in keys_seen:
                 msg = (
                     "Variable name '{}' is already taken. All variable "
                     "names must be unique.".format(key)
@@ -243,40 +246,14 @@ class YAMLSpecification(Specification):
         :returns: A set of variable names seen.
         """
         dep_types = ["path", "git", "spack"]
-        # Required keys
-        req_keys = {}
-        # For each PathDependency, we require two things:
-        # 1. A unique name (which will be its variable name for substitution)
-        # 2. A path.
-        req_keys["path"] = set(["name", "path"])
 
-        # For each GitDependency, required items are:
-        # 1. A name for the dependency (variable name to be substituted)
-        # 2. A git URL (ssh or http)
-        # 3. A path to store the repository to.
-        req_keys["git"] = set(["name", "path", "url"])
-
-        # For each SpackDependency, required items are:
-        # 1. A name for the dependency (variable name to be substituted)
-        # 2. Spack package name
-        req_keys["spack"] = set(["name", "package_name"])
+        if "dependencies" not in self.environment:
+            return keys_seen
 
         # For each dependency type, run through the required keys and name.
         for dep_type in dep_types:
             if dep_type in self.environment["dependencies"]:
                 for item in self.environment["dependencies"][dep_type]:
-                    # Check that the name and path attributes are populated.
-                    missing_keys = req_keys[dep_type] - set(item.keys())
-                    if missing_keys:
-                        msg = (
-                            "Incomplete %s dependency detected -- missing"
-                            " %s required keys. Value: %s".format(
-                                dep_type, missing_keys, item
-                            )
-                        )
-                        logger.error(msg)
-                        raise ValueError(msg)
-
                     # Make sure that the "name" attribute is not taken.
                     # Because every dependency should be responsible for
                     # substituting itself into data, they are required to have
@@ -297,16 +274,16 @@ class YAMLSpecification(Specification):
 
     def verify_environment(self):
         """Verify that the environment in a specification is valid."""
+        # validate environment against json schema
+        YAMLSpecification.validate_schema(
+            "env", self.environment, schemas["ENV"]
+        )
         # Verify the variables section of the specification.
         keys_seen = self._verify_variables()
         # Verify the sources section of the specification.
         self._verify_sources()
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
-        # validate environment against json schema
-        YAMLSpecification.validate_schema(
-            "env", self.environment, schemas["ENV"]
-        )
 
     def verify_study(self):
         """Verify the each step of the study in the specification."""

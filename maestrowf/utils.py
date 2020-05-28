@@ -30,6 +30,7 @@
 """A collection of more general utility functions."""
 
 from collections import OrderedDict
+import coloredlogs
 import logging
 import os
 import string
@@ -37,13 +38,14 @@ from subprocess import PIPE, Popen
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
 import time
+import datetime
 
 LOGGER = logging.getLogger(__name__)
 
 
 def get_duration(time_delta):
     """
-    Covert durations to HH:MM:SS format.
+    Convert durations to HH:MM:SS format.
 
     :params time_delta: A time difference in datatime format.
     :returns: A formatted string in HH:MM:SS
@@ -56,6 +58,24 @@ def get_duration(time_delta):
 
     return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
            .format(days, hours, minutes, seconds)
+
+
+def round_datetime_seconds(input_datetime):
+    """
+    Round datetime to the nearest whole second.
+
+    Solution referenced from: https://stackoverflow.com/questions/47792242/
+    rounding-time-off-to-the-nearest-second-python.
+
+    :params input_datetime: A datetime in datatime format.
+    :returns: ``input_datetime`` rounded to the nearest whole second
+    """
+    new_datetime = input_datetime
+
+    if new_datetime.microsecond >= 500000:
+        new_datetime = new_datetime + datetime.timedelta(seconds=1)
+
+    return new_datetime.replace(microsecond=0)
 
 
 def generate_filename(path, append_time=True):
@@ -271,7 +291,7 @@ class LoggerUtility:
         """
         self._logger = logger
 
-    def configure(self, log_format, log_lvl=2):
+    def configure(self, log_format, log_lvl=2, colors=True):
         """
         Configures the general logging facility.
 
@@ -279,6 +299,9 @@ class LoggerUtility:
         :param log_lvl: Integer level (1-5) to set the logger to.
         """
         logging.basicConfig(level=self.map_level(log_lvl), format=log_format)
+        if colors:
+            coloredlogs.install(level=self.map_level(log_lvl),
+                                logger=self._logger, fmt=log_format)
 
     def add_stream_handler(self, log_format, log_lvl=2):
         """

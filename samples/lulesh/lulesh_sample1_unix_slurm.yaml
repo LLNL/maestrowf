@@ -21,6 +21,7 @@ batch:
     bank        : baasic
     queue       : pbatch
     gres        : ignore
+    reservation : test_reservation
 
 study:
     - name: make-lulesh
@@ -43,6 +44,7 @@ study:
           depends: [make-lulesh]
           nodes: 2
           procs: 27
+          exclusive   : True
           walltime: "00:10:00"
 
 global.parameters:
