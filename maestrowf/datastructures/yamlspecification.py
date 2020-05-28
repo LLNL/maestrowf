@@ -49,13 +49,6 @@ from maestrowf.datastructures import environment
 logger = logging.getLogger(__name__)
 
 
-# load the schemas.json file
-dirpath = os.path.dirname(os.path.abspath(__file__))
-schemas_file = os.path.join(dirpath, "schemas.json")
-with open(schemas_file, "r") as json_file:
-    schemas = json.load(json_file)
-
-
 class YAMLSpecification(Specification):
     """
     Class for loading and verifying a Study Specification.
@@ -98,7 +91,7 @@ class YAMLSpecification(Specification):
         self.globals = {}
 
     @classmethod
-    def load_specification(cls, path):
+    def load_specification(cls, path, schema_path=None):
         """
         Load a study specification.
 
@@ -109,7 +102,7 @@ class YAMLSpecification(Specification):
         try:
             # Load the YAML spec from the file.
             with open(path, "r") as data:
-                specification = cls.load_specification_from_stream(data)
+                specification = cls.load_specification_from_stream(data, schema_path)
 
         except Exception as e:
             logger.exception(e.args)
@@ -120,7 +113,7 @@ class YAMLSpecification(Specification):
         return specification
 
     @classmethod
-    def load_specification_from_stream(cls, stream):
+    def load_specification_from_stream(cls, stream, schema_path=None):
         """
         Load a study specification.
 
@@ -150,6 +143,13 @@ class YAMLSpecification(Specification):
         specification.batch = spec.pop("batch", {})
         specification.study = spec.pop("study", [])
         specification.globals = spec.pop("global.parameters", {})
+
+        # load the spec schema file
+        if schema_path is None:
+            dirpath = os.path.dirname(os.path.abspath(__file__))
+            schema_path = os.path.join(dirpath, "schemas.json")
+        with open(schema_path, "r") as json_file:
+            specification.schemas = json.load(json_file)
 
         logger.debug("Specification object created. Verifying...")
         specification.verify()
@@ -181,7 +181,7 @@ class YAMLSpecification(Specification):
 
         # validate description against json schema
         YAMLSpecification.validate_schema(
-            "description", self.description, schemas["DESCRIPTION"]
+            "description", self.description, self.schemas["DESCRIPTION"]
         )
 
         logger.debug("Study description verified -- \n%s", self.description)
@@ -276,7 +276,7 @@ class YAMLSpecification(Specification):
         """Verify that the environment in a specification is valid."""
         # validate environment against json schema
         YAMLSpecification.validate_schema(
-            "env", self.environment, schemas["ENV"]
+            "env", self.environment, self.schemas["ENV"]
         )
         # Verify the variables section of the specification.
         keys_seen = self._verify_variables()
@@ -318,7 +318,7 @@ class YAMLSpecification(Specification):
                 YAMLSpecification.validate_schema(
                     "study.{}".format(step["name"]),
                     step,
-                    schemas["STUDY_STEP"],
+                    self.schemas["STUDY_STEP"],
                 )
 
         except Exception as e:
@@ -359,7 +359,7 @@ class YAMLSpecification(Specification):
                     YAMLSpecification.validate_schema(
                         "global.params.{}".format(name),
                         value,
-                        schemas["PARAM"],
+                        self.schemas["PARAM"],
                     )
 
                     # If label is a list, check its length against values.
