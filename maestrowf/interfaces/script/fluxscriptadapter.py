@@ -74,10 +74,10 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         The expected keyword arguments that are expected when the Flux adapter
         is instantiated are as follows:
-        - host: The cluster to execute scripts on.
-        - bank: The account to charge computing time to.
-        - queue: Scheduler queue scripts should be submitted to.
-        - nodes: The number of compute nodes to be reserved for computing.
+        * host: The cluster to execute scripts on.
+        * bank: The account to charge computing time to.
+        * queue: Scheduler queue scripts should be submitted to.
+        * nodes: The number of compute nodes to be reserved for computing.
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
@@ -119,7 +119,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+                  the parameter step.
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -155,9 +155,9 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+                      (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+                  and procs.
         """
         args = [
             "env",
@@ -185,10 +185,10 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+                        identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+                  identiifer.
         """
         # # Leading command is "sbatch"
         # cmd = ["flux", "submit"]
@@ -277,7 +277,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+                  identifiers to their status.
         """
         LOGGER.debug("Joblist type -- %s", type(joblist))
         LOGGER.debug("Joblist contents -- %s", joblist)
@@ -494,10 +494,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         The expected keyword arguments that are expected when the Flux adapter
         is instantiated are as follows:
-        - host: The cluster to execute scripts on.
-        - bank: The account to charge computing time to.
-        - queue: Scheduler queue scripts should be submitted to.
-        - nodes: The number of compute nodes to be reserved for computing.
+        * host: The cluster to execute scripts on.
+        * bank: The account to charge computing time to.
+        * queue: Scheduler queue scripts should be submitted to.
+        * nodes: The number of compute nodes to be reserved for computing.
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
@@ -537,7 +537,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+                  the parameter step.
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -565,9 +565,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+                      (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+                  and procs.
         """
         args = ["flux", "wreckrun", "-n", str(procs)]
 
@@ -590,10 +590,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+                        identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+                  identiifer.
         """
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
@@ -680,7 +680,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+                  identifiers to their status.
         """
         LOGGER.debug("Joblist type -- %s", type(joblist))
         LOGGER.debug("Joblist contents -- %s", joblist)
@@ -848,8 +848,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if to be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+                  written script for run["cmd"], and the path to the script
+                  written for run["restart"] (if it exists).
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 

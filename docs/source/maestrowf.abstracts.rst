@@ -41,14 +41,6 @@ maestrowf.abstracts.graph module
     :undoc-members:
     :show-inheritance:
 
-maestrowf.abstracts.simobject module
-------------------------------------
-
-.. automodule:: maestrowf.abstracts.simobject
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 maestrowf.abstracts.specification module
 ----------------------------------------
 

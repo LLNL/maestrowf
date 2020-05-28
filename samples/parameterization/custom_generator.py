@@ -5,8 +5,10 @@ from maestrowf.datastructures.core import ParameterGenerator
 
 def get_custom_generator(env, **kwargs):
     """
-    Create a custom populated ParameterGenerator.
+    Create a custom populated ParameterGenerator with a single Parameter.
 
+    :params env: A StudyEnvironment object containing custom information.
+    :params kwargs: A dictionary of keyword arguments this function uses.
     :returns: A ParameterGenerator populated with parameters.
     """
     p_gen = ParameterGenerator()

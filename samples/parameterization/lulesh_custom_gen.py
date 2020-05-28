@@ -6,11 +6,11 @@ from maestrowf.datastructures.core import ParameterGenerator
 def get_custom_generator(env, **kwargs):
     """
     Create a custom populated ParameterGenerator.
-
     This function recreates the exact same parameter set as the sample LULESH
     specifications. The point of this file is to present an example of how to
     generate custom parameters.
-
+    :params env: A StudyEnvironment object containing custom information.
+    :params kwargs: A dictionary of keyword arguments this function uses.
     :returns: A ParameterGenerator populated with parameters.
     """
     p_gen = ParameterGenerator()
