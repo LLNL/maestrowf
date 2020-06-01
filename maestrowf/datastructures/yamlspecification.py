@@ -316,7 +316,7 @@ class YAMLSpecification(Specification):
             for step in self.study:
                 # validate step against json schema
                 YAMLSpecification.validate_schema(
-                    "study.{}".format(step["name"]),
+                    "study step '{}'".format(step["name"]),
                     step,
                     schemas["STUDY_STEP"],
                 )
@@ -406,21 +406,17 @@ class YAMLSpecification(Specification):
         validator = jsonschema.Draft7Validator(schema)
         errors = validator.iter_errors(instance)
         for error in errors:
+            path = ".".join(list(error.path))
             if error.validator == "additionalProperties":
                 unrecognized = (
                     re.search(r"'.+'", error.message).group(0).strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "Unrecognized key '{0}' found in spec section '{1}'."
+                    "Unrecognized key '{0}' found in {1}."
                     .format(unrecognized, parent_key)
                 )
 
             elif error.validator == "type":
-                bad_val = (
-                    re.search(r".+ is not of type", error.message)
-                    .group(0)
-                    .strip(" is not of type")
-                )
                 expected_type = (
                     re.search(r"is not of type '.+'", error.message)
                     .group(0)
@@ -428,8 +424,8 @@ class YAMLSpecification(Specification):
                     .strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "Value {0} in spec section '{1}' must be of type '{2}'."
-                    .format(bad_val, parent_key, expected_type)
+                    "In {0}, {1} must be of type '{2}'."
+                    .format(parent_key, path, expected_type)
                 )
 
             elif error.validator == "required":
@@ -437,25 +433,38 @@ class YAMLSpecification(Specification):
                 missing = missing.group(0)
                 missing = missing.strip("'")
                 raise jsonschema.ValidationError(
-                    "Key '{0}' is missing from spec section '{1}'.".format(
+                    "Key '{0}' is missing from {1}.".format(
                         missing, parent_key
                     )
                 )
 
             elif error.validator == "uniqueItems":
                 raise jsonschema.ValidationError(
-                    "Non-unique step names in spec section '{0}.run.depends'."
+                    "Non-unique step names in {0}.run.depends."
                     .format(parent_key)
                 )
 
             elif error.validator == "minLength":
                 raise jsonschema.ValidationError(
-                    "Empty string found in value in spec section '{0}'."
-                    .format(parent_key)
+                    "In {0}, empty string found as value for {1}."
+                    .format(parent_key, path)
+                )
+
+            elif error.validator == "anyOf":
+                path = ".".join(list(error.path))
+                context_message = error.context[0].message
+                context_message = re.sub(r"'.+' ", "'{0}' ".format(
+                    path
+                ), context_message)
+                raise jsonschema.ValidationError(
+                    ("The value '{0}' in field {1} of {2} is not of type "
+                     "'{3}' or does not conform to the format '$(VARNAME)'.")
+                    .format(error.instance, path, parent_key,
+                            error.validator_value[0]["type"])
                 )
 
             else:
-                raise ValueError("Unknown validation error: " + error.message)
+                raise ValueError("Validation error: " + error.message)
 
     @property
     def output_path(self):
