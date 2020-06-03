@@ -153,8 +153,10 @@ class YAMLSpecification(Specification):
         """Verify the whole specification."""
 
         # load the YAMLSpecification schema file
+        classname = self.__class__.__name__.lower().replace(".py", "")
         dirpath = os.path.dirname(os.path.abspath(__file__))
-        schema_path = os.path.join(dirpath, "schemas.json")
+        schema_path = os.path.join(dirpath, "schemas")
+        schema_path = os.path.join(schema_path, "{}.json".format(classname))
         with open(schema_path, "r") as json_file:
             schemas = json.load(json_file)
         #TODO make this based on the class name
