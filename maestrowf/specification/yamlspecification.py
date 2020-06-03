@@ -159,7 +159,6 @@ class YAMLSpecification(Specification):
         schema_path = os.path.join(schema_path, "{}.json".format(classname))
         with open(schema_path, "r") as json_file:
             schemas = json.load(json_file)
-        #TODO make this based on the class name
 
         self.verify_description(schemas["DESCRIPTION"])
         self.verify_environment(schemas["ENV"])
