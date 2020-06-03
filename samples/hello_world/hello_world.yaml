@@ -12,4 +12,3 @@ study:
       run:
           cmd: |
             echo "Hello, World!" > hello_world.txt
-      bun: hi
