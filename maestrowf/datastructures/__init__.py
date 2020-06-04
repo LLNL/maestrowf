@@ -43,5 +43,5 @@ import logging
 from .dag import DAG
 
 
-__all__ = ("DAG")
+__all__ = ["DAG"]
 LOGGER = logging.getLogger(__name__)

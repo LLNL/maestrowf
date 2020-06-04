@@ -1,4 +1,4 @@
 from .yamlspecification import YAMLSpecification
 
 
-__all__ = ("YAMLSpecification")
+__all__ = ["YAMLSpecification"]
