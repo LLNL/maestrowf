@@ -40,6 +40,8 @@ wide concepts of a Study, Environment, and Parameter generation.
 
 import logging
 
+from .dag import DAG
+
 
 __all__ = ("DAG")
 LOGGER = logging.getLogger(__name__)
