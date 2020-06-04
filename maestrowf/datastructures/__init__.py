@@ -41,8 +41,7 @@ wide concepts of a Study, Environment, and Parameter generation.
 import logging
 
 from .dag import DAG
-from .yamlspecification import YAMLSpecification
 
 
-__all__ = ("DAG", "YAMLSpecification")
+__all__ = ["DAG"]
 LOGGER = logging.getLogger(__name__)
