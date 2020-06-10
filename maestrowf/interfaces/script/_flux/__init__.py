@@ -1,13 +1,10 @@
 """A module for utility classes to interface with Flux."""
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod
 
 
 class FluxInterface(ABC):
-    @abstractmethod
-    def __init__(self, uri):
-        pass
 
-    @abstractmethod
-    def get_statuses(self, joblist):
+    @abstractclassmethod
+    def get_statuses(cls, handle, joblist):
         pass
