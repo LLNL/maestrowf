@@ -2,6 +2,7 @@ import errno
 import logging
 
 import flux
+import flux.constants
 from . import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
