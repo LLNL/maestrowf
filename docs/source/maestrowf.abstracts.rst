@@ -48,5 +48,3 @@ maestrowf.abstracts.specification module
     :members:
     :undoc-members:
     :show-inheritance:
-
-

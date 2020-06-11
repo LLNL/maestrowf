@@ -12,4 +12,3 @@ Subpackages
 .. toctree::
 
     maestrowf.interfaces.script
-

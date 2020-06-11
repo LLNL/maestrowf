@@ -40,5 +40,3 @@ maestrowf.datastructures.environment.variable module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
