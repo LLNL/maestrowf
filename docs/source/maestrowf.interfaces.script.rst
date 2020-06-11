@@ -39,13 +39,4 @@ maestrowf.interfaces.script.fluxscriptadapter module
 .. automodule:: maestrowf.interfaces.script.fluxscriptadapter
     :members:
     :undoc-members:
-    :show-inheritance:       
-
-
-maestrowf.interfaces.script.fluxscriptadapter module
------------------------------------------------------
-
-.. automodule:: maestrowf.interfaces.script.fluxscriptadapter
-    :members:
-    :undoc-members:
     :show-inheritance:
