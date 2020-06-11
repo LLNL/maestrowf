@@ -64,7 +64,9 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     package_data={
-                'maestrowf': ['maestrowf/datastructures/schemas.json'],
+        'maestrowf': [
+            'maestrowf/specification/schemas/yamlspecification.json'
+        ],
     },
     include_package_data=True,
 )
