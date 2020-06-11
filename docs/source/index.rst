@@ -14,6 +14,7 @@ Welcome to Maestro Workflow Conductor Documentation
    quick_start
    hello_world
    lulesh_breakdown
+   parameters
    maestro_core
 
    modules

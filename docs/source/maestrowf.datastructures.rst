@@ -32,5 +32,3 @@ maestrowf.datastructures.yamlspecification module
     :members:
     :undoc-members:
     :show-inheritance:
-
-

@@ -25,4 +25,18 @@ maestrowf.interfaces.script.slurmscriptadapter module
     :undoc-members:
     :show-inheritance:
 
+maestrowf.interfaces.script.lsfscriptadapter module
+-----------------------------------------------------
 
+.. automodule:: maestrowf.interfaces.script.lsfscriptadapter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+maestrowf.interfaces.script.fluxscriptadapter module
+-----------------------------------------------------
+
+.. automodule:: maestrowf.interfaces.script.fluxscriptadapter
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -5,4 +5,3 @@ maestrowf.abstracts.enums package
     :members:
     :undoc-members:
     :show-inheritance:
-

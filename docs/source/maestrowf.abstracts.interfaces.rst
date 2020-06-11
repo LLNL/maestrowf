@@ -24,5 +24,3 @@ maestrowf.abstracts.interfaces.scriptadapter module
     :members:
     :undoc-members:
     :show-inheritance:
-
-
