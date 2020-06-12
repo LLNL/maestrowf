@@ -339,7 +339,6 @@ class ExecutionGraph(DAG, PickleInterface):
         self._submission_throttle = submission_throttle
         self.dry_run = dry_run
 
-        self._local_procs = local_procs
 
         # A map that tracks the dependencies of a step.
         # NOTE: I don't know how performant the Python dict structure is, but
