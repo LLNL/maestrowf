@@ -3,6 +3,7 @@ import logging
 
 import flux
 import flux.constants
+from flux.core.inner import raw
 from . import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -51,7 +52,9 @@ class FluxInterface_0160(FluxInterface):
         "status_abbrev": ("state", "result"),
     }
 
-    attrs = ["id", "username", "state", "result", "status"]
+    attrs = set()
+    attrs.add(fields2attrs["userid"])
+    attrs.add(fields2attrs["status"])
 
     @staticmethod
     def status_callback(future, args):
@@ -89,3 +92,20 @@ class FluxInterface_0160(FluxInterface):
         ret = handle.reactor_run(rpc_handle.get_reactor(), 0)
 
         return ret, cb_args["jobs"]
+
+    @classmethod
+    def resulttostr(cls, resultid, singlechar=False):
+        # if result not returned, just return empty string back
+        if resultid == "":
+            return ""
+        return raw.flux_job_resulttostr(resultid, singlechar).decode("utf-8")
+
+    @classmethod
+    def statustostr(cls, stateid, resultid, abbrev=False):
+        if stateid & flux.constants.FLUX_JOB_PENDING:
+            statusstr = "PD" if abbrev else "PENDING"
+        elif stateid & flux.constants.FLUX_JOB_RUNNING:
+            statusstr = "R" if abbrev else "RUNNING"
+        else:  # flux.constants.FLUX_JOB_INACTIVE
+            statusstr = cls.resulttostr(resultid, abbrev)
+        return statusstr
