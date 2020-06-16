@@ -94,7 +94,14 @@ class FluxInterface_0160(FluxInterface):
             rpc_handle.then(cls.status_callback, arg=(jobid, cb_args))
         ret = handle.reactor_run(rpc_handle.get_reactor(), 0)
 
-        return ret, cb_args["jobs"]
+        statuses = {}
+        for job in cb_args["jobs"]:
+            if job[0] != "S":
+                statuses[job["id"]] = job[0]
+            else:
+                statuses[job["id"]] = \
+                    cls.statustostr(job["state"], job["result"], True)
+        return ret, statuses
 
     @classmethod
     def resulttostr(cls, resultid, singlechar=False):
