@@ -97,10 +97,10 @@ class FluxInterface_0160(FluxInterface):
         statuses = {}
         for job in cb_args["jobs"]:
             if job[0] != "S":
-                statuses[job["id"]] = job[0]
+                statuses[job[1]["id"]] = job[0]
             else:
-                statuses[job["id"]] = \
-                    cls.statustostr(job["state"], job["result"], True)
+                statuses[job[1]["id"]] = \
+                    cls.statustostr(job[1]["state"], job[1]["result"], True)
         return ret, statuses
 
     @classmethod
