@@ -2,6 +2,7 @@ import errno
 import logging
 
 import flux
+import flux.job
 import flux.constants
 from flux.core.inner import raw
 from . import FluxInterface
