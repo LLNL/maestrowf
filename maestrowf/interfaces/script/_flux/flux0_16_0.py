@@ -10,6 +10,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FluxInterface_0160(FluxInterface):
+    key = "0.16.0"
+
     STATE_CONST_DICT = {
         "depend": flux.constants.FLUX_JOB_DEPEND,
         "sched": flux.constants.FLUX_JOB_SCHED,
@@ -21,7 +23,7 @@ class FluxInterface_0160(FluxInterface):
         "active": flux.constants.FLUX_JOB_ACTIVE,
     }
 
-    fields2attrs = {
+    _FIELDATTRS = {
         "id": (),
         "userid": ("userid",),
         "username": ("userid",),
@@ -53,8 +55,8 @@ class FluxInterface_0160(FluxInterface):
     }
 
     attrs = set()
-    attrs.add(fields2attrs["userid"])
-    attrs.add(fields2attrs["status"])
+    attrs.add(_FIELDATTRS["userid"])
+    attrs.add(_FIELDATTRS["status"])
 
     @staticmethod
     def status_callback(future, args):
@@ -71,7 +73,7 @@ class FluxInterface_0160(FluxInterface):
                 LOGGER.error("Flux RPC: {}", err.strerror)
                 e_stat = "UNK"
 
-        cb_args["jobs"][jobid] = (e_stat, job)
+        cb_args["jobs"].append((e_stat, job))
 
         cb_args["count"] += 1
         if cb_args["count"] == cb_args["total"]:
@@ -80,7 +82,7 @@ class FluxInterface_0160(FluxInterface):
     @classmethod
     def get_statuses(cls, handle, joblist):
         cb_args = {
-            "jobs":   {},
+            "jobs":   [],
             "handle": handle,
             "count":  0,
             "total": len(joblist),
