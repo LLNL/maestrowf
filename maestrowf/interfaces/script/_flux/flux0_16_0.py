@@ -55,8 +55,7 @@ class FluxInterface_0160(FluxInterface):
         "status_abbrev": ("state", "result"),
     }
 
-    attrs = set()
-    attrs.add(
+    attrs = set(
         _FIELDATTRS["userid"] + _FIELDATTRS["status"]
     )
 
