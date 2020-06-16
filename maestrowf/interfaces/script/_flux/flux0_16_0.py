@@ -55,8 +55,9 @@ class FluxInterface_0160(FluxInterface):
     }
 
     attrs = set()
-    attrs.add(_FIELDATTRS["userid"])
-    attrs.add(_FIELDATTRS["status"])
+    attrs.add(
+        _FIELDATTRS["userid"] + _FIELDATTRS["status"]
+    )
 
     @staticmethod
     def status_callback(future, args):
