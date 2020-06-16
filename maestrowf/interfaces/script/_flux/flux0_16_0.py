@@ -66,7 +66,7 @@ class FluxInterface_0160(FluxInterface):
             job = future.get_job()
             e_stat = "S"
         except EnvironmentError as err:
-            job = None
+            job = {'id': jobid}
             if err.errno == errno.ENOENT:
                 LOGGER.error("Flux Job identifier '%s' not found.", jobid)
                 e_stat = "NF"
