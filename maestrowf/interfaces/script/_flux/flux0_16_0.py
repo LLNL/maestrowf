@@ -79,7 +79,7 @@ class FluxInterface_0160(FluxInterface):
 
         cb_args["count"] += 1
         if cb_args["count"] == cb_args["total"]:
-            cb_args["flux_handle"].reactor_stop(future.get_reactor())
+            cb_args["handle"].reactor_stop(future.get_reactor())
 
     @classmethod
     def get_statuses(cls, handle, joblist):
