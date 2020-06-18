@@ -1,28 +1,14 @@
 import errno
 import logging
 
-import flux
-import flux.job
-import flux.constants
-from flux.core.inner import raw
-from . import FluxInterface
+from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
 
 
-class FluxInterface_0160(FluxInterface):
-    key = "0.16.0"
-
-    STATE_CONST_DICT = {
-        "depend": flux.constants.FLUX_JOB_DEPEND,
-        "sched": flux.constants.FLUX_JOB_SCHED,
-        "run": flux.constants.FLUX_JOB_RUN,
-        "cleanup": flux.constants.FLUX_JOB_CLEANUP,
-        "inactive": flux.constants.FLUX_JOB_INACTIVE,
-        "pending": flux.constants.FLUX_JOB_PENDING,
-        "running": flux.constants.FLUX_JOB_RUNNING,
-        "active": flux.constants.FLUX_JOB_ACTIVE,
-    }
+class FluxInterface_0170(FluxInterface):
+    # This utility class is for Flux 0.17.0
+    key = "0.17.0"
 
     _FIELDATTRS = {
         "id": (),
@@ -82,6 +68,10 @@ class FluxInterface_0160(FluxInterface):
 
     @classmethod
     def get_statuses(cls, handle, joblist):
+        # We need to import flux here, as it may not be installed on
+        # all systems.
+        flux = __import__("flux", fromlist=["job"])
+
         cb_args = {
             "jobs":   [],
             "handle": handle,
@@ -106,12 +96,15 @@ class FluxInterface_0160(FluxInterface):
     @classmethod
     def resulttostr(cls, resultid, singlechar=False):
         # if result not returned, just return empty string back
+        raw = __import__("flux.core.inner", fromlist=["raw"])
         if resultid == "":
             return ""
         return raw.flux_job_resulttostr(resultid, singlechar).decode("utf-8")
 
     @classmethod
     def statustostr(cls, stateid, resultid, abbrev=False):
+        flux = __import__("flux", fromlist=["constants"])
+
         if stateid & flux.constants.FLUX_JOB_PENDING:
             statusstr = "PD" if abbrev else "PENDING"
         elif stateid & flux.constants.FLUX_JOB_RUNNING:
