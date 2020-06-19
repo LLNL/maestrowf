@@ -20,8 +20,9 @@ Maestro can be installed via [pip](https://pip.pypa.io/):
 
 ## Documentation
 
-* [Maestro Documentation](https://maestrowf.readthedocs.io)
-* [Maestro Samples](/samples)
+* [Maestro Documentation](https://maestrowf.readthedocs.io) - Official Maestro documentation.
+* [Maestro Sheetmusic](https://github.com/LLNL/maestro_sheetmusic) - A collection of sample and user contributed Maestro study examples.
+* [Maestro Samples](/samples) - Maestro sample studies.
 
 ## Getting Started is Quick and Easy
 
