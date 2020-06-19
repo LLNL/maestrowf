@@ -96,10 +96,11 @@ class FluxInterface_0170(FluxInterface):
     @classmethod
     def resulttostr(cls, resultid, singlechar=False):
         # if result not returned, just return empty string back
-        raw = __import__("flux.core.inner", fromlist=["raw"])
+        inner = __import__("flux.core.inner", fromlist=["raw"])
         if resultid == "":
             return ""
-        return raw.flux_job_resulttostr(resultid, singlechar).decode("utf-8")
+        ret = inner.raw.flux_job_resulttostr(resultid, singlechar)
+        return ret.decode("utf-8")
 
     @classmethod
     def statustostr(cls, stateid, resultid, abbrev=False):
