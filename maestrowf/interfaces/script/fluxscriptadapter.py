@@ -39,7 +39,7 @@ import subprocess as sp
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
-from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord \
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord, \
     FluxFactory
 
 LOGGER = logging.getLogger(__name__)
