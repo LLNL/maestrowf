@@ -685,72 +685,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                          "instance.")
             self.h = self.flux.Flux()
 
-        resp = self.flux.job.job_list(self.h)
-        paths = resp.get_jobs()
-        status = {}
-        for jobid in joblist:
-            status[jobid] = None
-        for i in range(0, len(joblist)):
-            jobid = joblist[i]
-            path = paths[i]
-            LOGGER.debug("Checking jobid %s", jobid)
-            try:
-                flux_state = str(self.kvs.get(self.h, path + ".state"))
-                # "complete" covers three cases:
-                # 1. Normal exit
-                # 2. Killed via signal
-                # 3. Failure in execution
-                LOGGER.debug("Encountered '%d' with state '%s'",
-                             i, flux_state)
-                if flux_state == "complete":
-                    flux_status = self.kvs.get(self.h, path + ".exit_status")
-                    # Use kvs to grab the max error code encountered.
-                    rcode = flux_status["max"]
-                    LOGGER.debug("State 'complete' found. Exit code -- %s",
-                                 rcode)
-                    # If retcode is not 0, not normal execution
-                    if rcode != 0:
-                        # If retcode is in the signaled set, we cancelled.
-                        if os.WIFSIGNALED(rcode):
-                            LOGGER.debug(
-                                "Return code -- %d (WIFSIGNALED)", rcode
-                            )
-                            flux_state = "killed"
-                        # Otherwise, something abnormal happened.
-                        else:
-                            LOGGER.debug(
-                                "Return code -- %d (failed)", rcode
-                            )
-                            flux_state = "failed"
-                    # Otherwise, completed normally.
-                    else:
-                        LOGGER.debug(
-                            "Return code -- %d (complete)", rcode
-                        )
-                        flux_state = "complete"
+        try:
+            status = self._interface.get_statuses(self.h, joblist)
+            chk_status = JobStatusCode.OK if status else JobStatusCode.NOJOBS
+        except Exception:
+            status = {}
+            chk_status = JobStatusCode.ERROR
 
-                status[jobid] = self._state(flux_state)
-                LOGGER.debug(
-                    "Returned code for state (%s) -- %s",
-                    flux_state, status[jobid]
-                )
-            except IOError:
-                LOGGER.error(
-                    "Error seen on path {} Unexpected behavior encountered."
-                    .format(path)
-                )
-                # NOTE: I don't know if we should actually be returning here.
-                # It feels like we may not want to.
-                return JobStatusCode.ERROR, status
-            except EnvironmentError:
-                LOGGER.warning("Job ID (%s) not found in kvs. Setting state"
-                               "to UNKNOWN.", jobid)
-                status[jobid] = self._state("unknown")
-
-        if not status:
-            return JobStatusCode.NOJOBS, status
-        else:
-            return JobStatusCode.OK, status
+        return chk_status, status
 
     def cancel_jobs(self, joblist):
         """
