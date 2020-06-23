@@ -1,7 +1,7 @@
 import errno
 import logging
 
-from maestrowf.abstracts.enums import State
+from maestrowf.abstracts.enums import JobStatusCode, State
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -106,6 +106,11 @@ class FluxInterface_0170(FluxInterface):
             rpc_handle.then(cls.status_callback, arg=(jobid, cb_args))
         ret = handle.reactor_run(rpc_handle.get_reactor(), 0)
 
+        if ret == 2:
+            chk_status = JobStatusCode.OK
+        else:
+            chk_status = JobStatusCode.ERROR
+
         statuses = {}
         for job in cb_args["jobs"]:
             if job[0] != "S":
@@ -113,7 +118,7 @@ class FluxInterface_0170(FluxInterface):
             else:
                 statuses[job[1]["id"]] = \
                     cls.statustostr(job[1]["state"], job[1]["result"], True)
-        return ret, statuses
+        return chk_status, statuses
 
     @classmethod
     def resulttostr(cls, resultid, singlechar=False):

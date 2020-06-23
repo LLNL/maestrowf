@@ -687,8 +687,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             self.h = self.flux.Flux()
 
         try:
-            status = self._interface.get_statuses(self.h, joblist)
-            chk_status = JobStatusCode.OK if status else JobStatusCode.NOJOBS
+            ret, status = self._interface.get_statuses(self.h, joblist)
+            chk_status = JobStatusCode.OK if ret == 2 else JobStatusCode.NOJOBS
         except Exception:
             status = {}
             chk_status = JobStatusCode.ERROR
