@@ -147,6 +147,8 @@ class CancellationRecord(Record):
 class FluxFactory(object):
     """A factory for swapping out Flux's backend interface based on version."""
 
+    latest = "0.17.0"
+
     def _iter_flux():
         """
         Based off of packaging.python.org loop over a namespace and find the
@@ -194,3 +196,7 @@ class FluxFactory(object):
     @classmethod
     def get_valid_interfaces(cls):
         return cls.factories.keys()
+
+    @classmethod
+    def get_latest_interface(cls):
+        return cls.factories[cls.latest]
