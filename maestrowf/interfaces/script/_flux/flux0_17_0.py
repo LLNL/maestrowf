@@ -57,7 +57,8 @@ class FluxInterface_0170(FluxInterface):
 
         # flux has additional arguments that can be passed via the '-o' flag.
         addtl = []
-        for key, value in kwargs.items():
+        addtl_args = kwargs.get("addtl_args", {})
+        for key, value in addtl_args.items():
             addtl.append(f"{key}={value}")
 
         if addtl:

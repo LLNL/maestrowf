@@ -517,7 +517,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
-        self._addl_args = kwargs.get("args", [])
+        self._addl_args = kwargs.get("args", {})
 
         # Header is only for informational purposes.
         self._header = {
@@ -579,7 +579,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                   and procs.
         """
         ntasks = nodes if nodes else self._batch.get("nodes", 1)
-        return self._interface.parallelize(procs, nodes=ntasks, **kwargs)
+        return self._interface.parallelize(
+            procs, nodes=ntasks, addtl_args=self._addl_args, **kwargs)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
