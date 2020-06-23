@@ -39,7 +39,8 @@ import subprocess as sp
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
-from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
+from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord \
+    FluxFactory
 
 LOGGER = logging.getLogger(__name__)
 status_re = re.compile(r"Job \d+ status: (.*)$")
@@ -523,13 +524,16 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             "nodes": "#INFO (nodes) {nodes}",
             "walltime": "#INFO (walltime) {walltime}",
             "URI": "#INFO (flux_uri) {flux_uri}"
+            "flux_version": "#INFO (flux version) {version}"
         }
 
-        self._cmd_flags = {
-            "ntasks": "-n",
-            "nodes": "-N",
-        }
+        # Store the Flux handle for future use.
         self.h = None
+        # Store the interface we're using
+        _version = kwargs.pop("version", FluxFactory.latest)
+        self.add_batch_parameter(
+            "version", _version)
+        self._interface = FluxFactory.get_interface(_version)
 
     def _convert_walltime_to_seconds(self, walltime):
         # Convert walltime to seconds.
@@ -560,9 +564,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         for key, value in self._header.items():
             if key not in batch_header:
                 continue
-
-            if key == "bank" and "reservation" in self._batch:
-                continue
             modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
@@ -577,18 +578,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
-        args = ["flux", "mini", "run", "-n", str(procs)]
-
-        # if we've specified nodes, add that to wreckrun
-        args.append("-N")
-        args.append(str(nodes))
-
-        # flux has additional arguments that can be passed via the '-o' flag.
-        if self._addl_args:
-            addtl = ["-o"] + self._addl_args
-            args.append(",".join(addtl))
-
-        return " ".join(args)
+        ntasks = nodes if nodes else self._batch.get("nodes", 1)
+        return self._interface.parallelize(procs, nodes=ntasks, **kwargs)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
