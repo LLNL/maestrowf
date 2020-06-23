@@ -523,8 +523,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self._header = {
             "nodes": "#INFO (nodes) {nodes}",
             "walltime": "#INFO (walltime) {walltime}",
-            "URI": "#INFO (flux_uri) {flux_uri}",
-            "flux_version": "#INFO (flux version) {version}",
+            "flux_uri": "#INFO (flux_uri) {flux_uri}",
+            "version": "#INFO (flux version) {version}",
         }
 
         # Store the Flux handle for future use.
