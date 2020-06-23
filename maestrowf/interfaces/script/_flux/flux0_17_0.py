@@ -1,6 +1,7 @@
 import errno
 import logging
 
+from maestrowf.abstracts.enums import State
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -44,6 +45,26 @@ class FluxInterface_0170(FluxInterface):
     attrs = set(
         _FIELDATTRS["userid"] + _FIELDATTRS["status"]
     )
+
+    @classmethod
+    def parallelize(cls, procs, nodes=None, **kwargs):
+        args = ["flux", "mini", "run", "-n", str(procs)]
+
+        # if we've specified nodes, add that to wreckrun
+        ntasks = nodes if nodes else 1
+        args.append("-N")
+        args.append(str(ntasks))
+
+        # flux has additional arguments that can be passed via the '-o' flag.
+        addtl = []
+        for key, value in kwargs.items():
+            addtl.append(f"{key}={value}")
+
+        if addtl:
+            args.append("-o")
+            args.append(",".join(addtl))
+
+        return " ".join(args)
 
     @staticmethod
     def status_callback(future, args):
@@ -112,4 +133,17 @@ class FluxInterface_0170(FluxInterface):
             statusstr = "R" if abbrev else "RUNNING"
         else:  # flux.constants.FLUX_JOB_INACTIVE
             statusstr = cls.resulttostr(resultid, abbrev)
-        return statusstr
+        return cls.state(statusstr)
+
+    @staticmethod
+    def state(state):
+        if state == "F":
+            return State.FAILED
+        elif state == "R":
+            return State.RUNNING
+        elif state == "PD":
+            return State.PENDING
+        elif state == "C":
+            return State.CANCELLED
+        else:
+            return State.UNKNOWN
