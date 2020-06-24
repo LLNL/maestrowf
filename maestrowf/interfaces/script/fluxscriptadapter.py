@@ -645,6 +645,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             # Submit our job spec.
             jobid = self.flux.job.submit(self.h, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
+            retcode = 0
 
             LOGGER.info("Submission returned status OK. -- "
                         "Assigned identifier (%s)", jobid)
@@ -652,9 +653,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(
                 "Submission failed -- Message (%s).", exception.message)
             jobid = -1
-            submit_status = SubmissionCode.ERRROR
+            retcode = -1
+            submit_status = SubmissionCode.ERROR
 
-        return SubmissionRecord(submit_status, jobid)
+        return SubmissionRecord(submit_status, retcode, jobid)
 
     def check_jobs(self, joblist):
         """
@@ -687,8 +689,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             self.h = self.flux.Flux()
 
         try:
-            ret, status = self._interface.get_statuses(self.h, joblist)
-            chk_status = JobStatusCode.OK if ret == 2 else JobStatusCode.NOJOBS
+            chk_status, status = self._interface.get_statuses(self.h, joblist)
         except Exception:
             status = {}
             chk_status = JobStatusCode.ERROR
