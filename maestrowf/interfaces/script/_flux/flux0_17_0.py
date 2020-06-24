@@ -117,6 +117,8 @@ class FluxInterface_0170(FluxInterface):
             if job[0] != "S":
                 statuses[str(job[1]["id"])] = job[0]
             else:
+                LOGGER.debug(
+                    "Job checked with status '%s'\nEntry: %s", job[0], job[1])
                 statuses[str(job[1]["id"])] = \
                     cls.statustostr(job[1]["state"], job[1]["result"], True)
         return chk_status, statuses
