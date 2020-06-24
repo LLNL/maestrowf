@@ -683,14 +683,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
-        if self.h is None:
-            LOGGER.debug("Class instance is None. Initializing a new Flux "
-                         "instance.")
-            self.h = self.flux.Flux()
+        handle = self.flux.Flux()
 
         try:
-            chk_status, status = self._interface.get_statuses(self.h, joblist)
-        except Exception:
+            chk_status, status = self._interface.get_statuses(handle, joblist)
+        except Exception as excpt:
+            LOGGER.ERROR(excpt.message)
             status = {}
             chk_status = JobStatusCode.ERROR
 
