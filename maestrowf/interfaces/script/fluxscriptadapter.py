@@ -683,7 +683,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
-        handle = self.flux.Flux()
+        if self.h is None:
+            self.h = self.flux.Flux()
 
         try:
             chk_status, status = self._interface.get_statuses(handle, joblist)
