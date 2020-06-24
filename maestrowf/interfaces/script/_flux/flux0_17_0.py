@@ -120,28 +120,20 @@ class FluxInterface_0170(FluxInterface):
                 LOGGER.debug(
                     "Job checked with status '%s'\nEntry: %s", job[0], job[1])
                 statuses[str(job[1]["id"])] = \
-                    cls.statustostr(job[1]["state"], job[1]["result"], True)
+                    cls.statustostr(job[1], True)
         return chk_status, statuses
 
     @classmethod
-    def resulttostr(cls, resultid, singlechar=False):
-        # if result not returned, just return empty string back
-        inner = __import__("flux.core.inner", fromlist=["raw"])
-        if resultid == "":
-            return ""
-        ret = inner.raw.flux_job_resulttostr(resultid, singlechar)
-        return ret.decode("utf-8")
-
-    @classmethod
-    def statustostr(cls, stateid, resultid, abbrev=False):
+    def statustostr(cls, job_entry, abbrev=False):
         flux = __import__("flux", fromlist=["constants"])
 
+        stateid = job_entry["state"]
         if stateid & flux.constants.FLUX_JOB_PENDING:
             statusstr = "PD" if abbrev else "PENDING"
         elif stateid & flux.constants.FLUX_JOB_RUNNING:
             statusstr = "R" if abbrev else "RUNNING"
         else:  # flux.constants.FLUX_JOB_INACTIVE
-            statusstr = cls.resulttostr(resultid, abbrev)
+            statusstr = cls.resulttostr(job_entry["result"], abbrev)
         return cls.state(statusstr)
 
     @staticmethod
