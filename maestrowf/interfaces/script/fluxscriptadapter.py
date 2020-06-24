@@ -634,7 +634,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         if self.h is None:
             self.h = self.flux.Flux()
+            LOGGER.debug("New Flux instance created.")
 
+        LOGGER.debug("Handle address -- %s", hex(id(self.h)))
         jobspec = self.flux.job.JobspecV1.from_command(
             cmd_line, num_tasks=nodes, num_nodes=nodes,
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
@@ -685,7 +687,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         if self.h is None:
             self.h = self.flux.Flux()
+            LOGGER.debug("New Flux instance created.")
 
+        LOGGER.debug("")
         try:
             chk_status, status = self._interface.get_statuses(self.h, joblist)
         except Exception as excpt:
@@ -714,6 +718,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                          "instance.")
             self.h = self.flux.Flux()
 
+        LOGGER.debug("Handle address -- %s", hex(id(self.h)))
         for _job in joblist:
             LOGGER.debug("Cancelling JobID = %s", _job)
             try:
