@@ -688,7 +688,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         try:
             chk_status, status = self._interface.get_statuses(handle, joblist)
         except Exception as excpt:
-            LOGGER.ERROR(excpt.message)
+            LOGGER.error(excpt.message)
             status = {}
             chk_status = JobStatusCode.ERROR
 
