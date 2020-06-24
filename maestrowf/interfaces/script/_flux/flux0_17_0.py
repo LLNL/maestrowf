@@ -124,6 +124,15 @@ class FluxInterface_0170(FluxInterface):
         return chk_status, statuses
 
     @classmethod
+    def resulttostr(cls, resultid, singlechar=False):
+        # if result not returned, just return empty string back
+        inner = __import__("flux.core.inner", fromlist=["raw"])
+        if resultid == "":
+            return ""
+        ret = inner.raw.flux_job_resulttostr(resultid, singlechar)
+        return ret.decode("utf-8")
+
+    @classmethod
     def statustostr(cls, job_entry, abbrev=False):
         flux = __import__("flux", fromlist=["constants"])
 
