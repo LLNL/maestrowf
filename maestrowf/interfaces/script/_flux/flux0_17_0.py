@@ -102,8 +102,9 @@ class FluxInterface_0170(FluxInterface):
         }
 
         for jobid in joblist:
-            rpc_handle = flux.job.job_list_id(handle, jobid, list(cls.attrs))
-            rpc_handle.then(cls.status_callback, arg=(jobid, cb_args))
+            rpc_handle = \
+                flux.job.job_list_id(handle, int(jobid), list(cls.attrs))
+            rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
         ret = handle.reactor_run(rpc_handle.get_reactor(), 0)
 
         if ret == 2:
