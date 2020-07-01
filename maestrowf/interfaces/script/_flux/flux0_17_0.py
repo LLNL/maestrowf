@@ -1,7 +1,8 @@
 import errno
 import logging
+import os
 
-from maestrowf.abstracts.enums import JobStatusCode, State
+from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -46,6 +47,43 @@ class FluxInterface_0170(FluxInterface):
         _FIELDATTRS["userid"] + _FIELDATTRS["status"]
     )
 
+    flux_handle = None
+    flux = __import__("flux", fromlist=["job", "Flux"])
+
+    @classmethod
+    def submit(cls, nodes, procs, cores_per_task, path, cwd, npgus=0):
+        # Set up with a broker, that is likely the general use case.
+        cmd_line = ["flux", "start", path]
+
+        if not cls.flux_handle:
+            cls.flux_handle = cls.flux.Flux()
+            LOGGER.debug("New Flux instance created.")
+
+        LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
+        jobspec = cls.flux.job.JobspecV1.from_command(
+            cmd_line, num_tasks=nodes, num_nodes=nodes,
+            cores_per_task=cores_per_task, gpus_per_task=ngpus)
+        jobspec.cwd = cwd
+        jobspec.environment = dict(os.environ)
+
+        try:
+            # Submit our job spec.
+            jobid = \
+                cls.flux.job.submit(cls.flux_handle, jobspec, waitable=True)
+            submit_status = SubmissionCode.OK
+            retcode = 0
+
+            LOGGER.info("Submission returned status OK. -- "
+                        "Assigned identifier (%s)", jobid)
+        except Exception as exception:
+            LOGGER.error(
+                "Submission failed -- Message (%s).", exception.message)
+            jobid = -1
+            retcode = -1
+            submit_status = SubmissionCode.ERROR
+
+        return jobid, retcode, submit_status
+
     @classmethod
     def parallelize(cls, procs, nodes=None, **kwargs):
         args = ["flux", "mini", "run", "-n", str(procs)]
@@ -83,29 +121,33 @@ class FluxInterface_0170(FluxInterface):
                 e_stat = "UNK"
 
         cb_args["jobs"].append((e_stat, job))
-
         cb_args["count"] += 1
         if cb_args["count"] == cb_args["total"]:
             cb_args["handle"].reactor_stop(future.get_reactor())
 
     @classmethod
-    def get_statuses(cls, handle, joblist):
+    def get_statuses(cls, joblist):
         # We need to import flux here, as it may not be installed on
         # all systems.
-        flux = __import__("flux", fromlist=["job"])
+        if not cls.flux_handle:
+            cls.flux_handle = cls.flux.Flux()
+
+        LOGGER.debug(
+            "Handle address -- %s", hex(id(cls.flux_handle)))
 
         cb_args = {
             "jobs":   [],
-            "handle": handle,
+            "handle": cls.flux_handle,
             "count":  0,
             "total": len(joblist),
         }
 
         for jobid in joblist:
             rpc_handle = \
-                flux.job.job_list_id(handle, int(jobid), list(cls.attrs))
+                flux.job.job_list_id(
+                    cls.flux_handle, int(jobid), list(cls.attrs))
             rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
-        ret = handle.reactor_run(rpc_handle.get_reactor(), 0)
+        ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
 
         if ret == 2:
             chk_status = JobStatusCode.OK
