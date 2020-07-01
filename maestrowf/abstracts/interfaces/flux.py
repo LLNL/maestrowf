@@ -1,10 +1,10 @@
-from abc import abstractclassmethod, abstractmethod, \
-    abstractstaticmethod, ABCMeta
+from abc import ABC, abstractclassmethod, abstractmethod, \
+    abstractstaticmethod
 
 from maestrowf.abstracts import Singleton
 
 
-class FluxInterface(Singleton, metaclass=ABCMeta):
+class FluxInterface(Singleton, ABC):
 
     @abstractclassmethod
     def get_statuses(cls, joblist):
