@@ -630,7 +630,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             raise ValueError(msg)
 
         submit_status, retcode, jobid = self._interface.submit(
-            nodes, processors, cores_per_task, path, cwd, npgus=0)
+            nodes, processors, cores_per_task, path, cwd, ngpus=0)
 
         return SubmissionRecord(submit_status, retcode, jobid)
 
