@@ -1,15 +1,16 @@
 from abc import abstractclassmethod, abstractmethod, \
     abstractstaticmethod, ABCMeta
 
+from maestrowf.abstracts import Singleton
 
-class FluxInterface(metaclass=ABCMeta):
+
+class FluxInterface(Singleton, metaclass=ABCMeta):
 
     @abstractclassmethod
-    def get_statuses(cls, handle, joblist):
+    def get_statuses(cls, joblist):
         """
         Return the statuses from a given Flux handle and joblist.
 
-        :param handle: An instance of a Flux handle to a running broker.
         :param joblist: A list of jobs to check the status of.
         :return: A dictionary of job identifiers to statuses.
         """
@@ -33,6 +34,22 @@ class FluxInterface(metaclass=ABCMeta):
         :param nodes: Number of nodes the parallel call will span.
         :param kwargs: Extra keyword arguments.
         :return: A string of a Flux MPI command.
+        """
+
+    @abstractclassmethod
+    def submit(cls, nodes, procs, cores_per_task, path, cwd, npgus=0):
+        """
+        Submit a job using this Flux interface's submit API.
+
+        :param nodes: The number of nodes to request on submission.
+        :param procs: The number of cores to request on submission.
+        :param cores_per_task: The number of cores per MPI task.
+        :param path: Path to the script to be submitted.
+        :param cwd: Path to the workspace to execute the script in.
+        :param ngpus: The number of GPUs to request on submission.
+        :return: A string representing the jobid returned by Flux submit.
+        :return: An integer of the return code submission returned.
+        :return: SubmissionCode enumeration that reflects result of submission.
         """
 
     @property
