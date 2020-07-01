@@ -629,34 +629,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
-        # Set up with a broker, that is likely the general use case.
-        cmd_line = ["flux", "start", path]
-
-        if self.h is None:
-            self.h = self.flux.Flux()
-            LOGGER.debug("New Flux instance created.")
-
-        LOGGER.debug("Handle address -- %s", hex(id(self.h)))
-        jobspec = self.flux.job.JobspecV1.from_command(
-            cmd_line, num_tasks=nodes, num_nodes=nodes,
-            cores_per_task=cores_per_task, gpus_per_task=ngpus)
-        jobspec.cwd = cwd
-        jobspec.environment = dict(os.environ)
-
-        try:
-            # Submit our job spec.
-            jobid = self.flux.job.submit(self.h, jobspec, waitable=True)
-            submit_status = SubmissionCode.OK
-            retcode = 0
-
-            LOGGER.info("Submission returned status OK. -- "
-                        "Assigned identifier (%s)", jobid)
-        except Exception as exception:
-            LOGGER.error(
-                "Submission failed -- Message (%s).", exception.message)
-            jobid = -1
-            retcode = -1
-            submit_status = SubmissionCode.ERROR
+        submit_status, retcode, jobid = self._interface.submit(
+            nodes, processors, cores_per_task, path, cwd, npgus=0)
 
         return SubmissionRecord(submit_status, retcode, jobid)
 
@@ -685,13 +659,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
-        if self.h is None:
-            self.h = self.flux.Flux()
-            LOGGER.debug("New Flux instance created.")
-
-        LOGGER.debug("")
         try:
-            chk_status, status = self._interface.get_statuses(self.h, joblist)
+            chk_status, status = self._interface.get_statuses(joblist)
         except Exception as excpt:
             LOGGER.error(str(excpt))
             status = {}
