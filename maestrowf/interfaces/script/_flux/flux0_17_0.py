@@ -51,7 +51,7 @@ class FluxInterface_0170(FluxInterface):
     flux = __import__("flux", fromlist=["job", "Flux"])
 
     @classmethod
-    def submit(cls, nodes, procs, cores_per_task, path, cwd, npgus=0):
+    def submit(cls, nodes, procs, cores_per_task, path, cwd, ngpus=0):
         # Set up with a broker, that is likely the general use case.
         cmd_line = ["flux", "start", path]
 
@@ -144,7 +144,7 @@ class FluxInterface_0170(FluxInterface):
 
         for jobid in joblist:
             rpc_handle = \
-                flux.job.job_list_id(
+                cls.flux.job.job_list_id(
                     cls.flux_handle, int(jobid), list(cls.attrs))
             rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
         ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
