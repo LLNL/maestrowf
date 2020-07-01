@@ -4,7 +4,7 @@ from abc import ABC, abstractclassmethod, abstractmethod, \
 from maestrowf.abstracts import Singleton
 
 
-class _FluxInterface(ABC):
+class FluxInterface(ABC):
 
     @abstractclassmethod
     def get_statuses(cls, joblist):
