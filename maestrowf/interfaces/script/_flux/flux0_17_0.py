@@ -184,7 +184,7 @@ class FluxInterface_0170(FluxInterface):
 
         stateid = job_entry["state"]
         LOGGER.debug(
-            "JOBID [%d] -- Encountered (%s)", job_entry["jobid"], stateid)
+            "JOBID [%d] -- Encountered (%s)", job_entry["id"], stateid)
 
         if stateid & flux.constants.FLUX_JOB_PENDING:
             LOGGER.debug("Marking as PENDING.")
