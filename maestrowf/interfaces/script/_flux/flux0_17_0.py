@@ -171,6 +171,10 @@ class FluxInterface_0170(FluxInterface):
         inner = __import__("flux.core.inner", fromlist=["raw"])
         if resultid == "":
             return ""
+
+        LOGGER.debug(
+            "Calling 'inner.raw.flux_job_resulttostr' with (%s, %s)",
+            resultid, singlechar)
         ret = inner.raw.flux_job_resulttostr(resultid, singlechar)
         return ret.decode("utf-8")
 
@@ -179,11 +183,19 @@ class FluxInterface_0170(FluxInterface):
         flux = __import__("flux", fromlist=["constants"])
 
         stateid = job_entry["state"]
+        LOGGER.debug(
+            "JOBID [%d] -- Encountered (%s)", job_entry["jobid"], stateid)
+
         if stateid & flux.constants.FLUX_JOB_PENDING:
+            LOGGER.debug("Marking as PENDING.")
             statusstr = "PD" if abbrev else "PENDING"
         elif stateid & flux.constants.FLUX_JOB_RUNNING:
+            LOGGER.debug("Marking as RUNNING.")
             statusstr = "R" if abbrev else "RUNNING"
-        else:  # flux.constants.FLUX_JOB_INACTIVE
+        else:
+            LOGGER.debug(
+                "Found Flux INACTIVE state. Calling resulttostr (result=%s).",
+                job_entry["result"])
             statusstr = cls.resulttostr(job_entry["result"], abbrev)
         return cls.state(statusstr)
 
