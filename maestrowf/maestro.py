@@ -68,7 +68,7 @@ def status_study(args):
         return 0
     else:
         print(
-            "Status check failed. If the issue persists, please verify that"
+            "Status check failed. If the issue persists, please verify that "
             "you are passing in a path to a study.")
         return 1
 
@@ -321,12 +321,12 @@ def setup_argparser():
                      help="Maximum number of submission attempts before a "
                      "step is marked as failed. [Default: %(default)d]")
     run.add_argument("-r", "--rlimit", type=int, default=1,
-                     help="Maximum number of restarts allowed when steps."
+                     help="Maximum number of restarts allowed when steps. "
                      "specify a restart command (0 denotes no limit). "
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
                      help="Maximum number of inflight jobs allowed to execute "
-                     "simultaneously (0 denotes not throttling)."
+                     "simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
@@ -336,7 +336,7 @@ def setup_argparser():
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
-                     "that returns a custom filled ParameterGenerator"
+                     "that returns a custom filled ParameterGenerator "
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
                      help="A string that represents a single argument to pass "
