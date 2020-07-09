@@ -179,7 +179,7 @@ class FluxInterface_0170(FluxInterface):
         return ret.decode("utf-8")
 
     @classmethod
-    def statustostr(cls, job_entry, abbrev=False):
+    def statustostr(cls, job_entry, abbrev=True):
         flux = __import__("flux", fromlist=["constants"])
 
         stateid = job_entry["state"]
@@ -201,7 +201,9 @@ class FluxInterface_0170(FluxInterface):
 
     @staticmethod
     def state(state):
-        if state == "F":
+        if state == "CD":
+            return State.FINISHED
+        elif state == "F":
             return State.FAILED
         elif state == "R":
             return State.RUNNING
