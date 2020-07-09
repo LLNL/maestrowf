@@ -104,13 +104,13 @@ def setup_parser():
     # Set up the parser for our conductor here.
     parser = ArgumentParser(prog="Conductor",
                             description="An application for checking and "
-                            "managing an ExecutionDAG within an executing"
+                            "managing an ExecutionDAG within an executing "
                             "study.",
                             formatter_class=RawTextHelpFormatter)
 
-    parser.add_argument("directory", type=str, help="The directory where"
-                        "a study has been set up and where a pickle file"
-                        " of an ExecutionGraph is stored.")
+    parser.add_argument("directory", type=str, help="The directory where "
+                        "a study has been set up and where a pickle file "
+                        "of an ExecutionGraph is stored.")
     parser.add_argument("-s", "--status", action="store_true",
                         help="Check the status of the ExecutionGraph "
                         "located as specified by the 'directory' "
