@@ -52,10 +52,10 @@ Defining multiple parameters in the parameter block will share a 1:1 mapping. Ma
 
   * ...
 
-Maestro does not do any additional operations on parameters such as cross products. If more complex methodologies are required to define parameters then the use of Maestro's :ref:`pgen_section` is recommended.
+Maestro does not do any additional operations on parameters such as Cartesian products. If more complex methodologies are required to define parameters then the use of Maestro's :ref:`pgen_section` is recommended.
 
 .. note
-   If you plan to use :ref:`PGEN <pgen section_>`_ exclusively, then we suggest you comment out the ``global.parameters`` section completely. The length of the ``value`` array for each parameter must be the same otherwise, *even if you do not use those parameter values in your PGEN study*.
+   Even when using the pgen functionality from the command line, Maestro will still initially verify that the provided specification is valid as if it planned to use it entirely (without pgen). If you are using the ``global.parameters`` block solely as documentation, we recommend that you comment out the ``global.parameters`` block. This lets the validator ignore it.
 
 Defined parameters can be used in steps directly:
 
