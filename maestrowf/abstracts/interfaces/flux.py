@@ -1,8 +1,6 @@
 from abc import ABC, abstractclassmethod, abstractmethod, \
     abstractstaticmethod
 
-from maestrowf.abstracts import Singleton
-
 
 class FluxInterface(ABC):
 
