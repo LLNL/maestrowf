@@ -46,5 +46,6 @@ class Record(object):
         (Default: None).
         :returns: The information labeled by parameter key. Default if key does
         not exist.
+
         """
         return self._info.get(key, default)
