@@ -659,11 +659,12 @@ class ExecutionGraph(DAG, PickleInterface):
 
         The 'execute_ready_steps' method is the core of how the ExecutionGraph
         manages execution. This method does the following:
-            - Checks the status of existing jobs that are executing.
-                - Updates the state if changed.
-            - Finds steps that are initialized and determines what can be run:
-                - Scans a steps dependencies and stages if all are me.
-                - Executes any steps whose dependencies are met.
+
+        * Checks the status of existing jobs that are executing and updates
+          the state if changed.
+        * Finds steps that are initialized and determines what can be run
+          based on satisfied dependencies and executes steps whose
+          dependencies are met.
 
         :returns: True if the study has completed, False otherwise.
         """
