@@ -43,9 +43,9 @@ class Record(object):
 
         :param key: The key to look up in a Record's stored information.
         :param default: The default value to return if the key is not found
-        (Default: None).
+             (Default: None).
         :returns: The information labeled by parameter key. Default if key does
-        not exist.
+             not exist.
 
         """
         return self._info.get(key, default)
