@@ -69,9 +69,10 @@ class Combination(object):
         of '$'. 'PARAM1' has some arbitrary value that was set. In order to
         substitute the different variations of 'PARAM1' in a string when the
         apply method is called, the user would include the following mark up:
-            - The value of 'PARAM1': '$(PARAM1)'
-            - The label of 'PARAM1': '$(PARAM1.label)'
-            - The name of 'PARAM1':  '$(PARAM1.name)'
+
+        * The value of 'PARAM1': '$(PARAM1)'
+        * The label of 'PARAM1': '$(PARAM1.label)'
+        * The name of 'PARAM1':  '$(PARAM1.name)'
 
         :param token: Token expected to be found in front of a parameter.
         """
@@ -182,21 +183,23 @@ class ParameterGenerator:
     change from its nice Pythonic style, you can in theory swap out a
     ParameterGenerator that performs completely differently. All of a sudden,
     you can get the following for simply deriving from this class:
-        - Uncertainty Quantification (UQ): Add the ability to statistically
-          sample parameters behind the scenes. Let the ParameterGenerator
-          constraint solve behind the scenes and return the Combination
-          objects it was going to return in the first place. If you can't
-          find a valid sampling, just return nothing and the study won't run.
-        - Boundary and constraint testing: Like UQ above, hide the solving
-          from the user. Simply add parameters to be constraint solved on
-          behind the API and all the user sees is combinations on the frontend.
+
+    * Uncertainty Quantification (UQ): Add the ability to statistically
+      sample parameters behind the scenes. Let the ParameterGenerator
+      constraint solve behind the scenes and return the Combination
+      objects it was going to return in the first place. If you can't
+      find a valid sampling, just return nothing and the study won't run.
+    * Boundary and constraint testing: Like UQ above, hide the solving
+      from the user. Simply add parameters to be constraint solved on
+      behind the API and all the user sees is combinations on the frontend.
 
     Ideally, all parameter generation schemes should boil down as follows:
-        1. Derive from this class, add constraint solving.
-        2. Construct a study how you would otherwise do so, just use
-           the new ParameterGenerator and add parameters.
-        3. Setup, stage, and execute your study.
-        4. Profit.
+
+    1. Derive from this class, add constraint solving.
+    2. Construct a study how you would otherwise do so, just use
+       the new ParameterGenerator and add parameters.
+    3. Setup, stage, and execute your study.
+    4. Profit.
     """
 
     def __init__(self, token="$", ltoken="%%"):

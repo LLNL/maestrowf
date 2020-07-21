@@ -59,9 +59,10 @@ class StudyStep:
     This class is primarily a 1:1 mapping of a study step in the YAML spec in
     terms of data. The StudyStep's class API should capture all functions that
     a step can be expected to perform, including:
-        - Applying a combination of parameters to itself.
-        - Tests for equality and non-equality to check for changes.
-        - Other -- WIP
+
+    * Applying a combination of parameters to itself.
+    * Tests for equality and non-equality to check for changes.
+    * Other -- WIP
     """
 
     def __init__(self):
@@ -129,40 +130,37 @@ class Study(DAG, PickleInterface):
     The Study class is part of the meat and potatoes of this whole package. A
     Study object is where the intersection of the major moving parts are
     collected. These moving parts include:
-        - ParameterGenerator for getting combinations of user parameters
-        - StudyEnvironment for managing and applying the environment to studies
-        - Study flow, which is a DAG of the abstract workflow
+
+    * ParameterGenerator for getting combinations of user parameters
+    * StudyEnvironment for managing and applying the environment to studies
+    * Study flow, which is a DAG of the abstract workflow
 
     The class is responsible for a number of the major key steps in study setup
     as well. Those responsibilities include (but are not limited to):
-        - Setting up the workspace where a simulation campaign will be run.
-        - Applying the StudyEnvionment to the abstract flow DAG:
-            - Creating the global workspace for a study.
-            - Setting up the parameterized workspaces for each combination.
-            - Acquiring dependencies as specified in the StudyEnvironment.
 
-        - Intelligently constructing the expanded DAG to be able to:
-            - Recognize when a step executes in a parameterized workspace
-            - Recognize when a step executes in the global workspace
+    * Setting up the workspace where a simulation campaign will be run.
+    * Applying the StudyEnvionment to the abstract flow DAG:
+        * Creating the global workspace for a study.
+        * Setting up the parameterized workspaces for each combination.
+        * Acquiring dependencies as specified in the StudyEnvironment.
 
-        - Expanding the abstract flow to the full set of specified parameters.
+    * Intelligently constructing the expanded DAG to be able to:
+        * Recognize when a step executes in a parameterized workspace
+        * Recognize when a step executes in the global workspace
+
+    * Expanding the abstract flow to the full set of specified parameters.
 
     Future functionality that makes sense to add here:
-        - Metadata collection. If we're setting things up here, collect the
-        general information. We might even want to venture to say that a set
-        of directives may be useful so that they could be placed into
-        Dependency classes as hooks for dumping that data automatically.
-        - A way of packaging an instance of the class up into something that is
-        easy to store in the ExecutionDAG class so that an API can be
-        designed in whatever class ends up managing all of this to have
-        machine learning applications pipe messages to spin up new studies
-        using the same environment.
-            - The current solution to this is VERY basic. Currently the plan is
-            to write a parameterized specification (not unlike the method of
-            using parameterized .dat files for simulators) and just have the
-            ML engine string replace those. It's crude because currently we'd
-            have to just construct a new environment, with no way to manage
-            injecting the new set into an existing workspace.
+
+    * Metadata collection. If we're setting things up here, collect the
+      general information. We might even want to venture to say that a set
+      of directives may be useful so that they could be placed into
+      Dependency classes as hooks for dumping that data automatically.
+    * A way of packaging an instance of the class up into something that is
+      easy to store in the ExecutionDAG class so that an API can be
+      designed in whatever class ends up managing all of this to have
+      machine learning applications pipe messages to spin up new studies
+      using the same environment.
     """
 
     def __init__(self, name, description,
@@ -334,7 +332,7 @@ class Study(DAG, PickleInterface):
         a step. When adding steps out of order it's recommended to just use the
         base class DAG functionality and manually make connections.
 
-         :param step: A StudyStep instance to be added to the Study instance.
+        :param step: A StudyStep instance to be added to the Study instance.
         """
         # Add the node to the DAG.
         self.add_node(step.name, step)
