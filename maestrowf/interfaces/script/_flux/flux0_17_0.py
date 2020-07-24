@@ -2,7 +2,8 @@ import errno
 import logging
 import os
 
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode
+from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
+    SubmissionCode
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -198,6 +199,28 @@ class FluxInterface_0170(FluxInterface):
                 job_entry["result"])
             statusstr = cls.resulttostr(job_entry["result"], abbrev)
         return cls.state(statusstr)
+
+    def cancel(cls, joblist):
+        """
+        Cancel a job using Flux 0.17.0 cancellation API.
+
+        :param joblist: A list of job identifiers to cancel.
+        :return: CancelCode enumeration that reflects result of cancellation.
+        """
+        # We need to import flux here, as it may not be installed on
+        # all systems.
+        if not cls.flux_handle:
+            cls.flux_handle = cls.flux.Flux()
+
+        cancel_code = CancelCode.OK
+        for job in joblist:
+            try:
+                cls.flux.job.cancel(cls.flux_handle, int(job))
+            except Exception as exception:
+                LOGGER.error(str(exception))
+                cancel_code = CancelCode.ERROR
+
+        return cancel_code
 
     @staticmethod
     def state(state):
