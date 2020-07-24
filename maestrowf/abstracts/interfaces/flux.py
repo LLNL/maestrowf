@@ -50,6 +50,15 @@ class FluxInterface(ABC):
         :return: SubmissionCode enumeration that reflects result of submission.
         """
 
+    @abstractclassmethod
+    def cancel(cls, joblist):
+        """
+        Cancel a job using this Flux interface's cancellation API.
+
+        :param joblist: A list of job identifiers to cancel.
+        :return: CancelCode enumeration that reflects result of cancellation.
+        """
+
     @property
     @abstractmethod
     def key(self):
