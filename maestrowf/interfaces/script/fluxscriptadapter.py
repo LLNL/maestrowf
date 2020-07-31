@@ -598,6 +598,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
+        force_broker = step.run.get("use_broker", False)
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
@@ -629,8 +630,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
-        jobid, retcode, submit_status = self._interface.submit(
-            nodes, processors, cores_per_task, path, cwd, ngpus=0)
+        jobid, retcode, submit_status = \
+            self._interface.submit(
+                nodes, processors, cores_per_task, path, cwd, ngpus=0,
+                force_broker=force_broker
+            )
 
         return SubmissionRecord(submit_status, retcode, jobid)
 

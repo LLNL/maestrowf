@@ -52,13 +52,32 @@ class FluxInterface_0170(FluxInterface):
     flux = __import__("flux", fromlist=["job", "Flux"])
 
     @classmethod
-    def submit(cls, nodes, procs, cores_per_task, path, cwd, ngpus=0):
-        # Set up with a broker, that is likely the general use case.
-        cmd_line = ["flux", "start", path]
-
+    def submit(
+        cls, nodes, procs, cores_per_task, path, cwd, ngpus=0,
+        force_broker=False
+    ):
         if not cls.flux_handle:
             cls.flux_handle = cls.flux.Flux()
             LOGGER.debug("New Flux instance created.")
+
+        # NOTE: This previously placed everything under a broker. However,
+        # if there's a job that schedules items to Flux, it will schedule all
+        # new jobs to the sub-broker. Sometimes this is desired, but it's
+        # incorrect to make that the general case. If we are asking for a
+        # single node, don't use a broker -- but introduce a flag that can
+        # force a single node to run in a broker.
+        if force_broker or nodes > 1:
+            LOGGER.debug(
+                "Launch under Flux sub-broker. [force_broker=%s, nodes=%d]",
+                force_broker, nodes
+            )
+            cmd_line = ["flux", "start", path]
+        else:
+            LOGGER.debug(
+                "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
+                force_broker, nodes
+            )
+            cmd_line = [path]
 
         LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
         jobspec = cls.flux.job.JobspecV1.from_command(
