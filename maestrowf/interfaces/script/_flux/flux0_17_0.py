@@ -226,6 +226,7 @@ class FluxInterface_0170(FluxInterface):
 
         :param joblist: A list of job identifiers to cancel.
         :return: CancelCode enumeration that reflects result of cancellation.
+        "return: A cancel return code indicating how cancellation call exited.
         """
         # We need to import flux here, as it may not be installed on
         # all systems.
@@ -233,14 +234,16 @@ class FluxInterface_0170(FluxInterface):
             cls.flux_handle = cls.flux.Flux()
 
         cancel_code = CancelCode.OK
+        cancel_rcode = 0
         for job in joblist:
             try:
                 cls.flux.job.cancel(cls.flux_handle, int(job))
             except Exception as exception:
                 LOGGER.error(str(exception))
                 cancel_code = CancelCode.ERROR
+                cancel_rcode = 1
 
-        return cancel_code
+        return cancel_code, cancel_rcode
 
     @staticmethod
     def state(state):

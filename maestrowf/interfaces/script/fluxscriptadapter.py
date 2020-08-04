@@ -683,9 +683,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if not joblist:
             return CancelCode.OK
 
-        cancelcode = self._interface.cancel(joblist)
-
-        return CancellationRecord(cancelcode)
+        c_status, r_code = self._interface.cancel(joblist)
+        return CancellationRecord(c_status, r_code)
 
     def _state(self, flux_state):
         """
