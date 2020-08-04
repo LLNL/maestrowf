@@ -683,25 +683,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if not joblist:
             return CancelCode.OK
 
-        cancelcode = CancelCode.OK
-        retcode = 0
+        cancelcode = self._interface.cancel(joblist)
 
-        if self.h is None:
-            LOGGER.debug("Class instance is None. Initializing a new Flux "
-                         "instance.")
-            self.h = self.flux.Flux()
-
-        LOGGER.debug("Handle address -- %s", hex(id(self.h)))
-        for _job in joblist:
-            LOGGER.debug("Cancelling JobID = %s", _job)
-            try:
-                self.flux.job.RAW.cancel(self.h)
-            except Exception:
-                cancelcode = CancelCode.ERROR
-                retcode = -1
-                continue
-
-        return CancellationRecord(cancelcode, retcode)
+        return CancellationRecord(cancelcode)
 
     def _state(self, flux_state):
         """
@@ -710,24 +694,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :param flux_state: String representation of scheduler job status.
         :returns: A Study.State enum corresponding to parameter job_state.
         """
-        LOGGER.debug("Received FLUX State -- %s", flux_state)
-        if flux_state == "running":
-            return State.RUNNING
-        elif flux_state == "pending" or flux_state == "runrequest" \
-                or flux_state == "allocated" or flux_state == "starting":
-            return State.PENDING
-        elif flux_state == "submitted":
-            return State.WAITING
-        elif flux_state == "failed":
-            return State.FAILED
-        elif flux_state == "cancelled" or flux_state == "killed":
-            return State.CANCELLED
-        elif flux_state == "complete":
-            return State.FINISHED
-        elif flux_state == "unknown":
-            return State.UNKNOWN
-        else:
-            return State.UNKNOWN
+        raise NotImplementedError(
+            "FluxScriptAdapter no longer uses the _state mapping.")
 
     def _write_script(self, ws_path, step):
         """
