@@ -62,6 +62,7 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
+    
     args_dir = args.directory
 
     #Step 1: Find if the directory string contains an asterisk
@@ -85,21 +86,24 @@ def status_study(args):
         
         #Step 1.4: Find the substring before the asterisk and all the numbers after the asterisk
         ts_first = args_dir[:ast_idx]
+        print(ts_first)
         ts_last = int(args_dir[ast_idx + 1:])
+        print(ts_last)
     
     directory_list = []
     #Step 2: Find all the directories that fall within range of the asterisk
     if contains_asterisk:
-        directory_str = ts_first + "*[" + ts_last + "]/"
+        directory_str = ts_first + "*[" + str(ts_last) + "]/"
         directory_list = glob.glob(directory_str)
+        print(directory_list)
     else:
         directory_list.append(args.directory)
 
     #Step 3: Find if the study is a Maestro study via the presence of study.pkl and status.csv
     maestro_dir_list = []
     for path in directory_list:
-        temp_path = path + "study.pkl"
-        temp_pkl_list = glob.glob(temp_path)
+        print(path)
+        temp_pkl_list = glob.glob(path + "/*study.pkl")
 
         #Step 3.1: Find if study.pkl exists. If it does, add it to the list 'maestro_dir_list'
         if not temp_pkl_list:
