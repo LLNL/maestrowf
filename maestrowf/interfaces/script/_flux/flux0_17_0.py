@@ -170,7 +170,7 @@ class FluxInterface_0170(FluxInterface):
         ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
 
         LOGGER.debug("Reactor return code: %d", ret)
-        if ret == 2:
+        if ret == 1:
             chk_status = JobStatusCode.OK
         else:
             chk_status = JobStatusCode.ERROR
