@@ -48,7 +48,8 @@ ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
 LOGGER = logging.getLogger(__name__)
 
 # Formatting of logger.
-LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
+LFORMAT = "[%(asctime)s: %(levelname)s] " \
+          "[%(module)s: %(lineno)d] %(message)s"
 
 
 def setup_logging(name, output_path, log_lvl=2, log_path=None,
