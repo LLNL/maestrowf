@@ -220,6 +220,7 @@ class FluxInterface_0170(FluxInterface):
             statusstr = cls.resulttostr(job_entry["result"], abbrev)
         return cls.state(statusstr)
 
+    @classmethod
     def cancel(cls, joblist):
         """
         Cancel a job using Flux 0.17.0 cancellation API.
