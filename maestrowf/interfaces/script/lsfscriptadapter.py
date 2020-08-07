@@ -153,7 +153,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         else:
             _nodes = 1
 
-        _procs = int(procs/_nodes)  # Compute the number of CPUs per node (rs)
+        # Compute the number of CPUs per node (rs)
+        _procs = int(procs)/int(_nodes)
+
         # Processors segment
         args += [
             self._cmd_flags["ntasks"].format(procs=_procs)
