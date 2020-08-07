@@ -62,89 +62,28 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    
+    #args_dir is the path specified
     args_dir = args.directory
 
-    #Step 1: Find if the directory string contains an asterisk
-    contains_asterisk = False
-    ts_first = ""
-    ts_last = 0
-
-    if "*" in args_dir:
-        contains_asterisk = True
-        #Step 1.2: If contains asterisk, find if there exists a '-', numbers will appear afterwards
-        ast_idx = args_dir.find("*")
-        dash_idx = args_dir.find("-")
-
-        if dash_idx == -1:
-            print("Directory requires a dash in order to have correct timestamp")
-            return 1
-        #Step 1.3: See if dash comes before asterisk
-        if dash_idx > ast_idx:
-            print("Improper placement of dash")
-            return 1
-        
-        #Step 1.4: Find the substring before the asterisk and all the numbers after the asterisk
-        ts_first = args_dir[:ast_idx]
-        print(ts_first)
-        ts_last = int(args_dir[ast_idx + 1:])
-        print(ts_last)
-    
+    #Get a list of all the directories based on the path
     directory_list = []
-    #Step 2: Find all the directories that fall within range of the asterisk
-    if contains_asterisk:
-        directory_str = ts_first + "*[" + str(ts_last) + "]/"
-        directory_list = glob.glob(directory_str)
-        print(directory_list)
-    else:
-        directory_list.append(args.directory)
+    directory_list = glob.glob(args_dir)
 
-    #Step 3: Find if the study is a Maestro study via the presence of study.pkl and status.csv
-    maestro_dir_list = []
-    for path in directory_list:
-        print(path)
-        temp_pkl_list = glob.glob(path + "/*study.pkl")
+    dir_len = len(directory_list)
 
-        #Step 3.1: Find if study.pkl exists. If it does, add it to the list 'maestro_dir_list'
-        if not temp_pkl_list:
-            print(path + " has no study.pkl so it is not a Maestro study")
-        else:
-            #Step 3.2: Find if status.csv exists if study.pkl exists
-            temp_path2 = path + "status.csv"
-            temp_pkl_list2 = glob.glob(temp_path2)
-            
-            if not temp_pkl_list2:
-                print(path + " has no study.csv")
-            else:
-                maestro_dir_list.append(path)
-
-    #Step 4: Send the directory to the conductor
-    for path in maestro_dir_list:
-        status = Conductor.get_status(path)
-
+    if dir_len == 1:
+        status = Conductor.get_status(args_dir)
         if status:
             print(tabulate.tabulate(status, headers="keys"))
+            return 0
         else:
             print(
-            "Status check failed. If the issue persists, please verify that "
-            "you are passing in a path to a study.")
-    
-    #Not entirely sure what to return
-    return 0
-
-    #status = Conductor.get_status(args.directory)
-
-    #print all the different statuses if those exist
-
-    #gets status, gets glob here
-    #if status:
-    #    print(tabulate.tabulate(status, headers="keys"))
-    #    return 0
-    #else:
-    #    print(
-    #        "Status check failed. If the issue persists, please verify that "
-    #        "you are passing in a path to a study.")
-    #    return 1
+                "Status check failed. If the issue persists, please verify that "
+                "you are passing in a path to a study.")
+            return 1
+    else:
+        print("test for now")
+        return 1
 
 
 def cancel_study(args):

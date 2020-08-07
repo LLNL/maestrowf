@@ -274,6 +274,8 @@ class Conductor:
                         _ = csvtable_to_dict(stat_file)
             except Timeout:
                 pass
+        else:
+            print("Path does not exist")
 
         return _
 
