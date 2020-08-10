@@ -69,22 +69,11 @@ def status_study(args):
     args_dir = args_dir.replace("'", "")
 
     #Get a list of all the directories based on the path
-    directory_list = []
     directory_list = args_dir.split(',')
 
     dir_len = len(directory_list)
 
-    if dir_len == 1:
-        status = Conductor.get_status(args_dir)
-        if status:
-            print(tabulate.tabulate(status, headers="keys"))
-            return 0
-        else:
-            print(
-                "Status check for " + path + "failed. If the issue persists, please verify that "
-                "you are passing in a path to a study.")
-            return 1
-    elif dir_len > 1:
+    if dir_len >= 1:
         for path in directory_list:
             status = Conductor.get_status(args_dir)
             if status:
