@@ -62,13 +62,20 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    
+
     #Get a list of all the directories based on the path
     directory_list = args.directory
 
     if directory_list:
         for path in directory_list:
             abs_path = os.path.abspath(path)
+
+            eq = '='
+            header_format = eq.ljust(100, "=")
+            print(header_format)
+            print("\t" + abs_path)
+            print(header_format)
+
             status = Conductor.get_status(abs_path)
             if status:
                 print(tabulate.tabulate(status, headers="keys"))
@@ -76,8 +83,9 @@ def status_study(args):
                 print(
                     "Status check for " + abs_path + " failed. If the issue persists, please verify that "
                     "you are passing in a path to a study.")
+            print('\n')
     else:
-        print("Path provided yielded no results. Perhaps try a different path.")
+        print("Path did not resolve to a directory which contained Maestro studies. Perhaps try a different path.")
         return 1
     
     return 0
