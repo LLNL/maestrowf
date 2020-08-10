@@ -62,28 +62,21 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    #args_dir is the path specified
-    args_dir = str(args.directory)
-    args_dir = args_dir.replace("[", "")
-    args_dir = args_dir.replace("]", "")
-    args_dir = args_dir.replace("'", "")
-
+    
     #Get a list of all the directories based on the path
-    directory_list = args_dir.split(',')
+    directory_list = args.directory
 
-    dir_len = len(directory_list)
-
-    if dir_len >= 1:
+    if directory_list:
         for path in directory_list:
-            status = Conductor.get_status(args_dir)
+            abs_path = os.path.abspath(path)
+            status = Conductor.get_status(abs_path)
             if status:
                 print(tabulate.tabulate(status, headers="keys"))
             else:
                 print(
-                    "Status check for " + path + " failed. If the issue persists, please verify that "
+                    "Status check for " + abs_path + " failed. If the issue persists, please verify that "
                     "you are passing in a path to a study.")
     else:
-        #Not reachable
         print("Path provided yielded no results. Perhaps try a different path.")
         return 1
     
