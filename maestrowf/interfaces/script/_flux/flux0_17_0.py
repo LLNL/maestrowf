@@ -177,8 +177,10 @@ class FluxInterface_0170(FluxInterface):
 
         statuses = {}
         for job in cb_args["jobs"]:
-            if job[0] != "S":
-                statuses[job[1]["id"]] = job[0]
+            if job[0] == "NF":
+                statuses[job[1]["id"]] = State.NOTFOUND
+            elif job[0] == "UNK":
+                statuses[job[1]["id"]] = State.UNKNOWN
             else:
                 LOGGER.debug(
                     "Job checked with status '%s'\nEntry: %s", job[0], job[1])
