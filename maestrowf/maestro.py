@@ -37,7 +37,6 @@ import six
 import sys
 import tabulate
 import time
-import glob
 
 from maestrowf import __version__
 from maestrowf.conductor import Conductor
@@ -62,18 +61,19 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
-    #Get a list of all the directories based on the path
     directory_list = args.directory
 
     if directory_list:
+        header_format = "".ljust(100, "=")
+
         for path in directory_list:
             abs_path = os.path.abspath(path)
 
-            eq = '='
-            header_format = eq.ljust(100, "=")
             print(header_format)
-            print("\t" + abs_path)
+            print(abs_path)
             print(header_format)
 
             status = Conductor.get_status(abs_path)
@@ -81,17 +81,24 @@ def status_study(args):
                 print(tabulate.tabulate(status, headers="keys"))
             else:
                 print(
-                    "Status check for " + abs_path + " failed. If the issue persists, please verify that "
-                    "you are passing in a path to a study.")
-            print('\n')
+                    "\nNo status to report -- the Maestro study in this path "
+                    "either unexpectedly crashed or the path does not contain " 
+                    "a Maestro study.")
+            print("")
+        print(header_format)
     else:
-        print("Path did not resolve to a directory which contained Maestro studies. Perhaps try a different path.")
+        print(
+            "Path did not resolve to a directory which contained Maestro "
+            "studies. Perhaps try a different path.")
         return 1
-    
+
     return 0
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
+
     if not os.path.isdir(args.directory):
         print("Attempted to cancel a path that was not a directory.")
         return 1
@@ -142,6 +149,12 @@ def load_parameter_generator(path, env, kwargs):
 
 def run_study(args):
     """Run a Maestro study."""
+    # Report log lvl
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
+
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
@@ -438,11 +451,6 @@ def main():
         else:
             lformat = LFORMAT
         LOG_UTIL.configure(lformat, args.debug_lvl)
-
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
     rc = args.func(args)
     sys.exit(rc)
