@@ -34,6 +34,9 @@ import logging
 
 from maestrowf.abstracts.graph import Graph
 
+import matplotlib.pyplot as plt
+import networkx as nx
+
 logger = logging.getLogger(__name__)
 
 
@@ -248,3 +251,66 @@ class DAG(Graph):
         rstack.remove(v)
         logger.debug("No cycle originating from '%s'", v)
         return False
+
+    def export_to_dot(self, dot_file):
+        """
+        Export dot representation of graph to enable rendering by
+        external graph visualization tools.
+
+        NOTE: must this re-call topological sort for safety?
+        :param dot_file: path to the dot file to write to
+        """
+
+        logger.debug("Exporting to dot file.")
+        # helper to parse node info to label dot representation
+        def parse_params(label):
+            # Parse step base name and params for labeling
+            label_tokens = label.split('_')
+
+            label_params = []
+            for param in [label_tokens[i] for i in range(1, len(label_tokens))]:
+                label_params.append(param.replace('.', ':'))
+
+            return label_tokens[0], label_params
+
+        dagnx = nx.DiGraph()
+
+        nodelist = self.topological_sort()
+        for idx, node in enumerate(nodelist):
+            node_name, node_params = parse_params(node)
+
+            if node == '_source':
+                node_label = 'Study'  # Try to get study name instead?
+            else:
+                this_step = self.values[node].step
+                node_label = '{}\n'.format(this_step.base_name)
+                for var, label in this_step.param_labels.items():
+                    node_label += '{}\n'.format(label)
+
+                logger.debug("Adding label to node {}: {}".format(node, node_label))
+
+            dagnx.add_node(node,
+                           label=node_label)
+
+            # Add edges in a second loop?
+            # children = self.adjacency_table[node_name]
+
+            logger.debug("Node {}, type: {}, {}: {}, params: {}".format(node, type(node), idx, node_name, node_params))
+            logger.debug("  value: {}".format(self.values[node]))
+            if node == '_source':
+                continue
+            logger.debug("  stepinfo: {}, type: {}, dir: {}".format(self.values[node].step, type(self.values[node].step), dir(self.values[node].step)))
+            logger.debug("  step dict: {}".format(self.values[node].step.__dict__))
+
+        logger.debug("Adjacency table: {}".format(self.adjacency_table))
+        logger.debug("First node: {}, type: {}".format(nodelist[0], type(nodelist[0])))
+        logger.debug("  children: {}".format(self.adjacency_table['_source']))
+        for node in nodelist:
+            edges = self.adjacency_table[node]
+
+            dagnx.add_edges_from([(node, child) for child in edges])
+            logger.debug("Node {} has children: {}".format(node, edges))
+
+
+        nx.draw(dagnx, with_labels=True)
+        plt.savefig(dot_file)

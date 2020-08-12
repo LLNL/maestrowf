@@ -207,8 +207,10 @@ def run_study(args):
         parameters = spec.get_parameters()
 
     # Setup the study.
+    LOGGER.debug("Draw flag: {}".format(args.draw))
     study = Study(spec.name, spec.description, studyenv=environment,
-                  parameters=parameters, steps=steps, out_path=output_path)
+                  parameters=parameters, steps=steps, out_path=output_path,
+                  draw=args.draw)
 
     # Check if the submission attempts is greater than 0:
     if args.attempts < 1:
@@ -334,6 +336,8 @@ def setup_argparser():
     run.add_argument("--dry", action="store_true", default=False,
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
+    run.add_argument("--draw", action="store_true", default=False,
+                     help="Generate dot style visualization of study's DAG")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
                      "that returns a custom filled ParameterGenerator "

@@ -68,6 +68,7 @@ class StudyStep:
     def __init__(self):
         """Object that represents a single workflow step."""
         self.name = ""
+        self.base_name = ""     # Stores unparameterized name
         self.description = ""
         self.run = {
                         "cmd":              "",
@@ -83,6 +84,9 @@ class StudyStep:
                         "reservation":      ""
                     }
 
+        self._param_vals = {}   # Better to be None?
+        self._param_labels = {}
+
     def apply_parameters(self, combo):
         """
         Apply a parameter combination to the StudyStep.
@@ -92,8 +96,13 @@ class StudyStep:
         """
         # Create a new StudyStep and populate it with substituted values.
         tmp = StudyStep()
+
+        base_name = tmp.name
         tmp.__dict__ = apply_function(self.__dict__, combo.apply)
         # Return if the new step is modified and the step itself.
+        tmp.base_name = base_name  # Why doesn't this work here?
+        tmp._param_vals = combo.param_vals
+        tmp._param_labels = combo.param_labels
 
         return self.__ne__(tmp), tmp
 
@@ -121,6 +130,20 @@ class StudyStep:
         : returns: True if other is not equal to self, False otherwise.
         """
         return not self.__eq__(other)
+
+    @property
+    def param_vals(self):
+        """
+        Return dict of parameter values for this step
+        """
+        return self._param_vals
+
+    @property
+    def param_labels(self):
+        """
+        Return dict of parameter labels for this step
+        """
+        return self._param_labels
 
 
 class Study(DAG, PickleInterface):
@@ -164,7 +187,8 @@ class Study(DAG, PickleInterface):
     """
 
     def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None, out_path="./"):
+                 studyenv=None, parameters=None, steps=None, out_path="./",
+                 draw=False):
         """
         Study object used to represent the full workflow of a study.
 
@@ -179,6 +203,7 @@ class Study(DAG, PickleInterface):
         :param studyenv: A populated StudyEnvironment instance.
         :param parameters: A populated Parameters instance.
         :param outpath: The path where the output of the study is written.
+        :param draw: Flag controlling generation of dot style visualization
         """
         # The basic study information
         self.name = name
@@ -224,6 +249,9 @@ class Study(DAG, PickleInterface):
             for step in steps:
                 # Deep copy because it prevents modifications after the fact.
                 self.add_step(step)
+
+        # Set dag vis flag
+        self.draw = draw
 
     @property
     def output_path(self):
@@ -446,7 +474,7 @@ class Study(DAG, PickleInterface):
         # Items to store that should be reset.
         LOGGER.info(
             "\n==================================================\n"
-            "Constructing parameter study '%s'\n"
+            "Constructing study '%s'\n"
             "==================================================\n",
             self.name
         )
@@ -644,6 +672,7 @@ class Study(DAG, PickleInterface):
                     self.step_combos[step].add(combo_str)
 
                     modified, step_exp = node.apply_parameters(combo)
+                    step_exp.base_name = step_exp.name
                     step_exp.name = combo_str
 
                     # Substitute workspaces into the combination.

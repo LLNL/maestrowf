@@ -304,6 +304,12 @@ class Conductor:
         # Write metadata
         self._exec_dag.set_adapter(batch_info)
         self._study.store_metadata()
+
+        LOGGER.debug("Exporting dag.")
+        if self._study.draw:
+
+            self._exec_dag.export_to_dot(os.path.join(self._study.output_path, "dag_dot.png"))
+
         self._setup = True
 
     def monitor_study(self):
