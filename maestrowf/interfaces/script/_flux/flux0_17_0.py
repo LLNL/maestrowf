@@ -85,6 +85,12 @@ class FluxInterface_0170(FluxInterface):
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
+        LOGGER.debug(
+            "%s, Flux Jobspec -- \n%s\n%s",
+            "".ljust(80, "="),
+            jobspec.dumps(),
+            "".ljust(80, "=")
+        )
 
         try:
             # Submit our job spec.
@@ -151,6 +157,7 @@ class FluxInterface_0170(FluxInterface):
         # all systems.
         if not cls.flux_handle:
             cls.flux_handle = cls.flux.Flux()
+            LOGGER.debug("New Flux instance created.")
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
@@ -235,11 +242,20 @@ class FluxInterface_0170(FluxInterface):
         # all systems.
         if not cls.flux_handle:
             cls.flux_handle = cls.flux.Flux()
+            LOGGER.debug("New Flux instance created.")
+
+        LOGGER.debug(
+            "Handle address -- %s", hex(id(cls.flux_handle)))
+        LOGGER.debug(
+            "Attempting to cancel jobs.\nJoblist:\n%s",
+            "\n".join(joblist)
+        )
 
         cancel_code = CancelCode.OK
         cancel_rcode = 0
         for job in joblist:
             try:
+                LOGGER.debug("Cancelling Job %s...", job)
                 cls.flux.job.cancel(cls.flux_handle, int(job))
             except Exception as exception:
                 LOGGER.error(str(exception))
