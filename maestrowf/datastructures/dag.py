@@ -31,11 +31,13 @@
 
 from collections import deque, OrderedDict
 import logging
+from math import sqrt
 
 from maestrowf.abstracts.graph import Graph
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import pygraphviz as pgz
 
 logger = logging.getLogger(__name__)
 
@@ -276,6 +278,7 @@ class DAG(Graph):
         dagnx = nx.DiGraph()
 
         nodelist = self.topological_sort()
+        node_labels = {}
         for idx, node in enumerate(nodelist):
             node_name, node_params = parse_params(node)
 
@@ -289,11 +292,9 @@ class DAG(Graph):
 
                 logger.debug("Adding label to node {}: {}".format(node, node_label))
 
+            node_labels[node] = node_label  # draw these later
             dagnx.add_node(node,
                            label=node_label)
-
-            # Add edges in a second loop?
-            # children = self.adjacency_table[node_name]
 
             logger.debug("Node {}, type: {}, {}: {}, params: {}".format(node, type(node), idx, node_name, node_params))
             logger.debug("  value: {}".format(self.values[node]))
@@ -312,5 +313,14 @@ class DAG(Graph):
             logger.debug("Node {} has children: {}".format(node, edges))
 
 
-        nx.draw(dagnx, with_labels=True)
-        plt.savefig(dot_file)
+        # Note: work on something better for sizing/layout than these dirty hacks
+        longest_chain = len(nx.algorithms.dag_longest_path(dagnx))  # NOTE: check if this is expensive
+        fig, ax = plt.subplots(figsize=(3*longest_chain, 2*longest_chain))
+
+        # Convert to pygraphviz agraph for dot layout
+        pos = nx.nx_agraph.pygraphviz_layout(dagnx, prog='dot')
+        #pos = nx.spring_layout(dagnx, k=1/sqrt(longest_chain))
+        nx.draw_networkx(dagnx, pos=pos, ax=ax, labels=node_labels, node_size=500)
+        #nx.draw(dagnx, with_labels=False)
+        #nx.draw_networkx_labels(dagnx,
+        plt.savefig(dot_file, dpi=150)
