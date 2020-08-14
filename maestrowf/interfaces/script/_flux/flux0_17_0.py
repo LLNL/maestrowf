@@ -248,7 +248,7 @@ class FluxInterface_0170(FluxInterface):
             "Handle address -- %s", hex(id(cls.flux_handle)))
         LOGGER.debug(
             "Attempting to cancel jobs.\nJoblist:\n%s",
-            "\n".join(joblist)
+            "\n".join(str(j) for j in joblist)
         )
 
         cancel_code = CancelCode.OK
