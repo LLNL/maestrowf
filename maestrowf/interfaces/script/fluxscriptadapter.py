@@ -633,7 +633,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         jobid, retcode, submit_status = \
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, ngpus=0,
-                force_broker=force_broker
+                job_name=step.name, force_broker=force_broker
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)
