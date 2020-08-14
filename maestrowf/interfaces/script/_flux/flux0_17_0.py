@@ -54,7 +54,7 @@ class FluxInterface_0170(FluxInterface):
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, ngpus=0,
-        force_broker=False
+        job_name=None, force_broker=False
     ):
         if not cls.flux_handle:
             cls.flux_handle = cls.flux.Flux()
@@ -85,6 +85,10 @@ class FluxInterface_0170(FluxInterface):
             cores_per_task=cores_per_task, gpus_per_task=ngpus)
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
+
+        if job_name:
+            jobspec.setattr("system.job.name", job_name)
+
         LOGGER.debug(
             "%s, Flux Jobspec -- \n%s\n%s",
             "".ljust(80, "="),
