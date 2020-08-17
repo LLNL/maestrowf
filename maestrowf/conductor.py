@@ -307,8 +307,9 @@ class Conductor:
 
         LOGGER.debug("Exporting dag.")
         if self._study.draw:
-
-            self._exec_dag.export_to_dot(os.path.join(self._study.output_path, "dag_dot.png"))
+            # Setup base name for each format option
+            dag_basename = os.path.join(self._study.output_path, 'dag_{}_'.format(self._study.name))
+            self._exec_dag.export_dag_vis(dag_basename, self._study.draw)
 
         self._setup = True
 
