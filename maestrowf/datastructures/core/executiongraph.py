@@ -82,7 +82,9 @@ class _StepRecord:
         else:
             scr_dir = self.workspace.value
 
-        self._step.run["cmd"] = self.workspace.substitute(self._step.run["cmd"])
+        self._step.run["cmd"] = self.workspace.substitute(
+            self._step.run["cmd"]
+        )
 
         LOGGER.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
