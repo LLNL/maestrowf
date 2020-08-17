@@ -339,8 +339,8 @@ def setup_argparser():
     run.add_argument("--draw", type=str, action="append", default=[],
                      help="Generate visualizations of study's DAG. Options: "
                      "mpl (matplotlib png), mpl-dot (dot layout mpl), dot "
-                     "(graphviz dot file), graphml (graphml file), graphml-dot "
-                     "(dot layout positioned graphml file)")
+                     "(graphviz dot file), graphml (graphml file), graphml-dot"
+                     " (dot layout positioned graphml file)")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
                      "that returns a custom filled ParameterGenerator "

@@ -277,7 +277,8 @@ class DAG(Graph):
             import networkx as nx
 
         except ImportError:
-            logger.exception("Couldn't import graph drawing utilities; disabling graph visualzation.")
+            logger.exception("Couldn't import graph drawing utilities; "
+                             "disabling graph visualzation.")
             return
 
         try:
@@ -286,7 +287,8 @@ class DAG(Graph):
             have_pygv = True
 
         except ImportError:
-            logger.exception("Error importing pygraphviz: dot layout/output disabled.")
+            logger.exception("Error importing pygraphviz: dot "
+                             "layout/output disabled.")
 
             have_pygv = False
 
@@ -305,7 +307,8 @@ class DAG(Graph):
                     varname = var[2:-1]
                     node_label += '{}:{}\n'.format(varname, value)
 
-                logger.debug("Adding label to node {}: {}".format(node, node_label))
+                logger.debug("Adding label to node {}: {}".format(node,
+                                                                  node_label))
 
             node_labels[node] = node_label  # draw these later
             dagnx.add_node(node,
@@ -318,8 +321,9 @@ class DAG(Graph):
             logger.debug("Node {} has children: {}".format(node, edges))
 
         # Compute node positions for two layouts
-        # Note: work on something better for sizing/layout than these dirty hacks
-        longest_chain = len(nx.algorithms.dag_longest_path(dagnx))  # NOTE: check if this is expensive
+        # Note: work on something better for sizing/layout than these hacks
+        # NOTE: check if this longest path computation is expensive
+        longest_chain = len(nx.algorithms.dag_longest_path(dagnx))
         pos_spring = nx.spring_layout(dagnx, k=1/sqrt(longest_chain))
 
         # Convert to pygraphviz agraph for dot layout
@@ -333,7 +337,8 @@ class DAG(Graph):
 
             # For matplotlib, have to do extra work to compute image size
             if viz_format == "mpl" or viz_format == "mpl-dot":
-                fig, ax = plt.subplots(figsize=(3*longest_chain, 2*longest_chain))
+                fig, ax = plt.subplots(figsize=(3*longest_chain,
+                                                2*longest_chain))
 
             if viz_format == "mpl" or viz_format == "graphml":
                 pos = pos_spring
@@ -342,21 +347,25 @@ class DAG(Graph):
 
             if viz_format == "mpl" or viz_format == "mpl-dot":
                 # Possible to iteratively compute node size and figure size?
-                nx.draw_networkx(dagnx, pos=pos, ax=ax, labels=node_labels, node_size=500)
+                nx.draw_networkx(dagnx,
+                                 pos=pos,
+                                 ax=ax,
+                                 labels=node_labels,
+                                 node_size=500)
                 # May need to render labels separately?
-                #nx.draw(dagnx, with_labels=False)
-                #nx.draw_networkx_labels(dagnx,
+                # nx.draw(dagnx, with_labels=False)
+                # nx.draw_networkx_labels(dagnx,
                 plt.savefig(dag_basename + '.png', dpi=150)
 
             if viz_format == "dot" and have_pygv:
-                # Possible to pass networkx/pygraphviz agraph object around when imports
-                # aren't available?
+                # Possible to pass networkx/pygraphviz agraph object around
+                # when imports aren't available?
                 nx.nx_agraph.write_dot(dagnx, dag_basename + '.dot')
 
             if viz_format == "graphml" or viz_format == "graphml-dot":
                 # NOTE: find implementation that avoids this copy
                 graphml_dag = dagnx
-                # Add positions as node attributes (NEEDS VERIFICATION THAT THIS WORKS)
+                # Add positions as node attributes (NEEDS VERIFICATION)
                 for node, (x, y) in pos.items():
                     graphml_dag.node[node]['x'] = float(x)
                     graphml_dag.node[node]['y'] = float(y)
