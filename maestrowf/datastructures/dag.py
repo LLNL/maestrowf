@@ -35,10 +35,6 @@ from math import sqrt
 
 from maestrowf.abstracts.graph import Graph
 
-import matplotlib.pyplot as plt
-import networkx as nx
-import pygraphviz as pgz
-
 logger = logging.getLogger(__name__)
 
 
@@ -274,6 +270,26 @@ class DAG(Graph):
 
         logger.debug("Exporting hierarchical representation of dag")
 
+        # Put these at the top of file, maybe decorate this function to handle
+        # the disablement?
+        try:
+            import matplotlib.pyplot as plt
+            import networkx as nx
+
+        except ImportError:
+            logger.exception("Couldn't import graph drawing utilities; disabling graph visualzation.")
+            return
+
+        try:
+            import pygraphviz   # Used indirectly, only imported for checking
+            from networkx.drawing.nx_agraph import write_dot
+            have_pygv = True
+
+        except ImportError:
+            logger.exception("Error importing pygraphviz: dot layout/output disabled.")
+
+            have_pygv = False
+
         dagnx = nx.DiGraph()
 
         nodelist = self.topological_sort()
@@ -307,7 +323,11 @@ class DAG(Graph):
         pos_spring = nx.spring_layout(dagnx, k=1/sqrt(longest_chain))
 
         # Convert to pygraphviz agraph for dot layout
-        pos_dot = nx.nx_agraph.pygraphviz_layout(dagnx, prog='dot')
+        if have_pygv:
+            pos_dot = nx.nx_agraph.pygraphviz_layout(dagnx, prog='dot')
+        else:
+            # Fail-safe for matplotlib rendering
+            pos_dot = pos_spring
 
         for viz_format in draw_opts:
 
@@ -321,21 +341,23 @@ class DAG(Graph):
                 pos = pos_dot
 
             if viz_format == "mpl" or viz_format == "mpl-dot":
+                # Possible to iteratively compute node size and figure size?
                 nx.draw_networkx(dagnx, pos=pos, ax=ax, labels=node_labels, node_size=500)
                 # May need to render labels separately?
                 #nx.draw(dagnx, with_labels=False)
                 #nx.draw_networkx_labels(dagnx,
                 plt.savefig(dag_basename + '.png', dpi=150)
 
-            if viz_format == "dot":
-                # Possible to pas networkx/pygraphviz agraph object around when imports
+            if viz_format == "dot" and have_pygv:
+                # Possible to pass networkx/pygraphviz agraph object around when imports
                 # aren't available?
                 nx.nx_agraph.write_dot(dagnx, dag_basename + '.dot')
 
             if viz_format == "graphml" or viz_format == "graphml-dot":
                 # NOTE: find implementation that avoids this copy
                 graphml_dag = dagnx
-                for node,(x,y) in pos.items():
+                # Add positions as node attributes (NEEDS VERIFICATION THAT THIS WORKS)
+                for node, (x, y) in pos.items():
                     graphml_dag.node[node]['x'] = float(x)
                     graphml_dag.node[node]['y'] = float(y)
 
