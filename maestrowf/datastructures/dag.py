@@ -282,8 +282,7 @@ class DAG(Graph):
             return
 
         try:
-            import pygraphviz   # Used indirectly, only imported for checking
-            from networkx.drawing.nx_agraph import write_dot
+            from networkx import nx_agraph
             have_pygv = True
 
         except ImportError:
@@ -328,7 +327,7 @@ class DAG(Graph):
 
         # Convert to pygraphviz agraph for dot layout
         if have_pygv:
-            pos_dot = nx.nx_agraph.pygraphviz_layout(dagnx, prog='dot')
+            pos_dot = nx_agraph.pygraphviz_layout(dagnx, prog='dot')
         else:
             # Fail-safe for matplotlib rendering
             pos_dot = pos_spring
@@ -360,7 +359,7 @@ class DAG(Graph):
             if viz_format == "dot" and have_pygv:
                 # Possible to pass networkx/pygraphviz agraph object around
                 # when imports aren't available?
-                nx.nx_agraph.write_dot(dagnx, dag_basename + '.dot')
+                nx_agraph.write_dot(dagnx, dag_basename + '.dot')
 
             if viz_format == "graphml" or viz_format == "graphml-dot":
                 # NOTE: find implementation that avoids this copy

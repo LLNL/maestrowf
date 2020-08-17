@@ -172,7 +172,8 @@ class Combination(object):
         Return dict of parameter labels
         """
         return self._labels
-    
+
+
 class ParameterGenerator:
     """
     Class for containing parameters and generating combinations.
