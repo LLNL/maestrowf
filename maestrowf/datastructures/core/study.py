@@ -417,7 +417,7 @@ class Study(DAG, PickleInterface):
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False, draw=False):
+                        dry_run=False, draw=[]):
         """
         Perform initial configuration of a study.
 
@@ -434,7 +434,7 @@ class Study(DAG, PickleInterface):
         ExecutionGraph dumps its information into a temporary directory.
         :param dry_run: Boolean value that toggles dry run to just generate \
         study workspaces and scripts without execution or status checking.
-        :param draw: Flag controlling generation of dot style visualization.
+        :param draw: List of visualization dot style options [empty = no draw].
         :returns: True if the Study is successfully setup, False otherwise.
         """
 
@@ -454,7 +454,7 @@ class Study(DAG, PickleInterface):
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
             "Dry run enabled =           %s\n"
-            "DAG drawing enabled =       %s\n"
+            "Graph vis options =         %s\n"
             "Output path =               %s\n"
             "------------------------------------------",
             submission_attempts, restart_limit, throttle,
