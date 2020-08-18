@@ -335,10 +335,13 @@ def setup_argparser():
                      help="Generate the directory structure and scripts for a "
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("--draw", type=str, action="append", default=[],
-                     help="Generate visualizations of study's DAG. Options: "
-                     "mpl (matplotlib png), mpl-dot (dot layout mpl), dot "
-                     "(graphviz dot file), graphml (graphml file), graphml-dot"
-                     " (dot layout positioned graphml file)")
+                     choices=["mpl", "mpl-dot", "graphml", "graphml-dot"],
+                     help="Generate visualizations of study's DAG (specify "
+                     "--draw multiple times with various args to draw multiple"
+                     " formats). Supported formats: matplotlib png (mpl), "
+                     "dot layout mpl (mpl-dot), graphviz dot file (dot), "
+                     "graphml file (graphml), dot layout positioned graphml "
+                     "file (graphml-dot)")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
                      "that returns a custom filled ParameterGenerator "
