@@ -203,7 +203,6 @@ class Study(DAG, PickleInterface):
         :param studyenv: A populated StudyEnvironment instance.
         :param parameters: A populated Parameters instance.
         :param outpath: The path where the output of the study is written.
-        :param draw: Flag controlling generation of dot style visualization
         """
         # The basic study information
         self.name = name
@@ -225,11 +224,13 @@ class Study(DAG, PickleInterface):
         self.is_configured = False
         self.add_node(SOURCE, None)
 
-        # Settings for handling restarts and submission attempts.
-        self._restart_limit = 0
-        self._submission_attempts = 0
-        self._use_tmp = False
-        self._dry_run = False
+        # Settings for handling restarts and submission attempts. Just set to
+        # defaults here.
+        self._restart_limit = 0         # Number of restarts before fail
+        self._submission_attempts = 0   # Submit attempts before fail
+        self._use_tmp = False           # tmp dir for script/lock writing.
+        self._dry_run = False           # Enables dry-run (disables submit)
+        self.draw = False               # Set dag vis flag
 
         # Management structures
         # The workspace used by each step.
@@ -249,9 +250,6 @@ class Study(DAG, PickleInterface):
             for step in steps:
                 # Deep copy because it prevents modifications after the fact.
                 self.add_step(step)
-
-        # Set dag vis flag
-        self.draw = draw
 
     @property
     def output_path(self):
@@ -419,24 +417,25 @@ class Study(DAG, PickleInterface):
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False):
+                        dry_run=False, draw=False):
         """
-        Perform initial configuration of a study. \
+        Perform initial configuration of a study.
 
         The method is used for going through and actually acquiring each \
-        dependency, substituting variables, sources and labels. \
+        dependency, substituting variables, sources and labels.
 
         :param submission_attempts: Number of attempted submissions before \
-        marking a step as failed. \
+        marking a step as failed.
         :param restart_limit: Upper limit on the number of times a step with \
         a restart command can be resubmitted before it is considered failed. \
         :param throttle: The maximum number of in-progress jobs allowed. [0 \
-        denotes no cap].\
+        denotes no cap].
         :param use_tmp: Boolean value specifying if the generated \
-        ExecutionGraph dumps its information into a temporary directory. \
+        ExecutionGraph dumps its information into a temporary directory.
         :param dry_run: Boolean value that toggles dry run to just generate \
-        study workspaces and scripts without execution or status checking. \
-        :returns: True if the Study is successfully setup, False otherwise. \
+        study workspaces and scripts without execution or status checking.
+        :param draw: Flag controlling generation of dot style visualization.
+        :returns: True if the Study is successfully setup, False otherwise.
         """
 
         self._submission_attempts = submission_attempts
@@ -445,6 +444,7 @@ class Study(DAG, PickleInterface):
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
         self._dry_run = dry_run
+        self.draw = draw
 
         LOGGER.info(
             "\n------------------------------------------\n"
@@ -454,10 +454,11 @@ class Study(DAG, PickleInterface):
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
             "Dry run enabled =           %s\n"
+            "DAG drawing enabled =       %s\n"
             "Output path =               %s\n"
             "------------------------------------------",
             submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, self._out_path
+            use_tmp, hash_ws, dry_run, self.draw, self._out_path
         )
 
         self.is_configured = True

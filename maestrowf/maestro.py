@@ -207,10 +207,8 @@ def run_study(args):
         parameters = spec.get_parameters()
 
     # Setup the study.
-    LOGGER.debug("Draw flag: {}".format(args.draw))
     study = Study(spec.name, spec.description, studyenv=environment,
-                  parameters=parameters, steps=steps, out_path=output_path,
-                  draw=args.draw)
+                  parameters=parameters, steps=steps, out_path=output_path)
 
     # Check if the submission attempts is greater than 0:
     if args.attempts < 1:
@@ -238,7 +236,7 @@ def run_study(args):
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
+        dry_run=args.dry, draw=args.draw)
     study.setup_environment()
 
     if args.dry:
