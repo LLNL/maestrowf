@@ -7,6 +7,13 @@ dill
 jsonschema>=3.2.0
 coloredlogs
 chainmap; python_version<'3'
+
+# Vis Extras
+networkx
+matplotlib
+# NOTE: This will require installation of graphviz and dot to work.
+pygraphviz
+
 -e .
 
 fabric
