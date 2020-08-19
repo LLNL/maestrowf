@@ -67,7 +67,7 @@ def status_study(args):
     directory_list = args.directory
 
     if directory_list:
-        header_format = "".ljust(100, "=")
+        header_format = "".ljust(150, "=")
 
         for path in directory_list:
             abs_path = os.path.abspath(path)
@@ -82,17 +82,18 @@ def status_study(args):
             else:
                 print(
                     "\nNo status to report -- the Maestro study in this path "
-                    "either unexpectedly crashed or the path does not contain " 
+                    "either unexpectedly crashed or the path does not contain "
                     "a Maestro study.")
             print("")
         print(header_format)
     else:
         print(
-            "Path did not resolve to a directory which contained Maestro "
-            "studies. Perhaps try a different path.")
+            "Path(s) or glob(s) did not resolve to a directory(ies) that "
+            "exists.")
         return 1
 
     return 0
+
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
