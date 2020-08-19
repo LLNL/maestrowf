@@ -61,20 +61,45 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    status = Conductor.get_status(args.directory)
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
-    if status:
-        print(tabulate.tabulate(status, headers="keys"))
-        return 0
+    directory_list = args.directory
+
+    if directory_list:
+        header_format = "".ljust(150, "=")
+
+        for path in directory_list:
+            abs_path = os.path.abspath(path)
+
+            print(header_format)
+            print(abs_path)
+            print(header_format)
+
+            status = Conductor.get_status(abs_path)
+            if status:
+                print(tabulate.tabulate(status, headers="keys"))
+            else:
+                print(
+                    "\nNo status to report -- the Maestro study in this path "
+                    "either unexpectedly crashed or the path does not contain "
+                    "a Maestro study.")
+            print("")
+        print(header_format)
     else:
         print(
-            "Status check failed. If the issue persists, please verify that "
-            "you are passing in a path to a study.")
+            "Path(s) or glob(s) did not resolve to a directory(ies) that "
+            "exists.")
         return 1
+
+    return 0
 
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
+
     if not os.path.isdir(args.directory):
         print("Attempted to cancel a path that was not a directory.")
         return 1
@@ -125,6 +150,12 @@ def load_parameter_generator(path, env, kwargs):
 
 def run_study(args):
     """Run a Maestro study."""
+    # Report log lvl
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
+
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
@@ -377,7 +408,7 @@ def setup_argparser():
         'status',
         help="Check the status of a running study.")
     status.add_argument(
-        "directory", type=str,
+        "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     status.set_defaults(func=status_study)
 
@@ -421,11 +452,6 @@ def main():
         else:
             lformat = LFORMAT
         LOG_UTIL.configure(lformat, args.debug_lvl)
-
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
     rc = args.func(args)
     sys.exit(rc)
