@@ -58,7 +58,7 @@ DEBUG_FORMAT = "[%(asctime)s: %(levelname)s] " \
 LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
 ACCEPTED_INPUT = set(["yes", "y"])
 
-
+#Gets and processes maestro status
 def status_study(args):
     """Check and print the status of an executing study."""
     # Force logging to Warning and above
