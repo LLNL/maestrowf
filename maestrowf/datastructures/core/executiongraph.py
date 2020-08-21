@@ -67,6 +67,7 @@ class _StepRecord:
 
     def setup_workspace(self):
         """Initialize the record's workspace."""
+        LOGGER.info("Creating directory: " + self.workspace.value)
         create_parentdir(self.workspace.value)
 
     def generate_script(self, adapter, tmp_dir=""):
