@@ -31,6 +31,7 @@
 
 from collections import deque, OrderedDict
 import logging
+from math import sqrt
 
 from maestrowf.abstracts.graph import Graph
 
@@ -248,3 +249,124 @@ class DAG(Graph):
         rstack.remove(v)
         logger.debug("No cycle originating from '%s'", v)
         return False
+
+    def export_dag_vis(self, dag_basename, draw_opts):
+        """
+        Export hierarchical representation of this study's dag to the list of
+        formats specified in draw_opts.
+
+        :param dag_basename: Basename of output file, in study output path
+        :param draw_opts: specifies one or more file output formats.
+                          mpl (matplotlib png), mpl-dot (dot layout mpl), dot
+                          (graphviz dot file), graphml (graphml file)
+
+        NOTE: must this re-call topological sort for safety?
+        NOTE: Add optional node annotations/attributes (colors, shape, etc)
+        NOTE: Add skeleton only format (unexpanded steps)
+        NOTE: Add partial expansion of dag -> large workflows
+        NOTE: What about node attributes when here are too many parameters
+              to enumerate?
+        """
+
+        logger.debug("Exporting hierarchical representation of dag")
+
+        # Put these at the top of file, maybe decorate this function to handle
+        # the disablement?
+        try:
+            import matplotlib.pyplot as plt
+            import networkx as nx
+
+        except ImportError:
+            logger.exception("Couldn't import graph drawing utilities; "
+                             "disabling graph visualzation.")
+            return
+
+        try:
+            from networkx import nx_agraph
+            have_pygv = True
+
+        except ImportError:
+            logger.exception("Error importing pygraphviz: dot "
+                             "layout/output disabled.")
+
+            have_pygv = False
+
+        dagnx = nx.DiGraph()
+
+        nodelist = self.topological_sort()
+        node_labels = {}
+        for idx, node in enumerate(nodelist):
+
+            if node == '_source':
+                node_label = 'Study'  # Try to get study name instead?
+            else:
+                this_step = self.values[node].step
+                node_label = '{}\n'.format(this_step.base_name)
+                for var, value in this_step.param_vals.items():
+                    varname = var[2:-1]
+                    node_label += '{}:{}\n'.format(varname, value)
+
+                logger.debug("Adding label to node {}: {}".format(node,
+                                                                  node_label))
+
+            node_labels[node] = node_label  # draw these later
+            dagnx.add_node(node,
+                           label=node_label)
+
+        for node in nodelist:
+            edges = self.adjacency_table[node]
+
+            dagnx.add_edges_from([(node, child) for child in edges])
+            logger.debug("Node {} has children: {}".format(node, edges))
+
+        # Compute node positions for two layouts
+        # Note: work on something better for sizing/layout than these hacks
+        # NOTE: check if this longest path computation is expensive
+        longest_chain = len(nx.algorithms.dag_longest_path(dagnx))
+        pos_spring = nx.spring_layout(dagnx, k=1/sqrt(longest_chain))
+
+        # Convert to pygraphviz agraph for dot layout
+        if have_pygv:
+            pos_dot = nx_agraph.pygraphviz_layout(dagnx, prog='dot')
+        else:
+            # Fail-safe for matplotlib rendering
+            pos_dot = pos_spring
+
+        for viz_format in draw_opts:
+
+            # For matplotlib, have to do extra work to compute image size
+            if viz_format == "mpl" or viz_format == "mpl-dot":
+                fig, ax = plt.subplots(figsize=(3*longest_chain,
+                                                2*longest_chain))
+
+            if viz_format == "mpl" or viz_format == "graphml":
+                pos = pos_spring
+            else:
+                pos = pos_dot
+
+            if viz_format == "mpl" or viz_format == "mpl-dot":
+                # Possible to iteratively compute node size and figure size?
+                nx.draw_networkx(dagnx,
+                                 pos=pos,
+                                 ax=ax,
+                                 labels=node_labels,
+                                 node_size=500)
+                # May need to render labels separately?
+                # nx.draw(dagnx, with_labels=False)
+                # nx.draw_networkx_labels(dagnx,
+                plt.savefig(dag_basename + '.png', dpi=150)
+
+            if viz_format == "dot" and have_pygv:
+                # Possible to pass networkx/pygraphviz agraph object around
+                # when imports aren't available?
+                nx_agraph.write_dot(dagnx, dag_basename + '.dot')
+
+            if viz_format == "graphml" or viz_format == "graphml-dot":
+                # NOTE: find implementation that avoids this copy
+                graphml_dag = dagnx
+                # Add positions as node attributes (NEEDS VERIFICATION)
+                for node, (x, y) in pos.items():
+                    graphml_dag.node[node]['x'] = float(x)
+                    graphml_dag.node[node]['y'] = float(y)
+
+                    nx.write_graphml(graphml_dag, dag_basename + '.graphml')

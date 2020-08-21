@@ -55,10 +55,10 @@ class _StepRecord:
         self.script = kwargs.get("script", "")
         self.restart_script = kwargs.get("restart", "")
         self.to_be_scheduled = False
-        self.step = step
+        self._step = step
         self.restart_limit = kwargs.get("restart_limit", 3)
 
-        # Status Information
+        # Status Informationp
         self._num_restarts = 0
         self._submit_time = None
         self._start_time = None
@@ -82,11 +82,13 @@ class _StepRecord:
         else:
             scr_dir = self.workspace.value
 
-        self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
+        self._step.run["cmd"] = self.workspace.substitute(
+            self._step.run["cmd"]
+        )
 
         LOGGER.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
-            adapter.write_script(scr_dir, self.step)
+            adapter.write_script(scr_dir, self._step)
         LOGGER.info("Script: %s\nRestart: %s\nScheduled?: %s",
                     self.script, self.restart_script, self.to_be_scheduled)
 
@@ -122,12 +124,12 @@ class _StepRecord:
     def _execute(self, adapter, script):
         if self.to_be_scheduled:
             srecord = adapter.submit(
-                self.step, script, self.workspace.value)
+                self._step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
             srecord = ladapter.submit(
-                self.step, script, self.workspace.value)
+                self._step, script, self.workspace.value)
 
         retcode = srecord.submission_code
         jobid = srecord.job_identifier
@@ -230,7 +232,14 @@ class _StepRecord:
 
         :returns: The name of the StudyStep contained within the record.
         """
-        return self.step.name
+        return self._step.name
+
+    @property
+    def step(self):
+        """
+        Get the study step object represented by the record instance
+        """
+        return self._step
 
     @property
     def walltime(self):
@@ -239,7 +248,7 @@ class _StepRecord:
 
         :returns: A string representing the requested computing time.
         """
-        return self.step.run["walltime"]
+        return self._step.run["walltime"]
 
     @property
     def time_submitted(self):

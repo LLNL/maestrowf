@@ -159,6 +159,20 @@ class Combination(object):
         # substrings.
         return item
 
+    @property
+    def param_vals(self):
+        """
+        Return dict of parameter values
+        """
+        return self._params
+
+    @property
+    def param_labels(self):
+        """
+        Return dict of parameter labels
+        """
+        return self._labels
+
 
 class ParameterGenerator:
     """

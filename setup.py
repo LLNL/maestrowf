@@ -44,7 +44,9 @@ setup(
         "coloredlogs",
         "chainmap ; python_version<'3'",
     ],
-    extras_require={},
+    extras_require={
+        "vis": ["networkx", "matplotlib", "pygraphviz"],
+    },
     long_description=load_readme(),
     long_description_content_type='text/markdown',
     download_url='https://pypi.org/project/maestrowf/',
