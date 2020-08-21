@@ -26,6 +26,12 @@ increasingly complex workflow processes across platforms.
 Getting Started is Quick and Easy
 ==================================
 
+Maestro can be installed easily with ``pip``:
+
+.. code:: bash
+
+    pip install maestrowf
+
 Create a ``YAML`` file named ``study.yaml`` and paste the following content
 into the file:
 
@@ -97,7 +103,7 @@ And, running the study is still as simple as:
    :maxdepth: 4
    :caption: Contents:
 
-   getting_started
+   installing
    quick_start
    hello_world
    lulesh_breakdown
