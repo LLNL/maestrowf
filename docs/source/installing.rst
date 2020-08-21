@@ -1,5 +1,14 @@
-Getting Started
-================
+Installing Maestro
+==================
+
+Maestro can be installed via ``pip``:
+
+.. code:: bash
+
+    $ pip install maestrowf
+
+.. note:: Using a `virtualenv <https://virtualenv.pypa.io/en/stable/>`_ is recommended.
+
 
 Maestro Docker Container
 ************************
@@ -18,14 +27,6 @@ Once inside the Docker container, the following should bring up help::
 
 For more information on using Dockerfiles, checkout Docker's `documentation <https://docs.docker.com/engine/reference/builder/>`.
 
-Installing MaestroWF
-*********************
-
-MaestroWF can be installed via pip outside of Docker with the following::
-
-    $ pip install maestrowf
-
-.. note:: Using a `virtualenv <https://virtualenv.pypa.io/en/stable/>`_ is recommended.
 
 Once installed run::
 
