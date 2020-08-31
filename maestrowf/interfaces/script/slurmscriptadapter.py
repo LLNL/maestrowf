@@ -141,12 +141,12 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
         nodes = resources.get("nodes")
-        if procs == None and nodes == None:
-            err_msg = "At least one of either Procs or Nodes needs to be "
-            "present for Script to proceed."
+        if not procs and not nodes:
+            err_msg = "At least one of either (procs) or (nodes) in {} needs "
+            "to be present for Script to proceed.".format(step.name)
             LOGGER.error(err_msg)
-            rt_err_msg = "No explicit resources specified. At least one of " 
-            "Nodes or Procs must be set to a non-zero value."
+            rt_err_msg = "No explicit resources specified in {}. At least one of " 
+            "(nodes) or (procs) must be set to a non-zero value.".format(step.name)
             raise RuntimeError(rt_err_msg)
 
         return "\n".join(modified_header)
