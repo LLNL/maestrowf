@@ -32,6 +32,7 @@ import getpass
 import logging
 import os
 import re
+import sys
 # In order to support Python2.7, we need to catch the import error.
 try:
     from collections import ChainMap
@@ -71,22 +72,38 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         super(SlurmScriptAdapter, self).__init__(**kwargs)
 
+        # If Nodes is greater than 0, add it to the header
+        nodes = kwargs.pop("nodes", "0")
+        if nodes !- "0":
+            self.add_batch_parameter("nodes", nodes)
+            self._header["nodes"] = "#SBATCH  --nodes={nodes}"
+
+        # If Procs is in batch, add it to the header
+        if "procs" in self._batch:
+            self._header["procs"] = "#SBATCH --ntasks={procs}"
+
+        # If neither Procs nor Nodes exist, throw an error
+        if procs == None and nodes == "0":
+            err_msg = "At least one of either Procs or Nodes needs to be "
+            "present for Script to proceed."
+            LOGGER.error(err_msg)
+            sys.exit(0) # Not entirely sure what exception to raise, 
+                        # I put sys.exit for now
+
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
-        self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
-        # Check for procs separately, as we don't want it in the header if it's
+        # Check for procs separately, as we don't want it in the header if it's 
         # not present.
         procs = kwargs.get("procs", None)
         if procs:
             self.add_batch_parameter("procs", procs)
 
         self._header = {
-            "nodes": "#SBATCH --nodes={nodes}",
             "queue": "#SBATCH --partition={queue}",
             "bank": "#SBATCH --account={bank}",
             "walltime": "#SBATCH --time={walltime}",
@@ -129,11 +146,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
             if resources[key]:
                 modified_header.append(value.format(**resources))
-
-        if "procs" in self._batch:
-            modified_header.append(
-                "#SBATCH --ntasks={}".format(resources["procs"])
-            )
 
         exclusive = resources.get("exclusive", False)
         if exclusive:
