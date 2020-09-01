@@ -145,7 +145,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             err_msg = "No explicit resources specified in {}. At least one of " 
             "\"procs\" or \"nodes\" must be set to a non-zero value.".format(step.name)
             LOGGER.error(err_msg)
-            raise RuntimeError(rt_err_msg)
+            raise RuntimeError(err_msg)
 
         return "\n".join(modified_header)
 

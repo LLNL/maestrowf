@@ -41,9 +41,7 @@ study:
       run:
           cmd: |
             $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
-          depends: [make-lulesh]
-          nodes: 2
-          procs: 27
+          depends: [make-lulesh] 
           exclusive   : True
           walltime: "00:10:00"
 
