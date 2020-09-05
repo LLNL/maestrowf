@@ -15,7 +15,7 @@ Maestro Docker Container
 
 In order to set up the Docker container execute the following from the root of the Maestro repository::
 
-    $ docker --build -t maestrowf .
+    $ docker build -t maestrowf .
 
 To launch the interactive shell of the Ubuntu image simply run::
 
@@ -25,7 +25,7 @@ Once inside the Docker container, the following should bring up help::
 
     $ maestro -h
 
-For more information on using Dockerfiles, checkout Docker's `documentation <https://docs.docker.com/engine/reference/builder/>`.
+For more information on using Dockerfiles, checkout Docker's `documentation <https://docs.docker.com/engine/reference/builder/>`_.
 
 
 Once installed run::
