@@ -142,10 +142,14 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         procs = resources.get("procs")
         nodes = resources.get("nodes")
         if not procs and not nodes:
-            err_msg = "No explicit resources specified in {}. At least one of " 
-            "\"procs\" or \"nodes\" must be set to a non-zero value.".format(step.name)
+            err_msg = \
+                'No explicit resources specified in {}. At least one' \
+                ' of "procs" or "nodes" must be set to a non-zero' \
+                ' value.'.format(step.name)
             LOGGER.error(err_msg)
             raise RuntimeError(err_msg)
+        elif procs or (procs and not nodes):
+            modified_header.append("#SBATCH --ntasks={}".format(procs))            
 
         return "\n".join(modified_header)
 
