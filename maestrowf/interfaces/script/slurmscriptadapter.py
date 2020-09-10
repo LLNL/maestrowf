@@ -72,12 +72,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         super(SlurmScriptAdapter, self).__init__(**kwargs)
 
-        # If Procs is in batch, add it to the header
-        if "procs" in self._batch:
-            self._header["procs"] = "#SBATCH --ntasks={procs}"
-
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
+        self.add_batch_parameter("nodes", kwargs.pop("nodes", ""))
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
@@ -123,20 +120,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             the parameter step.
         """
         resources = ChainMap(step.run, self._batch)
-        resources["job-name"] = step.name.replace(" ", "_")
-        resources["comment"] = step.description.replace("\n", " ")
-
-        modified_header = ["#!{}".format(self._exec)]
-        for key, value in self._header.items():
-            if key not in resources:
-                continue
-
-            if resources[key]:
-                modified_header.append(value.format(**resources))
-
-        exclusive = resources.get("exclusive", False)
-        if exclusive:
-            modified_header.append("#SBATCH --exclusive")
 
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
@@ -148,8 +131,26 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 ' value.'.format(step.name)
             LOGGER.error(err_msg)
             raise RuntimeError(err_msg)
-        elif procs or (procs and not nodes):
-            modified_header.append("#SBATCH --ntasks={}".format(procs))            
+
+        resources["job-name"] = step.name.replace(" ", "_")
+        resources["comment"] = step.description.replace("\n", " ")
+
+        modified_header = ["#!{}".format(self._exec)]
+        for key, value in self._header.items():
+            if key not in resources:
+                continue
+
+            if resources[key]:
+                modified_header.append(value.format(**resources))
+
+        if "procs" in self._batch or not nodes:
+            modified_header.append(
+                "#SBATCH --ntasks={}".format(resources["procs"])
+                )
+
+        exclusive = resources.get("exclusive", False)
+        if exclusive:
+            modified_header.append("#SBATCH --exclusive")
 
         return "\n".join(modified_header)
 
