@@ -230,7 +230,7 @@ class _StepRecord:
 
         :returns: The name of the StudyStep contained within the record.
         """
-        return self.step.name
+        return self.step.real_name
 
     @property
     def walltime(self):
@@ -386,10 +386,10 @@ class ExecutionGraph(DAG, PickleInterface):
         :param restart_limit: Upper limit on the number of restart attempts.
         """
         data = {
-                    "step": step,
-                    "state": State.INITIALIZED,
-                    "workspace": workspace,
-                    "restart_limit": restart_limit
+                    "step":          step,
+                    "state":         State.INITIALIZED,
+                    "workspace":     workspace,
+                    "restart_limit": restart_limit,
                 }
         record = _StepRecord(**data)
         self._dependencies[name] = set()

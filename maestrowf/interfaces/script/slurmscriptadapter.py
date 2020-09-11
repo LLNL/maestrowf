@@ -106,6 +106,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "nodes": "-N",
             "cores per task": "-c",
         }
+
+        self._extension = ".slurm.sh"
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
@@ -378,3 +380,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension

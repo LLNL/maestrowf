@@ -28,7 +28,7 @@
 ###############################################################################
 
 """Abstract Script Interfaces for generating scripts."""
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 import logging
 import os
 import six
@@ -121,6 +121,14 @@ class ScriptAdapter(object):
             st = os.stat(restart_path)
             os.chmod(restart_path, st.st_mode | stat.S_IXUSR)
 
+        LOGGER.debug(
+            "---------------------------------\n"
+            "Script path:   %s"
+            "Restart path:  %s"
+            "Scheduled?:    %s"
+            "---------------------------------\n",
+            script_path, restart_path, to_be_scheduled
+        )
         return to_be_scheduled, script_path, restart_path
 
     @abstractmethod
@@ -143,8 +151,16 @@ class ScriptAdapter(object):
         """
         pass
 
-    @property
-    @abstractmethod
+    @abstractproperty
+    def extension(self):
+        """
+        Returns the extension that generated scripts will use.
+
+        :returns: A string of the extension
+        """
+        pass
+
+    @abstractproperty
     def key(self):
         """
         Return the key name for a ScriptAdapter..
