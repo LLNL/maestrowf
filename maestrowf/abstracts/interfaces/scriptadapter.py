@@ -123,9 +123,9 @@ class ScriptAdapter(object):
 
         LOGGER.debug(
             "---------------------------------\n"
-            "Script path:   %s"
-            "Restart path:  %s"
-            "Scheduled?:    %s"
+            "Script path:   %s\n"
+            "Restart path:  %s\n"
+            "Scheduled?:    %s\n"
             "---------------------------------\n",
             script_path, restart_path, to_be_scheduled
         )

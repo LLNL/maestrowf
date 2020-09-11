@@ -114,7 +114,7 @@ class StudyStep:
         """
         Set the name of a StudyStep instance.
 
-        :oaram value: A string value representing the name to give the step.
+        :param value: A string value representing the name to give the step.
         """
         self._name = value
 
