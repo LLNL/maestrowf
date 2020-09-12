@@ -20,23 +20,26 @@ def test_load_spec_error():
 
 def test_load_spec():
     spec = YAMLSpecification.load_specification(
-            "samples/hello_world/hello_world.yaml")
+        "samples/hello_world/hello_world.yaml"
+    )
     assert "samples/hello_world/hello_world.yaml" == spec.path
     assert "hello_world" == spec.description["name"] == spec.name
     assert (
-            "A simple 'Hello World' study." ==
-            spec.description["description"] ==
-            spec.desc
+        "A simple 'Hello World' study."
+        == spec.description["description"]
+        == spec.desc
     )
 
     assert isinstance(spec.environment["variables"], dict)
-    assert "./sample_output/hello_world" == \
-           spec.environment["variables"]["OUTPUT_PATH"]
+    assert (
+        "./sample_output/hello_world"
+        == spec.environment["variables"]["OUTPUT_PATH"]
+    )
 
     assert 1 == len(spec.study)
     assert "hello_world" == spec.study[0]["name"]
     assert "Say hello to the world!" == spec.study[0]["description"]
     assert (
-            'echo "Hello, World!" > hello_world.txt\n' ==
-            spec.study[0]["run"]["cmd"]
+        'echo "Hello, World!" > hello_world.txt\n'
+        == spec.study[0]["run"]["cmd"]
     )
