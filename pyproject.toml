@@ -37,6 +37,7 @@ pytest = "*"
 pytest-cov = "*"
 pre-commit = "*"
 tox-travis = "*"
+tox-pyenv = "*"
 
 
 [tool.poetry.plugins."console_scripts"]
