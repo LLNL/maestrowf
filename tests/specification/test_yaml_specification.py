@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from jsonschema import ValidationError
 from pytest import raises
@@ -51,50 +53,31 @@ def test_load_spec():
     "spec, error, error_txt",
     [
         (
-            "description:\n    name: hello_world\n    description: A simple "
-            "Hello World study.\nenv:\n    variables:\n        "
-            "OUTPUT_PATH: \nstudy:\n    - name: hello_world\n      "
-            "description: Say hello to the world!\n      run:\n"
-            "        cmd: |\n"
-            '            echo "Hello, World!" > hello_world.txt\n',
+            "empty_variables.yml",
             ValidationError,
             "The value 'None' in field variables",
         ),
         (
-            "description:\n  name: hello_world\n  description: A simple "
-            "'Hello World' study.\n\nenv:\n  variables:\n    "
-            "OUTPUT_PATH: ./sample_output/hello_world\n\n"
-            "study:\n  - name: hello_world\n    run:\n      cmd: |\n        "
-            'echo "Hello, World!" > hello_world.txt\n',
+            "missing_step_desc.yml",
             ValidationError,
             "Key 'description' is missing from study step",
         ),
         (
-            "description:\n  name: hello_world\n  description: A simple "
-            "'Hello World' study.\n\nenv:\n  variables:\n    "
-            "OUTPUT_PATH: ./sample_output/hello_world\n\n"
-            "study:\n",
+            "missing_step.yml",
             ValueError,
             "A study specification MUST contain at least"
             " one step in its workflow",
         ),
         (
-            "description:\n  name: hello_world\n  description: A simple "
-            "Hello World study.\nenv:\n  variables:\n    "
-            "OUTPUT_PATH: ./sample_output/hello_world\n  dependencies:\n    "
-            "git:\n      - name: LULESH\n        path: $(OUTPUT_PATH)\n       "
-            " url: https://github.com/LLNL/LULESH.git\n      - name: "
-            "LULESH\n        path: $(OUTPUT_PATH)\n        "
-            "url: https://github.com/LLNL/LULESH.git\nstudy:\n  - name: "
-            "hello_world\n    description: yikes\n    run:\n      cmd: |\n"
-            '        echo "Hello, World!" > hello_world.txt\n',
+            "duplicate_dependency.yml",
             ValueError,
             "Variable name 'LULESH' is already taken",
         ),
     ],
 )
 def test_validate_error(spec, error, error_txt):
-    bspec = str.encode(spec)
+    dirpath = os.path.dirname(os.path.abspath(__file__))
+    spec_path = os.path.join(dirpath, "test_specs", spec)
     with raises(error) as value_error:
-        spec = YAMLSpecification.load_specification_from_stream(bspec)
+        spec = YAMLSpecification.load_specification(spec_path)
         assert error_txt in value_error.value
