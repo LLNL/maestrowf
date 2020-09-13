@@ -1,0 +1,10 @@
+description:
+  name: hello_world
+  description: A simple 'Hello World' study.
+
+env:
+  variables:
+    OUTPUT_PATH: ./sample_output/hello_world
+
+
+study:
