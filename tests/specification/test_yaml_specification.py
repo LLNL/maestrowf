@@ -78,6 +78,11 @@ def test_load_spec():
             ValidationError,
             "In global.params.GREETING2, label must be of type 'string'",
         ),
+        (
+            "extra_study_params.yml",
+            ValidationError,
+            "Unrecognized key 'bad' found in study step",
+        ),
     ],
 )
 def test_validate_error(spec, error, error_txt):
@@ -85,4 +90,7 @@ def test_validate_error(spec, error, error_txt):
     spec_path = os.path.join(dirpath, "test_specs", spec)
     with raises(error) as value_error:
         spec = YAMLSpecification.load_specification(spec_path)
-        assert error_txt in value_error.value
+    if value_error.typename == "ValidationError":
+        assert error_txt in value_error.value.message
+    else:
+        assert error_txt in value_error.value.args[0]
