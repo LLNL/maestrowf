@@ -78,6 +78,19 @@ def test_load_spec():
             "A study specification MUST contain at least"
             " one step in its workflow",
         ),
+        (
+            "description:\n  name: hello_world\n  description: A simple "
+            "Hello World study.\nenv:\n  variables:\n    "
+            "OUTPUT_PATH: ./sample_output/hello_world\n  dependencies:\n    "
+            "git:\n      - name: LULESH\n        path: $(OUTPUT_PATH)\n       "
+            " url: https://github.com/LLNL/LULESH.git\n      - name: "
+            "LULESH\n        path: $(OUTPUT_PATH)\n        "
+            "url: https://github.com/LLNL/LULESH.git\nstudy:\n  - name: "
+            "hello_world\n    description: yikes\n    run:\n      cmd: |\n"
+            '        echo "Hello, World!" > hello_world.txt\n',
+            ValueError,
+            "Variable name 'LULESH' is already taken",
+        ),
     ],
 )
 def test_validate_error(spec, error, error_txt):
