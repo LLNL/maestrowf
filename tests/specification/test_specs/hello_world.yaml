@@ -1,0 +1,14 @@
+description:
+    name: hello_world
+    description: A simple 'Hello World' study.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/hello_world
+
+study:
+    - name: hello_world
+      description: Say hello to the world!
+      run:
+          cmd: |
+            echo "Hello, World!" > hello_world.txt
