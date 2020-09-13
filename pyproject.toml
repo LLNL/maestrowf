@@ -4,20 +4,35 @@ name = "maestrowf"
 version = "1.1.9.dev0"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
-classifiers = ["Development Status :: 5 - Production/Stable", "Operating System :: Unix", "Operating System :: MacOS :: MacOS X", "Intended Audience :: Developers", "Intended Audience :: Education", "Intended Audience :: Science/Research", "Topic :: Scientific/Engineering", "Topic :: System :: Distributed Computing", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.5", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Operating System :: Unix", "Operating System :: MacOS :: MacOS X",
+    "Intended Audience :: Developers", "Intended Audience :: Education",
+    "Intended Audience :: Science/Research", "Topic :: Scientific/Engineering",
+    "Topic :: System :: Distributed Computing",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+]
 homepage = "https://github.com/llnl/maestrowf"
-authors = ["Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale"]
+documentation = "https://maestrowf.readthedocs.io/"
+authors = [
+    "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale"
+]
+maintainers = [
+    "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale"
+]
 readme = "README.md"
 packages = [
     { include = 'maestrowf'}
 ]
 
 [tool.poetry.dependencies]
-python = "*"
-chainmap = {python = "<3", version = "*"}
+python = ">3.4"
 coloredlogs = "*"
 dill = "*"
-enum34 = {python = "<3.4", version = "*"}
 filelock = "*"
 jsonschema = ">=3.2.0"
 pyyaml = ">=4.2b1"
@@ -48,3 +63,8 @@ tox-pyenv = "*"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/LLNL/maestrowf/issues"
+"Discussions" = "https://github.com/LLNL/maestrowf/discussions"
