@@ -82,7 +82,17 @@
   "ENV": {
     "type": "object",
     "properties": {
-      "variables": {"type": "object"},
+      "variables": {
+        "type": "object",
+        "patternProperties": {
+          "^.*": {
+            "anyOf": [
+                {"type": "string", "minLength": 1},
+                {"type": "number"}
+            ]
+          }
+        }
+      },
       "labels": {"type": "object"},
       "sources": {"type": "array"},
       "dependencies": {
