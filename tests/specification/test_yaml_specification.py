@@ -73,6 +73,11 @@ def test_load_spec():
             ValueError,
             "Variable name 'LULESH' is already taken",
         ),
+        (
+            "error_parameterized.yml",
+            ValidationError,
+            "In global.params.GREETING2, label must be of type 'string'",
+        ),
     ],
 )
 def test_validate_error(spec, error, error_txt):
