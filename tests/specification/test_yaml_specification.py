@@ -48,7 +48,7 @@ def test_load_spec():
 
 
 @pytest.mark.parametrize(
-    "spec, error",
+    "spec, error, error_txt",
     [
         (
             "description:\n    name: hello_world\n    description: A simple "
@@ -57,6 +57,7 @@ def test_load_spec():
             "description: Say hello to the world!\n      run:\n"
             "        cmd: |\n"
             '            echo "Hello, World!" > hello_world.txt\n',
+            ValidationError,
             "The value 'None' in field variables",
         ),
         (
@@ -65,12 +66,22 @@ def test_load_spec():
             "OUTPUT_PATH: ./sample_output/hello_world\n\n"
             "study:\n  - name: hello_world\n    run:\n      cmd: |\n        "
             'echo "Hello, World!" > hello_world.txt\n',
+            ValidationError,
             "Key 'description' is missing from study step",
+        ),
+        (
+            "description:\n  name: hello_world\n  description: A simple "
+            "'Hello World' study.\n\nenv:\n  variables:\n    "
+            "OUTPUT_PATH: ./sample_output/hello_world\n\n"
+            "study:\n",
+            ValueError,
+            "A study specification MUST contain at least"
+            " one step in its workflow",
         ),
     ],
 )
-def test_validate_error(spec, error):
+def test_validate_error(spec, error, error_txt):
     bspec = str.encode(spec)
-    with raises(ValidationError) as value_error:
+    with raises(error) as value_error:
         spec = YAMLSpecification.load_specification_from_stream(bspec)
-        assert error in value_error.value
+        assert error_txt in value_error.value
