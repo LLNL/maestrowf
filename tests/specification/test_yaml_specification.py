@@ -40,6 +40,8 @@ def test_load_spec():
         == spec.environment["variables"]["OUTPUT_PATH"]
     )
 
+    assert "./sample_output/hello_world" == spec.output_path
+
     assert 1 == len(spec.study)
     assert "hello_world" == spec.study[0]["name"]
     assert "Say hello to the world!" == spec.study[0]["description"]
@@ -94,3 +96,24 @@ def test_validate_error(spec, error, error_txt):
         assert error_txt in value_error.value.message
     else:
         assert error_txt in value_error.value.args[0]
+
+
+@pytest.mark.parametrize(
+        "spec, expected",
+        [
+            (
+                    "hello_world.yaml",
+                    "./sample_output/hello_world",
+            ),
+            (
+                    "empty_output_path.yaml",
+                    "",
+            ),
+        ],
+)
+def test_output_path(spec, expected):
+    dirpath = os.path.dirname(os.path.abspath(__file__))
+    spec_path = os.path.join(dirpath, "test_specs", spec)
+    spec = YAMLSpecification.load_specification(spec_path)
+
+    assert expected == spec.output_path
