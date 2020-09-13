@@ -1,3 +1,4 @@
+import pytest
 from pytest import raises
 
 from maestrowf.specification import YAMLSpecification
@@ -43,3 +44,24 @@ def test_load_spec():
         'echo "Hello, World!" > hello_world.txt\n'
         == spec.study[0]["run"]["cmd"]
     )
+
+
+@pytest.mark.parametrize(
+    "spec, error",
+    [
+        (
+            "description:\n    name: hello_world\n    description: A simple "
+            "Hello World study.\nenv:\n    variables:\n        "
+            "OUTPUT_PATH:\nstudy:\n    - name: hello_world\n      "
+            "description: Say hello to the world!\n      run:\n"
+            "        cmd: |\n"
+            '            echo "Hello, World!" > hello_world.txt\n',
+            "All variables must have a valid value"
+        ),
+    ],
+)
+def test_validate_error(spec, error):
+    bspec = str.encode(spec)
+    with raises(ValueError) as value_error:
+        spec = YAMLSpecification.load_specification_from_stream(bspec)
+        assert error in value_error.value
