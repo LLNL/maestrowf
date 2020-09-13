@@ -1,4 +1,5 @@
 import pytest
+from jsonschema import ValidationError
 from pytest import raises
 
 from maestrowf.specification import YAMLSpecification
@@ -52,16 +53,24 @@ def test_load_spec():
         (
             "description:\n    name: hello_world\n    description: A simple "
             "Hello World study.\nenv:\n    variables:\n        "
-            "OUTPUT_PATH:\nstudy:\n    - name: hello_world\n      "
+            "OUTPUT_PATH: \nstudy:\n    - name: hello_world\n      "
             "description: Say hello to the world!\n      run:\n"
             "        cmd: |\n"
             '            echo "Hello, World!" > hello_world.txt\n',
-            "All variables must have a valid value"
+            "The value 'None' in field variables",
+        ),
+        (
+            "description:\n  name: hello_world\n  description: A simple "
+            "'Hello World' study.\n\nenv:\n  variables:\n    "
+            "OUTPUT_PATH: ./sample_output/hello_world\n\n"
+            "study:\n  - name: hello_world\n    run:\n      cmd: |\n        "
+            'echo "Hello, World!" > hello_world.txt\n',
+            "Key 'description' is missing from study step",
         ),
     ],
 )
 def test_validate_error(spec, error):
     bspec = str.encode(spec)
-    with raises(ValueError) as value_error:
+    with raises(ValidationError) as value_error:
         spec = YAMLSpecification.load_specification_from_stream(bspec)
         assert error in value_error.value
