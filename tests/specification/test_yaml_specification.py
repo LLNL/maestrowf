@@ -99,17 +99,17 @@ def test_validate_error(spec, error, error_txt):
 
 
 @pytest.mark.parametrize(
-        "spec, expected",
-        [
-            (
-                    "hello_world.yaml",
-                    "./sample_output/hello_world",
-            ),
-            (
-                    "empty_output_path.yaml",
-                    "",
-            ),
-        ],
+    "spec, expected",
+    [
+        (
+            "hello_world.yaml",
+            "./sample_output/hello_world",
+        ),
+        (
+            "empty_output_path.yaml",
+            "",
+        ),
+    ],
 )
 def test_output_path(spec, expected):
     dirpath = os.path.dirname(os.path.abspath(__file__))
