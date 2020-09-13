@@ -22,7 +22,8 @@ authors = [
     "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale"
 ]
 maintainers = [
-    "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale"
+    "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale",
+	"Kevin C. Athey <athey1@llnl.gov>","Kevin C. Athey",
 ]
 readme = "README.md"
 packages = [
