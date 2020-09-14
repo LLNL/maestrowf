@@ -164,8 +164,8 @@ To create a new virtual environment:
 
 If you plan to develop on Maestro, install the repository directly using:
 
-    pip install -r requirements.txt
-    pip install -e .
+    pip install poetry
+    poetry install
 
 Once set up, test the environment. The paths should point to a virtual environment folder.
 
