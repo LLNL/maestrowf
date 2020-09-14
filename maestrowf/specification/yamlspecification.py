@@ -517,7 +517,7 @@ class YAMLSpecification(Specification):
 
         :param value: String value representing the new description.
         """
-        self.description["name"] = value
+        self.description["description"] = value
 
     def get_study_environment(self):
         """
