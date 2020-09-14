@@ -1,0 +1,88 @@
+[2020-09-14 09:18:23,519: INFO] INFO Logging Level -- Enabled
+[2020-09-14 09:18:23,519: WARNING] WARNING Logging Level -- Enabled
+[2020-09-14 09:18:23,520: CRITICAL] CRITICAL Logging Level -- Enabled
+[2020-09-14 09:18:23,521: INFO] 
+------------------------------------------
+Submission attempts =       1
+Submission throttle limit = 0
+Use temporary directory =   False
+Tmp Dir = 
+------------------------------------------
+[2020-09-14 09:18:23,521: INFO] 
+==================================================
+name: slurm_test
+description: Sample test for SLURM header
+==================================================
+
+[2020-09-14 09:18:23,521: INFO] 
+==================================================
+Constructing parameter study 'slurm_test'
+==================================================
+
+[2020-09-14 09:18:23,521: INFO] 
+==================================================
+Processing step '_source'
+==================================================
+
+[2020-09-14 09:18:23,521: INFO] Encountered '_source'. Adding and continuing.
+[2020-09-14 09:18:23,521: INFO] 
+==================================================
+Processing step 'local-step'
+==================================================
+
+[2020-09-14 09:18:23,521: INFO] 
+-------------------------------------------------
+Adding step 'local-step' (No parameters used)
+-------------------------------------------------
+
+[2020-09-14 09:18:23,521: INFO] Searching for workspaces...
+cmd = echo "do stuff"
+
+[2020-09-14 09:18:23,522: INFO] 
+==================================================
+Processing step 'scheduled-step'
+==================================================
+
+[2020-09-14 09:18:23,522: INFO] 
+-------------------------------------------------
+Adding step 'scheduled-step' (No parameters used)
+-------------------------------------------------
+
+[2020-09-14 09:18:23,522: INFO] Searching for workspaces...
+cmd = echo "Do scheduled stuff"
+
+[2020-09-14 09:18:23,522: INFO] Adding edge (local-step, scheduled-step)...
+[2020-09-14 09:18:23,522: INFO] Directory does not exist. Creating directories to /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/meta
+[2020-09-14 09:18:23,522: INFO] Directory does not exist. Creating directories to /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/meta/study
+[2020-09-14 09:18:23,533: INFO] Checking DAG status at 2020-09-14 09:18:23.532982
+[2020-09-14 09:18:23,533: INFO] Launching all ready steps...
+[2020-09-14 09:18:23,533: INFO] Calling execute for StepRecord 'local-step'
+[2020-09-14 09:18:23,533: INFO] Directory does not exist. Creating directories to /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/local-step
+[2020-09-14 09:18:23,533: INFO] Generating script for local-step into /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/local-step
+[2020-09-14 09:18:23,533: INFO] Running workflow step 'local-step' locally.
+[2020-09-14 09:18:23,534: INFO] Script: /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/local-step/local-step.slurm.sh
+Restart: None
+Scheduled?: False
+[2020-09-14 09:18:23,537: INFO] Lock 140477618833872 acquired on /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/.status.lock
+[2020-09-14 09:18:23,538: INFO] Lock 140477618833872 released on /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/.status.lock
+[2020-09-14 09:18:24,540: INFO] Checking DAG status at 2020-09-14 09:18:24.540445
+[2020-09-14 09:18:24,541: INFO] Launching all ready steps...
+[2020-09-14 09:18:24,541: INFO] Calling execute for StepRecord 'scheduled-step'
+[2020-09-14 09:18:24,542: INFO] Directory does not exist. Creating directories to /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/scheduled-step
+[2020-09-14 09:18:24,544: INFO] Generating script for scheduled-step into /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/scheduled-step
+[2020-09-14 09:18:24,544: WARNING] 'walltime' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: WARNING] 'post' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: WARNING] 'pre' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: WARNING] 'restart' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: WARNING] 'reservation' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: WARNING] 'gpus' is not supported -- ommitted.
+[2020-09-14 09:18:24,545: INFO] Scheduling workflow step 'scheduled-step'.
+[2020-09-14 09:18:24,546: INFO] Script: /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/scheduled-step/scheduled-step.slurm.sh
+Restart: None
+Scheduled?: True
+[2020-09-14 09:18:24,546: INFO] 'slurm_test' is complete. Returning.
+[2020-09-14 09:18:24,548: INFO] Lock 140477618833872 acquired on /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/.status.lock
+[2020-09-14 09:18:24,549: INFO] Lock 140477618833872 released on /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/.status.lock
+[2020-09-14 09:18:24,549: INFO] Study completed with state 'StudyStatus.FINISHED'.
+[2020-09-14 09:18:24,549: INFO] Study exiting, cleaning up...
+[2020-09-14 09:18:24,549: INFO] Squeaky clean!

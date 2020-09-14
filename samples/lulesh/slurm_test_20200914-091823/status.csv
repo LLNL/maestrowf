@@ -1,0 +1,3 @@
+Step Name,Workspace,State,Run Time,Elapsed Time,Start Time,Submit Time,End Time,Number Restarts
+local-step,local-step,DRYRUN,--:--:--,--:--:--,--,--,2020-09-14 09:18:24,0
+scheduled-step,scheduled-step,DRYRUN,--:--:--,--:--:--,--,--,2020-09-14 09:18:25,0

@@ -121,9 +121,24 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         resources = ChainMap(step.run, self._batch)
 
+        for key in resources:
+            if not resources[key]:
+                # One of either Step map or Batch map has no value for 
+                # the key or the key does not exist
+                step_key = step.run.get(key, -1)
+                batch_key = self._batch.get(key, -1)
+
+                if step_key and step_key != -1:
+                    resources[key] = step_key
+                    continue
+                if batch_key and batch_key != -1:
+                    resources[key] = batch_key
+                    continue 
+
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
         nodes = resources.get("nodes")
+
         if not procs and not nodes:
             err_msg = \
                 'No explicit resources specified in {}. At least one' \
@@ -139,11 +154,12 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         for key, value in self._header.items():
             if key not in resources:
                 continue
-
+ 
             if resources[key]:
                 modified_header.append(value.format(**resources))
 
-        if "procs" in self._batch or not nodes:
+        #if "procs" in self._batch or not nodes:
+        if procs or not nodes:
             modified_header.append(
                 "#SBATCH --ntasks={}".format(resources["procs"])
                 )

@@ -1,0 +1,2 @@
+nohup: ignoring input
+['/home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823/slurm_test.study.pkl']

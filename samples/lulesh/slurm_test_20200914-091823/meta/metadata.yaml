@@ -1,0 +1,23 @@
+dependencies:
+  _source: !!set {}
+  local-step: !!set {}
+  scheduled-step: !!set
+    local-step: null
+hub_dependencies:
+  _source: !!set {}
+  local-step: !!set {}
+  scheduled-step: !!set {}
+step_combinations:
+  _source: /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823
+  local-step:
+    local-step: local-step
+  scheduled-step:
+    scheduled-step: scheduled-step
+used_parameters:
+  _source: !!set {}
+  local-step: !!set {}
+  scheduled-step: !!set {}
+workspaces:
+  _source: /home/youngjeffrey/LLNL_fork/Maestro/maestrowf/samples/lulesh/slurm_test_20200914-091823
+  local-step: local-step
+  scheduled-step: scheduled-step
