@@ -25,6 +25,7 @@ maintainers = [
     "Francesco Di Natale <dinatale3@llnl.gov>", "Francesco Di Natale",
     "Kevin C. Athey <athey1@llnl.gov>", "Kevin C. Athey",
     "Jessica Semler <semler1@llnl.gov>", "Jessica Semler",
+    "Jeremy White <white242@llnl.gov>", "Jeremy White",
 ]
 readme = "README.md"
 packages = [
