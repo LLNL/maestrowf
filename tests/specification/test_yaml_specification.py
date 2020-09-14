@@ -34,6 +34,10 @@ def test_load_spec():
         == spec.desc
     )
 
+    spec.desc = "a test"
+    assert "hello_world" == spec.description["name"] == spec.name
+    assert "a test" == spec.description["description"] == spec.desc
+
     assert isinstance(spec.environment["variables"], dict)
     assert (
         "./sample_output/hello_world"
