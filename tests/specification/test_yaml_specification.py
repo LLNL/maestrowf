@@ -28,14 +28,16 @@ def test_load_spec():
     )
     assert "samples/hello_world/hello_world.yaml" == spec.path
     assert "hello_world" == spec.description["name"] == spec.name
+    spec.name = "a_test"
+    assert "a_test" == spec.description["name"] == spec.name
+
     assert (
         "A simple 'Hello World' study."
         == spec.description["description"]
         == spec.desc
     )
-
     spec.desc = "a test"
-    assert "hello_world" == spec.description["name"] == spec.name
+    assert "a_test" == spec.description["name"] == spec.name
     assert "a test" == spec.description["description"] == spec.desc
 
     assert isinstance(spec.environment["variables"], dict)
@@ -147,9 +149,7 @@ def test_get_parameters():
 
 def test_get_study_environment():
     dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(
-            dirpath, "test_specs", "lulesh_sample1_unix.yml"
-    )
+    spec_path = os.path.join(dirpath, "test_specs", "lulesh_sample1_unix.yml")
     spec = YAMLSpecification.load_specification(spec_path)
     study_env = spec.get_study_environment()
 
