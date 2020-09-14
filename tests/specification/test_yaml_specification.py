@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from jsonschema import ValidationError
 from pytest import raises
@@ -22,11 +20,10 @@ def test_load_spec_error():
         YAMLSpecification.load_specification("badspec.yaml")
 
 
-def test_load_spec():
-    spec = YAMLSpecification.load_specification(
-        "samples/hello_world/hello_world.yaml"
-    )
-    assert "samples/hello_world/hello_world.yaml" == spec.path
+def test_load_spec(spec_path):
+    spec = YAMLSpecification.load_specification(spec_path("hello_world.yml"))
+
+    assert spec_path("hello_world.yml") == spec.path
     assert "hello_world" == spec.description["name"] == spec.name
     spec.name = "a_test"
     assert "a_test" == spec.description["name"] == spec.name
@@ -93,11 +90,9 @@ def test_load_spec():
         ),
     ],
 )
-def test_validate_error(spec, error, error_txt):
-    dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(dirpath, "test_specs", spec)
+def test_validate_error(spec_path, spec, error, error_txt):
     with raises(error) as value_error:
-        spec = YAMLSpecification.load_specification(spec_path)
+        YAMLSpecification.load_specification(spec_path(spec))
     if value_error.typename == "ValidationError":
         assert error_txt in value_error.value.message
     else:
@@ -117,18 +112,14 @@ def test_validate_error(spec, error, error_txt):
         ),
     ],
 )
-def test_output_path(spec, expected):
-    dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(dirpath, "test_specs", spec)
-    spec = YAMLSpecification.load_specification(spec_path)
+def test_output_path(spec_path, spec, expected):
+    spec = YAMLSpecification.load_specification(spec_path(spec))
 
     assert expected == spec.output_path
 
 
-def test_get_study_steps():
-    dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(dirpath, "test_specs", "hello_world.yml")
-    spec = YAMLSpecification.load_specification(spec_path)
+def test_get_study_steps(spec_path):
+    spec = YAMLSpecification.load_specification(spec_path("hello_world.yml"))
     steps = spec.get_study_steps()
 
     assert 1 == len(steps)
@@ -136,21 +127,19 @@ def test_get_study_steps():
     assert "Say hello to the world!" == steps[0].description
 
 
-def test_get_parameters():
-    dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(
-        dirpath, "test_specs", "hello_bye_parameterized.yml"
+def test_get_parameters(spec_path):
+    spec = YAMLSpecification.load_specification(
+        spec_path("hello_bye_parameterized.yml")
     )
-    spec = YAMLSpecification.load_specification(spec_path)
     params = spec.get_parameters()
 
     assert params
 
 
-def test_get_study_environment():
-    dirpath = os.path.dirname(os.path.abspath(__file__))
-    spec_path = os.path.join(dirpath, "test_specs", "lulesh_sample1_unix.yml")
-    spec = YAMLSpecification.load_specification(spec_path)
+def test_get_study_environment(spec_path):
+    spec = YAMLSpecification.load_specification(
+        spec_path("lulesh_sample1_unix.yml")
+    )
     study_env = spec.get_study_environment()
 
     assert study_env
