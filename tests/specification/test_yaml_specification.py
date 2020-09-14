@@ -102,11 +102,11 @@ def test_validate_error(spec, error, error_txt):
     "spec, expected",
     [
         (
-            "hello_world.yaml",
+            "hello_world.yml",
             "./sample_output/hello_world",
         ),
         (
-            "empty_output_path.yaml",
+            "empty_output_path.yml",
             "",
         ),
     ],
@@ -117,3 +117,25 @@ def test_output_path(spec, expected):
     spec = YAMLSpecification.load_specification(spec_path)
 
     assert expected == spec.output_path
+
+
+def test_get_study_steps():
+    dirpath = os.path.dirname(os.path.abspath(__file__))
+    spec_path = os.path.join(dirpath, "test_specs", "hello_world.yml")
+    spec = YAMLSpecification.load_specification(spec_path)
+    steps = spec.get_study_steps()
+
+    assert 1 == len(steps)
+    assert "hello_world" == steps[0].name
+    assert "Say hello to the world!" == steps[0].description
+
+
+def test_get_parameters():
+    dirpath = os.path.dirname(os.path.abspath(__file__))
+    spec_path = os.path.join(
+        dirpath, "test_specs", "hello_bye_parameterized.yml"
+    )
+    spec = YAMLSpecification.load_specification(spec_path)
+    params = spec.get_parameters()
+
+    assert params
