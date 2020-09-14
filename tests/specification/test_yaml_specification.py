@@ -139,3 +139,14 @@ def test_get_parameters():
     params = spec.get_parameters()
 
     assert params
+
+
+def test_get_study_environment():
+    dirpath = os.path.dirname(os.path.abspath(__file__))
+    spec_path = os.path.join(
+            dirpath, "test_specs", "lulesh_sample1_unix.yml"
+    )
+    spec = YAMLSpecification.load_specification(spec_path)
+    study_env = spec.get_study_environment()
+
+    assert study_env
