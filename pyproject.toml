@@ -73,4 +73,4 @@ build-backend = "poetry.masonry.api"
 "Discussions" = "https://github.com/LLNL/maestrowf/discussions"
 
 [tool.black]
-line-length = 80
+line-length = 79
