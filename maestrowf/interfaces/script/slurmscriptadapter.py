@@ -119,21 +119,20 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
             the parameter step.
         """
-        resources = ChainMap(step.run, self._batch)
+
+        resources = {}
+        resources.update(step.run)
+        resources.update(self._batch)
 
         for key in resources:
             if not resources[key]:
                 # One of either Step map or Batch map has no value for 
                 # the key or the key does not exist
                 step_key = step.run.get(key, -1)
-                batch_key = self._batch.get(key, -1)
 
                 if step_key and step_key != -1:
                     resources[key] = step_key
                     continue
-                if batch_key and batch_key != -1:
-                    resources[key] = batch_key
-                    continue 
 
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
