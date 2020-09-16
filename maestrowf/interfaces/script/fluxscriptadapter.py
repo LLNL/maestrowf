@@ -105,7 +105,12 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             "ntasks": "-n",
             "nodes": "-N",
         }
+        self._extension = "flux.sh"
         self.h = None
+
+    @property
+    def extension(self):
+        return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
         # Convert walltime to seconds.
@@ -450,7 +455,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
-        fname = "{}.flux.sh".format(step.name)
+        fname = "{}.{}".format(step.name, self._extension)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             if to_be_scheduled:
@@ -462,7 +467,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if restart:
-            rname = "{}.restart.flux.sh".format(step.name)
+            rname = "{}.restart.{}".format(step.name, self._extension)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
@@ -523,7 +528,12 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             "ntasks": "-n",
             "nodes": "-N",
         }
+        self._extension = "flux.sh"
         self.h = None
+
+    @property
+    def extension(self):
+        return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
         # Convert walltime to seconds.
@@ -853,7 +863,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
-        fname = "{}.flux.sh".format(step.name)
+        fname = "{}.{}".format(step.name, self._extension)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             if to_be_scheduled:
@@ -865,7 +875,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if restart:
-            rname = "{}.restart.flux.sh".format(step.name)
+            rname = "{}.restart.{}".format(step.name, self._extension)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
