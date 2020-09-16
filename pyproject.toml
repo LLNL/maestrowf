@@ -71,3 +71,6 @@ build-backend = "poetry.masonry.api"
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/LLNL/maestrowf/issues"
 "Discussions" = "https://github.com/LLNL/maestrowf/discussions"
+
+[tool.black]
+line-length = 79
