@@ -1,5 +1,0 @@
-bank: abank
-host: amachine
-nodes: 1
-queue: pbatch
-type: slurm
