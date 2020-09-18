@@ -32,12 +32,6 @@ import getpass
 import logging
 import os
 import re
-import sys
-# In order to support Python2.7, we need to catch the import error.
-try:
-    from collections import ChainMap
-except ImportError:
-    from chainmap import ChainMap
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
@@ -80,7 +74,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
-        # Check for procs separately, as we don't want it in the header if it's 
+        # Check for procs separately, as we don't want it in the header if it's
         # not present.
         procs = kwargs.get("procs", None)
         if procs:
@@ -121,18 +115,14 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
 
         resources = {}
-        resources.update(step.run)
         resources.update(self._batch)
-
-        for key in resources:
-            if not resources[key]:
-                # One of either Step map or Batch map has no value for 
-                # the key or the key does not exist
-                step_key = step.run.get(key, -1)
-
-                if step_key and step_key != -1:
-                    resources[key] = step_key
-                    continue
+        procs_in_batch = bool("procs" in resources)
+        resources.update(
+            {
+                resource: value for (resource, value) in step.run.items()
+                if value
+            }
+        )
 
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
@@ -153,12 +143,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         for key, value in self._header.items():
             if key not in resources:
                 continue
- 
+
             if resources[key]:
                 modified_header.append(value.format(**resources))
 
-        #if "procs" in self._batch or not nodes:
-        if procs or not nodes:
+        if procs_in_batch or not nodes:
             modified_header.append(
                 "#SBATCH --ntasks={}".format(resources["procs"])
                 )
