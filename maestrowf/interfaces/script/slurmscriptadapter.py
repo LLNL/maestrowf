@@ -94,6 +94,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "gpus": "#SBATCH --gres=gpu:{gpus}"
         }
 
+        self._ntask_header = "#SBATCH --ntasks={procs}"
+        self._exclusive = "#SBATCH --exclusive"
+
         self._cmd_flags = {
             "cmd": "srun",
             "depends": "--dependency",
@@ -123,7 +126,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 if value
             }
         )
-
         # If neither Procs nor Nodes exist, throw an error
         procs = resources.get("procs")
         nodes = resources.get("nodes")
@@ -148,13 +150,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 modified_header.append(value.format(**resources))
 
         if procs_in_batch or not nodes:
-            modified_header.append(
-                "#SBATCH --ntasks={}".format(resources["procs"])
-                )
+            modified_header.append(self._ntask_header.format(**resources))
 
         exclusive = resources.get("exclusive", False)
         if exclusive:
-            modified_header.append("#SBATCH --exclusive")
+            modified_header.append(self._exclusive)
 
         return "\n".join(modified_header)
 
