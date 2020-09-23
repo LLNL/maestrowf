@@ -64,7 +64,15 @@
             "anyOf": [
               {"type": "boolean"},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "extra_args": {
+            "type": "object",
+            "properties": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]}
+          }
         },
         "additionalProperties": false,
         "required": [

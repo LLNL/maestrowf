@@ -1,0 +1,29 @@
+description:
+  name: slurm_test
+  description: Sample test for SLURM header
+
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+    gres        : ignore
+    reservation : test_reservation
+    extra_args:
+        begin: "02:30:00"            # delay execution by 2.5 hours
+        depends: 238474            # start after job with id 238474
+
+
+study:
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+          depends: [make-lulesh]
+          nodes: 2
+          procs: 27
+          exclusive   : True
+          walltime: "00:10:00"
+          extra_args:
+              cpus-per-task: 4            # Run task with 4 threads
