@@ -227,7 +227,6 @@ class Conductor:
         study_glob = \
             glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
 
-        print(study_glob)
         if len(study_glob) == 1:
             # We only expect one result.If we only get one, let's assume and
             # check after.
@@ -356,7 +355,8 @@ class Conductor:
             dag.write_status(os.path.split(pkl_path)[0])
             # Sleep for SLEEPTIME in args if study not complete.
             if completion_status == StudyStatus.RUNNING:
-                sleep(sleep_time)
+                #sleep(sleep_time)
+                sleep(3)
 
         return completion_status
 
