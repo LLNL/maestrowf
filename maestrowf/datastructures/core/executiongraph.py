@@ -601,22 +601,22 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
-        header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
-                 ",Submit Time,End Time,Number Restarts, Job ID"
+        header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time,Start Time" \
+                 ",Submit Time,End Time,Number Restarts"
         status = [header]
         keys = set(self.values.keys()) - set(["_source"])
         for key in keys:
             value = self.values[key]
 
-            jobid_str = "Job ID not available"
+            jobid_str = "--"
             if value.jobid:
-                jobid_str = " ".join(value.jobid)
+                jobid_str = value.jobid[-1]
 
             _ = [
-                    value.name, os.path.split(value.workspace.value)[1],
+                    value.name, jobid_str, os.path.split(value.workspace.value)[1],
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
-                    str(value.restarts), jobid_str
+                    str(value.restarts)
                 ]
             _ = ",".join(_)
             status.append(_)

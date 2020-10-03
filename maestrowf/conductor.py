@@ -355,8 +355,7 @@ class Conductor:
             dag.write_status(os.path.split(pkl_path)[0])
             # Sleep for SLEEPTIME in args if study not complete.
             if completion_status == StudyStatus.RUNNING:
-                #sleep(sleep_time)
-                sleep(3)
+                sleep(sleep_time)
 
         return completion_status
 
