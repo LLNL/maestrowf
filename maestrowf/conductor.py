@@ -227,7 +227,6 @@ class Conductor:
         study_glob = \
             glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
 
-        print(study_glob)
         if len(study_glob) == 1:
             # We only expect one result.If we only get one, let's assume and
             # check after.
