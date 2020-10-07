@@ -95,6 +95,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "reservation":  "-J",
         }
 
+        self._extension = ".lsf.sh"
+
     def get_header(self, step):
         """
         Generate the header present at the top of LSF execution scripts.
@@ -383,7 +385,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
-        fname = "{}.lsf.cmd".format(step.name)
+        fname = "{}.{}".format(step.name, self._extension)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             if to_be_scheduled:
@@ -395,7 +397,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if restart:
-            rname = "{}.restart.lsf.cmd".format(step.name)
+            rname = "{}.restart.{}".format(step.name, self._extension)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
@@ -410,3 +412,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension
