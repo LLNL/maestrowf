@@ -58,7 +58,7 @@ class SubmissionRecord(Record):
         """
         Property for the job identifier for the record.
 
-        :returns: A string representing the job identifer assigned by the
+        :returns: A string representing the job identifier assigned by the
                   scheduler.
         """
         return self._info.get("jobid", None)

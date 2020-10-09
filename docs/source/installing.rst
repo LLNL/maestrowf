@@ -34,7 +34,7 @@ Once installed run::
 
     usage: maestro [-h] [-l LOGPATH] [-d DEBUG_LVL] [-c] {cancel,run,status} ...
 
-    The Maestro Workflow Conductor for specifiying, launching, and managing general workflows.
+    The Maestro Workflow Conductor for specifying, launching, and managing general workflows.
 
     positional arguments:
       {cancel,run,status}

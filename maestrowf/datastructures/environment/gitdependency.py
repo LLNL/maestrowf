@@ -58,7 +58,7 @@ class GitDependency(Dependency):
         Currently, the GitDependency class only supports three optional
         parameters: branch, hash, and tag. Each operate as their name specifies
         according to how they would be used in git. The class will acquire the
-        specfic repository in accordance with a specified optional (example:
+        specific repository in accordance with a specified optional (example:
         if a tag is specfied, the class will clone then checkout the tag). The
         only caveat to the optionals is that only one may be used at a time.
 

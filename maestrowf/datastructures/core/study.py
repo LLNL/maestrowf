@@ -135,7 +135,7 @@ class StudyStep:
         : returns: True if other is equal to self, False otherwise.
         """
         if isinstance(other, self.__class__):
-            # This works because the classes are currently intefaces over
+            # This works because the classes are currently interfaces over
             # internals that are all based on Python builtin classes.
             # NOTE: This method will need to be reworked if something more
             # complex is done with the class.
@@ -798,7 +798,7 @@ class Study(DAG, PickleInterface):
             used_spaces = re.findall(WSREGEX, cmd)
             for match in used_spaces:
                 # In this case we don't need to look for any parameters, or
-                # combination depdendent ("funnel") steps. It's a simple sub.
+                # combination dependent ("funnel") steps. It's a simple sub.
                 LOGGER.info("Workspace found -- %s", match)
                 workspace_var = "$({}.workspace)".format(match)
                 ws = self.workspaces[match]
