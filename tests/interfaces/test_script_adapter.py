@@ -50,7 +50,7 @@ def test_factory():
 def test_get_valid_adapters():
     """
     Test to verify that the keys in the internal factory is the same set as
-    the resutls from get_valid_adapters()
+    the results from get_valid_adapters()
     """
     saf = ScriptAdapterFactory
     assert(saf.factories.keys() == ScriptAdapterFactory.get_valid_adapters())

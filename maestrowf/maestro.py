@@ -331,7 +331,7 @@ def setup_argparser():
     """Set up the program's argument parser."""
     parser = ArgumentParser(
         prog="maestro",
-        description="The Maestro Workflow Conductor for specifiying, launching"
+        description="The Maestro Workflow Conductor for specifying, launching"
         ", and managing general workflows.",
         formatter_class=RawTextHelpFormatter)
     subparsers = parser.add_subparsers(dest='subparser')
@@ -439,7 +439,7 @@ def main():
 
     This function uses command line arguments to locate the study description.
     It makes use of the maestrowf core data structures as a high level class
-    inerface.
+    interface.
     """
     # Set up the necessary base data structures to begin study set up.
     parser = setup_argparser()

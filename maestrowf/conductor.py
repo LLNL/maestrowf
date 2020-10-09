@@ -347,7 +347,7 @@ class Conductor:
 
             LOGGER.info("Checking DAG status at %s", str(datetime.now()))
             # Execute steps that are ready
-            # Recieves StudyStatus enum
+            # Receives StudyStatus enum
             completion_status = dag.execute_ready_steps()
             # Re-pickle the ExecutionGraph.
             dag.pickle(pkl_path)
