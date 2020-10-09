@@ -176,7 +176,7 @@ class ParameterGenerator:
     defined and will generate each combination one by one. The end user should
     NEVER SEE AN INVALID COMBINATION. Because this class generates the
     combinations as specified by the parameters added (eventually with types
-    or enforced inheritence), and eventually constraints, it opens up being
+    or enforced inheritance), and eventually constraints, it opens up being
     able to quietly change how this class generates its combinations.
 
     Easily convert studies to other types of studies. Because the API doesn't

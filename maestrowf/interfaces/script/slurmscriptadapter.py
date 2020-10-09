@@ -186,7 +186,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         for key in supported:
             value = kwargs.get(key)
             if key not in self._cmd_flags:
-                LOGGER.warning("'%s' is not supported -- ommitted.", key)
+                LOGGER.warning("'%s' is not supported -- omitted.", key)
                 continue
             if value:
                 args += [

@@ -27,7 +27,7 @@
 # SOFTWARE.
 ###############################################################################
 
-"""Module that contains the implemenation of a Directed-Acyclic Graph."""
+"""Module that contains the implementation of a Directed-Acyclic Graph."""
 
 from collections import deque, OrderedDict
 import logging
