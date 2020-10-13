@@ -346,43 +346,77 @@ def setup_argparser():
     cancel.set_defaults(func=cancel_study)
 
     # subparser for a run subcommand
-    run = subparsers.add_parser('run',
-                                help="Launch a study based on a specification")
+    # need manual line breaks to allow formatted template documentation.
+    run = subparsers.add_parser(
+        'run',
+        help="Launch a study based on a specification",
+        formatter_class=RawTextHelpFormatter)
+
     run.add_argument("-a", "--attempts", type=int, default=1,
-                     help="Maximum number of submission attempts before a "
+                     help="Maximum number of submission attempts before a\n"
                      "step is marked as failed. [Default: %(default)d]")
     run.add_argument("-r", "--rlimit", type=int, default=1,
-                     help="Maximum number of restarts allowed when steps. "
-                     "specify a restart command (0 denotes no limit). "
+                     help="Maximum number of restarts allowed when steps. \n"
+                     "specify a restart command (0 denotes no limit). \n"
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
-                     help="Maximum number of inflight jobs allowed to execute "
+                     help="Maximum number of inflight jobs allowed to execute \n"
                      "simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
-                     help="Amount of time (in seconds) for the manager to "
+                     help="Amount of time (in seconds) for the manager to \n"
                      "wait between job status checks. [Default: %(default)d]")
     run.add_argument("--dry", action="store_true", default=False,
-                     help="Generate the directory structure and scripts for a "
+                     help="Generate the directory structure and scripts for a \n"
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
-                     help="Path to a Python code file containing a function "
-                     "that returns a custom filled ParameterGenerator "
+                     help="Path to a Python code file containing a function \n"
+                     "that returns a custom filled ParameterGenerator \n"
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
-                     help="A string that represents a single argument to pass "
-                     "a custom parameter generation function. Reuse '--parg' "
+                     help="A string that represents a single argument to pass \n"
+                     "a custom parameter generation function. Reuse '--parg' \n"
                      "to pass multiple arguments. [Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
-                     help="Output path to place study in. [NOTE: overrides "
+                     help="Output path to place study in. [NOTE: overrides \n"
                      "OUTPUT_PATH in the specified specification]")
     run.add_argument("-fg", action="store_true", default=False,
-                     help="Runs the backend conductor in the foreground "
+                     help="Runs the backend conductor in the foreground \n"
                      "instead of using nohup. [Default: %(default)s]")
     run.add_argument("--hashws", action="store_true", default=False,
-                     help="Enable hashing of subdirectories in parameterized "
-                     "studies (NOTE: breaks commands that use parameter labels"
-                     " to search directories). [Default: %(default)s]")
+                     help="Enable hashing of subdirectories in parameterized \n"
+                     "studies (NOTE: breaks commands that use parameter labels\n"
+                     "to search directories). [Default: %(default)s]")
+    run.add_argument("--make-links", action="store_true", default=False,
+                     help="Automatically make customizable, human readable \n"
+                     "links to run directories. [Default: %(default)s]")
+    run.add_argument(
+        "--link-directory",
+        type=str,
+        default="{{output_path}}/links",
+        help="Jinja template for path where links to run directories are made\n"
+        "[Default: %(default)s]")
+
+    run.add_argument(
+        "--link-template",
+        type=str,
+        default=(
+            "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
+        help="Jinja template for links to run directories\n"
+        "[Default: %(default)s]\n \n"
+        "Currently supported Jinja variables:\n"
+        "{{output_path}} - Output path for this maestro study\n"
+        "{{link_directory}} - Link directory for this maestro study\n"
+        "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
+        "{{instance}} - Maestro label for a set of parameters\n"
+        "               (e.g. 'X1.5.X2.5.X3.20')\n"
+        "               [maximum length: 255 characters]\n"
+        "{{instance_variables_only}} - Maestro label for a set of parameters\n"
+        "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
+        "               fixed for all runs (constants).\n"
+        "               [maximum length: 255 characters]\n"
+        "{{step}} - Maestro label for a given step (e.g. 'run')\n"
+        "{{INDEX}} - Unique number for labeling runs (e.g. '0001')")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
@@ -395,11 +429,11 @@ def setup_argparser():
     # The only required positional argument for 'run' is a specification path.
     run.add_argument(
         "specification", type=str,
-        help="The path to a Study YAML specification that will be loaded and "
+        help="The path to a Study YAML specification that will be loaded and \n"
         "executed.")
     run.add_argument(
         "--usetmp", action="store_true", default=False,
-        help="Make use of a temporary directory for dumping scripts and other "
+        help="Make use of a temporary directory for dumping scripts and other \n"
         "Maestro related files.")
     run.set_defaults(func=run_study)
 
