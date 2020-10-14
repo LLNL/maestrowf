@@ -569,7 +569,7 @@ class ExecutionGraph(DAG, PickleInterface):
             record.setup_workspace()    # Generate the workspace.
             record.generate_script(adapter, self._tmp_dir)
             if self.linker:
-                LOGGER.info(f"CRK make_links: {self.linker.make_links}")
+                LOGGER.info(f"CRK make_links_flag: {self.linker.make_links_flag}")
                 self.linker.link(record)
 
         if self.dry_run:

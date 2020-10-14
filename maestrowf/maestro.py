@@ -264,7 +264,7 @@ def run_study(args):
 
     # Set up the study workspace and configure it for execution.
     linker = Linker(
-        make_links=args.make_links,
+        make_links_flag=args.make_links,
         link_directory=args.link_directory,
         link_template=args.link_template,
         output_root=out_dir
@@ -399,7 +399,7 @@ def setup_argparser():
     run.add_argument(
         "--link-directory",
         type=str,
-        default="{{spec_root}}/links",
+        default="{{output_root}}/links",
         help="Jinja template for path where links to run directories are made\n"
         "[Default: %(default)s]")
 

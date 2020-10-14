@@ -420,9 +420,9 @@ class Study(DAG, PickleInterface):
         self._hash_ws = hash_ws
         self._dry_run = dry_run
         self.linker = linker
-        make_links = False
+        make_links_flag = False
         if linker:
-            make_links = linker.make_links
+            make_links_flag = linker.make_links_flag
 
         LOGGER.info(
             "\n------------------------------------------\n"
@@ -436,7 +436,7 @@ class Study(DAG, PickleInterface):
             "Output path =               %s\n"
             "------------------------------------------",
             submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, make_links, self._out_path
+            use_tmp, hash_ws, dry_run, make_links_flag, self._out_path
         )
 
         self.is_configured = True
