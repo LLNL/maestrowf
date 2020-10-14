@@ -411,7 +411,7 @@ def setup_argparser():
         help="Jinja template for links to run directories\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
-        "{{spec_root}} - Parent directory for this maestro study\n"
+        "{{output_root}} - Parent directory for this maestro study\n"
         "{{link_directory}} - Link directory for this maestro study\n"
         "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
         "{{instance}} - Maestro label for a set of parameters\n"

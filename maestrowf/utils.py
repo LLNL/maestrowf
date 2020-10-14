@@ -39,6 +39,8 @@ from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
+from jinja2 import Template
+import re
 
 LOGGER = logging.getLogger(__name__)
 
@@ -279,6 +281,119 @@ def create_dictionary(list_keyvalues, token=":"):
 
     return _dict
 
+def next_path(path_pattern):
+    """
+    Finds the next free path in an sequentially named list of files
+
+    e.g. path_pattern = 'file-%s.txt':
+
+    file-1.txt
+    file-2.txt
+    file-3.txt
+
+    Runs in log(n) time where n is the number of existing files in sequence
+    https://stackoverflow.com/questions/17984809/how-do-i-create-a-incrementing-filename-in-python
+    """
+    i = 1
+
+    # First do an exponential search
+    while os.path.exists(path_pattern % i):
+        i = i * 2
+
+    # Result lies somewhere in the interval (i/2..i]
+    # We call this interval (a..b] and narrow it down until a + 1 = b
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2  # interval midpoint
+        a, b = (c, b) if os.path.exists(path_pattern % c) else (a, c)
+
+    return path_pattern % b
+
+def foo():
+    # there are two template cases (with and without {{INDEX}})
+    INDEX_locations = [
+        m.start() for m in
+        re.finditer('{{INDEX}}', link_directory_template_string)
+        ]
+    if len(INDEX_locations) > 1:
+        raise(ValueError(
+            "at most one '{{INDEX}}' can be in link path template string"))
+    if len(INDEX_locations) == 1:
+        (defs["indexed_directory_prefix"],
+            defs["indexed_directory_suffix"],
+            defs["indexed_directory_template"]) = (
+         maestro_split_index_directory(link_directory_template, defs))
+
+        indexed_directory = os.path.join(
+            output_path_root,
+            defs["prefix_date-time"],
+            "run_directory_link")
+
+        success = False
+        if not os.path.lexists(indexed_directory):
+            timeout = time.time() + mkdir_timeout
+            while not success and time.time() < timeout:
+                try:
+                    path = next_path(os.path.join(
+                        defs["indexed_directory_prefix"],
+                        defs["indexed_directory_template"]
+                        ))
+                    os.makedirs(path)
+                    success = True
+                except OSError as e:
+                    if e.args[1] == 'File exists':
+                        time.sleep(random.uniform(0.5, 1.5))
+                    elif e.args[1] == 'Permission denied':
+                        raise(ValueError(
+                            "Could not create a unique directory because of a"
+                            " permissions error.\n\n"
+                            f"Attempted path: {path}\n"
+                            f"Template string: "
+                            f"{link_directory_template_string}"
+                            ))
+                    else:
+                        raise(ValueError(e))
+
+                if time.time() > timeout:
+                    raise(ValueError(
+                        f"Could not create unique directory in {mkdir_timeout}"
+                        " seconds.\n\n"
+                        "Attempted path: {path}\n"
+                        "Template string: {link_directory_template_string}"))
+            os.symlink(path, indexed_directory)
+
+        target_directory = os.path.join(
+            indexed_directory,
+            defs["indexed_directory_suffix"])
+        os.makedirs(os.path.dirname(target_directory), exist_ok=True)
+        if not os.path.lexists(target_directory):
+            os.symlink(dir_path_full, target_directory)
+
+def splitall(path):
+    allparts = []
+    while 1:
+        parts = os.path.split(path)
+        if parts[0] == path:  # sentinel for absolute paths
+            allparts.insert(0, parts[0])
+            break
+        elif parts[1] == path: # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
+
+def recursive_render(tpl, values):
+    #https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
+    prev = tpl
+    while True:
+        curr = jinja2.Template(prev).render(**values)
+        if curr != prev:
+            prev = curr
+        else:
+            return curr
+
 class Linker:
     """Utility class to make links."""
 
@@ -299,15 +414,85 @@ class Linker:
         self.link_template = link_template
         self.output_root = output_root
 
+    def split_indexed_directory(template_string):
+        """
+        Returns a tuple of a indexed_directory prefix, suffix & template
+
+        Example `link_directory_template`: {{output_path_root}}/links/{{date}}/
+            run-{{INDEX}}/{{instance}}/{{step}}
+
+        Example `indexed_directory_prefix`: studies/links/2020_07_30
+        Example `indexed_directory_suffix`: bar.1.foo.1.foobar.1/run-codepy-baseline/
+        Example `indexed_directory_template`: run-{{INDEX}}
+
+        :param link_directory_template: a one line jinja directory path template
+        :param defs: a dictionary containing replacement definitions for
+            ``link_directory_template``
+
+        :returns: a tuple containing the indexed_directory prefix, suffix
+            & template
+        """
+        # @TODO: test cases: index in front, middle, end, no index, two indexes
+        # @TODO: other error checking on template_string?
+        dir_list = splitall(template_string)
+        indexed_directory_prefix = []
+        indexed_directory_template = ""
+        indexed_directory_suffix = []  
+        while not re.match(r".*{{INDEX}}.*", dir_list[0]):
+            indexed_directory_prefix.append(dir_list.pop(0))
+        if dir_list:
+            indexed_directory_template = dir_list.pop(0)
+        if dir_list:
+            while dir_list and not re.match(r".*{{INDEX}}.*", dir_list[0]):
+                indexed_directory_suffix.append(dir_list.pop(0)) 
+            if dir_list:   
+                raise(ValueError(
+                    "at most one '{{INDEX}}' can be in link path template string")) 
+        return(indexed_directory_prefix, indexed_directory_suffix,
+            indexed_directory_template)
+
+    # "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
+
+        #     "[Default: %(default)s]\n \n"
+        # "Currently supported Jinja variables:\n"
+        # "{{output_root}} - Parent directory for this maestro study\n"
+        # "{{link_directory}} - Link directory for this maestro study\n"
+        # "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
+        # "{{instance}} - Maestro label for a set of parameters\n"
+        # "               (e.g. 'X1.5.X2.5.X3.20')\n"
+        # "               [maximum length: 255 characters]\n"
+        # "{{instance_variables_only}} - Maestro label for a set of parameters\n"
+        # "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
+        # "               fixed for all runs (constants).\n"
+        # "               [maximum length: 255 characters]\n"
+        # "{{step}} - Maestro label for a given step (e.g. 'run')\n"
+        # "{{INDEX}} - Unique number for labeling runs (e.g. '0001')")
+
     def link(self, record):
         if not self.make_links_flag:
             return
+        replacements = {"output_root": self.output_root}
+        t = Template(self.link_directory)
+        replacements["link_directory"] = t.render(replacements)
+        replacements["date"] = time.strftime("%Y-%m-%d")
+        (replacements["indexed_directory_prefix"],
+            replacements["indexed_directory_suffix"],
+            replacements["indexed_directory_template"]) = (
+            split_indexed_directory(link_directory_template))
+        
+        t = Template(self.link_template)
         LOGGER.info(f"CRK make_links_flag (link): {self.make_links_flag}")
         LOGGER.info(f"CRK output_root (link): {self.output_root}")
-        LOGGER.info(f"CRK link_directory (link): {self.link_directory}")
+        LOGGER.info(f"CRK link_directory (template): {self.link_directory}")
+        LOGGER.info(f"CRK link_template (template): {self.link_template}")
+        LOGGER.info(f"CRK link_directory (full): {replacements['link_directory']}")
+        LOGGER.info(f"CRK link_path (full): {t.render(replacements)}")
         LOGGER.info("CRK Creating directory: " + record.workspace.value)
-        LOGGER.info("CRK Step name: " + record.name)
         LOGGER.info("CRK Step label: " + record.step_label)
+        LOGGER.info("CRK Step name: " + record.name)
+        LOGGER.info(f"CRK indexed_directory_prefix: {indexed_directory_prefix}"  )
+        LOGGER.info(f"CRK indexed_directory_template: {indexed_directory_template}" )
+        LOGGER.info(f"CRK indexed_directory_suffix: {indexed_directory_suffix}" )
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""
