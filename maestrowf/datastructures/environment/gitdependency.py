@@ -158,8 +158,8 @@ class GitDependency(Dependency):
 
         logger.info("Checking for connectivity to '%s'", self.url)
         p = start_process(["git", "ls-remote", self.url], shell=False)
-        retcode = p.wait()
-        if retcode != 0:
+        p.communicate()
+        if p.returncode != 0:
             msg = "Connectivity check failed. Check that you have " \
                 "permissions to the specified repository, that the URL is " \
                 "correct, and that you have network connectivity. (url = {})" \
@@ -170,8 +170,8 @@ class GitDependency(Dependency):
 
         logger.info("Cloning '%s' from '%s'...", self.name, self.url)
         clone = start_process(["git", "clone", self.url, path], shell=False)
-        retcode = clone.wait()
-        if retcode != 0:
+        clone.communicate()
+        if clone.returncode != 0:
             msg = "Failed to acquire GitDependency named '{}'. Check " \
               "that repository URL ({}) and repository local path ({}) " \
               "are valid.".format(self.name, self.url, path)
