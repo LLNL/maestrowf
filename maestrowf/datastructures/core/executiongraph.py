@@ -69,7 +69,7 @@ class _StepRecord:
         """Initialize the record's workspace."""
         LOGGER.info("CRK Creating directory: " + self.workspace.value)
         LOGGER.info("CRK Step name: " + self.name)
-        LOGGER.info("Creating directory: " + self.workspace.value)
+        LOGGER.info("CRK Step label: " + self.step_label)
         create_parentdir(self.workspace.value)
 
     def generate_script(self, adapter, tmp_dir=""):
@@ -236,6 +236,25 @@ class _StepRecord:
         return self.step.name
 
     @property
+    def step_label(self):
+        """
+        Get step label of the step represented by the record instance.
+        This is the name of the step without any parameter substitutions.
+
+        :returns: The step label of the StudyStep contained within the record.
+        """
+        return self.step.step_label
+
+    #CRK  @property
+    # def link_data(self):
+    #     """
+    #     Get step label of the step represented by the record instance.
+
+    #     :returns: The step label of the StudyStep contained within the record.
+    #     """
+    #     return self.step.step_label
+
+    @property
     def walltime(self):
         """
         Get the requested wall time of the record instance.
@@ -321,6 +340,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # Member variables for execution.
         self._adapter = None
         self._description = OrderedDict()
+        self.linker = None
 
         # Generate tempdir (if specfied)
         if use_tmp:
@@ -519,7 +539,6 @@ class ExecutionGraph(DAG, PickleInterface):
                 continue
 
             # Record generates its own script.
-            record.setup_workspace()
             record.generate_script(adapter, self._tmp_dir)
 
     def _execute_record(self, record, adapter, restart=False):
@@ -549,6 +568,9 @@ class ExecutionGraph(DAG, PickleInterface):
             # Generate the script for execution on the fly.
             record.setup_workspace()    # Generate the workspace.
             record.generate_script(adapter, self._tmp_dir)
+            if self.linker:
+                LOGGER.info(f"CRK make_links: {self.linker.make_links}")
+                self.linker.link(record)
 
         if self.dry_run:
             record.mark_end(State.DRYRUN)

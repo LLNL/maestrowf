@@ -45,7 +45,7 @@ from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
-    start_process
+    start_process, Linker
 
 
 # Program Globals
@@ -263,11 +263,17 @@ def run_study(args):
         raise ArgumentError(_msg)
 
     # Set up the study workspace and configure it for execution.
+    linker = Linker(
+        make_links=args.make_links,
+        link_directory=args.link_directory,
+        link_template=args.link_template,
+        output_root=out_dir
+        )
     study.setup_workspace()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
+        dry_run=args.dry, linker=linker)
     study.setup_environment()
 
     if args.dry:
@@ -388,12 +394,12 @@ def setup_argparser():
                      "studies (NOTE: breaks commands that use parameter labels\n"
                      "to search directories). [Default: %(default)s]")
     run.add_argument("--make-links", action="store_true", default=False,
-                     help="Automatically make customizable, human readable \n"
+                     help="Automatically make customizable, human-readable \n"
                      "links to run directories. [Default: %(default)s]")
     run.add_argument(
         "--link-directory",
         type=str,
-        default="{{output_path}}/links",
+        default="{{spec_root}}/links",
         help="Jinja template for path where links to run directories are made\n"
         "[Default: %(default)s]")
 
@@ -405,7 +411,7 @@ def setup_argparser():
         help="Jinja template for links to run directories\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
-        "{{output_path}} - Output path for this maestro study\n"
+        "{{spec_root}} - Parent directory for this maestro study\n"
         "{{link_directory}} - Link directory for this maestro study\n"
         "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
         "{{instance}} - Maestro label for a set of parameters\n"

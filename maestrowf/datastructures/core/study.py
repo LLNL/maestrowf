@@ -339,7 +339,7 @@ class Study(DAG, PickleInterface):
         self.add_node(step.name, step)
         LOGGER.info(
             "Adding step '%s' to study '%s'...", step.name, self.name)
-        # Apply the environment to the incoming step.
+        # Apply the dag to the incoming step.
         step.__dict__ = \
             apply_function(step.__dict__, self.environment.apply_environment)
 
@@ -392,7 +392,7 @@ class Study(DAG, PickleInterface):
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False):
+                        dry_run=False, linker=None):
         """
         Perform initial configuration of a study. \
 
@@ -409,6 +409,7 @@ class Study(DAG, PickleInterface):
         ExecutionGraph dumps its information into a temporary directory. \
         :param dry_run: Boolean value that toggles dry run to just generate \
         study workspaces and scripts without execution or status checking. \
+        :param linker: Linker object.
         :returns: True if the Study is successfully setup, False otherwise. \
         """
 
@@ -418,6 +419,10 @@ class Study(DAG, PickleInterface):
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
         self._dry_run = dry_run
+        self.linker = linker
+        make_links = False
+        if linker:
+            make_links = linker.make_links
 
         LOGGER.info(
             "\n------------------------------------------\n"
@@ -427,10 +432,11 @@ class Study(DAG, PickleInterface):
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
             "Dry run enabled =           %s\n"
+            "Make links enabled =        %s\n"
             "Output path =               %s\n"
             "------------------------------------------",
             submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, self._out_path
+            use_tmp, hash_ws, dry_run, make_links, self._out_path
         )
 
         self.is_configured = True
@@ -841,6 +847,7 @@ class Study(DAG, PickleInterface):
             use_tmp=self._use_tmp, dry_run=self._dry_run)
         dag.add_description(**self.description)
         dag.log_description()
+        dag.linker = self.linker
 
         # Because we're working within a Study class whose steps have already
         # been verified to not contain a cycle, we can override the check for

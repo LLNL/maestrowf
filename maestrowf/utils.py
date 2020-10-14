@@ -279,6 +279,35 @@ def create_dictionary(list_keyvalues, token=":"):
 
     return _dict
 
+class Linker:
+    """Utility class to make links."""
+
+    def __init__(
+        self, make_links=False, link_directory=None, link_template=None,
+        output_root=None):
+        """
+        Initialize a new Linker class instance.
+
+        :param make_links: Enable customizable, human-readable links to
+            run directories.
+        :param link_directory: Jinja template for path where links to
+            run directories are made.
+        :param link_template: Jinja template for links to run directories.
+        """
+        self.make_links = make_links
+        self.link_directory = link_directory
+        self.link_template = link_template
+        self.output_root = output_root
+
+    def link(self, record):
+        if not self.make_links:
+            return
+        LOGGER.info(f"CRK make_links (link): {self.make_links}")
+        LOGGER.info(f"CRK output_root (link): {self.output_root}")
+        LOGGER.info(f"CRK link_directory (link): {self.link_directory}")
+        LOGGER.info("CRK Creating directory: " + record.workspace.value)
+        LOGGER.info("CRK Step name: " + record.name)
+        LOGGER.info("CRK Step label: " + record.step_label)
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""
