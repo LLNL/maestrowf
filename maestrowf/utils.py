@@ -30,20 +30,21 @@
 """A collection of more general utility functions."""
 
 from collections import OrderedDict
-import coloredlogs
 import logging
 import os
 import string
 from subprocess import PIPE, Popen
-from six.moves.urllib.request import urlopen
-from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
-from jinja2 import Template
 import re
-from filelock import SoftFileLock as FileLock
-from filelock import Timeout
 import random
+
+import coloredlogs
+
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.error import HTTPError, URLError
+from jinja2 import Template
+from filelock import SoftFileLock as FileLock
 
 LOGGER = logging.getLogger(__name__)
 
@@ -284,6 +285,7 @@ def create_dictionary(list_keyvalues, token=":"):
 
     return _dict
 
+
 def next_path(path_pattern):
     """
     Finds the next free path in an sequentially named list of files
@@ -312,7 +314,9 @@ def next_path(path_pattern):
 
     return path_pattern % b
 
+
 def splitall(path):
+    """https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html"""
     allparts = []
     while 1:
         parts = os.path.split(path)
@@ -327,8 +331,9 @@ def splitall(path):
             allparts.insert(0, parts[1])
     return allparts
 
+
 def recursive_render(tpl, values):
-    #https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
+    """https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content"""
     prev = tpl
     while True:
         curr = Template(prev).render(values)
@@ -336,6 +341,7 @@ def recursive_render(tpl, values):
             prev = curr
         else:
             return curr
+
 
 class Linker:
     """Utility class to make links."""
@@ -361,6 +367,8 @@ class Linker:
         self.output_name = output_name
         self.output_root = output_root
 
+    # @TODO: fix pylint: error E0213
+    #        Method should have "self" as first argument (no-self-argument)
     def split_indexed_directory(self, template_string):
         """
         Returns a tuple of a indexed_directory prefix, suffix & template
@@ -384,27 +392,24 @@ class Linker:
         dir_list = splitall(template_string)
         indexed_directory_prefix = []
         indexed_directory_template = ""
-        indexed_directory_suffix = []  
+        indexed_directory_suffix = []
         while not re.match(r".*{{INDEX}}.*", dir_list[0]):
             indexed_directory_prefix.append(dir_list.pop(0))
         if dir_list:
             indexed_directory_template = dir_list.pop(0)
         if dir_list:
             while dir_list and not re.match(r".*{{INDEX}}.*", dir_list[0]):
-                indexed_directory_suffix.append(dir_list.pop(0)) 
-            if dir_list:   
+                indexed_directory_suffix.append(dir_list.pop(0))
+            if dir_list:
                 raise(ValueError(
-                    "at most one '{{INDEX}}' can be in link path template string")) 
-        return(indexed_directory_prefix, indexed_directory_suffix,
+                    "at most one '{{INDEX}}' can be in "
+                    "link path template string"))
+        return(
+            indexed_directory_prefix, indexed_directory_suffix,
             indexed_directory_template)
 
-    def link(self, record):
-        # @TODO: test cases: index in front, middle, end, no index, two indexes
-        #        with and without hash
-        if not self.make_links_flag:
-            return
-
-        # build replacements dictionary
+    def build_replacements(self, record):
+        """ build replacements dictionary """
         replacements = {}
         # t = Template(self.link_directory)
         # replacements["link_directory"] = t.render(replacements)
@@ -414,8 +419,6 @@ class Linker:
             replacements['indexed_directory_suffix'],
             replacements['indexed_directory_template']) = (
             self.split_indexed_directory(self.link_template))
-        LOGGER.info(f"CRKx record.step_label: {record.step_label}")
-        LOGGER.info(f"CRKx record.name: {record.name}")
         if record.step_label:
             replacements['step'] = record.step_label
             replacements['instance'] = (
@@ -432,7 +435,63 @@ class Linker:
         replacements['indexed_directory_suffix'] = [
             recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_suffix']]
-        LOGGER.info(f"CRK suffix (1): {replacements['indexed_directory_suffix']}")
+        return replacements
+
+    def read_or_make_index_directory(self, replacements):
+        """ helper function """
+        maestro_index_file_path = (
+            os.path.join(
+                self.output_root,
+                self.output_name,
+                self.maestro_index_file))
+        if os.path.exists(maestro_index_file_path):
+            with open(maestro_index_file_path, "r") as f:
+                index_directory_string = f.readlines()[0].strip(" \n")
+        else:
+            index_directory_template_string = (
+                replacements['indexed_directory_template'].replace(
+                    '{{INDEX}}', self.index_format))
+            success = False
+            timeout = time.time() + self.mkdir_timeout
+            lock = FileLock(
+                maestro_index_file_path + ".lock",
+                timeout=2*self.mkdir_timeout)
+            with lock:
+                while not success and time.time() < timeout:
+                    try:
+                        index_directory_string = next_path(os.path.join(
+                            replacements['directory_prefix_path'],
+                            index_directory_template_string
+                            ))
+                        os.makedirs(index_directory_string)
+                        with open(maestro_index_file_path, "w") as f:
+                            f.write(index_directory_string + "\n")
+                        success = True
+
+                    except OSError as e:
+                        if e.args[1] == 'File exists':
+                            time.sleep(random.uniform(
+                                0.05*self.mkdir_timeout,
+                                0.10*self.mkdir_timeout))
+                        elif e.args[1] == 'Permission denied':
+                            raise(ValueError(
+                                "Could not create a unique directory " +
+                                "because of a " +
+                                "permissions error.\n\n" +
+                                "Attempted path: " + index_directory_string +
+                                "\nTemplate string: " + self.link_template
+                                ))
+                        else:
+                            raise(ValueError(e))
+        return index_directory_string
+
+    def link(self, record):
+        # @TODO: test cases: index in front, middle, end, no index, two indexes
+        #        with and without hash
+        if not self.make_links_flag:
+            return
+
+        replacements = self.build_replacements(record)
 
         # make link directories
         if len(replacements['indexed_directory_prefix']) == 0:
@@ -443,71 +502,17 @@ class Linker:
 
         # len(replacements['indexed_directory_prefix']) must be 1
         # because of error check in split_indexed_directory
-        directory_prefix_path = os.path.join(
-            *replacements['indexed_directory_prefix'])
+        replacements['directory_prefix_path'] = (
+            os.path.join(
+                *replacements['indexed_directory_prefix']))
         if replacements['indexed_directory_template']:
-            maestro_index_file_path = (
-                os.path.join(
-                    self.output_root,
-                    self.output_name, 
-                    self.maestro_index_file))
-            if os.path.exists(maestro_index_file_path):
-                with open(maestro_index_file_path, "r") as f:
-                    index_directory_string = f.readlines()[0].strip(" \n")
-                    LOGGER.info(
-                        f"CRK index_directory_string (from disk): "
-                        f"{index_directory_string}")
-            else:
-                index_directory_template_string = (
-                    replacements['indexed_directory_template'].replace(
-                        '{{INDEX}}', self.index_format))
-                success = False
-                timeout = time.time() + self.mkdir_timeout
-                LOGGER.info(f"CRK maestro_index_file_path: {maestro_index_file_path}")
-                lock = FileLock(
-                    maestro_index_file_path + ".lock", 
-                    timeout=2*self.mkdir_timeout)
-                with lock:
-                    while not success and time.time() < timeout:
-                        try:
-                            index_directory_string = next_path(os.path.join(
-                                directory_prefix_path,
-                                index_directory_template_string
-                                ))
-                            os.makedirs(index_directory_string)
-                            with open(maestro_index_file_path, "w") as f:
-                                f.write(index_directory_string + "\n")
-                            LOGGER.info(
-                                f"CRK index_directory_string (from scratch): "
-                                f"{index_directory_string}")
-                            success = True
-                        except OSError as e:
-                            if e.args[1] == 'File exists':
-                                time.sleep(random.uniform(
-                                    0.05*self.mkdir_timeout,
-                                    0.10*self.mkdir_timeout))
-                            elif e.args[1] == 'Permission denied':
-                                raise(ValueError(
-                                    "Could not create a unique directory because of a " +
-                                    "permissions error.\n\n" +
-                                    "Attempted path: " + path + "\n" +
-                                    "Template string: " + self.link_template 
-                                    ))
-                            else:
-                                raise(ValueError(e))
-            LOGGER.info(
-                f"CRK suffix (2): "
-                f">>{replacements['indexed_directory_suffix']}<<")
-            LOGGER.info(
-                f"CRK index_directory_string (2): "
-                f">>{index_directory_string}<<")
-            path = os.path.join(index_directory_string, 
+            index_directory_string = (
+                self.read_or_make_index_directory(replacements))
+            path = os.path.join(
+                index_directory_string,
                 *replacements['indexed_directory_suffix'])
-            LOGGER.info(f"CRK make_links_path: >>{path}<<")
         else:
-            path = directory_prefix_path
-        LOGGER.info(f"CRKx suffix (3): {replacements['indexed_directory_suffix']}")
-        LOGGER.info(f"CRK make_links_path: {path}")
+            path = replacements['directory_prefix_path']
         try:
             # make full path; then make link
             os.makedirs(path)
@@ -518,33 +523,17 @@ class Linker:
                 raise(ValueError(
                     "Could not create a unique directory.\n\n" +
                     "Attempted path: " + path + "\n" +
-                    "Template string: " + self.link_template)) 
+                    "Template string: " + self.link_template))
             elif e.args[1] == 'Permission denied':
                 raise(ValueError(
                     "Could not create a unique directory because of a " +
                     "permissions error.\n\n" +
                     "Attempted path: " + path + "\n" +
-                    "Template string: " + self.link_template 
+                    "Template string: " + self.link_template
                     ))
             else:
                 raise(ValueError)
 
-
-        LOGGER.info(f"CRK make_links_flag (link): {self.make_links_flag}")
-        LOGGER.info(f"CRK PATH: {path}")
-        LOGGER.info(f"CRK output_root (link): {self.output_root}")
-        LOGGER.info(f"CRK link_directory (template): {self.link_directory}")
-        LOGGER.info(f"CRK link_template (template): {self.link_template}")
-        LOGGER.info(f"CRK link_directory (full): {replacements['link_directory']}")
-        # LOGGER.info(f"CRK link_path (full): {t.render(replacements)}")
-        LOGGER.info("CRK Creating directory: " + record.workspace.value)
-        LOGGER.info("CRK Step label: " + record.step_label)
-        LOGGER.info("CRK Step name: " + record.name)
-        LOGGER.info(
-            f"CRK indexed_directory_prefix: "
-            f"{os.path.join(*replacements['indexed_directory_prefix'])}")
-        # LOGGER.info(f"CRK indexed_directory_template: {replacements["indexed_directory_suffix"]}" )
-        # LOGGER.info(f"CRK indexed_directory_suffix: {indexed_directory_suffix}" )
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""

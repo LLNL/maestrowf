@@ -418,10 +418,6 @@ def setup_argparser():
         "{{instance}} - Maestro label for a set of parameters\n"
         "               (e.g. 'X1.5.X2.5.X3.20')\n"
         "               [maximum length: 255 characters]\n"
-        # "{{instance_variables_only}} - Maestro label for a set of parameters\n"
-        # "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
-        # "               fixed for all runs (constants).\n"
-        # "               [maximum length: 255 characters]\n"
         "{{step}} - Maestro label for a given step (e.g. 'run')\n"
         "{{INDEX}} - Unique number for each maestro execution (e.g. '0001')")
 
