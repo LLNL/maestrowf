@@ -29,14 +29,16 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
-import jsonschema
+
 import logging
 import os
 import shutil
-import six
 import sys
-import tabulate
 import time
+
+import tabulate
+import six
+import jsonschema
 
 from maestrowf import __version__
 from maestrowf.conductor import Conductor
