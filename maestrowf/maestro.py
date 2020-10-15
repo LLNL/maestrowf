@@ -267,6 +267,7 @@ def run_study(args):
         make_links_flag=args.make_links,
         link_directory=args.link_directory,
         link_template=args.link_template,
+        output_name=out_name,
         output_root=out_dir
         )
     study.setup_workspace()
@@ -417,12 +418,12 @@ def setup_argparser():
         "{{instance}} - Maestro label for a set of parameters\n"
         "               (e.g. 'X1.5.X2.5.X3.20')\n"
         "               [maximum length: 255 characters]\n"
-        "{{instance_variables_only}} - Maestro label for a set of parameters\n"
-        "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
-        "               fixed for all runs (constants).\n"
-        "               [maximum length: 255 characters]\n"
+        # "{{instance_variables_only}} - Maestro label for a set of parameters\n"
+        # "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
+        # "               fixed for all runs (constants).\n"
+        # "               [maximum length: 255 characters]\n"
         "{{step}} - Maestro label for a given step (e.g. 'run')\n"
-        "{{INDEX}} - Unique number for labeling runs (e.g. '0001')")
+        "{{INDEX}} - Unique number for each maestro execution (e.g. '0001')")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(

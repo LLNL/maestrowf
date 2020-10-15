@@ -15,12 +15,18 @@ study:
           cmd: |
             echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
 
+    - name: whats_up_world
+      description: Say what's up to someone!
+      run:
+          cmd: |
+            echo "What's up, $(NAME)!" > whats_up.txt
+
     - name: bye_world
       description: Say bye to someone!
       run:
           cmd: |
             echo "Bye, World!" > bye.txt
-          depends: [hello_world]
+          depends: [hello_world_*]
 
 global.parameters:
     NAME:

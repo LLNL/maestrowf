@@ -41,6 +41,9 @@ import time
 import datetime
 from jinja2 import Template
 import re
+from filelock import SoftFileLock as FileLock
+from filelock import Timeout
+import random
 
 LOGGER = logging.getLogger(__name__)
 
@@ -338,10 +341,11 @@ class Linker:
     """Utility class to make links."""
     index_format = '%04d'
     mkdir_timeout = 5  # seconds
+    maestro_index_file = 'maestro_index_file'
 
     def __init__(
         self, make_links_flag=False, link_directory=None, link_template=None,
-        output_root=None):
+        output_name=None, output_root=None):
         """
         Initialize a new Linker class instance.
 
@@ -354,6 +358,7 @@ class Linker:
         self.make_links_flag = make_links_flag
         self.link_directory = link_directory
         self.link_template = link_template
+        self.output_name = output_name
         self.output_root = output_root
 
     def split_indexed_directory(self, template_string):
@@ -395,8 +400,10 @@ class Linker:
 
     def link(self, record):
         # @TODO: test cases: index in front, middle, end, no index, two indexes
+        #        with and without hash
         if not self.make_links_flag:
             return
+
         # build replacements dictionary
         replacements = {}
         # t = Template(self.link_directory)
@@ -407,18 +414,25 @@ class Linker:
             replacements['indexed_directory_suffix'],
             replacements['indexed_directory_template']) = (
             self.split_indexed_directory(self.link_template))
-        replacements['step'] = record.step_label
-        replacements['instance'] = (
-            record.name.replace(record.step_label + '_', ''))
+        LOGGER.info(f"CRKx record.step_label: {record.step_label}")
+        LOGGER.info(f"CRKx record.name: {record.name}")
+        if record.step_label:
+            replacements['step'] = record.step_label
+            replacements['instance'] = (
+                record.name.replace(record.step_label + '_', ''))
+        else:
+            replacements['step'] = record.name
+            replacements['instance'] = "all_records"
         replacements['link_directory'] = (
             recursive_render(
                 self.link_directory, replacements))
         replacements['indexed_directory_prefix'] = [
-            recursive_render(template_string, replacements) 
+            recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_prefix']]
         replacements['indexed_directory_suffix'] = [
-            recursive_render(template_string, replacements) 
+            recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_suffix']]
+        LOGGER.info(f"CRK suffix (1): {replacements['indexed_directory_suffix']}")
 
         # make link directories
         if len(replacements['indexed_directory_prefix']) == 0:
@@ -426,39 +440,74 @@ class Linker:
                 "link_directory (" + self.link_directory + ")" +
                 "and link_template (" + self.link_template + ")" +
                 "do not result in a valid path for links."))
+
+        # len(replacements['indexed_directory_prefix']) must be 1
+        # because of error check in split_indexed_directory
         directory_prefix_path = os.path.join(
             *replacements['indexed_directory_prefix'])
         if replacements['indexed_directory_template']:
-            index_directory_template_string = (
-                replacements['indexed_directory_template'].replace(
-                    '{{INDEX}}', self.index_format))
-            success = False
-            timeout = time.time() + self.mkdir_timeout
-            while not success and time.time() < timeout:
-                try:
-                    path = next_path(os.path.join(
-                        directory_prefix_path,
-                        index_directory_template_string
-                        ))
-                    os.makedirs(path)
-                    success = True
-                except OSError as e:
-                    if e.args[1] == 'File exists':
-                        time.sleep(random.uniform(0.5, 1.5))
-                    elif e.args[1] == 'Permission denied':
-                        raise(ValueError(
-                            "Could not create a unique directory because of a " +
-                            "permissions error.\n\n" +
-                            "Attempted path: " + path + "\n" +
-                            "Template string: " + self.link_template 
-                            ))
-                    else:
-                        raise(ValueError(e))
-            path = os.path.join(path, *replacements['indexed_directory_suffix'])
+            maestro_index_file_path = (
+                os.path.join(
+                    self.output_root,
+                    self.output_name, 
+                    self.maestro_index_file))
+            if os.path.exists(maestro_index_file_path):
+                with open(maestro_index_file_path, "r") as f:
+                    index_directory_string = f.readlines()[0].strip(" \n")
+                    LOGGER.info(
+                        f"CRK index_directory_string (from disk): "
+                        f"{index_directory_string}")
+            else:
+                index_directory_template_string = (
+                    replacements['indexed_directory_template'].replace(
+                        '{{INDEX}}', self.index_format))
+                success = False
+                timeout = time.time() + self.mkdir_timeout
+                LOGGER.info(f"CRK maestro_index_file_path: {maestro_index_file_path}")
+                lock = FileLock(
+                    maestro_index_file_path + ".lock", 
+                    timeout=2*self.mkdir_timeout)
+                with lock:
+                    while not success and time.time() < timeout:
+                        try:
+                            index_directory_string = next_path(os.path.join(
+                                directory_prefix_path,
+                                index_directory_template_string
+                                ))
+                            os.makedirs(index_directory_string)
+                            with open(maestro_index_file_path, "w") as f:
+                                f.write(index_directory_string + "\n")
+                            LOGGER.info(
+                                f"CRK index_directory_string (from scratch): "
+                                f"{index_directory_string}")
+                            success = True
+                        except OSError as e:
+                            if e.args[1] == 'File exists':
+                                time.sleep(random.uniform(
+                                    0.05*self.mkdir_timeout,
+                                    0.10*self.mkdir_timeout))
+                            elif e.args[1] == 'Permission denied':
+                                raise(ValueError(
+                                    "Could not create a unique directory because of a " +
+                                    "permissions error.\n\n" +
+                                    "Attempted path: " + path + "\n" +
+                                    "Template string: " + self.link_template 
+                                    ))
+                            else:
+                                raise(ValueError(e))
+            LOGGER.info(
+                f"CRK suffix (2): "
+                f">>{replacements['indexed_directory_suffix']}<<")
+            LOGGER.info(
+                f"CRK index_directory_string (2): "
+                f">>{index_directory_string}<<")
+            path = os.path.join(index_directory_string, 
+                *replacements['indexed_directory_suffix'])
+            LOGGER.info(f"CRK make_links_path: >>{path}<<")
         else:
             path = directory_prefix_path
-
-        # make link
+        LOGGER.info(f"CRKx suffix (3): {replacements['indexed_directory_suffix']}")
+        LOGGER.info(f"CRK make_links_path: {path}")
         try:
             # make full path; then make link
             os.makedirs(path)
