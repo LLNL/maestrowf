@@ -169,6 +169,7 @@ def run_study(args):
 
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
+    out_name = ""
     if args.out:
         # If out is specified in the args, ignore OUTPUT_PATH.
         output_path = os.path.abspath(args.out)
