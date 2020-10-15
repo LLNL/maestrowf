@@ -388,7 +388,7 @@ def recursive_render(tpl, values):
     #https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
     prev = tpl
     while True:
-        curr = jinja2.Template(prev).render(**values)
+        curr = Template(prev).render(values)
         if curr != prev:
             prev = curr
         else:
@@ -414,7 +414,7 @@ class Linker:
         self.link_template = link_template
         self.output_root = output_root
 
-    def split_indexed_directory(template_string):
+    def split_indexed_directory(self, template_string):
         """
         Returns a tuple of a indexed_directory prefix, suffix & template
 
@@ -455,44 +455,59 @@ class Linker:
 
         #     "[Default: %(default)s]\n \n"
         # "Currently supported Jinja variables:\n"
-        # "{{output_root}} - Parent directory for this maestro study\n"
+        # "*{{output_root}} - Parent directory for this maestro study\n"
         # "{{link_directory}} - Link directory for this maestro study\n"
-        # "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
-        # "{{instance}} - Maestro label for a set of parameters\n"
+        # "*{{date}} - Human-readable date (e.g. '2020_07_28')\n"
+        # "*{{instance}} - Maestro label for a set of parameters\n"
         # "               (e.g. 'X1.5.X2.5.X3.20')\n"
         # "               [maximum length: 255 characters]\n"
         # "{{instance_variables_only}} - Maestro label for a set of parameters\n"
         # "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
         # "               fixed for all runs (constants).\n"
         # "               [maximum length: 255 characters]\n"
-        # "{{step}} - Maestro label for a given step (e.g. 'run')\n"
+        # "*{{step}} - Maestro label for a given step (e.g. 'run')\n"
         # "{{INDEX}} - Unique number for labeling runs (e.g. '0001')")
 
     def link(self, record):
         if not self.make_links_flag:
             return
-        replacements = {"output_root": self.output_root}
-        t = Template(self.link_directory)
-        replacements["link_directory"] = t.render(replacements)
-        replacements["date"] = time.strftime("%Y-%m-%d")
-        (replacements["indexed_directory_prefix"],
-            replacements["indexed_directory_suffix"],
-            replacements["indexed_directory_template"]) = (
-            split_indexed_directory(link_directory_template))
-        
-        t = Template(self.link_template)
+        replacements = {}
+        # t = Template(self.link_directory)
+        # replacements["link_directory"] = t.render(replacements)
+        replacements['output_root'] = self.output_root
+        replacements['date'] = time.strftime('%Y-%m-%d')
+        (replacements['indexed_directory_prefix'],
+            replacements['indexed_directory_suffix'],
+            replacements['indexed_directory_template']) = (
+            self.split_indexed_directory(self.link_template))
+        replacements['step'] = record.step_label
+        replacements['instance'] = (
+            record.name.replace(record.step_label + '_', ''))
+        replacements['link_directory'] = (
+            recursive_render(
+                self.link_directory, replacements))
+        replacements['indexed_directory_prefix'] = [
+            recursive_render(template_string, replacements) 
+            for template_string in replacements['indexed_directory_prefix']]
+        # replacements['indexed_directory_suffix'] = (
+        #     recursive_render(
+        #         replacements['indexed_directory_suffix'],
+        #         replacements))
+
         LOGGER.info(f"CRK make_links_flag (link): {self.make_links_flag}")
         LOGGER.info(f"CRK output_root (link): {self.output_root}")
         LOGGER.info(f"CRK link_directory (template): {self.link_directory}")
         LOGGER.info(f"CRK link_template (template): {self.link_template}")
         LOGGER.info(f"CRK link_directory (full): {replacements['link_directory']}")
-        LOGGER.info(f"CRK link_path (full): {t.render(replacements)}")
+        # LOGGER.info(f"CRK link_path (full): {t.render(replacements)}")
         LOGGER.info("CRK Creating directory: " + record.workspace.value)
         LOGGER.info("CRK Step label: " + record.step_label)
         LOGGER.info("CRK Step name: " + record.name)
-        LOGGER.info(f"CRK indexed_directory_prefix: {indexed_directory_prefix}"  )
-        LOGGER.info(f"CRK indexed_directory_template: {indexed_directory_template}" )
-        LOGGER.info(f"CRK indexed_directory_suffix: {indexed_directory_suffix}" )
+        LOGGER.info(
+            f"CRK indexed_directory_prefix: "
+            f"{replacements['indexed_directory_prefix']}")
+        # LOGGER.info(f"CRK indexed_directory_template: {replacements["indexed_directory_suffix"]}" )
+        # LOGGER.info(f"CRK indexed_directory_suffix: {indexed_directory_suffix}" )
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""
