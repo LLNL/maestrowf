@@ -75,7 +75,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         # NOTE: The _batch member should be used to store persistent batching
         # parameters. The entries in this dictionary are meant to capture the
         # the base settings for submission to a batch. This member variables
-        # should never be used publicallly outside of an instance.
+        # should never be used publicly outside of an instance.
 
         # Call super to set self._exec
         super(SchedulerScriptAdapter, self).__init__(**kwargs)
@@ -105,7 +105,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
     @abstractmethod
     def get_parallelize_command(self, procs, nodes, **kwargs):
         """
-        Generate the parallelization segement of the command line.
+        Generate the parallelization segment of the command line.
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
@@ -117,7 +117,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
     def _substitute_parallel_command(self, step_cmd, **kwargs):
         """
-        Substitute parallelized segements into a specified command.
+        Substitute parallelized segments into a specified command.
 
         :param step_cmd: Command string to parallelize.
         :param nodes: Total number of requested nodes.

@@ -230,7 +230,7 @@ class _StepRecord:
 
         :returns: The name of the StudyStep contained within the record.
         """
-        return self.step.name
+        return self.step.real_name
 
     @property
     def step_label(self):
@@ -397,10 +397,10 @@ class ExecutionGraph(DAG, PickleInterface):
         :param restart_limit: Upper limit on the number of restart attempts.
         """
         data = {
-                    "step": step,
-                    "state": State.INITIALIZED,
-                    "workspace": workspace,
-                    "restart_limit": restart_limit
+                    "step":          step,
+                    "state":         State.INITIALIZED,
+                    "workspace":     workspace,
+                    "restart_limit": restart_limit,
                 }
         record = _StepRecord(**data)
         self._dependencies[name] = set()
@@ -613,14 +613,20 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
-        header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
-                 ",Submit Time,End Time,Number Restarts"
+        header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
+                 "Start Time,Submit Time,End Time,Number Restarts"
         status = [header]
         keys = set(self.values.keys()) - set(["_source"])
         for key in keys:
             value = self.values[key]
+
+            jobid_str = "--"
+            if value.jobid:
+                jobid_str = str(value.jobid[-1])
+
             _ = [
-                    value.name, os.path.split(value.workspace.value)[1],
+                    value.name, jobid_str,
+                    os.path.split(value.workspace.value)[1],
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)

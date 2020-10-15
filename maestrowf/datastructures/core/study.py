@@ -70,6 +70,7 @@ class StudyStep:
         self.name = ""
         self.step_label = ""
         self.description = ""
+        self.nickname = ""
         self.run = {
                         "cmd":              "",
                         "depends":          "",
@@ -98,6 +99,35 @@ class StudyStep:
 
         return self.__ne__(tmp), tmp
 
+    @property
+    def name(self):
+        """
+        Get the name to assign to a task for this step.
+
+        :returns: A utf-8 formatted string of the task name.
+        """
+        if self.nickname:
+            return self.nickname
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """
+        Set the name of a StudyStep instance.
+
+        :param value: A string value representing the name to give the step.
+        """
+        self._name = value
+
+    @property
+    def real_name(self):
+        """
+        Get the real name of the step (ignore nickname).
+
+        :returns: A string of the true name of a StudyStep instance.
+        """
+        return self._name
+
     def __eq__(self, other):
         """
         Equality operator for the StudyStep class.
@@ -106,7 +136,7 @@ class StudyStep:
         : returns: True if other is equal to self, False otherwise.
         """
         if isinstance(other, self.__class__):
-            # This works because the classes are currently intefaces over
+            # This works because the classes are currently interfaces over
             # internals that are all based on Python builtin classes.
             # NOTE: This method will need to be reworked if something more
             # complex is done with the class.
@@ -336,7 +366,7 @@ class Study(DAG, PickleInterface):
         :param step: A StudyStep instance to be added to the Study instance.
         """
         # Add the node to the DAG.
-        self.add_node(step.name, step)
+        self.add_node(step.real_name, step)
         LOGGER.info(
             "Adding step '%s' to study '%s'...", step.name, self.name)
         # Apply the dag to the incoming step.
@@ -347,17 +377,17 @@ class Study(DAG, PickleInterface):
         if "depends" in step.run and step.run["depends"]:
             for dependency in step.run["depends"]:
                 LOGGER.info("{0} is dependent on {1}. Creating edge ("
-                            "{1}, {0})...".format(step.name, dependency))
+                            "{1}, {0})...".format(step.real_name, dependency))
                 if "*" not in dependency:
-                    self.add_edge(dependency, step.name)
+                    self.add_edge(dependency, step.real_name)
                 else:
                     self.add_edge(
                         re.sub(ALL_COMBOS, "", dependency),
-                        step.name
+                        step.real_name
                     )
         else:
             # Otherwise, if no other dependency, just execute the step.
-            self.add_edge(SOURCE, step.name)
+            self.add_edge(SOURCE, step.real_name)
 
     def walk_study(self, src=SOURCE):
         """
@@ -632,11 +662,15 @@ class Study(DAG, PickleInterface):
                                 "**********************************",
                                 str(combo))
                     # Compute this step's combination name and workspace.
+                    nickname = None
                     combo_str = combo.get_param_string(self.used_params[step])
+                    # We must encode explicitly to utf-8
+                    # combo_str = combo_str.encode("utf-8")
                     if self._hash_ws:
+                        nickname = md5(combo_str.encode("utf-8")).hexdigest()
                         workspace = make_safe_path(
                                         self._out_path,
-                                        *[step, md5(combo_str).hexdigest()])
+                                        *[step, nickname])
                     else:
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
@@ -653,6 +687,7 @@ class Study(DAG, PickleInterface):
                     modified, step_exp = node.apply_parameters(combo)
                     step_exp.name = combo_str
                     step_exp.step_label = step
+                    step_exp.nickname = nickname
 
                     # Substitute workspaces into the combination.
                     cmd = step_exp.run["cmd"]
@@ -693,7 +728,8 @@ class Study(DAG, PickleInterface):
                     step_exp.run["cmd"] = cmd
                     step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
-                    dag.add_step(step_exp.name, step_exp, workspace, rlimit)
+                    dag.add_step(
+                        step_exp.real_name, step_exp, workspace, rlimit)
 
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can
@@ -770,7 +806,7 @@ class Study(DAG, PickleInterface):
             used_spaces = re.findall(WSREGEX, cmd)
             for match in used_spaces:
                 # In this case we don't need to look for any parameters, or
-                # combination depdendent ("funnel") steps. It's a simple sub.
+                # combination dependent ("funnel") steps. It's a simple sub.
                 LOGGER.info("Workspace found -- %s", match)
                 workspace_var = "$({}.workspace)".format(match)
                 ws = self.workspaces[match]

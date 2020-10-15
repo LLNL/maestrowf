@@ -31,7 +31,7 @@
 The core abstract APIs that define various class behaviors.
 
 This module contains all of the abstract classes and APIs for defining objects.
-Abstracts include abstract data stuctures (like a graph), APIs for concepts
+Abstracts include abstract data structures (like a graph), APIs for concepts
 such as queueing adapters and environment APIs, as well as fundamental data
 structures.
 """

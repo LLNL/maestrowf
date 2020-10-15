@@ -32,11 +32,6 @@ import getpass
 import logging
 import os
 import re
-# In order to support Python2.7, we need to catch the import error.
-try:
-    from collections import ChainMap
-except ImportError:
-    from chainmap import ChainMap
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
@@ -73,10 +68,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
+        self.add_batch_parameter("nodes", kwargs.pop("nodes", ""))
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
-        self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
         # Check for procs separately, as we don't want it in the header if it's
@@ -99,6 +94,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "gpus": "#SBATCH --gres=gpu:{gpus}"
         }
 
+        self._ntask_header = "#SBATCH --ntasks={procs}"
+        self._exclusive = "#SBATCH --exclusive"
+
         self._cmd_flags = {
             "cmd": "srun",
             "depends": "--dependency",
@@ -106,6 +104,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "nodes": "-N",
             "cores per task": "-c",
         }
+
+        self._extension = ".slurm.sh"
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
@@ -116,7 +116,28 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
             the parameter step.
         """
-        resources = ChainMap(step.run, self._batch)
+
+        resources = {}
+        resources.update(self._batch)
+        procs_in_batch = bool("procs" in resources)
+        resources.update(
+            {
+                resource: value for (resource, value) in step.run.items()
+                if value
+            }
+        )
+        # If neither Procs nor Nodes exist, throw an error
+        procs = resources.get("procs")
+        nodes = resources.get("nodes")
+
+        if not procs and not nodes:
+            err_msg = \
+                'No explicit resources specified in {}. At least one' \
+                ' of "procs" or "nodes" must be set to a non-zero' \
+                ' value.'.format(step.name)
+            LOGGER.error(err_msg)
+            raise RuntimeError(err_msg)
+
         resources["job-name"] = step.name.replace(" ", "_")
         resources["comment"] = step.description.replace("\n", " ")
 
@@ -128,14 +149,12 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             if resources[key]:
                 modified_header.append(value.format(**resources))
 
-        if "procs" in self._batch:
-            modified_header.append(
-                "#SBATCH --ntasks={}".format(resources["procs"])
-            )
+        if procs_in_batch or not nodes:
+            modified_header.append(self._ntask_header.format(**resources))
 
         exclusive = resources.get("exclusive", False)
         if exclusive:
-            modified_header.append("#SBATCH --exclusive")
+            modified_header.append(self._exclusive)
 
         return "\n".join(modified_header)
 
@@ -167,7 +186,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         for key in supported:
             value = kwargs.get(key)
             if key not in self._cmd_flags:
-                LOGGER.warning("'%s' is not supported -- ommitted.", key)
+                LOGGER.warning("'%s' is not supported -- omitted.", key)
                 continue
             if value:
                 args += [
@@ -378,3 +397,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension
