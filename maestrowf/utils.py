@@ -309,66 +309,6 @@ def next_path(path_pattern):
 
     return path_pattern % b
 
-def foo():
-    # there are two template cases (with and without {{INDEX}})
-    INDEX_locations = [
-        m.start() for m in
-        re.finditer('{{INDEX}}', link_directory_template_string)
-        ]
-    if len(INDEX_locations) > 1:
-        raise(ValueError(
-            "at most one '{{INDEX}}' can be in link path template string"))
-    if len(INDEX_locations) == 1:
-        (defs["indexed_directory_prefix"],
-            defs["indexed_directory_suffix"],
-            defs["indexed_directory_template"]) = (
-         maestro_split_index_directory(link_directory_template, defs))
-
-        indexed_directory = os.path.join(
-            output_path_root,
-            defs["prefix_date-time"],
-            "run_directory_link")
-
-        success = False
-        if not os.path.lexists(indexed_directory):
-            timeout = time.time() + mkdir_timeout
-            while not success and time.time() < timeout:
-                try:
-                    path = next_path(os.path.join(
-                        defs["indexed_directory_prefix"],
-                        defs["indexed_directory_template"]
-                        ))
-                    os.makedirs(path)
-                    success = True
-                except OSError as e:
-                    if e.args[1] == 'File exists':
-                        time.sleep(random.uniform(0.5, 1.5))
-                    elif e.args[1] == 'Permission denied':
-                        raise(ValueError(
-                            "Could not create a unique directory because of a"
-                            " permissions error.\n\n"
-                            f"Attempted path: {path}\n"
-                            f"Template string: "
-                            f"{link_directory_template_string}"
-                            ))
-                    else:
-                        raise(ValueError(e))
-
-                if time.time() > timeout:
-                    raise(ValueError(
-                        f"Could not create unique directory in {mkdir_timeout}"
-                        " seconds.\n\n"
-                        "Attempted path: {path}\n"
-                        "Template string: {link_directory_template_string}"))
-            os.symlink(path, indexed_directory)
-
-        target_directory = os.path.join(
-            indexed_directory,
-            defs["indexed_directory_suffix"])
-        os.makedirs(os.path.dirname(target_directory), exist_ok=True)
-        if not os.path.lexists(target_directory):
-            os.symlink(dir_path_full, target_directory)
-
 def splitall(path):
     allparts = []
     while 1:
@@ -396,6 +336,8 @@ def recursive_render(tpl, values):
 
 class Linker:
     """Utility class to make links."""
+    index_format = '%04d'
+    mkdir_timeout = 5  # seconds
 
     def __init__(
         self, make_links_flag=False, link_directory=None, link_template=None,
@@ -451,26 +393,11 @@ class Linker:
         return(indexed_directory_prefix, indexed_directory_suffix,
             indexed_directory_template)
 
-    # "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
-
-        #     "[Default: %(default)s]\n \n"
-        # "Currently supported Jinja variables:\n"
-        # "*{{output_root}} - Parent directory for this maestro study\n"
-        # "{{link_directory}} - Link directory for this maestro study\n"
-        # "*{{date}} - Human-readable date (e.g. '2020_07_28')\n"
-        # "*{{instance}} - Maestro label for a set of parameters\n"
-        # "               (e.g. 'X1.5.X2.5.X3.20')\n"
-        # "               [maximum length: 255 characters]\n"
-        # "{{instance_variables_only}} - Maestro label for a set of parameters\n"
-        # "               (e.g. 'X1.5.X2.5.X3.20'), excluding parameters that are\n"
-        # "               fixed for all runs (constants).\n"
-        # "               [maximum length: 255 characters]\n"
-        # "*{{step}} - Maestro label for a given step (e.g. 'run')\n"
-        # "{{INDEX}} - Unique number for labeling runs (e.g. '0001')")
-
     def link(self, record):
+        # @TODO: test cases: index in front, middle, end, no index, two indexes
         if not self.make_links_flag:
             return
+        # build replacements dictionary
         replacements = {}
         # t = Template(self.link_directory)
         # replacements["link_directory"] = t.render(replacements)
@@ -489,12 +416,73 @@ class Linker:
         replacements['indexed_directory_prefix'] = [
             recursive_render(template_string, replacements) 
             for template_string in replacements['indexed_directory_prefix']]
-        # replacements['indexed_directory_suffix'] = (
-        #     recursive_render(
-        #         replacements['indexed_directory_suffix'],
-        #         replacements))
+        replacements['indexed_directory_suffix'] = [
+            recursive_render(template_string, replacements) 
+            for template_string in replacements['indexed_directory_suffix']]
+
+        # make link directories
+        if len(replacements['indexed_directory_prefix']) == 0:
+            raise(ValueError(
+                "link_directory (" + self.link_directory + ")" +
+                "and link_template (" + self.link_template + ")" +
+                "do not result in a valid path for links."))
+        directory_prefix_path = os.path.join(
+            *replacements['indexed_directory_prefix'])
+        if replacements['indexed_directory_template']:
+            index_directory_template_string = (
+                replacements['indexed_directory_template'].replace(
+                    '{{INDEX}}', self.index_format))
+            success = False
+            timeout = time.time() + self.mkdir_timeout
+            while not success and time.time() < timeout:
+                try:
+                    path = next_path(os.path.join(
+                        directory_prefix_path,
+                        index_directory_template_string
+                        ))
+                    os.makedirs(path)
+                    success = True
+                except OSError as e:
+                    if e.args[1] == 'File exists':
+                        time.sleep(random.uniform(0.5, 1.5))
+                    elif e.args[1] == 'Permission denied':
+                        raise(ValueError(
+                            "Could not create a unique directory because of a " +
+                            "permissions error.\n\n" +
+                            "Attempted path: " + path + "\n" +
+                            "Template string: " + self.link_template 
+                            ))
+                    else:
+                        raise(ValueError(e))
+            path = os.path.join(path, *replacements['indexed_directory_suffix'])
+        else:
+            path = directory_prefix_path
+
+        # make link
+        try:
+            # make full path; then make link
+            os.makedirs(path)
+            os.rmdir(path)
+            os.symlink(record.workspace.value, path)
+        except OSError as e:
+            if e.args[1] == 'File exists':
+                raise(ValueError(
+                    "Could not create a unique directory.\n\n" +
+                    "Attempted path: " + path + "\n" +
+                    "Template string: " + self.link_template)) 
+            elif e.args[1] == 'Permission denied':
+                raise(ValueError(
+                    "Could not create a unique directory because of a " +
+                    "permissions error.\n\n" +
+                    "Attempted path: " + path + "\n" +
+                    "Template string: " + self.link_template 
+                    ))
+            else:
+                raise(ValueError)
+
 
         LOGGER.info(f"CRK make_links_flag (link): {self.make_links_flag}")
+        LOGGER.info(f"CRK PATH: {path}")
         LOGGER.info(f"CRK output_root (link): {self.output_root}")
         LOGGER.info(f"CRK link_directory (template): {self.link_directory}")
         LOGGER.info(f"CRK link_template (template): {self.link_template}")
@@ -505,7 +493,7 @@ class Linker:
         LOGGER.info("CRK Step name: " + record.name)
         LOGGER.info(
             f"CRK indexed_directory_prefix: "
-            f"{replacements['indexed_directory_prefix']}")
+            f"{os.path.join(*replacements['indexed_directory_prefix'])}")
         # LOGGER.info(f"CRK indexed_directory_template: {replacements["indexed_directory_suffix"]}" )
         # LOGGER.info(f"CRK indexed_directory_suffix: {indexed_directory_suffix}" )
 
