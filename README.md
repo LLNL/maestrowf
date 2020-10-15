@@ -20,8 +20,9 @@ Maestro can be installed via [pip](https://pip.pypa.io/):
 
 ## Documentation
 
-* [Maestro Documentation](https://maestrowf.readthedocs.io)
-* [Maestro Samples](/samples)
+* [Maestro Documentation](https://maestrowf.readthedocs.io) - Official Maestro documentation.
+* [Maestro Sheetmusic](https://github.com/LLNL/maestro_sheetmusic) - A collection of sample and user contributed Maestro study examples.
+* [Maestro Samples](/samples) - Maestro sample studies.
 
 ## Getting Started is Quick and Easy
 
@@ -121,7 +122,7 @@ Maestro comes packed with a basic example using [LULESH](https://github.com/LLNL
 
 ## What is Maestro?
 
-Maestro is an open-source HPC software tool that defines a YAML-based study specification for defining multistep workflows and automates execution of software flows on HPC resources. The core design tenants of Maestro focus on encouraging clear workflow communication and documentation, while making consistent execution easier to allow users to focus on science. Maestro’s study specification helps users think about complex workflows in a step-wise, intent-oriented, manner that encourages modularity and tool reuse. These principles are becoming increasingly important as computational science is continuously more present in scientific fields and has started to require a similar rigor to physical experiment. Maestro is currently in use for multiple projects at Lawrence Livermore National Laboratory and has been used to run existing codes including MFEM, and other simulation codes. It has also been used in other areas including in the training of machine-learned models and more.
+Maestro is an open-source HPC software tool that defines a YAML-based study specification for defining multistep workflows and automates execution of software flows on HPC resources. The core design tenants of Maestro focus on encouraging clear workflow communication and documentation, while making consistent execution easier to allow users to focus on science. Maestro's study specification helps users think about complex workflows in a step-wise, intent-oriented, manner that encourages modularity and tool reuse. These principles are becoming increasingly important as computational science is continuously more present in scientific fields and has started to require a similar rigor to physical experiment. Maestro is currently in use for multiple projects at Lawrence Livermore National Laboratory and has been used to run existing codes including MFEM, and other simulation codes. It has also been used in other areas including in the training of machine-learned models and more.
 
 ### Maestro's Foundation and Core Concepts
 
@@ -163,8 +164,8 @@ To create a new virtual environment:
 
 If you plan to develop on Maestro, install the repository directly using:
 
-    pip install -r requirements.txt
-    pip install -e .
+    pip install poetry
+    poetry install
 
 Once set up, test the environment. The paths should point to a virtual environment folder.
 

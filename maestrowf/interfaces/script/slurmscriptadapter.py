@@ -68,32 +68,44 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
         # current host is where submission occurs.
+        self.add_batch_parameter("nodes", kwargs.pop("nodes", ""))
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
-        self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
 
+        # Check for procs separately, as we don't want it in the header if it's
+        # not present.
+        procs = kwargs.get("procs", None)
+        if procs:
+            self.add_batch_parameter("procs", procs)
+
         self._header = {
-            "nodes": "#SBATCH -N {nodes}",
-            "queue": "#SBATCH -p {queue}",
-            "bank": "#SBATCH -A {bank}",
-            "walltime": "#SBATCH -t {walltime}",
+            "nodes": "#SBATCH --nodes={nodes}",
+            "queue": "#SBATCH --partition={queue}",
+            "bank": "#SBATCH --account={bank}",
+            "walltime": "#SBATCH --time={walltime}",
             "job-name":
-                "#SBATCH -J \"{job-name}\"\n"
-                "#SBATCH -o \"{job-name}.out\"\n"
-                "#SBATCH -e \"{job-name}.err\"",
-            "comment": "#SBATCH --comment \"{comment}\""
+                "#SBATCH --job-name=\"{job-name}\"\n"
+                "#SBATCH --output=\"{job-name}.out\"\n"
+                "#SBATCH --error=\"{job-name}.err\"",
+            "comment": "#SBATCH --comment \"{comment}\"",
+            "reservation": "#SBATCH --reservation=\"{reservation}\"",
+            "gpus": "#SBATCH --gres=gpu:{gpus}"
         }
+
+        self._ntask_header = "#SBATCH --ntasks={procs}"
+        self._exclusive = "#SBATCH --exclusive"
 
         self._cmd_flags = {
             "cmd": "srun",
             "depends": "--dependency",
             "ntasks": "-n",
             "nodes": "-N",
-            "reservation": "--reservation",
             "cores per task": "-c",
         }
+
+        self._extension = ".slurm.sh"
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
@@ -104,22 +116,45 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
             the parameter step.
         """
-        run = dict(step.run)
-        batch_header = dict(self._batch)
-        batch_header["walltime"] = run.pop("walltime")
-        if run["nodes"]:
-            batch_header["nodes"] = run.pop("nodes")
-        batch_header["job-name"] = step.name.replace(" ", "_")
-        batch_header["comment"] = step.description.replace("\n", " ")
+
+        resources = {}
+        resources.update(self._batch)
+        procs_in_batch = bool("procs" in resources)
+        resources.update(
+            {
+                resource: value for (resource, value) in step.run.items()
+                if value
+            }
+        )
+        # If neither Procs nor Nodes exist, throw an error
+        procs = resources.get("procs")
+        nodes = resources.get("nodes")
+
+        if not procs and not nodes:
+            err_msg = \
+                'No explicit resources specified in {}. At least one' \
+                ' of "procs" or "nodes" must be set to a non-zero' \
+                ' value.'.format(step.name)
+            LOGGER.error(err_msg)
+            raise RuntimeError(err_msg)
+
+        resources["job-name"] = step.name.replace(" ", "_")
+        resources["comment"] = step.description.replace("\n", " ")
 
         modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
-            # If we're looking at the bank and the reservation header exists,
-            # skip the bank to prefer the reservation.
-            if key == "bank" and "reservation" in self._batch:
-                if self._batch["reservation"]:
-                    continue
-            modified_header.append(value.format(**batch_header))
+            if key not in resources:
+                continue
+
+            if resources[key]:
+                modified_header.append(value.format(**resources))
+
+        if procs_in_batch or not nodes:
+            modified_header.append(self._ntask_header.format(**resources))
+
+        exclusive = resources.get("exclusive", False)
+        if exclusive:
+            modified_header.append(self._exclusive)
 
         return "\n".join(modified_header)
 
@@ -151,7 +186,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         for key in supported:
             value = kwargs.get(key)
             if key not in self._cmd_flags:
-                LOGGER.warning("'%s' is not supported -- ommitted.", key)
+                LOGGER.warning("'%s' is not supported -- omitted.", key)
                 continue
             if value:
                 args += [
@@ -362,3 +397,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension

@@ -14,7 +14,8 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration
+from maestrowf.utils import create_parentdir, get_duration, \
+    round_datetime_seconds
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -140,7 +141,7 @@ class _StepRecord:
             self.status)
         self.status = State.PENDING
         if not self._submit_time:
-            self._submit_time = datetime.now()
+            self._submit_time = round_datetime_seconds(datetime.now())
         else:
             LOGGER.warning(
                 "Cannot set the submission time of '%s' because it has "
@@ -155,7 +156,7 @@ class _StepRecord:
             self.status)
         self.status = State.RUNNING
         if not self._start_time:
-            self._start_time = datetime.now()
+            self._start_time = round_datetime_seconds(datetime.now())
 
     def mark_end(self, state):
         """
@@ -170,7 +171,7 @@ class _StepRecord:
             self.status)
         self.status = state
         if not self._end_time:
-            self._end_time = datetime.now()
+            self._end_time = round_datetime_seconds(datetime.now())
 
     def mark_restart(self):
         """Mark the end time of the record."""
@@ -229,7 +230,7 @@ class _StepRecord:
 
         :returns: The name of the StudyStep contained within the record.
         """
-        return self.step.name
+        return self.step.real_name
 
     @property
     def walltime(self):
@@ -385,10 +386,10 @@ class ExecutionGraph(DAG, PickleInterface):
         :param restart_limit: Upper limit on the number of restart attempts.
         """
         data = {
-                    "step": step,
-                    "state": State.INITIALIZED,
-                    "workspace": workspace,
-                    "restart_limit": restart_limit
+                    "step":          step,
+                    "state":         State.INITIALIZED,
+                    "workspace":     workspace,
+                    "restart_limit": restart_limit,
                 }
         record = _StepRecord(**data)
         self._dependencies[name] = set()
@@ -600,14 +601,20 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
-        header = "Step Name,Workspace,State,Run Time,Elapsed Time,Start Time" \
-                 ",Submit Time,End Time,Number Restarts"
+        header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
+                 "Start Time,Submit Time,End Time,Number Restarts"
         status = [header]
         keys = set(self.values.keys()) - set(["_source"])
         for key in keys:
             value = self.values[key]
+
+            jobid_str = "--"
+            if value.jobid:
+                jobid_str = str(value.jobid[-1])
+
             _ = [
-                    value.name, os.path.split(value.workspace.value)[1],
+                    value.name, jobid_str,
+                    os.path.split(value.workspace.value)[1],
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts)
@@ -658,11 +665,12 @@ class ExecutionGraph(DAG, PickleInterface):
 
         The 'execute_ready_steps' method is the core of how the ExecutionGraph
         manages execution. This method does the following:
-            - Checks the status of existing jobs that are executing.
-                - Updates the state if changed.
-            - Finds steps that are initialized and determines what can be run:
-                - Scans a steps dependencies and stages if all are me.
-                - Executes any steps whose dependencies are met.
+
+        * Checks the status of existing jobs that are executing and updates
+          the state if changed.
+        * Finds steps that are initialized and determines what can be run
+          based on satisfied dependencies and executes steps whose
+          dependencies are met.
 
         :returns: True if the study has completed, False otherwise.
         """
@@ -764,6 +772,16 @@ class ExecutionGraph(DAG, PickleInterface):
                     self.in_progress.remove(name)
                     record.mark_end(State.FAILED)
                     cleanup_steps.update(self.bfs_subtree(name)[0])
+
+                elif status == State.UNKNOWN:
+                    record.mark_end(State.UNKNOWN)
+                    LOGGER.info(
+                        "Step '%s' found in UNKNOWN state. Step was found "
+                        "in '%s' state previously, marking as UNKNOWN. "
+                        "Adding to failed steps.",
+                        name, record.status)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
+                    self.in_progress.remove(name)
 
                 elif status == State.CANCELLED:
                     LOGGER.info("Step '%s' was cancelled.", name)

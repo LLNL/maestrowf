@@ -57,6 +57,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         LOGGER.debug("kwargs\n--------------------------\n%s", kwargs)
         super(LocalScriptAdapter, self).__init__(**kwargs)
+        self._extension = ".sh"
 
     def _write_script(self, ws_path, step):
         """
@@ -154,3 +155,7 @@ class LocalScriptAdapter(ScriptAdapter):
             _record = SubmissionRecord(SubmissionCode.ERROR, retcode, pid)
             _record.add_info("stderr", str(err))
             return _record
+
+    @property
+    def extension(self):
+        return self._extension

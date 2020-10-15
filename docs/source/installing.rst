@@ -1,12 +1,21 @@
-Getting Started
-================
+Installing Maestro
+==================
+
+Maestro can be installed via ``pip``:
+
+.. code:: bash
+
+    $ pip install maestrowf
+
+.. note:: Using a `virtualenv <https://virtualenv.pypa.io/en/stable/>`_ is recommended.
+
 
 Maestro Docker Container
 ************************
 
 In order to set up the Docker container execute the following from the root of the Maestro repository::
 
-    $ docker --build -t maestrowf .
+    $ docker build -t maestrowf .
 
 To launch the interactive shell of the Ubuntu image simply run::
 
@@ -16,16 +25,8 @@ Once inside the Docker container, the following should bring up help::
 
     $ maestro -h
 
-For more information on using Dockerfiles, checkout Docker's `documentation <https://docs.docker.com/engine/reference/builder/>`.
+For more information on using Dockerfiles, checkout Docker's `documentation <https://docs.docker.com/engine/reference/builder/>`_.
 
-Installing MaestroWF
-*********************
-
-MaestroWF can be installed via pip outside of Docker with the following::
-
-    $ pip install maestrowf
-
-.. note:: Using a `virtualenv <https://virtualenv.pypa.io/en/stable/>`_ is recommended.
 
 Once installed run::
 
@@ -33,7 +34,7 @@ Once installed run::
 
     usage: maestro [-h] [-l LOGPATH] [-d DEBUG_LVL] [-c] {cancel,run,status} ...
 
-    The Maestro Workflow Conductor for specifiying, launching, and managing general workflows.
+    The Maestro Workflow Conductor for specifying, launching, and managing general workflows.
 
     positional arguments:
       {cancel,run,status}

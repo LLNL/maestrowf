@@ -43,7 +43,7 @@ class EnvObject:
 
     The EnvObject is meant to be used to represent entities in the larger
     environment that affect the execution of a study (and therefore jobs).
-    This abstact base class should be used to represent things such as data
+    This abstract base class should be used to represent things such as data
     dependencies, code dependencies, variables, aliases, etc. The only method
     we require is _verify, to allow users to verify that they've provided the
     minimal information for the object to be valid.
@@ -101,8 +101,9 @@ class Source(EnvObject):
     The Source environment class is meant to provide a way to programmatically
     set environment settings that binaries or other scripts may require in the
     workflow. Such settings that are intended to be captured are:
-        - Exporting of shell/environment variables (using 'export')
-        - Setting of an environment package with the 'use' command
+
+        * Exporting of shell/environment variables (using 'export')
+        * Setting of an environment package with the 'use' command
     """
 
     @abstractmethod
@@ -111,8 +112,8 @@ class Source(EnvObject):
         Apply the Source to some string data.
 
         Subclasses of Source should use this method in order to apply an
-        environment alterating change. The 'data' parameter should be a string
-        representing a command to apply Source to or a list of other comands
+        environment altering change. The 'data' parameter should be a string
+        representing a command to apply Source to or a list of other commands
         that Source should be included with.
 
         :param data: A string representing a command or set of other sources.
@@ -130,14 +131,15 @@ class Dependency(Substitution):
 
     The Dependency base class is intended to be used to capture external items
     the workflow is dependent on. These items include (but are not limited to):
-        - Remotely stored repositories (such as bitbucket)
-        - Paths located on the filesystem that hold required files or binaries
-        - Binaries that are required to be installed using a specific package
+
+        * Remotely stored repositories (such as bitbucket)
+        * Paths located on the filesystem that hold required files or binaries
+        * Binaries that are required to be installed using a specific package
           manager
-        - External APIs that a workflow needs to pull data from
+        * External APIs that a workflow needs to pull data from
 
     The goal of this base class is to make it so that this package is able to
-    pull exernal dependencies in a consistent manner.
+    pull external dependencies in a consistent manner.
     """
 
     @abstractmethod

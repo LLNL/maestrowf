@@ -40,7 +40,7 @@ import time
 
 from maestrowf import __version__
 from maestrowf.conductor import Conductor
-from maestrowf.datastructures import YAMLSpecification
+from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
@@ -61,20 +61,45 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def status_study(args):
     """Check and print the status of an executing study."""
-    status = Conductor.get_status(args.directory)
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
-    if status:
-        print(tabulate.tabulate(status, headers="keys"))
-        return 0
+    directory_list = args.directory
+
+    if directory_list:
+        header_format = "".ljust(150, "=")
+
+        for path in directory_list:
+            abs_path = os.path.abspath(path)
+
+            print(header_format)
+            print(abs_path)
+            print(header_format)
+
+            status = Conductor.get_status(abs_path)
+            if status:
+                print(tabulate.tabulate(status, headers="keys"))
+            else:
+                print(
+                    "\nNo status to report -- the Maestro study in this path "
+                    "either unexpectedly crashed or the path does not contain "
+                    "a Maestro study.")
+            print("")
+        print(header_format)
     else:
         print(
-            "Status check failed. If the issue persists, please verify that"
-            "you are passing in a path to a study.")
+            "Path(s) or glob(s) did not resolve to a directory(ies) that "
+            "exists.")
         return 1
+
+    return 0
 
 
 def cancel_study(args):
     """Flag a study to be cancelled."""
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
+
     if not os.path.isdir(args.directory):
         print("Attempted to cancel a path that was not a directory.")
         return 1
@@ -125,6 +150,12 @@ def load_parameter_generator(path, env, kwargs):
 
 def run_study(args):
     """Run a Maestro study."""
+    # Report log lvl
+    LOGGER.info("INFO Logging Level -- Enabled")
+    LOGGER.warning("WARNING Logging Level -- Enabled")
+    LOGGER.critical("CRITICAL Logging Level -- Enabled")
+    LOGGER.debug("DEBUG Logging Level -- Enabled")
+
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
@@ -300,7 +331,7 @@ def setup_argparser():
     """Set up the program's argument parser."""
     parser = ArgumentParser(
         prog="maestro",
-        description="The Maestro Workflow Conductor for specifiying, launching"
+        description="The Maestro Workflow Conductor for specifying, launching"
         ", and managing general workflows.",
         formatter_class=RawTextHelpFormatter)
     subparsers = parser.add_subparsers(dest='subparser')
@@ -321,12 +352,12 @@ def setup_argparser():
                      help="Maximum number of submission attempts before a "
                      "step is marked as failed. [Default: %(default)d]")
     run.add_argument("-r", "--rlimit", type=int, default=1,
-                     help="Maximum number of restarts allowed when steps."
+                     help="Maximum number of restarts allowed when steps. "
                      "specify a restart command (0 denotes no limit). "
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
                      help="Maximum number of inflight jobs allowed to execute "
-                     "simultaneously (0 denotes not throttling)."
+                     "simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
@@ -336,7 +367,7 @@ def setup_argparser():
                      "study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
-                     "that returns a custom filled ParameterGenerator"
+                     "that returns a custom filled ParameterGenerator "
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
                      help="A string that represents a single argument to pass "
@@ -377,7 +408,7 @@ def setup_argparser():
         'status',
         help="Check the status of a running study.")
     status.add_argument(
-        "directory", type=str,
+        "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     status.set_defaults(func=status_study)
 
@@ -408,7 +439,7 @@ def main():
 
     This function uses command line arguments to locate the study description.
     It makes use of the maestrowf core data structures as a high level class
-    inerface.
+    interface.
     """
     # Set up the necessary base data structures to begin study set up.
     parser = setup_argparser()
@@ -421,11 +452,6 @@ def main():
         else:
             lformat = LFORMAT
         LOG_UTIL.configure(lformat, args.debug_lvl)
-
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
 
     rc = args.func(args)
     sys.exit(rc)
