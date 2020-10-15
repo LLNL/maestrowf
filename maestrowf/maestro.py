@@ -369,23 +369,23 @@ def setup_argparser():
                      "specify a restart command (0 denotes no limit). \n"
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
-                     help="Maximum number of inflight jobs allowed to execute \n"
-                     "simultaneously (0 denotes not throttling). "
+                     help="Maximum number of inflight jobs allowed to \n"
+                     "execute simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to \n"
                      "wait between job status checks. [Default: %(default)d]")
     run.add_argument("--dry", action="store_true", default=False,
-                     help="Generate the directory structure and scripts for a \n"
-                     "study but do not launch it. [Default: %(default)s]")
+                     help="Generate the directory structure and scripts for \n"
+                     "a study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function \n"
                      "that returns a custom filled ParameterGenerator \n"
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
-                     help="A string that represents a single argument to pass \n"
-                     "a custom parameter generation function. Reuse '--parg' \n"
-                     "to pass multiple arguments. [Use with '--pgen']")
+                     help="A string that represents a single argument to  \n"
+                     "pass a custom parameter generation function. Reuse ' \n"
+                     "'--parg to pass multiple arguments. [Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides \n"
                      "OUTPUT_PATH in the specified specification]")
@@ -393,9 +393,10 @@ def setup_argparser():
                      help="Runs the backend conductor in the foreground \n"
                      "instead of using nohup. [Default: %(default)s]")
     run.add_argument("--hashws", action="store_true", default=False,
-                     help="Enable hashing of subdirectories in parameterized \n"
-                     "studies (NOTE: breaks commands that use parameter labels\n"
-                     "to search directories). [Default: %(default)s]")
+                     help="Enable hashing of subdirectories in \n"
+                     "parameterized studies (NOTE: breaks commands that use \n"
+                     "parameter labels to search directories). \n"
+                     " [Default: %(default)s]")
     run.add_argument("--make-links", action="store_true", default=False,
                      help="Automatically make customizable, human-readable \n"
                      "links to run directories. [Default: %(default)s]")
@@ -403,8 +404,8 @@ def setup_argparser():
         "--link-directory",
         type=str,
         default="{{output_root}}/links",
-        help="Jinja template for path where links to run directories are made\n"
-        "[Default: %(default)s]")
+        help="Jinja template for path where links to run directories \n"
+        "are made. [Default: %(default)s]")
 
     run.add_argument(
         "--link-template",
@@ -434,12 +435,12 @@ def setup_argparser():
     # The only required positional argument for 'run' is a specification path.
     run.add_argument(
         "specification", type=str,
-        help="The path to a Study YAML specification that will be loaded and \n"
-        "executed.")
+        help="The path to a Study YAML specification that will be loaded \n"
+        "and executed.")
     run.add_argument(
         "--usetmp", action="store_true", default=False,
-        help="Make use of a temporary directory for dumping scripts and other \n"
-        "Maestro related files.")
+        help="Make use of a temporary directory for dumping scripts and \n"
+        "other Maestro related files.")
     run.set_defaults(func=run_study)
 
     # subparser for a status subcommand

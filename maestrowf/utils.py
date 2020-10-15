@@ -316,14 +316,16 @@ def next_path(path_pattern):
 
 
 def splitall(path):
-    """https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html"""
+    """
+    https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html
+    """
     allparts = []
     while 1:
         parts = os.path.split(path)
         if parts[0] == path:  # sentinel for absolute paths
             allparts.insert(0, parts[0])
             break
-        elif parts[1] == path: # sentinel for relative paths
+        elif parts[1] == path:  # sentinel for relative paths
             allparts.insert(0, parts[1])
             break
         else:
@@ -333,7 +335,9 @@ def splitall(path):
 
 
 def recursive_render(tpl, values):
-    """https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content"""
+    """
+    https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
+    """
     prev = tpl
     while True:
         curr = Template(prev).render(values)
@@ -350,8 +354,8 @@ class Linker:
     maestro_index_file = 'maestro_index_file'
 
     def __init__(
-        self, make_links_flag=False, link_directory=None, link_template=None,
-        output_name=None, output_root=None):
+            self, make_links_flag=False, link_directory=None,
+            link_template=None, output_name=None, output_root=None):
         """
         Initialize a new Linker class instance.
 
@@ -377,10 +381,10 @@ class Linker:
             run-{{INDEX}}/{{instance}}/{{step}}
 
         Example `indexed_directory_prefix`: studies/links/2020_07_30
-        Example `indexed_directory_suffix`: bar.1.foo.1.foobar.1/run-codepy-baseline/
+        Example `indexed_directory_suffix`: bar.1.foo.1/run-codepy-baseline/
         Example `indexed_directory_template`: run-{{INDEX}}
 
-        :param link_directory_template: a one line jinja directory path template
+        :param link_directory_template: one line jinja directory path template
         :param defs: a dictionary containing replacement definitions for
             ``link_directory_template``
 
