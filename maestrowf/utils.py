@@ -397,7 +397,7 @@ class Linker:
         indexed_directory_prefix = []
         indexed_directory_template = ""
         indexed_directory_suffix = []
-        while not re.match(r".*{{INDEX}}.*", dir_list[0]):
+        while dir_list and not re.match(r".*{{INDEX}}.*", dir_list[0]):
             indexed_directory_prefix.append(dir_list.pop(0))
         if dir_list:
             indexed_directory_template = dir_list.pop(0)
