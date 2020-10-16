@@ -22,6 +22,7 @@ from maestrowf.datastructures.core.study import StudyStep
 #     next_path, splitall, maestro_split_index_directory,
 #     create_maestro_links)
 
+
 @pytest.mark.unit
 class TestLinkUtilsUnits(unittest.TestCase):
     """Unit tests for Linker helper functions"""
@@ -34,7 +35,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.orig_dir)
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
-  
+
     def test_splitall(self):
         """
         tests splitall method
@@ -46,7 +47,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
         dir = os.path.join("foo", "bar", "foo")
         self.assertEqual(splitall(dir), ["foo", "bar", "foo"])
 
-    def test_recursive_render(self):    
+    def test_recursive_render(self):
         self.assertEqual(
             recursive_render("Hello {{X}}!", dict(X="{{name}}", name="world")),
             'Hello world!')
@@ -70,6 +71,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
         os.system(f"touch {template % max_range}")
         file = next_path(template)
         self.assertEqual(file, template % (max_range + 1))
+
 
 @pytest.mark.unit
 class TestLinkUtilUnits(unittest.TestCase):
@@ -99,10 +101,10 @@ class TestLinkUtilUnits(unittest.TestCase):
             split_list[0],
             ["{{output_path_root}}", "links", "{{date}}"])
         self.assertEqual(
-            split_list[1], 
+            split_list[1],
             ["{{instance}}", "{{step}}"])
         self.assertEqual(
-            split_list[2], 
+            split_list[2],
             "run-{{INDEX}}")
 
         template_string = (
@@ -134,3 +136,4 @@ class TestLinkUtilUnits(unittest.TestCase):
         """
         tests split_indexed_directory method
         """
+        pass
