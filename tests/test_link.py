@@ -63,11 +63,11 @@ class TestLinkUtilsUnits(unittest.TestCase):
         self.assertEqual(file, template % 1)
         max_range = 3
         for i in range(max_range):
-            os.system(f"touch {template % i}")
+            os.system("touch " + (template % i))
         file = next_path(template)
         print(file)
         self.assertEqual(file, template % max_range)
-        os.system(f"touch {template % max_range}")
+        os.system("touch "+(template % max_range))
         file = next_path(template)
         self.assertEqual(file, template % (max_range + 1))
 
