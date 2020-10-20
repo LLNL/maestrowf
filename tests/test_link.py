@@ -23,7 +23,6 @@ from maestrowf.datastructures.core.study import StudyStep
 #     create_maestro_links)
 
 
-@pytest.mark.unit
 class TestLinkUtilsUnits(unittest.TestCase):
     """Unit tests for Linker helper functions"""
 
@@ -73,7 +72,6 @@ class TestLinkUtilsUnits(unittest.TestCase):
         self.assertEqual(file, template % (max_range + 1))
 
 
-@pytest.mark.unit
 class TestLinkUtilUnits(unittest.TestCase):
     """Unit tests for Linker class methods"""
 
