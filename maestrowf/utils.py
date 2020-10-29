@@ -39,6 +39,7 @@ from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
+import yaml
 
 LOGGER = logging.getLogger(__name__)
 
@@ -349,3 +350,89 @@ class LoggerUtility:
             return logging.ERROR
         else:
             return logging.CRITICAL
+
+
+class ReconstructGlobalParameters:
+    """Allows for reconstruction of a global.parameters block from a study's meta/parameters.yaml file."""
+
+    def __init__(self, meta_parameters_path: str, output_path: str):
+        self.meta_parameters_path: str = meta_parameters_path
+        self.output_path: str = output_path
+
+        self.formatted_labels: list = []
+        self.formatted_values: list = []
+        self.formatted_names: list = []
+
+    def construct_parameters(self):
+        """Gather raw parameters, build a formatted block, and output to a file."""
+        formatted_items: tuple(list, list, list) = self.gather_parameters()
+        global_parameters_string: str = self.build_parameters(formatted_items)
+        self.dump_parameters(global_parameters_string)
+
+    def gather_parameters(self):
+        """Gathers the raw names, values and labels from a parameters.yaml and builds indiviudal lists for those properties."""
+        raw_parameters: dict = {}
+
+        with open(self.meta_parameters_path) as f:
+            raw_parameters: object = yaml.load(f, Loader=yaml.Loader)
+
+        for raw_values in raw_parameters.values():
+            for i in range(len(list(raw_values.items())[0][1].items())):
+                labels_list: list = list(raw_values.items())[0][1]
+                label: str = list(labels_list.items())[i][1]
+
+                self.formatted_labels.append(label)
+
+                values_list: list = list(raw_values.items())[1][1]
+                value: str = list(values_list.items())[i][1]
+
+                names_list: list = list(raw_values.items())[1][1]
+                name: str = list(names_list.items())[i][0]
+                name: str = name.replace('$(', '').replace(')', '')
+
+                self.formatted_names.append(
+                    self.formatted_labels[i].replace('.1', ''))
+
+                if type(value) is list:
+                    value: str = '\n\t\t' + "- {}".format(str(value))
+                else:
+                    value: str = '[' + str(value) + ']'
+
+                self.formatted_values.append(value)
+
+        return (self.formatted_names, self.formatted_values, self.formatted_labels)
+
+    def build_parameters(self, formatted_items):
+        """Builds a global.parameters block given formatted names, values, and labels then saves to generated_global_parameters.yaml.
+
+        Example:
+            global.parameters:
+                ANTIGEN_CHAINS_IN_STRUCT:
+                    values: [A]
+                    label: [ANTIGEN_CHAINS_IN_STRUCT.1]
+        """
+        global_parameters_block: list = []
+        global_parameters_block.append("global.parameters:\n")
+
+        names: list = formatted_items[0]
+        values: list = formatted_items[1]
+        labels: list = formatted_items[2]
+
+        for i in range(len(values)):
+            blocks: dict = {
+                'name': names[i],
+                'value': values[i],
+                'label': labels[i]
+            }
+            formatted_block: str = "\t{name}:\n \t\tvalues: {value}\n \t\tlabel: [{label}]\n".format(
+                **blocks)
+            global_parameters_block.append(formatted_block)
+
+        global_parameters_string: str = ''.join(global_parameters_block)
+
+        return global_parameters_string
+
+    def dump_parameters(self, global_parameters_string):
+        """Saves parameters to a file."""
+        with open(self.output_path + "generated_global_parameters.yaml", "a") as f:
+            f.write(global_parameters_string)
