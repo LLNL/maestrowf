@@ -353,7 +353,7 @@ class LoggerUtility:
 
 
 class ReconstructGlobalParameters:
-    """Allows for reconstruction of a global.parameters block from a study's meta/parameters.yaml file."""
+    """Reconstruct a global.parameters block from meta/parameters.yaml."""
 
     def __init__(self, meta_parameters_path: str, output_path: str):
         self.meta_parameters_path: str = meta_parameters_path
@@ -364,13 +364,14 @@ class ReconstructGlobalParameters:
         self.formatted_names: list = []
 
     def construct_parameters(self):
-        """Gather raw parameters, build a formatted block, and output to a file."""
+        """Gather raw parameters, build a formatted block, output to a file."""
         formatted_items: tuple(list, list, list) = self.gather_parameters()
         global_parameters_string: str = self.build_parameters(formatted_items)
         self.dump_parameters(global_parameters_string)
 
     def gather_parameters(self):
-        """Gathers the raw names, values and labels from a parameters.yaml and builds indiviudal lists for those properties."""
+        """Gathers the raw names, values and labels from a parameters.yaml and
+        builds indiviudal lists for those properties."""
         raw_parameters: dict = {}
 
         with open(self.meta_parameters_path) as f:
@@ -400,10 +401,13 @@ class ReconstructGlobalParameters:
 
                 self.formatted_values.append(value)
 
-        return (self.formatted_names, self.formatted_values, self.formatted_labels)
+        return (self.formatted_names,
+                self.formatted_values,
+                self.formatted_labels)
 
     def build_parameters(self, formatted_items: tuple(list, list, list)):
-        """Builds a global.parameters block given formatted names, values, and labels then saves to generated_global_parameters.yaml.
+        """Builds a global.parameters block given formatted names, values, and labels
+        then saves to generated_global_parameters.yaml.
 
         Example:
             global.parameters:
@@ -424,8 +428,9 @@ class ReconstructGlobalParameters:
                 'value': values[i],
                 'label': labels[i]
             }
-            formatted_block: str = "\t{name}:\n \t\tvalues: {value}\n \t\tlabel: [{label}]\n".format(
-                **blocks)
+            formatted_block: str = \
+                "\t{name}:\n \t\tvalues: {value}\n \t\tlabel: [{label}]\n" \
+                .format(**blocks)
             global_parameters_block.append(formatted_block)
 
         global_parameters_string: str = ''.join(global_parameters_block)
@@ -434,5 +439,6 @@ class ReconstructGlobalParameters:
 
     def dump_parameters(self, global_parameters_string: str):
         """Saves parameters to a file."""
-        with open(self.output_path + "generated_global_parameters.yaml", "a") as f:
+        file_name: str = 'generated_global_parameters.yaml'
+        with open(self.output_path + file_name, "a") as f:
             f.write(global_parameters_string)
