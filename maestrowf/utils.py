@@ -402,7 +402,7 @@ class ReconstructGlobalParameters:
 
         return (self.formatted_names, self.formatted_values, self.formatted_labels)
 
-    def build_parameters(self, formatted_items):
+    def build_parameters(self, formatted_items: tuple(list, list, list)):
         """Builds a global.parameters block given formatted names, values, and labels then saves to generated_global_parameters.yaml.
 
         Example:
@@ -432,7 +432,7 @@ class ReconstructGlobalParameters:
 
         return global_parameters_string
 
-    def dump_parameters(self, global_parameters_string):
+    def dump_parameters(self, global_parameters_string: str):
         """Saves parameters to a file."""
         with open(self.output_path + "generated_global_parameters.yaml", "a") as f:
             f.write(global_parameters_string)
