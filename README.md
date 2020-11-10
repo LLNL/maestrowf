@@ -10,9 +10,8 @@
 [![Stars](https://img.shields.io/github/stars/LLNL/maestrowf.svg)](https://github.com/LLNL/maestrowf/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/LLNL/maestrowf/master/LICENSE)
 
-[![Downloads](https://pepy.tech/badge/maestrowf)](https://pepy.tech/project/maestrowf)
-[![Downloads](https://pepy.tech/badge/maestrowf/month)](https://pepy.tech/project/maestrowf/month)
-[![Downloads](https://pepy.tech/badge/maestrowf/week)](https://pepy.tech/project/maestrowf/week)
+[![Downloads](https://static.pepy.tech/personalized-badge/maestrowf?period=total&units=international_system&left_color=black&right_color=blue&left_text=Downloads)](https://pepy.tech/project/maestrowf)
+[![Downloads](https://static.pepy.tech/personalized-badge/maestrowf?period=month&units=international_system&left_color=black&right_color=blue&left_text=Downloads/Month)](https://pepy.tech/project/maestrowf)
 
 Maestro can be installed via [pip](https://pip.pypa.io/):
 
