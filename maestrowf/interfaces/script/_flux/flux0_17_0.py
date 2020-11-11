@@ -123,6 +123,10 @@ class FluxInterface_0170(FluxInterface):
         args.append("-N")
         args.append(str(ntasks))
 
+        if "cores per task" in kwargs:
+            args.append("-c")
+            args.append(str(kwargs["cores per task"]))
+
         # flux has additional arguments that can be passed via the '-o' flag.
         addtl = []
         addtl_args = kwargs.get("addtl_args", {})
