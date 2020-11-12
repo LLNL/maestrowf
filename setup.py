@@ -43,6 +43,7 @@ setup(
         "jsonschema>=3.2.0",
         "coloredlogs",
         "chainmap ; python_version<'3'",
+        "jinja2",
     ],
     extras_require={},
     long_description=load_readme(),
