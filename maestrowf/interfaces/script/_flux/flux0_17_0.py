@@ -89,13 +89,6 @@ class FluxInterface_0170(FluxInterface):
         if job_name:
             jobspec.setattr("system.job.name", job_name)
 
-        LOGGER.debug(
-            "%s, Flux Jobspec -- \n%s\n%s",
-            "".ljust(80, "="),
-            jobspec.dumps(),
-            "".ljust(80, "=")
-        )
-
         try:
             # Submit our job spec.
             jobid = \
