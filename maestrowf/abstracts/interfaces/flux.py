@@ -36,8 +36,8 @@ class FluxInterface(ABC):
 
     @abstractclassmethod
     def submit(
-        cls, nodes, procs, cores_per_task, path, cwd, npgus=0,
-        job_name=None, force_broker=False
+        cls, nodes, procs, cores_per_task, path, cwd, walltime,
+        npgus=0, job_name=None, force_broker=False
     ):
         """
         Submit a job using this Flux interface's submit API.
@@ -47,6 +47,7 @@ class FluxInterface(ABC):
         :param cores_per_task: The number of cores per MPI task.
         :param path: Path to the script to be submitted.
         :param cwd: Path to the workspace to execute the script in.
+        :param walltime: HH:MM:SS formatted time string for job duration.
         :param ngpus: The number of GPUs to request on submission.
         :param job_name: A name string to assign the submitted job.
         :param force_broker: Forces the script to run under a Flux sub-broker.
