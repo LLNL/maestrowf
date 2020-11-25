@@ -1,3 +1,4 @@
+
 ###############################################################################
 # Copyright (c) 2017, Lawrence Livermore National Security, LLC.
 # Produced at the Lawrence Livermore National Laboratory
@@ -134,7 +135,6 @@ class SchedulerScriptAdapter(ScriptAdapter):
         addl_args.pop("procs")
 
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
-        LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
         alloc_search = list(re.finditer(self.launcher_regex, step_cmd))
         if alloc_search:
