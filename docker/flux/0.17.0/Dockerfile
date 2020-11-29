@@ -2,16 +2,11 @@ FROM fluxrm/flux-core:centos7-v0.17.0
 #FROM fluxrm/flux-sched:centos7-v0.9.0
 ENV PATH="/home/fluxuser/.local/bin:$PATH"
 
-#RUN sudo yum update -y
-#RUN sudo yum install -y gcc mpig++ openssl-devel bzip2-devel libffi-devel
-#RUN sudo yum install -y libpython-devel libyaml-devel
-
 RUN curl -sL https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.5.tar.gz | tar xz && \
     cd ./openmpi-4.0.5 && \
     ./configure && \
     make && \
     sudo make install
-
 
 COPY . /home/fluxuser/maestrowf
 WORKDIR /home/fluxuser/maestrowf
