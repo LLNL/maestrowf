@@ -17,22 +17,20 @@ env:
 
 batch:
     type        : flux
+    version     : "0.19.0"
     host        : quartz
     bank        : baasic
     queue       : pbatch
-    gres        : ignore
-    reservation : test_reservation
 
 study:
     - name: make-lulesh
       description: Build the MPI enabled version of LULESH.
       run:
           cmd: |
-            module load cmake/3.13.4
             cd $(LULESH)
             mkdir build
             cd build
-            cmake -DCMAKE_BUILD_TYPE=Release -DMPI_CXX_COMPILER=`which mpicxx` ..
+            cmake -WITH_MPI=Off -WITH_OPENMP=Off ..
             make
           depends: []
 
@@ -42,16 +40,16 @@ study:
           cmd: |
             $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
-          nodes: 2
-          procs: 2
-          cores per task: 27
-          exclusive   : True
-          walltime: "00:10:00"
+          nodes: 1
+          procs: 1
+          cores per task: 1
+          use_broker: True
+          walltime: "00:02:00"
 
 global.parameters:
     SIZE:
         values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
         label   : SIZE.%%
     ITERATIONS:
-        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
         label   : ITER.%%
