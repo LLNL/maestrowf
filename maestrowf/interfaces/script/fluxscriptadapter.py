@@ -612,6 +612,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
         force_broker = step.run.get("use_broker", False)
+        walltime = step.run.get("walltime", "inf")
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
@@ -645,7 +646,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         jobid, retcode, submit_status = \
             self._interface.submit(
-                nodes, processors, cores_per_task, path, cwd, ngpus,
+                nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
                 job_name=step.name, force_broker=force_broker
             )
 

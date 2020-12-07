@@ -1,3 +1,4 @@
+from datetime import datetime
 import errno
 import logging
 import os
@@ -89,15 +90,13 @@ class FluxInterface_0190(FluxInterface):
         if job_name:
             jobspec.setattr("system.job.name", job_name)
 
-        jobspec.stdout = f"{job_name}.{{id}}.out"
-        jobspec.stderr = f"{job_name}.{{id}}.err"
+        if walltime != "inf":
+            seconds = datetime.strptime(walltime, "%H:%M:%S")
+            seconds = seconds - datetime(1900, 1, 1)
+            jobspec.duration = seconds
 
-        LOGGER.debug(
-            "%s, Flux Jobspec -- \n%s\n%s",
-            "".ljust(80, "="),
-            jobspec.dumps(),
-            "".ljust(80, "=")
-        )
+        jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
+        jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
 
         try:
             # Submit our job spec.
