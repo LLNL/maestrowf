@@ -286,5 +286,7 @@ class FluxInterface_0190(FluxInterface):
             return State.PENDING
         elif state == "C":
             return State.CANCELLED
+        elif state == "TO":
+            return State.TIMEDOUT
         else:
             return State.UNKNOWN
