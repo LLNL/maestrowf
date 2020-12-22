@@ -253,7 +253,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             #     },
             #   },
         }
-        LOGGER.debug("Submission Spec -- \n%s", jobspec)
+        # LOGGER.debug("Submission Spec -- \n%s", jobspec)
         if step.run["nodes"] > 1:
             jobspec["cmdline"] = ["flux", "broker", path]
         else:

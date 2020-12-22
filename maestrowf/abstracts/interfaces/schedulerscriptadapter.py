@@ -245,8 +245,8 @@ class SchedulerScriptAdapter(ScriptAdapter):
             pcmd = self.get_parallelize_command(procs, nodes, **addl_args)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
-                LOGGER.debug("'%s' found in cmd -- %s",
-                             self.launcher_var, step_cmd)
+                LOGGER.debug(
+                    "'%s' found in cmd. Substituting", self.launcher_var)
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
                 LOGGER.debug(
