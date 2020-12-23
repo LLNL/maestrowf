@@ -549,6 +549,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
+        if not walltime:
+            return "inf"
         # Convert walltime to seconds.
         wt = \
             (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
@@ -564,9 +566,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
-        if step.run["walltime"]:
-            batch_header["walltime"] = \
-                str(self._convert_walltime_to_seconds(step.run["walltime"]))
+        walltime = step.run.get("walltime", None)
+        batch_header["walltime"] = \
+            str(self._convert_walltime_to_seconds(walltime))
 
         if run["nodes"]:
             batch_header["nodes"] = run.pop("nodes")
