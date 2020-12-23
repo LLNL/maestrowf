@@ -249,10 +249,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     "'%s' found in cmd. Substituting", self.launcher_var)
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
-                LOGGER.debug(
-                    "The command did not specify an MPI command. cmd=%s",
-                    step_cmd
-                )
+                LOGGER.debug("The command did not specify an MPI command.")
                 return step_cmd
 
     def get_scheduler_command(self, step):
