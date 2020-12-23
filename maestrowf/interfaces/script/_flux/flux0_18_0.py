@@ -90,7 +90,7 @@ class FluxInterface_0190(FluxInterface):
         if job_name:
             jobspec.setattr("system.job.name", job_name)
 
-        if walltime != "inf":
+        if walltime and walltime != "inf":
             seconds = datetime.strptime(walltime, "%H:%M:%S")
             seconds = seconds - datetime(1900, 1, 1)
             jobspec.duration = seconds
