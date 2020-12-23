@@ -550,8 +550,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
     def _convert_walltime_to_seconds(self, walltime):
         if not walltime:
+            LOGGER.debug("Encountered inf walltime!")
             return "inf"
         # Convert walltime to seconds.
+        LOGGER.debug("Converting %s to seconds...", walltime)
         wt = \
             (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
         return int(wt.total_seconds())
