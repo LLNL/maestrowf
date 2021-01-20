@@ -82,7 +82,7 @@ class FluxInterface_0190(FluxInterface):
                 force_broker, nodes
             )
             jobspec = cls.flux.job.JobspecV1.from_command(
-                path, num_tasks=procs, num_nodes=nodes,
+                [path], num_tasks=procs, num_nodes=nodes,
                 cores_per_task=cores_per_task, gpus_per_task=ngpus)
 
         LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
