@@ -67,28 +67,29 @@ class FluxInterface_0190(FluxInterface):
         # incorrect to make that the general case. If we are asking for a
         # single node, don't use a broker -- but introduce a flag that can
         # force a single node to run in a broker.
+
         if force_broker or nodes > 1:
             LOGGER.debug(
                 "Launch under Flux sub-broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            cmd_line = ["flux", "start", path]
+            jobspec = cls.flux.job.JobspecV1.from_nest_command(
+                [path], num_nodes=nodes, cores_per_slot=cores_per_task,
+                num_slots=procs, gpus_per_slot=ngpus)
         else:
             LOGGER.debug(
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            cmd_line = [path]
+            jobspec = cls.flux.job.JobspecV1.from_command(
+                path, num_tasks=procs, num_nodes=nodes,
+                cores_per_task=cores_per_task, gpus_per_task=ngpus)
 
         LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
-        jobspec = cls.flux.job.JobspecV1.from_command(
-            cmd_line, num_tasks=nodes, num_nodes=nodes,
-            cores_per_task=cores_per_task, gpus_per_task=ngpus)
-        jobspec.cwd = cwd
-        jobspec.environment = dict(os.environ)
-
         if job_name:
             jobspec.setattr("system.job.name", job_name)
+        jobspec.cwd = cwd
+        jobspec.environment = dict(os.environ)
 
         if walltime and walltime != "inf":
             seconds = datetime.strptime(walltime, "%H:%M:%S")
