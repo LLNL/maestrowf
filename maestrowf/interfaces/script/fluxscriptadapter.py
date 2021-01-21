@@ -230,8 +230,8 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
         walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         cores_per_task = step.run.get("cores per task", 1)
         jobspec = {
+            "cmdline": [path],
             "nnodes": step.run["nodes"],
-            # NOTE: interface doesn"t allow multiple here yet
             "ntasks":   step.run["nodes"],
             "ncores":   cores_per_task * step.run["procs"],
             "gpus":     step.run.get("gpus", 0),
@@ -253,11 +253,7 @@ class SpectrumFluxScriptAdapter(SchedulerScriptAdapter):
             #     },
             #   },
         }
-        # LOGGER.debug("Submission Spec -- \n%s", jobspec)
-        if step.run["nodes"] > 1:
-            jobspec["cmdline"] = ["flux", "broker", path]
-        else:
-            jobspec["cmdline"] = [path]
+
         if self.h is None:
             self.h = self.flux.Flux()
         resp = self.h.rpc_send("job.submit", json.dumps(jobspec))

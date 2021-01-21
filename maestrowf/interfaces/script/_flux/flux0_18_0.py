@@ -75,7 +75,7 @@ class FluxInterface_0190(FluxInterface):
             )
             jobspec = cls.flux.job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
-                num_slots=procs, gpus_per_slot=ngpus)
+                num_slots=nodes, gpus_per_slot=ngpus)
         else:
             LOGGER.debug(
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
