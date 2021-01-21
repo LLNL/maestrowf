@@ -9,6 +9,11 @@ from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
 
+try:
+    import flux
+except ImportError:
+    LOGGER.info("Failed to import Flux. Continuing.")
+
 
 class FluxInterface_0190(FluxInterface):
     # This utility class is for Flux 0.17.0
@@ -50,7 +55,6 @@ class FluxInterface_0190(FluxInterface):
     )
 
     flux_handle = None
-    flux = __import__("flux", fromlist=["job", "Flux"])
 
     @classmethod
     def submit(
@@ -58,7 +62,7 @@ class FluxInterface_0190(FluxInterface):
         ngpus=0, job_name=None, force_broker=False
     ):
         if not cls.flux_handle:
-            cls.flux_handle = cls.flux.Flux()
+            cls.flux_handle = flux.Flux()
             LOGGER.debug("New Flux instance created.")
 
         # NOTE: This previously placed everything under a broker. However,
@@ -73,7 +77,7 @@ class FluxInterface_0190(FluxInterface):
                 "Launch under Flux sub-broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            jobspec = cls.flux.job.JobspecV1.from_nest_command(
+            jobspec = flux.job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
                 num_slots=nodes, gpus_per_slot=ngpus)
         else:
@@ -81,7 +85,7 @@ class FluxInterface_0190(FluxInterface):
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            jobspec = cls.flux.job.JobspecV1.from_command(
+            jobspec = flux.job.JobspecV1.from_command(
                 [path], num_tasks=procs, num_nodes=nodes,
                 cores_per_task=cores_per_task, gpus_per_task=ngpus)
 
@@ -102,7 +106,7 @@ class FluxInterface_0190(FluxInterface):
         try:
             # Submit our job spec.
             jobid = \
-                cls.flux.job.submit(cls.flux_handle, jobspec, waitable=True)
+                flux.job.submit(cls.flux_handle, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
             retcode = 0
 
@@ -167,7 +171,7 @@ class FluxInterface_0190(FluxInterface):
         # We need to import flux here, as it may not be installed on
         # all systems.
         if not cls.flux_handle:
-            cls.flux_handle = cls.flux.Flux()
+            cls.flux_handle = flux.Flux()
             LOGGER.debug("New Flux instance created.")
 
         LOGGER.debug(
@@ -182,7 +186,7 @@ class FluxInterface_0190(FluxInterface):
 
         for jobid in joblist:
             rpc_handle = \
-                cls.flux.job.job_list_id(
+                flux.job.job_list_id(
                     cls.flux_handle, int(jobid), list(cls.attrs))
             rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
         ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
@@ -252,7 +256,7 @@ class FluxInterface_0190(FluxInterface):
         # We need to import flux here, as it may not be installed on
         # all systems.
         if not cls.flux_handle:
-            cls.flux_handle = cls.flux.Flux()
+            cls.flux_handle = flux.Flux()
             LOGGER.debug("New Flux instance created.")
 
         LOGGER.debug(
@@ -267,7 +271,7 @@ class FluxInterface_0190(FluxInterface):
         for job in joblist:
             try:
                 LOGGER.debug("Cancelling Job %s...", job)
-                cls.flux.job.cancel(cls.flux_handle, int(job))
+                flux.job.cancel(cls.flux_handle, int(job))
             except Exception as exception:
                 LOGGER.error(str(exception))
                 cancel_code = CancelCode.ERROR
