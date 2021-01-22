@@ -1,6 +1,7 @@
 from datetime import datetime
 import errno
 import logging
+from math import ceil
 import os
 
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
@@ -77,9 +78,10 @@ class FluxInterface_0190(FluxInterface):
                 "Launch under Flux sub-broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
+            ngpus_per_slot = int(ceil(ngpus / nodes))
             jobspec = flux.job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
-                num_slots=nodes, gpus_per_slot=ngpus)
+                num_slots=nodes, gpus_per_slot=ngpus_per_slot)
         else:
             LOGGER.debug(
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",

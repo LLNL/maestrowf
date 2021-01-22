@@ -624,8 +624,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
-        if not ngpus:
-            ngpus = 0
+        ngpus = 0 if not ngpus else ngpus
 
         # Calculate nprocs
         ncores = cores_per_task * nodes
