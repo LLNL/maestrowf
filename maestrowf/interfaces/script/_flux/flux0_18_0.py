@@ -116,7 +116,7 @@ class FluxInterface_0190(FluxInterface):
                         "Assigned identifier (%s)", jobid)
         except Exception as exception:
             LOGGER.error(
-                "Submission failed -- Message (%s).", exception.message)
+                "Submission failed -- Message (%s).", exception)
             jobid = -1
             retcode = -1
             submit_status = SubmissionCode.ERROR
