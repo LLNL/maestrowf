@@ -103,16 +103,31 @@ def cancel_study(args):
     directory_list = args.directory
 
     ret_code = 0
+    to_cancel = []
     if directory_list:
         for directory in directory_list:
-            if not os.path.isdir(directory):
+            abs_path = os.path.abspath(directory)
+            if not os.path.isdir(abs_path):
                 print(
-                    f"Attempted to cancel '{directory}' "
+                    f"Attempted to cancel '{abs_path}' "
                     "-- study directory not found.")
-                ret_code = 2
+                ret_code = 1
             else:
-                print(f"Marked study in '{directory}' to be cancelled.")
-                Conductor.mark_cancelled(directory)
+                print(f"Study in '{abs_path}' to be cancelled.")
+                to_cancel.append(abs_path)
+
+        if to_cancel:
+            ok_cancel = input("Are you sure? [y|[n]]: ")
+            try:
+                if ok_cancel in ACCEPTED_INPUT:
+                    for directory in to_cancel:
+                        Conductor.mark_cancelled(directory)
+            except Exception as excpt:
+                print(f"Error:\n{excpt}")
+                print("Error in cancellation. Aborting.")
+                return -1
+        else:
+            print("Cancellation aborted.")
     else:
         print("Path(s) or glob(s) did not resolve to a directory(ies).")
         ret_code = 1
