@@ -100,13 +100,24 @@ def cancel_study(args):
     # Force logging to Warning and above
     LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
-    if not os.path.isdir(args.directory):
-        print("Attempted to cancel a path that was not a directory.")
-        return 1
+    directory_list = args.directory
 
-    Conductor.mark_cancelled(args.directory)
+    ret_code = 0
+    if directory_list:
+        for directory in directory_list:
+            if not os.path.isdir(directory):
+                print(
+                    f"Attempted to cancel '{directory}' "
+                    "-- study directory not found.")
+                ret_code = 2
+            else:
+                print(f"Marked study in '{directory}' to be cancelled.")
+                Conductor.mark_cancelled(directory)
+    else:
+        print("Path(s) or glob(s) did not resolve to a directory(ies).")
+        ret_code = 1
 
-    return 0
+    return ret_code
 
 
 def load_parameter_generator(path, env, kwargs):
@@ -341,7 +352,7 @@ def setup_argparser():
         'cancel',
         help="Cancel all running jobs.")
     cancel.add_argument(
-        "directory", type=str,
+        "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     cancel.set_defaults(func=cancel_study)
 
