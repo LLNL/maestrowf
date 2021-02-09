@@ -53,6 +53,16 @@
               {"type": "integer", "minimum": 0},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
+          "cores": {
+            "anyOf": [
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "tasks": {
+            "anyOf": [
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
           "cores per task": {
             "anyOf": [
               {"type": "integer", "minimum": 1},
