@@ -36,6 +36,7 @@ from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
 from maestrowf.utils import start_process
+from perfflowaspect.aspect import critical_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class LocalScriptAdapter(ScriptAdapter):
         super(LocalScriptAdapter, self).__init__(**kwargs)
         self._extension = ".sh"
 
+    @critical_path(scope="adapter.local")
     def _write_script(self, ws_path, step):
         """
         Write a Slurm script to the workspace of a workflow step.
@@ -95,6 +97,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
         return to_be_scheduled, script_path, restart_path
 
+    @critical_path(scope="adapter.scheduler")
     def check_jobs(self, joblist):
         """
         For the given job list, query execution status.
@@ -105,6 +108,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         return JobStatusCode.NOJOBS, {}
 
+    @critical_path(scope="adapter.scheduler")
     def cancel_jobs(self, joblist):
         """
         For the given job list, cancel each job.
@@ -114,6 +118,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         return CancellationRecord(CancelCode.OK, 0)
 
+    @critical_path(scope="adapter.scheduler")
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
         Execute the step locally.

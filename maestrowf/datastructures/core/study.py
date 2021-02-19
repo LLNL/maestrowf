@@ -41,6 +41,7 @@ from maestrowf.abstracts import PickleInterface
 from maestrowf.datastructures.dag import DAG
 from maestrowf.utils import apply_function, create_parentdir, make_safe_path
 from .executiongraph import ExecutionGraph
+from perfflowaspect.aspect import critical_path
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -352,6 +353,7 @@ class Study(DAG, PickleInterface):
         self.used_params = metadata["used_parameters"]
         self.step_combos = metadata["step_combinations"]
 
+    @critical_path(scope="setup")
     def add_step(self, step):
         """
         Add a step to a study.
@@ -464,6 +466,7 @@ class Study(DAG, PickleInterface):
 
         self.is_configured = True
 
+    @critical_path(scope="staging")
     def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
@@ -757,6 +760,7 @@ class Study(DAG, PickleInterface):
 
         return dag
 
+    @critical_path(scope="staging")
     def _stage_linear(self, dag):
         """
         Execute a linear workflow without parameters.
@@ -823,6 +827,7 @@ class Study(DAG, PickleInterface):
 
         return dag
 
+    @critical_path(scope="staging")
     def stage(self):
         """
         Generate the execution graph for a Study.
