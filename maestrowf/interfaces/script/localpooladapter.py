@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class LocalPoolAdapter(SchedulerScriptAdapter):
-    """Interface class for the flux scheduler (on Spectrum MPI)."""
+    """Adapter class for scheduling to a local pool of fixed workers."""
 
     key = "local_pool"
 
@@ -19,8 +19,8 @@ class LocalPoolAdapter(SchedulerScriptAdapter):
         """
         Initialize an instance of the LocalPool Adapter.
 
-        The expected keyword arguments that are expected when the Flux adapter
-        is instantiated are as follows:
+        The expected keyword arguments that are expected when the Local Pool
+        adapter is instantiated are as follows:
         * num_processes: The number of local workers for processing.
 
         :param **kwargs: A dictionary with default settings for the adapter.
@@ -29,15 +29,20 @@ class LocalPoolAdapter(SchedulerScriptAdapter):
         num_workers = kwargs.get("num_workers", "1")
         self.add_batch_parameter("max_workers", num_workers)
         self._pool = Executor(num_workers)
-        self._extension = ".lp.sh"
+        self._extension = ".sh"
 
     @property
     def extension(self):
+        """
+        Returns the extension that generated scripts will use.
+
+        :returns: A string of the extension (e.g. ".sh").
+        """
         return self._extension
 
     def get_header(self, step):
         """
-        Generate the header present at the top of Flux execution scripts.
+        Generate the header present at the top of shell scripts.
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
@@ -59,7 +64,7 @@ class LocalPoolAdapter(SchedulerScriptAdapter):
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
-        Submit a script to the Flux scheduler.
+        Submit a script to the Local Pool.
 
         :param step: The StudyStep instance this submission is based on.
         :param path: Local path to the script to be executed.
@@ -107,7 +112,7 @@ class LocalPoolAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Unknown type. Returning an error.")
                 return JobStatusCode.ERROR, {}
 
-        status = {jid: State.UNKNOWN for jid in joblist}
+        status = {job_id: State.UNKNOWN for job_id in joblist}
         try:
             for job_id, state in self._pool.get_all_status():
                 if job_id in status:
