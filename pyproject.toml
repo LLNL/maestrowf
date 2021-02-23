@@ -42,6 +42,7 @@ pyyaml = ">=4.2b1"
 six = "*"
 tabulate = "*"
 pyaestro = "^0.0.1-alpha.0"
+psutil = "^5.8.0"
 
 [tool.poetry.dev-dependencies]
 fabric = "*"
