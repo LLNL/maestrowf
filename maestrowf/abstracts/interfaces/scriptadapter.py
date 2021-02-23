@@ -28,7 +28,7 @@
 ###############################################################################
 
 """Abstract Script Interfaces for generating scripts."""
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 import logging
 import os
 import six
@@ -151,16 +151,16 @@ class ScriptAdapter(object):
         """
         pass
 
-    @abstractproperty
+    @property
     def extension(self):
         """
         Returns the extension that generated scripts will use.
 
         :returns: A string of the extension
         """
-        pass
+        return
 
-    @abstractproperty
+    @property
     def key(self):
         """
         Return the key name for a ScriptAdapter..
@@ -168,4 +168,4 @@ class ScriptAdapter(object):
         This is used to register the adapter in the ScriptAdapterFactory
         and when writing the workflow specification.
         """
-        pass
+        return
