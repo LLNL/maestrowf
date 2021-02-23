@@ -497,11 +497,15 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pyaestro"
-version = "0.0.1a0"
+version = "0.0.1a2"
 description = "A package of utilities structures for building workflows and workflow related tools."
 category = "main"
 optional = false
-python-versions = ">3.4.*"
+python-versions = ">3.4"
+
+[package.dependencies]
+coloredlogs = "*"
+psutil = "*"
 
 [[package]]
 name = "pycodestyle"
@@ -933,7 +937,7 @@ testing = ["pathlib2", "unittest2", "jaraco.itertools", "func-timeout"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">3.5"
-content-hash = "990606be108c213b9387f468d6d00c4c4c47be8a7aafc5f2d91081e00864499c"
+content-hash = "2f4ee48deb2c6df50a1a03f489bc48ecc4d4c80d9d42392ae1d465d16871dde0"
 
 [metadata.files]
 alabaster = [
@@ -1319,8 +1323,8 @@ py = [
     {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
 ]
 pyaestro = [
-    {file = "pyaestro-0.0.1a0-py2.py3-none-any.whl", hash = "sha256:b7e93e632b9d19695c148d6a96abbb05657cc089318232845898e6d210f68a5a"},
-    {file = "pyaestro-0.0.1a0.tar.gz", hash = "sha256:1cff7b70b3779cb384d6210d69bcae85b540e224173780ab949ece70b2e3d327"},
+    {file = "pyaestro-0.0.1a2-py3-none-any.whl", hash = "sha256:878504ba92ebd530c2c1ad40b1410d7ddd5f5c1e666ad12119e879d757c51f98"},
+    {file = "pyaestro-0.0.1a2.tar.gz", hash = "sha256:1f6a5068ff8dd9fe4838aba43850e51a5b622f379819ae62103617bf9c8aaa31"},
 ]
 pycodestyle = [
     {file = "pycodestyle-2.6.0-py2.py3-none-any.whl", hash = "sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367"},
