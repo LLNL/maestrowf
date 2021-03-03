@@ -85,6 +85,7 @@ class StudyStep:
                         "reservation":      ""
                     }
 
+    @critical_path(pointcut="around")
     def apply_parameters(self, combo):
         """
         Apply a parameter combination to the StudyStep.
@@ -194,6 +195,7 @@ class Study(DAG, PickleInterface):
       using the same environment.
     """
 
+    @critical_path(pointcut="around")
     def __init__(self, name, description,
                  studyenv=None, parameters=None, steps=None, out_path="./"):
         """
@@ -265,6 +267,7 @@ class Study(DAG, PickleInterface):
         """
         return self._out_path
 
+    @critical_path(pointcut="around")
     def store_metadata(self):
         """Store metadata related to the study."""
         # Create the metadata directory.
@@ -327,6 +330,7 @@ class Study(DAG, PickleInterface):
         with open(path, "wb") as metafile:
             metafile.write(yaml.dump(os.environ.copy()).encode("utf-8"))
 
+    @critical_path(pointcut="around")
     def load_metadata(self):
         """Load metadata for the study."""
         if not os.path.exists(self._meta_path):
@@ -353,7 +357,7 @@ class Study(DAG, PickleInterface):
         self.used_params = metadata["used_parameters"]
         self.step_combos = metadata["step_combinations"]
 
-    @critical_path(scope="setup")
+    @critical_path(pointcut="around")
     def add_step(self, step):
         """
         Add a step to a study.
@@ -390,6 +394,7 @@ class Study(DAG, PickleInterface):
             # Otherwise, if no other dependency, just execute the step.
             self.add_edge(SOURCE, step.real_name)
 
+    @critical_path(pointcut="around")
     def walk_study(self, src=SOURCE):
         """
         Walk the study and create a spanning tree.
@@ -405,6 +410,7 @@ class Study(DAG, PickleInterface):
         for node in path:
             yield parents[node], node, self.values[node]
 
+    @critical_path(pointcut="around")
     def setup_workspace(self):
         """Set up the study's main workspace directory."""
         try:
@@ -414,6 +420,7 @@ class Study(DAG, PickleInterface):
             LOGGER.error(e.args)
             return False
 
+    @critical_path(pointcut="around")
     def setup_environment(self):
         """Set up the environment by acquiring outside dependencies."""
         # Set up the environment if it hasn't been already.
@@ -421,6 +428,7 @@ class Study(DAG, PickleInterface):
             LOGGER.debug("Environment is setting up.")
             self.environment.acquire_environment()
 
+    @critical_path(pointcut="around")
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False, hash_ws=False,
                         dry_run=False):
@@ -466,7 +474,7 @@ class Study(DAG, PickleInterface):
 
         self.is_configured = True
 
-    @critical_path(scope="staging")
+    @critical_path(pointcut="around")
     def _stage(self, dag):
         """
         Set up the ExecutionGraph of a parameterized study.
@@ -827,7 +835,7 @@ class Study(DAG, PickleInterface):
 
         return dag
 
-    @critical_path(scope="staging")
+    @critical_path(pointcut="around")
     def stage(self):
         """
         Generate the execution graph for a Study.

@@ -37,6 +37,7 @@ from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord, \
     FluxFactory
+from perfflowaspect.aspect import critical_path
 
 LOGGER = logging.getLogger(__name__)
 status_re = re.compile(r"Job \d+ status: (.*)$")
@@ -49,6 +50,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
     key = "flux"
 
+    @critical_path(pointcut="around")
     def __init__(self, **kwargs):
         """
         Initialize an instance of the FluxScriptAdapter.
@@ -124,6 +126,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+    @critical_path(pointcut="around")
     def get_header(self, step):
         """
         Generate the header present at the top of Flux execution scripts.
@@ -151,6 +154,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         return "\n".join(modified_header)
 
+    @critical_path(pointcut="around")
     def get_parallelize_command(self, procs, nodes=None, **kwargs):
         """
         Generate the FLUX parallelization segement of the command line.
@@ -165,6 +169,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._interface.parallelize(
             procs, nodes=ntasks, addtl_args=self._addl_args, **kwargs)
 
+    @critical_path(pointcut="around")
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
         Submit a script to the Flux scheduler.
@@ -226,6 +231,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         return SubmissionRecord(submit_status, retcode, jobid)
 
+    @critical_path(pointcut="around")
     def check_jobs(self, joblist):
         """
         For the given job list, query execution status.
@@ -260,6 +266,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         return chk_status, status
 
+    @critical_path(pointcut="around")
     def cancel_jobs(self, joblist):
         """
         For the given job list, cancel each job.
@@ -284,6 +291,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         raise NotImplementedError(
             "FluxScriptAdapter no longer uses the _state mapping.")
 
+    @critical_path(pointcut="around")
     def _write_script(self, ws_path, step):
         """
         Write a Flux script to the workspace of a workflow step.

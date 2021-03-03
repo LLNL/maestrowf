@@ -42,6 +42,7 @@ import yaml
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
 from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
+from perfflowaspect.aspect import critical_path
 
 # Logger instantiation
 ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
@@ -52,6 +53,7 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
           "%(levelname)s - %(message)s"
 
 
+@critical_path(pointcut="around")
 def setup_logging(name, output_path, log_lvl=2, log_path=None,
                   log_stdout=False, log_format=None):
     """
@@ -170,6 +172,7 @@ class Conductor:
         return self._study.name
 
     @classmethod
+    @critical_path(pointcut="around")
     def store_study(cls, study):
         """
         Store a Maestro study instance in a way the Conductor can read it.
@@ -180,6 +183,7 @@ class Conductor:
         study.pickle(pkl_path)
 
     @classmethod
+    @critical_path(pointcut="around")
     def load_batch(cls, out_path):
         """
         Load the batch information for the study rooted in 'out_path'.
@@ -207,6 +211,7 @@ class Conductor:
         return batch_info
 
     @classmethod
+    @critical_path(pointcut="around")
     def store_batch(cls, out_path, batch):
         """
         Store the specified batch information to the study in 'out_path'.
@@ -218,6 +223,7 @@ class Conductor:
             batch_info.write(yaml.dump(batch).encode("utf-8"))
 
     @classmethod
+    @critical_path(pointcut="around")
     def load_study(cls, out_path):
         """
         Load the Study instance in the study root specified by 'out_path'.
@@ -256,6 +262,7 @@ class Conductor:
         return obj
 
     @classmethod
+    @critical_path(pointcut="around")
     def get_status(cls, output_path):
         """
         Retrieve the status of the study rooted at 'out_path'.
@@ -289,6 +296,7 @@ class Conductor:
         with open(lock_path, 'a'):
             os.utime(lock_path, None)
 
+    @critical_path(pointcut="around")
     def initialize(self, batch_info, sleeptime=60):
         """
         Initializes the Conductor instance based on the stored study.
@@ -306,6 +314,7 @@ class Conductor:
         self._study.store_metadata()
         self._setup = True
 
+    @critical_path(pointcut="around")
     def monitor_study(self):
         """Monitor a running study."""
         if not self._setup:
@@ -360,10 +369,12 @@ class Conductor:
 
         return completion_status
 
+    @critical_path(pointcut="around")
     def cleanup(self):
         self._exec_dag.cleanup()
 
 
+@critical_path(pointcut="around")
 def main():
     """Run the main segment of the conductor."""
     conductor = None

@@ -45,6 +45,7 @@ from maestrowf.datastructures.core import (
     StudyStep,
 )
 from maestrowf.datastructures import environment
+from perfflowaspect.aspect import critical_path
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ class YAMLSpecification(Specification):
         self.globals = {}
 
     @classmethod
+    @critical_path(pointcut="around")
     def load_specification(cls, path):
         """
         Load a study specification.
@@ -113,6 +115,7 @@ class YAMLSpecification(Specification):
         return specification
 
     @classmethod
+    @critical_path(pointcut="around")
     def load_specification_from_stream(cls, stream):
         """
         Load a study specification.
@@ -149,6 +152,7 @@ class YAMLSpecification(Specification):
         logger.debug("Returning verified specification.")
         return specification
 
+    @critical_path(pointcut="around")
     def verify(self):
         """Verify the whole specification."""
 
@@ -399,6 +403,7 @@ class YAMLSpecification(Specification):
             raise
 
     @staticmethod
+    @critical_path(pointcut="around")
     def validate_schema(parent_key, instance, schema):
         """
         Given a parent key, an instance of a spec section, and a json schema
@@ -520,6 +525,7 @@ class YAMLSpecification(Specification):
         """
         self.description["description"] = value
 
+    @critical_path(pointcut="around")
     def get_study_environment(self):
         """
         Generate a StudyEnvironment object from the environment in the spec.
@@ -563,6 +569,7 @@ class YAMLSpecification(Specification):
 
         return env
 
+    @critical_path(pointcut="around")
     def get_parameters(self):
         """
         Generate a ParameterGenerator object from the global parameters.
@@ -580,6 +587,7 @@ class YAMLSpecification(Specification):
 
         return params
 
+    @critical_path(pointcut="around")
     def get_study_steps(self):
         """
         Generate a list of StudySteps from the study in the specification.

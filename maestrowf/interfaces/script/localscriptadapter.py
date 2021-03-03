@@ -46,6 +46,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
     key = "local"
 
+    @critical_path(pointcut="around")
     def __init__(self, **kwargs):
         """
         Initialize an instance of the LocalScriptAdapter.
@@ -97,7 +98,7 @@ class LocalScriptAdapter(ScriptAdapter):
 
         return to_be_scheduled, script_path, restart_path
 
-    @critical_path(scope="adapter.scheduler")
+    @critical_path(pointcut="around")
     def check_jobs(self, joblist):
         """
         For the given job list, query execution status.
@@ -108,7 +109,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         return JobStatusCode.NOJOBS, {}
 
-    @critical_path(scope="adapter.scheduler")
+    @critical_path(pointcut="around")
     def cancel_jobs(self, joblist):
         """
         For the given job list, cancel each job.
@@ -118,7 +119,7 @@ class LocalScriptAdapter(ScriptAdapter):
         """
         return CancellationRecord(CancelCode.OK, 0)
 
-    @critical_path(scope="adapter.scheduler")
+    @critical_path(pointcut="around")
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
         Execute the step locally.

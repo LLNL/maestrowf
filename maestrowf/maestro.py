@@ -46,6 +46,7 @@ from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
+from perfflowaspect.aspect import critical_path
 
 
 # Program Globals
@@ -145,6 +146,7 @@ def cancel_study(args):
     return ret_code
 
 
+@critical_path(pointcut="around")
 def load_parameter_generator(path, env, kwargs):
     """
     Import and load custom parameter Python files.
