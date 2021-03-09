@@ -11,7 +11,9 @@ from maestrowf.abstracts.interfaces.flux import FluxInterface
 LOGGER = logging.getLogger(__name__)
 
 try:
-    from flux import constants, Flux, job
+    from flux import constants as flux_constants
+    from flux import job as flux_job
+    from flux import Flux
 except ImportError:
     LOGGER.info("Failed to import Flux. Continuing.")
 
@@ -79,7 +81,7 @@ class FluxInterface_0190(FluxInterface):
                 force_broker, nodes
             )
             ngpus_per_slot = int(ceil(ngpus / nodes))
-            jobspec = job.JobspecV1.from_nest_command(
+            jobspec = flux_job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
                 num_slots=nodes, gpus_per_slot=ngpus_per_slot)
         else:
@@ -87,7 +89,7 @@ class FluxInterface_0190(FluxInterface):
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            jobspec = job.JobspecV1.from_command(
+            jobspec = flux_job.JobspecV1.from_command(
                 [path], num_tasks=procs, num_nodes=nodes,
                 cores_per_task=cores_per_task, gpus_per_task=ngpus)
 
@@ -108,7 +110,7 @@ class FluxInterface_0190(FluxInterface):
         try:
             # Submit our job spec.
             jobid = \
-                job.submit(cls.flux_handle, jobspec, waitable=True)
+                flux_job.submit(cls.flux_handle, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
             retcode = 0
 
@@ -187,7 +189,7 @@ class FluxInterface_0190(FluxInterface):
         }
 
         for jobid in joblist:
-            rpc_handle = job.job_list_id(
+            rpc_handle = flux_job.job_list_id(
                 cls.flux_handle, int(jobid), list(cls.attrs))
             rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
         ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
@@ -231,10 +233,10 @@ class FluxInterface_0190(FluxInterface):
         LOGGER.debug(
             "JOBID [%d] -- Encountered (%s)", job_entry["id"], stateid)
 
-        if stateid & constants.FLUX_JOB_PENDING:
+        if stateid & flux_constants.FLUX_JOB_PENDING:
             LOGGER.debug("Marking as PENDING.")
             statusstr = "PD" if abbrev else "PENDING"
-        elif stateid & constants.FLUX_JOB_RUNNING:
+        elif stateid & flux_constants.FLUX_JOB_RUNNING:
             LOGGER.debug("Marking as RUNNING.")
             statusstr = "R" if abbrev else "RUNNING"
         else:
