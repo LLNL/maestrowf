@@ -714,7 +714,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
                 elif status == State.RUNNING:
                     # When detect that a step is running, mark it.
-                    LOGGER.info("Step '%s' found to be running.")
+                    LOGGER.info("Step '%s' found to be running.", record.name)
                     record.mark_running()
 
                 elif status == State.TIMEDOUT:
