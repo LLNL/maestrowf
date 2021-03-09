@@ -197,6 +197,45 @@ Once set up, test the environment. The paths should point to a virtual environme
     which python
     which pip
 
+----------------
+
+## Using Maestro Dockerfiles
+
+
+Maestro comes packaged with a set of Docker files for testing things out. The two primary files
+are:
+
+- A standard `Dockerfile` in the root of the Maestro repository. This file is a standard install
+  of Maestro meant to try out Maestro on the demo samples provided with this repository. In order
+  to try Maestro locally, with [Docker](https://www.docker.com/) installed run:
+
+  ```
+  docker build -t maestrowf .
+  docker run -ti maestrowf
+  ```
+
+  From within the container run the following:
+
+  ```
+  maestro run ./maestrowf/samples/lulesh/lulesh_sample1_unix.yaml
+  ```
+
+- In order to try out Flux 0.19.0 integration, from the root of the Maestro repository run the
+  following:
+
+  ```
+  docker build -t flux_0190 -f ./docker/flux/0.19.0/Dockerfile .
+  docker run -ti flux_0190
+  ```
+
+  From within the container run the following:
+
+  ```
+  maestro run ./maestrowf/samples/lulesh/lulesh_sample1_unix_flux.yaml
+  ```
+
+----------------
+
 ## Contributors
 
 Many thanks go to MaestroWF's [contributors](https://github.com/LLNL/maestrowf/graphs/contributors).

@@ -11,7 +11,9 @@ from maestrowf.abstracts.interfaces.flux import FluxInterface
 LOGGER = logging.getLogger(__name__)
 
 try:
-    import flux
+    from flux import constants as flux_constants
+    from flux import job as flux_job
+    from flux import Flux
 except ImportError:
     LOGGER.info("Failed to import Flux. Continuing.")
 
@@ -63,7 +65,7 @@ class FluxInterface_0190(FluxInterface):
         ngpus=0, job_name=None, force_broker=False
     ):
         if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
+            cls.flux_handle = Flux()
             LOGGER.debug("New Flux instance created.")
 
         # NOTE: This previously placed everything under a broker. However,
@@ -79,7 +81,7 @@ class FluxInterface_0190(FluxInterface):
                 force_broker, nodes
             )
             ngpus_per_slot = int(ceil(ngpus / nodes))
-            jobspec = flux.job.JobspecV1.from_nest_command(
+            jobspec = flux_job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
                 num_slots=nodes, gpus_per_slot=ngpus_per_slot)
         else:
@@ -87,7 +89,7 @@ class FluxInterface_0190(FluxInterface):
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
                 force_broker, nodes
             )
-            jobspec = flux.job.JobspecV1.from_command(
+            jobspec = flux_job.JobspecV1.from_command(
                 [path], num_tasks=procs, num_nodes=nodes,
                 cores_per_task=cores_per_task, gpus_per_task=ngpus)
 
@@ -108,7 +110,7 @@ class FluxInterface_0190(FluxInterface):
         try:
             # Submit our job spec.
             jobid = \
-                flux.job.submit(cls.flux_handle, jobspec, waitable=True)
+                flux_job.submit(cls.flux_handle, jobspec, waitable=True)
             submit_status = SubmissionCode.OK
             retcode = 0
 
@@ -173,7 +175,7 @@ class FluxInterface_0190(FluxInterface):
         # We need to import flux here, as it may not be installed on
         # all systems.
         if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
+            cls.flux_handle = Flux()
             LOGGER.debug("New Flux instance created.")
 
         LOGGER.debug(
@@ -187,9 +189,8 @@ class FluxInterface_0190(FluxInterface):
         }
 
         for jobid in joblist:
-            rpc_handle = \
-                flux.job.job_list_id(
-                    cls.flux_handle, int(jobid), list(cls.attrs))
+            rpc_handle = flux_job.job_list_id(
+                cls.flux_handle, int(jobid), list(cls.attrs))
             rpc_handle.then(cls.status_callback, arg=(int(jobid), cb_args))
         ret = cls.flux_handle.reactor_run(rpc_handle.get_reactor(), 0)
 
@@ -200,16 +201,17 @@ class FluxInterface_0190(FluxInterface):
             chk_status = JobStatusCode.ERROR
 
         statuses = {}
-        for job in cb_args["jobs"]:
-            if job[0] == "NF":
-                statuses[job[1]["id"]] = State.NOTFOUND
-            elif job[0] == "UNK":
-                statuses[job[1]["id"]] = State.UNKNOWN
+        for job_entry in cb_args["jobs"]:
+            if job_entry[0] == "NF":
+                statuses[job_entry[1]["id"]] = State.NOTFOUND
+            elif job_entry[0] == "UNK":
+                statuses[job_entry[1]["id"]] = State.UNKNOWN
             else:
                 LOGGER.debug(
-                    "Job checked with status '%s'\nEntry: %s", job[0], job[1])
-                statuses[job[1]["id"]] = \
-                    cls.statustostr(job[1], True)
+                    "Job checked with status '%s'\nEntry: %s",
+                    job_entry[0], job_entry[1])
+                statuses[job_entry[1]["id"]] = \
+                    cls.statustostr(job_entry[1], True)
         return chk_status, statuses
 
     @classmethod
@@ -227,16 +229,14 @@ class FluxInterface_0190(FluxInterface):
 
     @classmethod
     def statustostr(cls, job_entry, abbrev=True):
-        flux = __import__("flux", fromlist=["constants"])
-
         stateid = job_entry["state"]
         LOGGER.debug(
             "JOBID [%d] -- Encountered (%s)", job_entry["id"], stateid)
 
-        if stateid & flux.constants.FLUX_JOB_PENDING:
+        if stateid & flux_constants.FLUX_JOB_PENDING:
             LOGGER.debug("Marking as PENDING.")
             statusstr = "PD" if abbrev else "PENDING"
-        elif stateid & flux.constants.FLUX_JOB_RUNNING:
+        elif stateid & flux_constants.FLUX_JOB_RUNNING:
             LOGGER.debug("Marking as RUNNING.")
             statusstr = "R" if abbrev else "RUNNING"
         else:
@@ -258,7 +258,7 @@ class FluxInterface_0190(FluxInterface):
         # We need to import flux here, as it may not be installed on
         # all systems.
         if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
+            cls.flux_handle = Flux()
             LOGGER.debug("New Flux instance created.")
 
         LOGGER.debug(
@@ -270,10 +270,10 @@ class FluxInterface_0190(FluxInterface):
 
         cancel_code = CancelCode.OK
         cancel_rcode = 0
-        for job in joblist:
+        for entry in joblist:
             try:
-                LOGGER.debug("Cancelling Job %s...", job)
-                flux.job.cancel(cls.flux_handle, int(job))
+                LOGGER.debug("Cancelling Job %s...", entry)
+                entry.cancel(cls.flux_handle, int(entry))
             except Exception as exception:
                 LOGGER.error(str(exception))
                 cancel_code = CancelCode.ERROR
