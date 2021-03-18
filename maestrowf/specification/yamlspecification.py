@@ -50,8 +50,7 @@ logger = logging.getLogger(__name__)
 
 
 class YAMLSpecification(Specification):
-    """
-    Class for loading and verifying a Study Specification.
+    """Class for loading and verifying a Study Specification.
 
     The Specification class provides an abstracted interface for constructing
     and managing studies. The Specification class makes use of a YAML file
@@ -75,6 +74,11 @@ class YAMLSpecification(Specification):
     is an example of how you would use an interface (of whatever type)
     to construct the core structures and make use of them to run a
     study.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self):
@@ -92,11 +96,14 @@ class YAMLSpecification(Specification):
 
     @classmethod
     def load_specification(cls, path):
-        """
-        Load a study specification.
+        """Load a study specification.
 
-        :param path: Path to a study specification.
-        :returns: A specification object containing the information from path.
+        Args:
+          path: Path to a study specification.
+
+        Returns:
+          A specification object containing the information from path.
+
         """
         logger.info("Loading specification -- path = %s", path)
         try:
@@ -114,12 +121,15 @@ class YAMLSpecification(Specification):
 
     @classmethod
     def load_specification_from_stream(cls, stream):
-        """
-        Load a study specification.
+        """Load a study specification.
 
-        :param stream: Raw text stream to study YAML specification data.
-        :returns: A specification object containing the information from the
-                  passed stream.
+        Args:
+          stream: Raw text stream to study YAML specification data.
+
+        Returns:
+          A specification object containing the information from the
+          passed stream.
+
         """
 
         try:
@@ -169,11 +179,16 @@ class YAMLSpecification(Specification):
         )
 
     def verify_description(self, schema):
-        """
-        Verify the description in the specification.
+        """Verify the description in the specification.
 
         The description is required to have both a name and a description. If
         either is missing, the specification is considered invalid.
+
+        Args:
+          schema:
+
+        Returns:
+
         """
         # Verify that the top level structure contains a name, description
         # and study.
@@ -188,14 +203,17 @@ class YAMLSpecification(Specification):
         logger.debug("Study description verified -- \n%s", self.description)
 
     def _verify_variables(self):
-        """
-        Verify the variables section of env in a specification.
+        """Verify the variables section of env in a specification.
 
         The criteria for each variable is as follows:
             1. Each variable must have a name and value (non-empty strings)
             2. A variable name cannot be repeated.
 
-        :returns: A set of keys encountered in the variables section.
+        Args:
+
+        Returns:
+          A set of keys encountered in the variables section.
+
         """
         keys_seen = set()
         if "variables" not in self.environment:
@@ -236,15 +254,18 @@ class YAMLSpecification(Specification):
         pass
 
     def _verify_dependencies(self, keys_seen):
-        """
-        Verify the dependencies section of env in a specification.
+        """Verify the dependencies section of env in a specification.
 
         A dependency is required to have at least a name in all cases. Other
         required keys are entirely dependent on the type of dependency.
 
-        :param keys_seen: A set of the keys seen in other parts of the
-            specification.
-        :returns: A set of variable names seen.
+        Args:
+          keys_seen: A set of the keys seen in other parts of the
+        specification.
+
+        Returns:
+          A set of variable names seen.
+
         """
         dep_types = ["path", "git", "spack"]
 
@@ -274,11 +295,16 @@ class YAMLSpecification(Specification):
         return keys_seen
 
     def verify_environment(self, schema):
-        """Verify that the environment in a specification is valid."""
+        """Verify that the environment in a specification is valid.
+
+        Args:
+          schema:
+
+        Returns:
+
+        """
         # validate environment against json schema
-        YAMLSpecification.validate_schema(
-            "env", self.environment, schema
-        )
+        YAMLSpecification.validate_schema("env", self.environment, schema)
         # Verify the variables section of the specification.
         keys_seen = self._verify_variables()
         # Verify the sources section of the specification.
@@ -287,7 +313,14 @@ class YAMLSpecification(Specification):
         self._verify_dependencies(keys_seen)
 
     def verify_study(self, schema):
-        """Verify the each step of the study in the specification."""
+        """Verify the each step of the study in the specification.
+
+        Args:
+          schema:
+
+        Returns:
+
+        """
         # The workflow must have at least one step in it, otherwise, it's
         # not a workflow...
         try:
@@ -307,19 +340,22 @@ class YAMLSpecification(Specification):
             raise
 
     def _verify_steps(self, schema):
-        """
-        Verify each study step in the specification.
+        """Verify each study step in the specification.
 
         A study step is required to have a name, description, and a command.
         If any are missing, the specification is considered invalid.
+
+        Args:
+          schema:
+
+        Returns:
+
         """
         try:
             for step in self.study:
                 # validate step against json schema
                 YAMLSpecification.validate_schema(
-                    "study step '{}'".format(step["name"]),
-                    step,
-                    schema,
+                    "study step '{}'".format(step["name"]), step, schema,
                 )
 
         except Exception as e:
@@ -329,8 +365,7 @@ class YAMLSpecification(Specification):
         logger.debug("Verified steps")
 
     def verify_parameters(self, schema):
-        """
-        Verify the parameters section of the specification.
+        """Verify the parameters section of the specification.
 
         Verify that (if globals exist) they conform to the following:
         Each parameter must have:
@@ -343,6 +378,12 @@ class YAMLSpecification(Specification):
         1. All global names must be unique.
         2. Each list of values must be the same length.
         3. If the label is a list, its length must match the value length.
+
+        Args:
+          schema:
+
+        Returns:
+
         """
         try:
             if self.globals:
@@ -358,9 +399,7 @@ class YAMLSpecification(Specification):
 
                     # validate parameters against json schema
                     YAMLSpecification.validate_schema(
-                        "global.params.{}".format(name),
-                        value,
-                        schema,
+                        "global.params.{}".format(name), value, schema,
                     )
 
                     # If label is a list, check its length against values.
@@ -400,9 +439,16 @@ class YAMLSpecification(Specification):
 
     @staticmethod
     def validate_schema(parent_key, instance, schema):
-        """
-        Given a parent key, an instance of a spec section, and a json schema
+        """Given a parent key, an instance of a spec section, and a json schema
         for that section, validate the instance against the schema.
+
+        Args:
+          parent_key:
+          instance:
+          schema:
+
+        Returns:
+
         """
         validator = jsonschema.Draft7Validator(schema)
         errors = validator.iter_errors(instance)
@@ -413,8 +459,9 @@ class YAMLSpecification(Specification):
                     re.search(r"'.+'", error.message).group(0).strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "Unrecognized key '{0}' found in {1}."
-                    .format(unrecognized, parent_key)
+                    "Unrecognized key '{0}' found in {1}.".format(
+                        unrecognized, parent_key
+                    )
                 )
 
             elif error.validator == "type":
@@ -425,8 +472,9 @@ class YAMLSpecification(Specification):
                     .strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "In {0}, {1} must be of type '{2}'."
-                    .format(parent_key, path, expected_type)
+                    "In {0}, {1} must be of type '{2}'.".format(
+                        parent_key, path, expected_type
+                    )
                 )
 
             elif error.validator == "required":
@@ -441,27 +489,34 @@ class YAMLSpecification(Specification):
 
             elif error.validator == "uniqueItems":
                 raise jsonschema.ValidationError(
-                    "Non-unique step names in {0}.run.depends."
-                    .format(parent_key)
+                    "Non-unique step names in {0}.run.depends.".format(
+                        parent_key
+                    )
                 )
 
             elif error.validator == "minLength":
                 raise jsonschema.ValidationError(
-                    "In {0}, empty string found as value for {1}."
-                    .format(parent_key, path)
+                    "In {0}, empty string found as value for {1}.".format(
+                        parent_key, path
+                    )
                 )
 
             elif error.validator == "anyOf":
                 path = ".".join(list(error.path))
                 context_message = error.context[0].message
-                context_message = re.sub(r"'.+' ", "'{0}' ".format(
-                    path
-                ), context_message)
+                context_message = re.sub(
+                    r"'.+' ", "'{0}' ".format(path), context_message
+                )
                 raise jsonschema.ValidationError(
-                    ("The value '{0}' in field {1} of {2} is not of type "
-                     "'{3}' or does not conform to the format '$(VARNAME)'.")
-                    .format(error.instance, path, parent_key,
-                            error.validator_value[0]["type"])
+                    (
+                        "The value '{0}' in field {1} of {2} is not of type "
+                        "'{3}' or does not conform to the format '$(VARNAME)'."
+                    ).format(
+                        error.instance,
+                        path,
+                        parent_key,
+                        error.validator_value[0]["type"],
+                    )
                 )
 
             else:
@@ -469,10 +524,13 @@ class YAMLSpecification(Specification):
 
     @property
     def output_path(self):
-        """
-        Return the OUTPUT_PATH variable (if it exists).
+        """Return the OUTPUT_PATH variable (if it exists).
 
-        :returns: Returns OUTPUT_PATH if it exists, empty string otherwise.
+        Args:
+
+        Returns:
+          Returns OUTPUT_PATH if it exists, empty string otherwise.
+
         """
         if "variables" in self.environment:
             if "OUTPUT_PATH" in self.environment["variables"]:
@@ -485,46 +543,61 @@ class YAMLSpecification(Specification):
 
     @property
     def name(self):
-        """
-        Getter for the name of a study specification.
+        """Getter for the name of a study specification.
 
-        :returns: The name of the study described by the specification.
+        Args:
+
+        Returns:
+          The name of the study described by the specification.
+
         """
         return self.description["name"]
 
     @name.setter
     def name(self, value):
-        """
-        Setter for the name of a study specification.
+        """Setter for the name of a study specification.
 
-        :param value: String value representing the new name.
+        Args:
+          value: String value representing the new name.
+
+        Returns:
+
         """
         self.description["name"] = value
 
     @property
     def desc(self):
-        """
-        Getter for the description of a study specification.
+        """Getter for the description of a study specification.
 
-        :returns: A string containing the description of the study
-            specification.
+        Args:
+
+        Returns:
+          A string containing the description of the study
+          specification.
+
         """
         return self.description["description"]
 
     @desc.setter
     def desc(self, value):
-        """
-        Setter for the description of a study specification.
+        """Setter for the description of a study specification.
 
-        :param value: String value representing the new description.
+        Args:
+          value: String value representing the new description.
+
+        Returns:
+
         """
         self.description["description"] = value
 
     def get_study_environment(self):
-        """
-        Generate a StudyEnvironment object from the environment in the spec.
+        """Generate a StudyEnvironment object from the environment in the spec.
 
-        :returns: A StudyEnvironment object with the data in the specification.
+        Args:
+
+        Returns:
+          A StudyEnvironment object with the data in the specification.
+
         """
         env = StudyEnvironment()
         if "variables" in self.environment:
@@ -564,10 +637,13 @@ class YAMLSpecification(Specification):
         return env
 
     def get_parameters(self):
-        """
-        Generate a ParameterGenerator object from the global parameters.
+        """Generate a ParameterGenerator object from the global parameters.
 
-        :returns: A ParameterGenerator with data from the specification.
+        Args:
+
+        Returns:
+          A ParameterGenerator with data from the specification.
+
         """
         params = ParameterGenerator()
         for key, value in self.globals.items():
@@ -581,10 +657,13 @@ class YAMLSpecification(Specification):
         return params
 
     def get_study_steps(self):
-        """
-        Generate a list of StudySteps from the study in the specification.
+        """Generate a list of StudySteps from the study in the specification.
 
-        :returns: A list of StudyStep objects.
+        Args:
+
+        Returns:
+          A list of StudyStep objects.
+
         """
         steps = []
         for step in self.study:

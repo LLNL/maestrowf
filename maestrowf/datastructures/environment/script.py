@@ -48,23 +48,31 @@ class Script(Source):
         :params source: The command for changing the execution environment.
         """
         self.source = source
-        self._verification("Script initialized without complete settings. Set"
-                           " source before calling methods.")
+        self._verification(
+            "Script initialized without complete settings. Set"
+            " source before calling methods."
+        )
 
     def apply(self, cmds):
-        """
-        Apply the Script source to the specified list of commands.
+        """Apply the Script source to the specified list of commands.
 
-        :param cmds: List of commands to add source to.
-        :returns: List of commands with the source prepended.
+        Args:
+          cmds: List of commands to add source to.
+
+        Returns:
+          List of commands with the source prepended.
+
         """
         return [self.source] + list(cmds)
 
     def _verify(self):
-        """
-        Verify the Script object's contents.
+        """Verify the Script object's contents.
 
-        :returns: True if the Script object is valid, False otherwise.
+        Args:
+
+        Returns:
+          True if the Script object is valid, False otherwise.
+
         """
         valid_param_pattern = re.compile(r"\w+")
         return bool(re.search(valid_param_pattern, self.source))

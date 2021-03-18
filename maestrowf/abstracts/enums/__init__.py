@@ -34,16 +34,22 @@ __all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
 
 
 class SubmissionCode(Enum):
+    """ """
+
     OK = 0
     ERROR = 1
 
 
 class CancelCode(Enum):
+    """ """
+
     OK = 0
     ERROR = 1
 
 
 class JobStatusCode(Enum):
+    """ """
+
     OK = 0
     NOJOBS = 1
     ERROR = 2
@@ -71,7 +77,8 @@ class State(Enum):
 
 class StudyStatus(Enum):
     """Workflow status enumeration"""
-    FINISHED = 0   # The Study has finished successfully, all steps ran
-    RUNNING = 1    # The Study is currently running
-    FAILURE = 2    # The Study has finished, but 1 or more steps failed
+
+    FINISHED = 0  # The Study has finished successfully, all steps ran
+    RUNNING = 1  # The Study is currently running
+    FAILURE = 2  # The Study has finished, but 1 or more steps failed
     CANCELLED = 3  # The Study has finished, but was cancelled

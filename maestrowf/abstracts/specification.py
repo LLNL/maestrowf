@@ -35,96 +35,122 @@ from . import abstractclassmethod
 
 @six.add_metaclass(ABCMeta)
 class Specification:
-    """
-    Abstract class for loading and verifying a Study Specification
-    """
+    """Abstract class for loading and verifying a Study Specification"""
 
     @abstractclassmethod
     def load_specification(cls, path):
-        """
-        Method for loading a study specification from a file.
+        """Method for loading a study specification from a file.
 
-        :param path: Path to a study specification.
-        :returns: A specification object containing the information loaded
-                  from path.
+        Args:
+          path: Path to a study specification.
+
+        Returns:
+          A specification object containing the information loaded
+          from path.
+
         """
 
     @abstractclassmethod
     def load_specification_from_stream(cls, stream):
-        """
-        Method for loading a study specification from a stream.
+        """Method for loading a study specification from a stream.
 
-        :param stream: Raw text stream containing specification data.
-        :returns: A specification object containing the information in string.
+        Args:
+          stream: Raw text stream containing specification data.
+
+        Returns:
+          A specification object containing the information in string.
+
         """
 
     @abstractmethod
     def verify(self):
-        """
-        Verify the whole specification.
-        """
+        """Verify the whole specification."""
 
     @abstractmethod
     def get_study_environment(self):
-        """
-        Generate a StudyEnvironment object from the environment in the spec.
+        """Generate a StudyEnvironment object from the environment in the spec.
 
-        :returns: A StudyEnvironment object with the data in the specification.
+        Args:
+
+        Returns:
+          A StudyEnvironment object with the data in the specification.
+
         """
 
     @abstractmethod
     def get_parameters(self):
-        """
-        Generate a ParameterGenerator object from the global parameters.
+        """Generate a ParameterGenerator object from the global parameters.
 
-        :returns: A ParameterGenerator with data from the specification.
+        Args:
+
+        Returns:
+          A ParameterGenerator with data from the specification.
+
         """
 
     @abstractmethod
     def get_study_steps(self):
-        """
-        Generate a list of StudySteps from the study in the specification.
+        """Generate a list of StudySteps from the study in the specification.
 
-        :returns: A list of StudyStep objects.
+        Args:
+
+        Returns:
+          A list of StudyStep objects.
+
         """
 
     @abstractproperty
     def output_path(self):
-        """
-        Return the OUTPUT_PATH variable (if it exists).
+        """Return the OUTPUT_PATH variable (if it exists).
 
-        :returns: Returns OUTPUT_PATH if it exists, empty string otherwise.
+        Args:
+
+        Returns:
+          Returns OUTPUT_PATH if it exists, empty string otherwise.
+
         """
 
     @abstractproperty
     def name(self):
-        """
-        Getter for the name of a study specification.
+        """Getter for the name of a study specification.
 
-        :returns: The name of the study described by the specification.
+        Args:
+
+        Returns:
+          The name of the study described by the specification.
+
         """
 
     @name.setter
     def name(self, value):
-        """
-        Setter for the name of a study specification.
+        """Setter for the name of a study specification.
 
-        :param value: String value representing the new name.
+        Args:
+          value: String value representing the new name.
+
+        Returns:
+
         """
 
     @abstractproperty
     def desc(self):
-        """
-        Getter for the description of a study specification.
+        """Getter for the description of a study specification.
 
-        :returns: A string containing the description of the study
-            specification.
+        Args:
+
+        Returns:
+          A string containing the description of the study
+          specification.
+
         """
 
     @desc.setter
     def desc(self, value):
-        """
-        Setter for the description of a study specification.
+        """Setter for the description of a study specification.
 
-        :param value: String value representing the new description.
+        Args:
+          value: String value representing the new description.
+
+        Returns:
+
         """

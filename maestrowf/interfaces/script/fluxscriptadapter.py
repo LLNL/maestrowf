@@ -36,8 +36,11 @@ import re
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, CancelCode
-from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord, \
-    FluxFactory
+from maestrowf.interfaces.script import (
+    CancellationRecord,
+    SubmissionRecord,
+    FluxFactory,
+)
 
 LOGGER = logging.getLogger(__name__)
 status_re = re.compile(r"Job \d+ status: (.*)$")
@@ -73,7 +76,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if not uri:
             raise ValueError(
                 "Flux URI must be specified in batch or stored in the "
-                "environment under 'FLUX_URI'")
+                "environment under 'FLUX_URI'"
+            )
 
         self.add_batch_parameter("flux_uri", uri)
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
@@ -97,37 +101,48 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.h = None
         # Store the interface we're using
         _version = kwargs.pop("version", FluxFactory.latest)
-        self.add_batch_parameter(
-            "version", _version)
+        self.add_batch_parameter("version", _version)
         self._interface = FluxFactory.get_interface(_version)
 
     @property
     def extension(self):
+        """ """
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
+        """
+
+        Args:
+          walltime:
+
+        Returns:
+
+        """
         if not walltime:
             LOGGER.debug("Encountered inf walltime!")
             return "inf"
         # Convert walltime to seconds.
         LOGGER.debug("Converting %s to seconds...", walltime)
-        wt = \
-            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
+        wt = datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1)
         return int(wt.total_seconds())
 
     def get_header(self, step):
-        """
-        Generate the header present at the top of Flux execution scripts.
+        """Generate the header present at the top of Flux execution scripts.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the header based on internal batch parameters and
-                  the parameter step.
+        Args:
+          step: A StudyStep instance.
+
+        Returns:
+          A string of the header based on internal batch parameters and
+          the parameter step.
+
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
         walltime = step.run.get("walltime", None)
-        batch_header["walltime"] = \
-            str(self._convert_walltime_to_seconds(walltime))
+        batch_header["walltime"] = str(
+            self._convert_walltime_to_seconds(walltime)
+        )
 
         if run["nodes"]:
             batch_header["nodes"] = run.pop("nodes")
@@ -143,31 +158,40 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return "\n".join(modified_header)
 
     def get_parallelize_command(self, procs, nodes=None, **kwargs):
-        """
-        Generate the FLUX parallelization segement of the command line.
+        """Generate the FLUX parallelization segement of the command line.
 
-        :param procs: Number of processors to allocate to the parallel call.
-        :param nodes: Number of nodes to allocate to the parallel call
-                      (default = 1).
-        :returns: A string of the parallelize command configured using nodes
-                  and procs.
+        Args:
+          procs: Number of processors to allocate to the parallel call.
+          nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+          **kwargs:
+
+        Returns:
+          A string of the parallelize command configured using nodes
+          and procs.
+
         """
         ntasks = nodes if nodes else self._batch.get("nodes", 1)
         return self._interface.parallelize(
-            procs, nodes=ntasks, addtl_args=self._addl_args, **kwargs)
+            procs, nodes=ntasks, addtl_args=self._addl_args, **kwargs
+        )
 
     def submit(self, step, path, cwd, job_map=None, env=None):
-        """
-        Submit a script to the Flux scheduler.
+        """Submit a script to the Flux scheduler.
 
-        :param step: The StudyStep instance this submission is based on.
-        :param path: Local path to the script to be executed.
-        :param cwd: Path to the current working directory.
-        :param job_map: A dictionary mapping step names to their job
-                        identifiers.
-        :param env: A dict containing a modified environment for execution.
-        :returns: The return status of the submission command and job
-                  identiifer.
+        Args:
+          step: The StudyStep instance this submission is based on.
+          path: Local path to the script to be executed.
+          cwd: Path to the current working directory.
+          job_map: A dictionary mapping step names to their job
+            identifiers. (Default value = None)
+          env: A dict containing a modified environment for execution.
+            (Default value = None)
+
+        Returns:
+          The return status of the submission command and job
+          identiifer.
+
         """
         # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
@@ -181,7 +205,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             cores_per_task = ceil(processors / nodes)
             LOGGER.warn(
                 "'cores per task' set to a non-value. Populating with a "
-                "sensible default. (cores per task = %d", cores_per_task)
+                "sensible default. (cores per task = %d",
+                cores_per_task,
+            )
 
         # Calculate ngpus
         ngpus = step.run.get("gpus", 0)
@@ -192,36 +218,49 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # Check to make sure that cores_per_task matches if processors
         # is specified.
         if processors > 0 and processors > ncores:
-            msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
+            msg = (
+                "Calculated ncores (nodes * cores per task) = {} "
+                "-- procs = {}".format(ncores, processors)
+            )
             LOGGER.error(msg)
             raise ValueError(msg)
 
         # Raise an exception if ncores is 0
         if ncores <= 0:
-            msg = "Invalid number of cores specified. " \
-                  "Aborting. (ncores = {})".format(ncores)
+            msg = (
+                "Invalid number of cores specified. "
+                "Aborting. (ncores = {})".format(ncores)
+            )
             LOGGER.error(msg)
             raise ValueError(msg)
 
-        jobid, retcode, submit_status = \
-            self._interface.submit(
-                nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
-                job_name=step.name, force_broker=force_broker
-            )
+        jobid, retcode, submit_status = self._interface.submit(
+            nodes,
+            processors,
+            cores_per_task,
+            path,
+            cwd,
+            walltime,
+            ngpus,
+            job_name=step.name,
+            force_broker=force_broker,
+        )
 
         return SubmissionRecord(submit_status, retcode, jobid)
 
     def check_jobs(self, joblist):
-        """
-        For the given job list, query execution status.
+        """For the given job list, query execution status.
 
         This method uses the scontrol show job <jobid> command and does a
         regex search for job information.
 
-        :param joblist: A list of job identifiers to be queried.
-        :returns: The return code of the status query, and a dictionary of job
-                  identifiers to their status.
+        Args:
+          joblist: A list of job identifiers to be queried.
+
+        Returns:
+          The return code of the status query, and a dictionary of job
+          identifiers to their status.
+
         """
         LOGGER.debug("Joblist type -- %s", type(joblist))
         LOGGER.debug("Joblist contents -- %s", joblist)
@@ -247,11 +286,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return chk_status, status
 
     def cancel_jobs(self, joblist):
-        """
-        For the given job list, cancel each job.
+        """For the given job list, cancel each job.
 
-        :param joblist: A list of job identifiers to be cancelled.
-        :returns: The return code to indicate if jobs were cancelled.
+        Args:
+          joblist: A list of job identifiers to be cancelled.
+
+        Returns:
+          The return code to indicate if jobs were cancelled.
+
         """
         # If we don"t have any jobs to check, just return status OK.
         if not joblist:
@@ -261,18 +303,21 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return CancellationRecord(c_status, r_code)
 
     def _state(self, flux_state):
-        """
-        Map a scheduler specific job state to a Study.State enum.
+        """Map a scheduler specific job state to a Study.State enum.
 
-        :param flux_state: String representation of scheduler job status.
-        :returns: A Study.State enum corresponding to parameter job_state.
+        Args:
+          flux_state: String representation of scheduler job status.
+
+        Returns:
+          A Study.State enum corresponding to parameter job_state.
+
         """
         raise NotImplementedError(
-            "FluxScriptAdapter no longer uses the _state mapping.")
+            "FluxScriptAdapter no longer uses the _state mapping."
+        )
 
     def _write_script(self, ws_path, step):
-        """
-        Write a Flux script to the workspace of a workflow step.
+        """Write a Flux script to the workspace of a workflow step.
 
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
@@ -280,11 +325,15 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         chain using a scheduler dependency setting). The functionality of
         the parameter may change depending on both future intended use.
 
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: Boolean value (True if to be scheduled), the path to the
-                  written script for run["cmd"], and the path to the script
-                  written for run["restart"] (if it exists).
+        Args:
+          ws_path: Path to the workspace directory of the step.
+          step: An instance of a StudyStep.
+
+        Returns:
+          Boolean value (True if to be scheduled), the path to the
+          written script for run["cmd"], and the path to the script
+          written for run["restart"] (if it exists).
+
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 

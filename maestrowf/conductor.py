@@ -48,21 +48,37 @@ ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
 LOGGER = logging.getLogger(__name__)
 
 # Formatting of logger.
-LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
-          "%(levelname)s - %(message)s"
+LFORMAT = (
+    "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - "
+    "%(levelname)s - %(message)s"
+)
 
 
-def setup_logging(name, output_path, log_lvl=2, log_path=None,
-                  log_stdout=False, log_format=None):
-    """
-    Set up logging in the Main class.
-    :param args: A Namespace object created by a parsed ArgumentParser.
-    :param name: The name of the log file.
+def setup_logging(
+    name,
+    output_path,
+    log_lvl=2,
+    log_path=None,
+    log_stdout=False,
+    log_format=None,
+):
+    """Set up logging in the Main class.
+
+    Args:
+      args: A Namespace object created by a parsed ArgumentParser.
+      name: The name of the log file.
+      output_path:
+      log_lvl:  (Default value = 2)
+      log_path:  (Default value = None)
+      log_stdout:  (Default value = False)
+      log_format:  (Default value = None)
+
+    Returns:
+
     """
     # Check if the user has specified a custom log path.
     if log_path:
-        LOGGER.info(
-            "Log path overwritten by command line -- %s", log_path)
+        LOGGER.info("Log path overwritten by command line -- %s", log_path)
     else:
         log_path = os.path.join(output_path, "logs")
 
@@ -96,41 +112,71 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
 
 
 def setup_parser():
-    """
-    Set up the Conductors's argument parser.
+    """Set up the Conductors's argument parser.
 
-    :returns: A ArgumentParser that's initialized with the conductor's CLI.
+    Args:
+
+    Returns:
+      A ArgumentParser that's initialized with the conductor's CLI.
+
     """
 
     # Set up the parser for our conductor here.
-    parser = ArgumentParser(prog="Conductor",
-                            description="An application for checking and "
-                            "managing an ExecutionDAG within an executing "
-                            "study.",
-                            formatter_class=RawTextHelpFormatter)
+    parser = ArgumentParser(
+        prog="Conductor",
+        description="An application for checking and "
+        "managing an ExecutionDAG within an executing "
+        "study.",
+        formatter_class=RawTextHelpFormatter,
+    )
 
-    parser.add_argument("directory", type=str, help="The directory where "
-                        "a study has been set up and where a pickle file "
-                        "of an ExecutionGraph is stored.")
-    parser.add_argument("-s", "--status", action="store_true",
-                        help="Check the status of the ExecutionGraph "
-                        "located as specified by the 'directory' "
-                        "argument.")
-    parser.add_argument("-l", "--logpath", type=str,
-                        help="Alternate path to store program logging.")
-    parser.add_argument("-d", "--debug_lvl", type=int, default=2,
-                        help="Level of logging messages to be output:\n"
-                             "5 - Critical\n"
-                             "4 - Error\n"
-                             "3 - Warning\n"
-                             "2 - Info (Default)\n"
-                             "1 - Debug")
-    parser.add_argument("-c", "--logstdout", action="store_true",
-                        help="Output logging to stdout in addition to a "
-                             "file.")
-    parser.add_argument("-t", "--sleeptime", type=int, default=60,
-                        help="Amount of time (in seconds) for the manager"
-                             " to wait between job status checks.")
+    parser.add_argument(
+        "directory",
+        type=str,
+        help="The directory where "
+        "a study has been set up and where a pickle file "
+        "of an ExecutionGraph is stored.",
+    )
+    parser.add_argument(
+        "-s",
+        "--status",
+        action="store_true",
+        help="Check the status of the ExecutionGraph "
+        "located as specified by the 'directory' "
+        "argument.",
+    )
+    parser.add_argument(
+        "-l",
+        "--logpath",
+        type=str,
+        help="Alternate path to store program logging.",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug_lvl",
+        type=int,
+        default=2,
+        help="Level of logging messages to be output:\n"
+        "5 - Critical\n"
+        "4 - Error\n"
+        "3 - Warning\n"
+        "2 - Info (Default)\n"
+        "1 - Debug",
+    )
+    parser.add_argument(
+        "-c",
+        "--logstdout",
+        action="store_true",
+        help="Output logging to stdout in addition to a " "file.",
+    )
+    parser.add_argument(
+        "-t",
+        "--sleeptime",
+        type=int,
+        default=60,
+        help="Amount of time (in seconds) for the manager"
+        " to wait between job status checks.",
+    )
 
     return parser
 
@@ -153,26 +199,37 @@ class Conductor:
 
     @property
     def output_path(self):
-        """
-        Return the path representing the root of the study workspace.
+        """Return the path representing the root of the study workspace.
 
-        :returns: A string containing the path to the study's root.
+        Args:
+
+        Returns:
+          A string containing the path to the study's root.
+
         """
         return self._study.output_path
 
     @property
     def study_name(self):
-        """
-        Return the name of the study this Conductor instance is managing.
+        """Return the name of the study this Conductor instance is managing.
 
-        :returns: A string containing the name of the study.
+        Args:
+
+        Returns:
+          A string containing the name of the study.
+
         """
         return self._study.name
 
     @classmethod
     def store_study(cls, study):
-        """
-        Store a Maestro study instance in a way the Conductor can read it.
+        """Store a Maestro study instance in a way the Conductor can read it.
+
+        Args:
+          study:
+
+        Returns:
+
         """
         # Pickle up the Study
         pkl_name = "{}{}".format(study.name, cls._pkl_extension)
@@ -181,11 +238,14 @@ class Conductor:
 
     @classmethod
     def load_batch(cls, out_path):
-        """
-        Load the batch information for the study rooted in 'out_path'.
+        """Load the batch information for the study rooted in 'out_path'.
 
-        :param out_path: A string containing the path to a study root.
-        :returns: A dict containing the batch information for the study.
+        Args:
+          out_path: A string containing the path to a study root.
+
+        Returns:
+          A dict containing the batch information for the study.
+
         """
         batch_path = os.path.join(out_path, cls._batch_info)
 
@@ -194,24 +254,29 @@ class Conductor:
             LOGGER.error(msg)
             raise Exception(msg)
 
-        with open(batch_path, 'r') as data:
+        with open(batch_path, "r") as data:
             try:
                 batch_info = yaml.load(data, yaml.FullLoader)
             except AttributeError:
                 LOGGER.warning(
                     "*** PyYAML is using an unsafe version with a known "
                     "load vulnerability. Please upgrade your installation "
-                    "to a more recent version! ***")
+                    "to a more recent version! ***"
+                )
                 batch_info = yaml.load(data)
 
         return batch_info
 
     @classmethod
     def store_batch(cls, out_path, batch):
-        """
-        Store the specified batch information to the study in 'out_path'.
+        """Store the specified batch information to the study in 'out_path'.
 
-        :param out_path: A string containing the patht to a study root.
+        Args:
+          out_path: A string containing the patht to a study root.
+          batch:
+
+        Returns:
+
         """
         path = os.path.join(out_path, cls._batch_info)
         with open(path, "wb") as batch_info:
@@ -219,28 +284,34 @@ class Conductor:
 
     @classmethod
     def load_study(cls, out_path):
-        """
-        Load the Study instance in the study root specified by 'out_path'.
+        """Load the Study instance in the study root specified by 'out_path'.
 
-        :param out_path: A string containing the patht to a study root.
-        :returns: A string containing the path to the study's root.
+        Args:
+          out_path: A string containing the patht to a study root.
+
+        Returns:
+          A string containing the path to the study's root.
+
         """
-        study_glob = \
-            glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
+        study_glob = glob.glob(
+            os.path.join(out_path, "*{}".format(cls._pkl_extension))
+        )
 
         if len(study_glob) == 1:
             # We only expect one result.If we only get one, let's assume and
             # check after.
             path = study_glob[0]
 
-            with open(path, 'rb') as pkl:
+            with open(path, "rb") as pkl:
                 obj = dill.load(pkl)
 
             if not isinstance(obj, Study):
-                msg = \
-                    "Object loaded from {path} is of type {type}. Expected " \
-                    "an object of type '{cls}.'" \
-                    .format(path=path, type=type(obj), cls=type(Study))
+                msg = (
+                    "Object loaded from {path} is of type {type}. Expected "
+                    "an object of type '{cls}.'".format(
+                        path=path, type=type(obj), cls=type(Study)
+                    )
+                )
                 LOGGER.error(msg)
                 raise TypeError(msg)
         else:
@@ -257,11 +328,15 @@ class Conductor:
 
     @classmethod
     def get_status(cls, output_path):
-        """
-        Retrieve the status of the study rooted at 'out_path'.
+        """Retrieve the status of the study rooted at 'out_path'.
 
-        :param out_path: A string containing the patht to a study root.
-        :returns: A dictionary containing the status of the study.
+        Args:
+          out_path: A string containing the patht to a study root.
+          output_path:
+
+        Returns:
+          A dictionary containing the status of the study.
+
         """
         stat_path = os.path.join(output_path, "status.csv")
         lock_path = os.path.join(output_path, ".status.lock")
@@ -279,23 +354,30 @@ class Conductor:
 
     @classmethod
     def mark_cancelled(cls, output_path):
-        """
-        Mark the study rooted at 'out_path'.
+        """Mark the study rooted at 'out_path'.
 
-        :param out_path: A string containing the patht to a study root.
-        :returns: A dictionary containing the status of the study.
+        Args:
+          out_path: A string containing the patht to a study root.
+          output_path:
+
+        Returns:
+          A dictionary containing the status of the study.
+
         """
         lock_path = make_safe_path(output_path, cls._cancel_lock)
-        with open(lock_path, 'a'):
+        with open(lock_path, "a"):
             os.utime(lock_path, None)
 
     def initialize(self, batch_info, sleeptime=60):
-        """
-        Initializes the Conductor instance based on the stored study.
+        """Initializes the Conductor instance based on the stored study.
 
-        :param batch_info: A dict containing batch information.
-        :param sleeptime: The amount of sleep time between polling loops
-                          [Default: 60s].
+        Args:
+          batch_info: A dict containing batch information.
+          sleeptime: The amount of sleep time between polling loops
+        [Default: 60s].
+
+        Returns:
+
         """
         # Set our conductor's sleep time.
         self.sleep_time = sleeptime
@@ -309,18 +391,21 @@ class Conductor:
     def monitor_study(self):
         """Monitor a running study."""
         if not self._setup:
-            msg = \
-                "Study '{}' located in '{}' not initialized. Initialize " \
-                "study before calling launching. Aborting." \
-                .format(self.study_name, self.output_path)
+            msg = (
+                "Study '{}' located in '{}' not initialized. Initialize "
+                "study before calling launching. Aborting.".format(
+                    self.study_name, self.output_path
+                )
+            )
             LOGGER.error(msg)
             raise Exception(msg)
 
         # Set some fixed variables that monitor will use.
         cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
         dag = self._exec_dag
-        pkl_path = \
-            os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
+        pkl_path = os.path.join(
+            self._pkl_path, "{}.pkl".format(self._study.name)
+        )
         sleep_time = self.sleep_time
 
         LOGGER.debug(
@@ -329,7 +414,10 @@ class Conductor:
             "cancel path = %s\n"
             "sleep time  = %s\n"
             "------------------------------------------\n",
-            pkl_path, cancel_lock_path, sleep_time)
+            pkl_path,
+            cancel_lock_path,
+            sleep_time,
+        )
 
         completion_status = StudyStatus.RUNNING
         while completion_status == StudyStatus.RUNNING:
@@ -361,6 +449,7 @@ class Conductor:
         return completion_status
 
     def cleanup(self):
+        """ """
         self._exec_dag.cleanup()
 
 
@@ -373,8 +462,13 @@ def main():
         parser = setup_parser()
         args = parser.parse_args()
         study = Conductor.load_study(args.directory)
-        setup_logging(study.name, args.directory, args.debug_lvl,
-                      args.logpath, args.logstdout)
+        setup_logging(
+            study.name,
+            args.directory,
+            args.debug_lvl,
+            args.logpath,
+            args.logstdout,
+        )
         batch_info = Conductor.load_batch(args.directory)
 
         conductor = Conductor(study)

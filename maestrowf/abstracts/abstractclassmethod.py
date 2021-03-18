@@ -34,7 +34,13 @@ class abstractclassmethod(classmethod):
     """Python 2.7 does not include built in @abstractclassmethod so we create
     our own class that extends @classmethod and then attaches a
     __isabstractmethod variable to the callable function. See ref:
-    https://stackoverflow.com/a/11218474"""
+    https://stackoverflow.com/a/11218474
+
+    Args:
+
+    Returns:
+
+    """
 
     __isabstractmethod__ = True
 

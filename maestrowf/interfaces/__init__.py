@@ -39,43 +39,65 @@ LOGGER = logging.getLogger(__name__)
 
 
 def iter_adapters():
-    """
-    Based off of packaging.python.org loop over a namespace and find the
+    """Based off of packaging.python.org loop over a namespace and find the
     modules. This has been adapted for this particular use case of loading
     all classes implementing ScriptAdapter loaded from all modules in
     maestrowf.interfaces.script.
     :return: an iterable of the classes existing in the namespace
+
+    Args:
+
+    Returns:
+
     """
     # get loader for the script adapter package
-    loader = pkgutil.get_loader('maestrowf.interfaces.script')
+    loader = pkgutil.get_loader("maestrowf.interfaces.script")
     # get all of the modules in the package
-    mods = [(name, ispkg) for finder, name, ispkg in pkgutil.iter_modules(
-            loader.load_module('maestrowf.interfaces.script').__path__,
-            loader.load_module('maestrowf.interfaces.script').__name__ + ".")]
+    mods = [
+        (name, ispkg)
+        for finder, name, ispkg in pkgutil.iter_modules(
+            loader.load_module("maestrowf.interfaces.script").__path__,
+            loader.load_module("maestrowf.interfaces.script").__name__ + ".",
+        )
+    ]
     cs = []
     for name, _ in mods:
         # get loader for every module
         m = pkgutil.get_loader(name).load_module(name)
         # get all classes that implement ScriptAdapter and are not abstract
         for n, cls in m.__dict__.items():
-            if isinstance(cls, type) and issubclass(cls, ScriptAdapter) and \
-                    not inspect.isabstract(cls):
+            if (
+                isinstance(cls, type)
+                and issubclass(cls, ScriptAdapter)
+                and not inspect.isabstract(cls)
+            ):
                 cs.append(cls)
 
     return cs
 
 
 class ScriptAdapterFactory(object):
-    factories = {
-       adapter.key: adapter for adapter in iter_adapters()
-    }
+    """ """
+
+    factories = {adapter.key: adapter for adapter in iter_adapters()}
 
     @classmethod
     def get_adapter(cls, adapter_id):
+        """
+
+        Args:
+          adapter_id:
+
+        Returns:
+
+        """
         if adapter_id.lower() not in cls.factories:
-            msg = "Adapter '{0}' not found. Specify an adapter that exists " \
-                  "or implement a new one mapping to the '{0}'" \
-                  .format(str(adapter_id))
+            msg = (
+                "Adapter '{0}' not found. Specify an adapter that exists "
+                "or implement a new one mapping to the '{0}'".format(
+                    str(adapter_id)
+                )
+            )
             LOGGER.error(msg)
             raise Exception(msg)
 
@@ -83,4 +105,5 @@ class ScriptAdapterFactory(object):
 
     @classmethod
     def get_valid_adapters(cls):
+        """ """
         return cls.factories.keys()

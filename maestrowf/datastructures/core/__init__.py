@@ -46,10 +46,18 @@ These moving parts include but are not limited to:
 """
 
 from maestrowf.datastructures.core.executiongraph import ExecutionGraph
-from maestrowf.datastructures.core.parameters import Combination, \
-    ParameterGenerator
+from maestrowf.datastructures.core.parameters import (
+    Combination,
+    ParameterGenerator,
+)
 from maestrowf.datastructures.core.study import Study, StudyStep
 from maestrowf.datastructures.core.studyenvironment import StudyEnvironment
 
-__all__ = ("Combination", "ExecutionGraph", "ParameterGenerator", "Study",
-           "StudyEnvironment", "StudyStep")
+__all__ = (
+    "Combination",
+    "ExecutionGraph",
+    "ParameterGenerator",
+    "Study",
+    "StudyEnvironment",
+    "StudyStep",
+)

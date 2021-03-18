@@ -31,8 +31,7 @@
 import logging
 import os
 
-from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
-    CancelCode
+from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
 from maestrowf.utils import start_process
@@ -60,8 +59,7 @@ class LocalScriptAdapter(ScriptAdapter):
         self._extension = ".sh"
 
     def _write_script(self, ws_path, step):
-        """
-        Write a Slurm script to the workspace of a workflow step.
+        """Write a Slurm script to the workspace of a workflow step.
 
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
@@ -69,11 +67,15 @@ class LocalScriptAdapter(ScriptAdapter):
         chain using a scheduler's dependency setting). The functionality of
         the parameter may change depending on both future intended use.
 
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: False (will not be scheduled), the path to the
-            written script for run["cmd"], and the path to the script written
-            for run["restart"] (if it exists).
+        Args:
+          ws_path: Path to the workspace directory of the step.
+          step: An instance of a StudyStep.
+
+        Returns:
+          False (will not be scheduled), the path to the
+          written script for run["cmd"], and the path to the script written
+          for run["restart"] (if it exists).
+
         """
         cmd = step.run["cmd"]
         restart = step.run["restart"]
@@ -96,27 +98,32 @@ class LocalScriptAdapter(ScriptAdapter):
         return to_be_scheduled, script_path, restart_path
 
     def check_jobs(self, joblist):
-        """
-        For the given job list, query execution status.
+        """For the given job list, query execution status.
 
-        :param joblist: A list of job identifiers to be queried.
-        :returns: The return code of the status query, and a dictionary of job
-            identifiers to their status.
+        Args:
+          joblist: A list of job identifiers to be queried.
+
+        Returns:
+          The return code of the status query, and a dictionary of job
+          identifiers to their status.
+
         """
         return JobStatusCode.NOJOBS, {}
 
     def cancel_jobs(self, joblist):
-        """
-        For the given job list, cancel each job.
+        """For the given job list, cancel each job.
 
-        :param joblist: A list of job identifiers to be cancelled.
-        :returns: The return code to indicate if jobs were cancelled.
+        Args:
+          joblist: A list of job identifiers to be cancelled.
+
+        Returns:
+          The return code to indicate if jobs were cancelled.
+
         """
         return CancellationRecord(CancelCode.OK, 0)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
-        """
-        Execute the step locally.
+        """Execute the step locally.
 
         If cwd is specified, the submit method will operate outside of the path
         specified by the 'cwd' parameter.
@@ -124,12 +131,18 @@ class LocalScriptAdapter(ScriptAdapter):
         variables for submission to the specified values. The 'env' parameter
         should be a dictionary of environment variables.
 
-        :param step: An instance of a StudyStep.
-        :param path: Path to the script to be executed.
-        :param cwd: Path to the current working directory.
-        :param job_map: A map of workflow step names to their job identifiers.
-        :param env: A dict containing a modified environment for execution.
-        :returns: The return code of the submission command and job identiifer.
+        Args:
+          step: An instance of a StudyStep.
+          path: Path to the script to be executed.
+          cwd: Path to the current working directory.
+          job_map: A map of workflow step names to their job identifiers.
+            (Default value = None)
+          env: A dict containing a modified environment for execution.
+            (Default value = None)
+
+        Returns:
+          The return code of the submission command and job identiifer.
+
         """
         LOGGER.debug("cwd = %s", cwd)
         LOGGER.debug("Script to execute: %s", path)
@@ -158,4 +171,5 @@ class LocalScriptAdapter(ScriptAdapter):
 
     @property
     def extension(self):
+        """ """
         return self._extension

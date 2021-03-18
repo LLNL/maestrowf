@@ -38,11 +38,15 @@ logger = logging.getLogger(__name__)
 
 
 class DAG(Graph):
-    """
-    A directed acyclic graph (DAG) data structure.
+    """A directed acyclic graph (DAG) data structure.
 
     The implementation of this DAG uses an adjacency map with a map to
     index the values (or objects) at each node.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self):
@@ -51,16 +55,18 @@ class DAG(Graph):
         self.values = OrderedDict()
 
     def add_node(self, name, obj):
-        """
-        Add node 'name' to the DAG.
+        """Add node 'name' to the DAG.
 
-        :param name: String identifier of the node.
-        :param obj: An object representing the value of the node.
+        Args:
+          name: String identifier of the node.
+          obj: An object representing the value of the node.
+
+        Returns:
+
         """
         logging.debug("Adding %s...", name)
         if name in self.values:
-            logger.warning("Node %s already exists. Returning.",
-                           name)
+            logger.warning("Node %s already exists. Returning.", name)
             return
 
         logger.debug("Node %s added. Value is of type %s.", name, type(obj))
@@ -68,22 +74,28 @@ class DAG(Graph):
         self.adjacency_table[name] = []
 
     def add_edge(self, src, dest):
-        """
-        Add an edge to the DAG if edge (src, dest) is a valid edge.
+        """Add an edge to the DAG if edge (src, dest) is a valid edge.
 
-        :param src: Source vertex name.
-        :param dest: Destination vertex name.
+        Args:
+          src: Source vertex name.
+          dest: Destination vertex name.
+
+        Returns:
+
         """
         # Disallow loops to the same node.
         if src == dest:
-            msg = "Cannot add self referring cycle edge ({}, {})" \
-                  .format(src, dest)
+            msg = "Cannot add self referring cycle edge ({}, {})".format(
+                src, dest
+            )
             logger.error(msg)
             return
 
         # Disallow adding edges to the graph before nodes are added.
-        error = "Attempted to create edge ({src}, {dest}), but node {node}" \
-                " does not exist."
+        error = (
+            "Attempted to create edge ({src}, {dest}), but node {node}"
+            " does not exist."
+        )
         if src not in self.adjacency_table:
             error = error.format(src=src, dest=dest, node=src)
             logger.error(error)
@@ -108,33 +120,49 @@ class DAG(Graph):
             raise Exception(msg)
 
     def remove_edge(self, src, dest):
-        """
-        Remove edge (src, dest) from the DAG.
+        """Remove edge (src, dest) from the DAG.
 
-        :param src: Source vertex name.
-        :param dest: Destination vertex name.
+        Args:
+          src: Source vertex name.
+          dest: Destination vertex name.
+
+        Returns:
+
         """
         if src not in self.adjacency_table:
-            logger.warning("Attempted to remove an edge (%s, %s), but %s"
-                           " does not exist.", src, dest, src)
+            logger.warning(
+                "Attempted to remove an edge (%s, %s), but %s"
+                " does not exist.",
+                src,
+                dest,
+                src,
+            )
             return
 
         if dest not in self.adjacency_table:
-            logger.warning("Attempted to remove an edge from (%s, %s), but %s"
-                           " does not exist.", src, dest, dest)
+            logger.warning(
+                "Attempted to remove an edge from (%s, %s), but %s"
+                " does not exist.",
+                src,
+                dest,
+                dest,
+            )
             return
 
         logging.debug("Removing edge (%s, %s).", src, dest)
         self.adjacency_table[src].remove(dest)
 
     def dfs_subtree(self, src, par=None):
-        """
-        Create a subtree of the DAG starting at src in DFS order.
+        """Create a subtree of the DAG starting at src in DFS order.
 
-        :param src: Source node name to begin search.
-        :param par: Name of parent node to the specified source node.
-        :returns: A list representing the path taken by DFS.
-        :returns: A dictionary containing a mapping from node to parent node.
+        Args:
+          src: Source node name to begin search.
+          par: Name of parent node to the specified source node.
+            (Default value = None)
+
+        Returns:
+          A list representing the path taken by DFS.
+
         """
         path = [src]
         parent = {src: par}
@@ -147,12 +175,14 @@ class DAG(Graph):
         return path, parent
 
     def bfs_subtree(self, src):
-        """
-        Create a subtree of the DAG starting at src in BFS order.
+        """Create a subtree of the DAG starting at src in BFS order.
 
-        :param src: Source node name to begin search.
-        :returns: A list representing the path taken by BFS.
-        :returns: A dictionary containing a mapping from node to parent node.
+        Args:
+          src: Source node name to begin search.
+
+        Returns:
+          A list representing the path taken by BFS.
+
         """
         queue = deque([src])
         path = [src]
@@ -171,13 +201,16 @@ class DAG(Graph):
         return path, parent
 
     def _topological_sort(self, v, visited, stack):
-        """
-        Recur through the nodes to perform a toplogical sort.
+        """Recur through the nodes to perform a toplogical sort.
 
-        :param v: The vertex previously visited.
-        :param visited: A dict of visited statuses.
-        :param stack: The current stack of vertices that have been sorted.
-        :returns: A list of the DAG's nodes in topologically sorted order.
+        Args:
+          v: The vertex previously visited.
+          visited: A dict of visited statuses.
+          stack: The current stack of vertices that have been sorted.
+
+        Returns:
+          A list of the DAG's nodes in topologically sorted order.
+
         """
         # Mark the node as visited.
         visited[v] = True
@@ -192,10 +225,13 @@ class DAG(Graph):
         stack.appendleft(v)
 
     def topological_sort(self):
-        """
-        Perform a topological ordering of the vertices in the DAG.
+        """Perform a topological ordering of the vertices in the DAG.
 
-        :returns: A list of the vertices sorted in topological order.
+        Args:
+
+        Returns:
+          A list of the vertices sorted in topological order.
+
         """
         v_stack = deque()
         v_visited = {key: False for key in self.values.keys()}
@@ -220,12 +256,15 @@ class DAG(Graph):
         return False
 
     def _detect_cycle(self, v, visited, rstack):
-        """
-        Recurse through nodes testing for loops.
+        """Recurse through nodes testing for loops.
 
-        :param v: Name of source vertex to search from.
-        :param visited: Set of the nodes we've visited so far.
-        :param rstack: Set of nodes currently on the path.
+        Args:
+          v: Name of source vertex to search from.
+          visited: Set of the nodes we've visited so far.
+          rstack: Set of nodes currently on the path.
+
+        Returns:
+
         """
         visited.add(v)
         rstack.add(v)
@@ -234,16 +273,21 @@ class DAG(Graph):
             if c not in visited:
                 logging.debug("Visting node '%s' from '%s'.", c, v)
                 if self._detect_cycle(c, visited, rstack):
-                    logger.debug("Cycle detected --\n"
-                                 "rstack = %s\n"
-                                 "visited = %s",
-                                 rstack, visited)
+                    logger.debug(
+                        "Cycle detected --\n" "rstack = %s\n" "visited = %s",
+                        rstack,
+                        visited,
+                    )
                     return True
             elif c in rstack:
-                logger.debug("Cycle detected ('%s' in rstack)--\n"
-                             "rstack = %s\n"
-                             "visited = %s",
-                             c, rstack, visited)
+                logger.debug(
+                    "Cycle detected ('%s' in rstack)--\n"
+                    "rstack = %s\n"
+                    "visited = %s",
+                    c,
+                    rstack,
+                    visited,
+                )
                 return True
         rstack.remove(v)
         logger.debug("No cycle originating from '%s'", v)

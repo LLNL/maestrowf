@@ -44,27 +44,36 @@ class Graph:
 
     @abstractmethod
     def add_node(self, name, obj):
-        """
-        Method to add a node to the graph.
+        """Method to add a node to the graph.
 
-        :param name: String identifier of the node.
-        :param obj: An object representing the value of the node.
+        Args:
+          name: String identifier of the node.
+          obj: An object representing the value of the node.
+
+        Returns:
+
         """
 
     @abstractmethod
     def add_edge(self, src, dest):
-        """
-        Add the edge (src, dest) to the graph.
+        """Add the edge (src, dest) to the graph.
 
-        :param src: Source vertex name.
-        :param dest: Destination vertex name.
+        Args:
+          src: Source vertex name.
+          dest: Destination vertex name.
+
+        Returns:
+
         """
 
     @abstractmethod
     def remove_edge(self, src, dest):
-        """
-        Remove edge (src, dest) from the graph.
+        """Remove edge (src, dest) from the graph.
 
-        :param src: Source vertex name.
-        :param dest: Destination vertex name.
+        Args:
+          src: Source vertex name.
+          dest: Destination vertex name.
+
+        Returns:
+
         """

@@ -41,15 +41,24 @@ import logging
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
+
     class NullHandler(logging.Handler):
         """Null logging handler for Python 3+."""
 
         def emit(self, record):
-            """Override so that logging outputs nothing."""
+            """Override so that logging outputs nothing.
+
+            Args:
+              record:
+
+            Returns:
+
+            """
             pass
+
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(NullHandler())
 
 __version_info__ = ("1", "1", "9dev0")
-__version__ = '.'.join(__version_info__)
+__version__ = ".".join(__version_info__)

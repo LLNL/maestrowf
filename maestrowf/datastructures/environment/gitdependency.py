@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 class GitDependency(Dependency):
     """Environment GitDependency class for substituting a git dependency."""
 
-    def __init__(self, name, value, path, token='$', **kwargs):
+    def __init__(self, name, value, path, token="$", **kwargs):
         """
         Initialize the GitDependency class.
 
@@ -88,40 +88,50 @@ class GitDependency(Dependency):
         self.tag = kwargs.pop("tag", "")
         self.branch = kwargs.pop("branch", "")
 
-        self._verification("PathDependency initialized without complete "
-                           " settings. Set required [name, value] before "
-                           "calling methods.")
+        self._verification(
+            "PathDependency initialized without complete "
+            " settings. Set required [name, value] before "
+            "calling methods."
+        )
         self._is_acquired = False
 
     def get_var(self):
-        """
-        Get the variable representation of the dependency's name.
+        """Get the variable representation of the dependency's name.
 
-        :returns: String of the Dependencies's name in token form.
+        Args:
+
+        Returns:
+          String of the Dependencies's name in token form.
+
         """
         return "{}({})".format(self.token, self.name)
 
     def substitute(self, data):
-        """
-        Substitute the dependency's value for its notation.
+        """Substitute the dependency's value for its notation.
 
-        :param data: String to substitute dependency into.
-        :returns: String with the dependency's name replaced with its value.
+        Args:
+          data: String to substitute dependency into.
+
+        Returns:
+          String with the dependency's name replaced with its value.
+
         """
         if not self._verify():
-            error = "Ensure that all required fields (name, value)," \
-                    "are populated and that value is a valid path."
+            error = (
+                "Ensure that all required fields (name, value),"
+                "are populated and that value is a valid path."
+            )
             logger.exception(error)
             raise ValueError(error)
 
         path = os.path.join(self.path, self.name)
-        logger.debug("%s: %s", self.get_var(),
-                     data.replace(self.get_var(), path))
+        logger.debug(
+            "%s: %s", self.get_var(), data.replace(self.get_var(), path)
+        )
         return data.replace(self.get_var(), path)
 
     def acquire(self, substitutions=None):
-        """
-        Acquire the dependency specified by the PathDependency.
+        """Acquire the dependency specified by the PathDependency.
 
         The GitDependency will clone the remote repository specified by the
         instance's value to the local repository specified by path. If a commit
@@ -129,15 +139,22 @@ class GitDependency(Dependency):
         version described by the hash. Alternatively, if a tag is specfied
         acquire will attempt to checkout the version labeled by the tag.
 
-        :param substitutions: List of Substitution objects that can be applied.
+        Args:
+          substitutions: List of Substitution objects that can be applied.
+            (Default value = None)
+
+        Returns:
+
         """
         if self._is_acquired:
             return
 
         if not self._verify():
-            error = "Ensure that all required fields (name, value, " \
-                    "path), are populated and that value is a " \
-                    "valid path."
+            error = (
+                "Ensure that all required fields (name, value, "
+                "path), are populated and that value is a "
+                "valid path."
+            )
             logger.error(error)
             raise ValueError(error)
 
@@ -151,8 +168,10 @@ class GitDependency(Dependency):
         # Moved the path existence here because git doesn't actually return a
         # specific enough error code.
         if os.path.exists(path):
-            msg = "Destination path '{}' already exists and is not an " \
-                  "empty directory.".format(path)
+            msg = (
+                "Destination path '{}' already exists and is not an "
+                "empty directory.".format(path)
+            )
             logger.error(msg)
             raise Exception(msg)
 
@@ -160,10 +179,12 @@ class GitDependency(Dependency):
         p = start_process(["git", "ls-remote", self.url], shell=False)
         p.communicate()
         if p.returncode != 0:
-            msg = "Connectivity check failed. Check that you have " \
-                "permissions to the specified repository, that the URL is " \
-                "correct, and that you have network connectivity. (url = {})" \
+            msg = (
+                "Connectivity check failed. Check that you have "
+                "permissions to the specified repository, that the URL is "
+                "correct, and that you have network connectivity. (url = {})"
                 .format(self.url)
+            )
             logger.error(msg)
             raise RuntimeError(msg)
         logger.info("Connectivity achieved!")
@@ -172,49 +193,59 @@ class GitDependency(Dependency):
         clone = start_process(["git", "clone", self.url, path], shell=False)
         clone.communicate()
         if clone.returncode != 0:
-            msg = "Failed to acquire GitDependency named '{}'. Check " \
-              "that repository URL ({}) and repository local path ({}) " \
-              "are valid.".format(self.name, self.url, path)
+            msg = (
+                "Failed to acquire GitDependency named '{}'. Check "
+                "that repository URL ({}) and repository local path ({}) "
+                "are valid.".format(self.name, self.url, path)
+            )
             logger.error(msg)
             raise Exception(msg)
 
         if self.hash:
             logger.info("Checking out SHA1 hash '%s'...", self.hash)
-            chkout = start_process(["git", "checkout", self.hash],
-                                   cwd=path, shell=False)
+            chkout = start_process(
+                ["git", "checkout", self.hash], cwd=path, shell=False
+            )
             retcode = chkout.wait()
 
             if retcode != 0:
-                msg = "Unable to checkout SHA1 hash '{}' for the repository" \
-                      " located at {}." \
-                      .format(self.hash, self.url)
+                msg = (
+                    "Unable to checkout SHA1 hash '{}' for the repository"
+                    " located at {}.".format(self.hash, self.url)
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
         if self.tag:
             logger.info("Checking out git tag '%s'...", self.tag)
             tag = "tags/{}".format(self.tag)
-            chkout = start_process(["git", "checkout", tag],
-                                   cwd=path, shell=False)
+            chkout = start_process(
+                ["git", "checkout", tag], cwd=path, shell=False
+            )
 
             retcode = chkout.wait()
 
             if retcode != 0:
-                msg = "Unable to checkout tag '{}' for the repository" \
-                      " located at {}".format(self.tag, self.url)
+                msg = (
+                    "Unable to checkout tag '{}' for the repository"
+                    " located at {}".format(self.tag, self.url)
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
         if self.branch:
             logger.info("Checking out git branch '%s'...", self.branch)
-            chkout = start_process(["git", "checkout", self.branch],
-                                   cwd=path, shell=False)
+            chkout = start_process(
+                ["git", "checkout", self.branch], cwd=path, shell=False
+            )
 
             retcode = chkout.wait()
 
             if retcode != 0:
-                msg = "Unable to checkout branch '{}' for the repository" \
-                      " located at {}".format(self.tag, self.url)
+                msg = (
+                    "Unable to checkout branch '{}' for the repository"
+                    " located at {}".format(self.tag, self.url)
+                )
                 logger.error(msg)
                 raise ValueError(msg)
 
@@ -226,22 +257,29 @@ class GitDependency(Dependency):
         self._is_acquired = True
 
     def _verify(self):
-        """
-        Verify that the necessary Dependency fields are populated.
+        """Verify that the necessary Dependency fields are populated.
 
-        :returns: True if Dependency is valid, False otherwise.
+        Args:
+
+        Returns:
+          True if Dependency is valid, False otherwise.
+
         """
         valid_param_pattern = re.compile(r"\w+")
-        required = bool(re.search(valid_param_pattern, self.name) and
-                        re.search(valid_param_pattern, self.url) and
-                        re.search(valid_param_pattern, self.path) and
-                        self.token)
+        required = bool(
+            re.search(valid_param_pattern, self.name)
+            and re.search(valid_param_pattern, self.url)
+            and re.search(valid_param_pattern, self.path)
+            and self.token
+        )
 
         opt_args = set([self.branch, self.hash, self.tag])
         opt_args.discard("")
         if len(opt_args) > 1:
-            msg = "A GitDependency cannot specify both a commit hash and " \
-                  "release tag. Specify one or the other, but not both."
+            msg = (
+                "A GitDependency cannot specify both a commit hash and "
+                "release tag. Specify one or the other, but not both."
+            )
             logger.error(msg)
             raise ValueError(msg)
         elif self.hash:

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class PathDependency(Dependency):
     """Environment PathDependency class for substituting a path dependency."""
 
-    def __init__(self, name, value, token='$'):
+    def __init__(self, name, value, token="$"):
         """
         Initialize the PathDependency class.
 
@@ -63,53 +63,70 @@ class PathDependency(Dependency):
         self.value = os.path.abspath(value)
         self.token = token
 
-        self._verification("PathDependency initialized without complete"
-                           " settings. Set required [name, value] before "
-                           "calling methods.")
+        self._verification(
+            "PathDependency initialized without complete"
+            " settings. Set required [name, value] before "
+            "calling methods."
+        )
         self._is_acquired = False
 
     def get_var(self):
-        """
-        Get the variable representation of the dependency's name.
+        """Get the variable representation of the dependency's name.
 
-        :returns: String of the Dependencies's name in token form.
+        Args:
+
+        Returns:
+          String of the Dependencies's name in token form.
+
         """
         return "{}({})".format(self.token, self.name)
 
     def substitute(self, data):
-        """
-        Substitute the dependency's value for its notation.
+        """Substitute the dependency's value for its notation.
 
-        :param data: String to substitute dependency into.
-        :returns: String with the dependency's name replaced with its value.
+        Args:
+          data: String to substitute dependency into.
+
+        Returns:
+          String with the dependency's name replaced with its value.
+
         """
         if not self._verify():
-            error = "Ensure that all required fields (name, value)," \
-                    "are populated and that value is a valid path."
+            error = (
+                "Ensure that all required fields (name, value),"
+                "are populated and that value is a valid path."
+            )
             logger.exception(error)
             raise ValueError(error)
 
-        logger.debug("%s: %s", self.get_var(),
-                     data.replace(self.get_var(), self.value))
+        logger.debug(
+            "%s: %s", self.get_var(), data.replace(self.get_var(), self.value)
+        )
         return data.replace(self.get_var(), self.value)
 
     def acquire(self, substitutions=None):
-        """
-        Acquire the dependency specified by the PathDependency.
+        """Acquire the dependency specified by the PathDependency.
 
         The PathDependency is simply a path that already exists, so the method
         doesn't actually acquire anything, but it does verify that the path
         exists.
 
-        :param substitutions: List of Substitution objects that can be applied.
+        Args:
+          substitutions: List of Substitution objects that can be applied.
+            (Default value = None)
+
+        Returns:
+
         """
         if self._is_acquired:
             return
 
         if not self._verify():
-            error = "Ensure that all required fields (name, " \
-                    "value), are populated and that value is a " \
-                    "valid path."
+            error = (
+                "Ensure that all required fields (name, "
+                "value), are populated and that value is a "
+                "valid path."
+            )
             logger.exception(error)
             raise ValueError(error)
 
@@ -121,15 +138,20 @@ class PathDependency(Dependency):
         self._is_acquired = True
 
     def _verify(self):
-        """
-        Verify that the necessary Dependency fields are populated.
+        """Verify that the necessary Dependency fields are populated.
 
-        :returns: True if Dependency is valid, False otherwise.
+        Args:
+
+        Returns:
+          True if Dependency is valid, False otherwise.
+
         """
         valid_param_pattern = re.compile(r"\w+")
-        return bool(re.search(valid_param_pattern, self.name) and
-                    re.search(valid_param_pattern, self.value) and
-                    self.token)
+        return bool(
+            re.search(valid_param_pattern, self.name)
+            and re.search(valid_param_pattern, self.value)
+            and self.token
+        )
 
     def __str__(self):
         """

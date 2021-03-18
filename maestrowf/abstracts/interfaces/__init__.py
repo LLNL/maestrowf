@@ -31,8 +31,9 @@
 Abstract classes for handling interfacing with various services.
 """
 
-from maestrowf.abstracts.interfaces.schedulerscriptadapter import \
-    SchedulerScriptAdapter
+from maestrowf.abstracts.interfaces.schedulerscriptadapter import (
+    SchedulerScriptAdapter,
+)
 from maestrowf.abstracts.interfaces.scriptadapter import ScriptAdapter
 
 

@@ -9,26 +9,38 @@ import tempfile
 from filelock import FileLock, Timeout
 
 from maestrowf.abstracts import PickleInterface
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
-    CancelCode, StudyStatus
+from maestrowf.abstracts.enums import (
+    JobStatusCode,
+    State,
+    SubmissionCode,
+    CancelCode,
+    StudyStatus,
+)
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
 from maestrowf.interfaces import ScriptAdapterFactory
-from maestrowf.utils import create_parentdir, get_duration, \
-    round_datetime_seconds
+from maestrowf.utils import (
+    create_parentdir,
+    get_duration,
+    round_datetime_seconds,
+)
 
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
 
 
 class _StepRecord:
-    """
-    A simple container object representing a workflow step record.
+    """A simple container object representing a workflow step record.
 
     The record contains all information used to generate associated scripts,
     and settings for execution of the record. The StepRecord is a utility
     class to the ExecutionGraph and maintains all information for any given
     step in the DAG.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self, workspace, step, **kwargs):
@@ -70,12 +82,15 @@ class _StepRecord:
         create_parentdir(self.workspace.value)
 
     def generate_script(self, adapter, tmp_dir=""):
-        """
-        Generate the script for executing the workflow step.
+        """Generate the script for executing the workflow step.
 
-        :param adapter: Instance of adapter to be used for script generation.
-        :param tmp_dir: If specified, place generated script in the specified
-        temp directory.
+        Args:
+          adapter: Instance of adapter to be used for script generation.
+          tmp_dir: If specified, place generated script in the specified
+        temp directory. (Default value = "")
+
+        Returns:
+
         """
         if tmp_dir:
             scr_dir = tmp_dir
@@ -85,12 +100,27 @@ class _StepRecord:
         self.step.run["cmd"] = self.workspace.substitute(self.step.run["cmd"])
 
         LOGGER.info("Generating script for %s into %s", self.name, scr_dir)
-        self.to_be_scheduled, self.script, self.restart_script = \
-            adapter.write_script(scr_dir, self.step)
-        LOGGER.info("Script: %s\nRestart: %s\nScheduled?: %s",
-                    self.script, self.restart_script, self.to_be_scheduled)
+        (
+            self.to_be_scheduled,
+            self.script,
+            self.restart_script,
+        ) = adapter.write_script(scr_dir, self.step)
+        LOGGER.info(
+            "Script: %s\nRestart: %s\nScheduled?: %s",
+            self.script,
+            self.restart_script,
+            self.to_be_scheduled,
+        )
 
     def execute(self, adapter):
+        """
+
+        Args:
+          adapter:
+
+        Returns:
+
+        """
         self.mark_submitted()
         retcode, jobid = self._execute(adapter, self.script)
 
@@ -100,6 +130,14 @@ class _StepRecord:
         return retcode
 
     def restart(self, adapter):
+        """
+
+        Args:
+          adapter:
+
+        Returns:
+
+        """
         retcode, jobid = self._execute(adapter, self.restart_script)
 
         if retcode == SubmissionCode.OK:
@@ -109,10 +147,13 @@ class _StepRecord:
 
     @property
     def can_restart(self):
-        """
-        Get whether or not the record can be restarted.
+        """Get whether or not the record can be restarted.
 
-        :returns: True if the record has a restart command assigned to it.
+        Args:
+
+        Returns:
+          True if the record has a restart command assigned to it.
+
         """
         if self.restart_script:
             return True
@@ -120,14 +161,21 @@ class _StepRecord:
         return False
 
     def _execute(self, adapter, script):
+        """
+
+        Args:
+          adapter:
+          script:
+
+        Returns:
+
+        """
         if self.to_be_scheduled:
-            srecord = adapter.submit(
-                self.step, script, self.workspace.value)
+            srecord = adapter.submit(self.step, script, self.workspace.value)
         else:
             self.mark_running()
             ladapter = ScriptAdapterFactory.get_adapter("local")()
-            srecord = ladapter.submit(
-                self.step, script, self.workspace.value)
+            srecord = ladapter.submit(self.step, script, self.workspace.value)
 
         retcode = srecord.submission_code
         jobid = srecord.job_identifier
@@ -138,14 +186,16 @@ class _StepRecord:
         LOGGER.debug(
             "Marking %s as submitted (PENDING) -- previously %s",
             self.name,
-            self.status)
+            self.status,
+        )
         self.status = State.PENDING
         if not self._submit_time:
             self._submit_time = round_datetime_seconds(datetime.now())
         else:
             LOGGER.warning(
                 "Cannot set the submission time of '%s' because it has "
-                "already been set.", self.name
+                "already been set.",
+                self.name,
             )
 
     def mark_running(self):
@@ -153,22 +203,27 @@ class _StepRecord:
         LOGGER.debug(
             "Marking %s as running (RUNNING) -- previously %s",
             self.name,
-            self.status)
+            self.status,
+        )
         self.status = State.RUNNING
         if not self._start_time:
             self._start_time = round_datetime_seconds(datetime.now())
 
     def mark_end(self, state):
-        """
-        Mark the end time of the record with associated termination state.
+        """Mark the end time of the record with associated termination state.
 
-        :param state: State enum corresponding to termination state.
+        Args:
+          state: State enum corresponding to termination state.
+
+        Returns:
+
         """
         LOGGER.debug(
             "Marking %s as finished (%s) -- previously %s",
             self.name,
             state,
-            self.status)
+            self.status,
+        )
         self.status = state
         if not self._end_time:
             self._end_time = round_datetime_seconds(datetime.now())
@@ -178,12 +233,12 @@ class _StepRecord:
         LOGGER.debug(
             "Marking %s as restarting (TIMEOUT) -- previously %s",
             self.name,
-            self.status)
+            self.status,
+        )
         self.status = State.TIMEDOUT
         # Designating a restart limit of zero as an unlimited restart setting.
         # Otherwise, if we're less than restart limit, attempt another restart.
-        if self.restart_limit == 0 or \
-                self._num_restarts < self.restart_limit:
+        if self.restart_limit == 0 or self._num_restarts < self.restart_limit:
             self._num_restarts += 1
             return True
         else:
@@ -191,7 +246,7 @@ class _StepRecord:
 
     @property
     def is_local_step(self):
-        """Return whether or not this step executes locally."""
+        """ """
         return not self.to_be_scheduled
 
     @property
@@ -208,10 +263,13 @@ class _StepRecord:
 
     @property
     def run_time(self):
-        """
-        Compute the run time of a record (includes restart queue time).
+        """Compute the run time of a record (includes restart queue time).
 
-        :returns: A string of the records's run time.
+        Args:
+
+        Returns:
+          A string of the records's run time.
+
         """
         if self._start_time and self._end_time:
             # If start and end time is set -- calculate run time.
@@ -225,28 +283,37 @@ class _StepRecord:
 
     @property
     def name(self):
-        """
-        Get the name of the step represented by the record instance.
+        """Get the name of the step represented by the record instance.
 
-        :returns: The name of the StudyStep contained within the record.
+        Args:
+
+        Returns:
+          The name of the StudyStep contained within the record.
+
         """
         return self.step.real_name
 
     @property
     def walltime(self):
-        """
-        Get the requested wall time of the record instance.
+        """Get the requested wall time of the record instance.
 
-        :returns: A string representing the requested computing time.
+        Args:
+
+        Returns:
+          A string representing the requested computing time.
+
         """
         return self.step.run["walltime"]
 
     @property
     def time_submitted(self):
-        """
-        Get the time the step started.
+        """Get the time the step started.
 
-        :returns: A formatted string of the date and time the step started.
+        Args:
+
+        Returns:
+          A formatted string of the date and time the step started.
+
         """
         if self._submit_time:
             return str(self._submit_time)
@@ -255,10 +322,13 @@ class _StepRecord:
 
     @property
     def time_start(self):
-        """
-        Get the time the step started.
+        """Get the time the step started.
 
-        :returns: A formatted string of the date and time the step started.
+        Args:
+
+        Returns:
+          A formatted string of the date and time the step started.
+
         """
         if self._start_time:
             return str(self._start_time)
@@ -267,10 +337,13 @@ class _StepRecord:
 
     @property
     def time_end(self):
-        """
-        Get the time the step ended.
+        """Get the time the step ended.
 
-        :returns: A formatted string of the date and time the step ended.
+        Args:
+
+        Returns:
+          A formatted string of the date and time the step ended.
+
         """
         if self._end_time:
             return str(self._end_time)
@@ -279,17 +352,19 @@ class _StepRecord:
 
     @property
     def restarts(self):
-        """
-        Get the number of restarts the step has executed.
+        """Get the number of restarts the step has executed.
 
-        :returns: An int representing the number of restarts.
+        Args:
+
+        Returns:
+          An int representing the number of restarts.
+
         """
         return self._num_restarts
 
 
 class ExecutionGraph(DAG, PickleInterface):
-    """
-    Datastructure that tracks, executes, and reports on study execution.
+    """Datastructure that tracks, executes, and reports on study execution.
 
     The ExecutionGraph is used to manage, monitor, and interact with tasks and
     the scheduler. This class searches its graph for tasks that are ready to
@@ -300,10 +375,20 @@ class ExecutionGraph(DAG, PickleInterface):
     should go. Essentially, if logic is needed to automatically manipulate the
     workflow in some fashion or additional monitoring is needed, this class is
     where that would go.
+
+    Args:
+
+    Returns:
+
     """
 
-    def __init__(self, submission_attempts=1, submission_throttle=0,
-                 use_tmp=False, dry_run=False):
+    def __init__(
+        self,
+        submission_attempts=1,
+        submission_throttle=0,
+        use_tmp=False,
+        dry_run=False,
+    ):
         """
         Initialize a new instance of an ExecutionGraph.
 
@@ -352,20 +437,27 @@ class ExecutionGraph(DAG, PickleInterface):
             "Use temporary directory =   %s\n"
             "Tmp Dir = %s\n"
             "------------------------------------------",
-            submission_attempts, submission_throttle, use_tmp, self._tmp_dir
+            submission_attempts,
+            submission_throttle,
+            use_tmp,
+            self._tmp_dir,
         )
 
         # Error check that the submission values are valid.
         if self._submission_attempts < 1:
-            _msg = "Submission attempts should always be greater than 0. " \
-                   "Received a value of {}.".format(self._submission_attempts)
+            _msg = (
+                "Submission attempts should always be greater than 0. "
+                "Received a value of {}.".format(self._submission_attempts)
+            )
             LOGGER.error(_msg)
             raise ValueError(_msg)
 
         if self._submission_throttle < 0:
-            _msg = "Throttling should be 0 for unthrottled or a positive " \
-                   "integer for the number of allowed inflight jobs. " \
-                   "Received a value of {}.".format(self._submission_throttle)
+            _msg = (
+                "Throttling should be 0 for unthrottled or a positive "
+                "integer for the number of allowed inflight jobs. "
+                "Received a value of {}.".format(self._submission_throttle)
+            )
             LOGGER.error(_msg)
             raise ValueError(_msg)
 
@@ -377,39 +469,48 @@ class ExecutionGraph(DAG, PickleInterface):
             self._tmp_dir = tempfile.mkdtemp()
 
     def add_step(self, name, step, workspace, restart_limit):
-        """
-        Add a StepRecord to the ExecutionGraph.
+        """Add a StepRecord to the ExecutionGraph.
 
-        :param name: Name of the step to be added.
-        :param step: StudyStep instance to be recorded.
-        :param workspace: Directory path for the step's working directory.
-        :param restart_limit: Upper limit on the number of restart attempts.
+        Args:
+          name: Name of the step to be added.
+          step: StudyStep instance to be recorded.
+          workspace: Directory path for the step's working directory.
+          restart_limit: Upper limit on the number of restart attempts.
+
+        Returns:
+
         """
         data = {
-                    "step":          step,
-                    "state":         State.INITIALIZED,
-                    "workspace":     workspace,
-                    "restart_limit": restart_limit,
-                }
+            "step": step,
+            "state": State.INITIALIZED,
+            "workspace": workspace,
+            "restart_limit": restart_limit,
+        }
         record = _StepRecord(**data)
         self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
 
     def add_connection(self, parent, step):
-        """
-        Add a connection between two steps in the ExecutionGraph.
+        """Add a connection between two steps in the ExecutionGraph.
 
-        :param parent: The parent step that is required to execute 'step'
-        :param step: The dependent step that relies on parent.
+        Args:
+          parent: The parent step that is required to execute 'step'
+          step: The dependent step that relies on parent.
+
+        Returns:
+
         """
         self.add_edge(parent, step)
         self._dependencies[step].add(parent)
 
     def set_adapter(self, adapter):
-        """
-        Set the adapter used to interface for scheduling tasks.
+        """Set the adapter used to interface for scheduling tasks.
 
-        :param adapter: Adapter name to be used when launching the graph.
+        Args:
+          adapter: Adapter name to be used when launching the graph.
+
+        Returns:
+
         """
         if not adapter:
             # If we have no adapter specified, assume sequential execution.
@@ -423,19 +524,24 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # Check to see that the adapter type is something the
         if adapter["type"] not in ScriptAdapterFactory.get_valid_adapters():
-            msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
-                  .format(adapter)
+            msg = \
+                "'{}' adapter must be specfied in ScriptAdapterFactory." \
+                .format(adapter)
             LOGGER.error(msg)
             raise TypeError(msg)
 
         self._adapter = adapter
 
     def add_description(self, name, description, **kwargs):
-        """
-        Add a study description to the ExecutionGraph instance.
+        """Add a study description to the ExecutionGraph instance.
 
-        :param name: Name of the study.
-        :param description: Description of the study.
+        Args:
+          name: Name of the study.
+          description: Description of the study.
+          **kwargs:
+
+        Returns:
+
         """
         self._description["name"] = name
         self._description["description"] = description
@@ -443,65 +549,86 @@ class ExecutionGraph(DAG, PickleInterface):
 
     @property
     def name(self):
-        """
-        Return the name for the study in the ExecutionGraph instance.
+        """Return the name for the study in the ExecutionGraph instance.
 
-        :returns: A string of the name of the study.
+        Args:
+
+        Returns:
+          A string of the name of the study.
+
         """
         return self._description["name"]
 
     @name.setter
     def name(self, value):
-        """
-        Set the name for the study in the ExecutionGraph instance.
+        """Set the name for the study in the ExecutionGraph instance.
 
-        :param name: A string of the name for the study.
+        Args:
+          name: A string of the name for the study.
+          value:
+
+        Returns:
+
         """
         self._description["name"] = value
 
     @property
     def description(self):
-        """
-        Return the description for the study in the ExecutionGraph instance.
+        """Return the description for the study in the ExecutionGraph instance.
 
-        :returns: A string of the description for the study.
+        Args:
+
+        Returns:
+          A string of the description for the study.
+
         """
         return self._description["description"]
 
     @description.setter
     def description(self, value):
-        """
-        Set the description for the study in the ExecutionGraph instance.
+        """Set the description for the study in the ExecutionGraph instance.
 
-        :param value: A string of the description for the study.
+        Args:
+          value: A string of the description for the study.
+
+        Returns:
+
         """
         self._description["description"] = value
 
     def log_description(self):
         """Log the description of the ExecutionGraph."""
-        desc = ["{}: {}".format(key, value)
-                for key, value in self._description.items()]
+        desc = [
+            "{}: {}".format(key, value)
+            for key, value in self._description.items()
+        ]
         desc = "\n".join(desc)
         LOGGER.info(
             "\n==================================================\n"
             "%s\n"
             "==================================================\n",
-            desc
+            desc,
         )
 
     def generate_scripts(self):
-        """
-        Generate the scripts for all steps in the ExecutionGraph.
+        """Generate the scripts for all steps in the ExecutionGraph.
 
         The generate_scripts method scans the ExecutionGraph instance and uses
         the stored adapter to write executable scripts for either local or
         scheduled execution. If a restart command is specified, a restart
         script will be generated for that record.
+
+        Args:
+
+        Returns:
+
         """
         # An adapter must be specified
         if not self._adapter:
-            msg = "Adapter not found. Specify a ScriptAdapter using " \
-                  "set_adapter."
+            msg = (
+                "Adapter not found. Specify a ScriptAdapter using "
+                "set_adapter."
+            )
             LOGGER.error(msg)
             raise ValueError(msg)
 
@@ -520,19 +647,23 @@ class ExecutionGraph(DAG, PickleInterface):
             record.generate_script(adapter, self._tmp_dir)
 
     def _execute_record(self, record, adapter, restart=False):
-        """
-        Execute a StepRecord.
+        """Execute a StepRecord.
 
-        :param record: The StepRecord to be executed.
-        :param adapter: An instance of the adapter to be used for cluster
+        Args:
+          record: The StepRecord to be executed.
+          adapter: An instance of the adapter to be used for cluster
         submission.
-        :param restart: True if the record needs restarting, False otherwise.
+          restart: True if the record needs restarting, False otherwise.
+            (Default value = False)
+
+        Returns:
+
         """
         # Logging for debugging.
         LOGGER.info("Calling execute for StepRecord '%s'", record.name)
 
-        num_restarts = 0    # Times this step has temporally restarted.
-        retcode = None      # Execution return code.
+        num_restarts = 0  # Times this step has temporally restarted.
+        retcode = None  # Execution return code.
 
         # While our submission needs to be submitted, keep trying:
         # 1. If the JobStatus is not OK.
@@ -541,10 +672,13 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # Only set up the workspace the initial iteration.
         if not restart:
-            LOGGER.debug("Setting up workspace for '%s' at %s",
-                         record.name, str(datetime.now()))
+            LOGGER.debug(
+                "Setting up workspace for '%s' at %s",
+                record.name,
+                str(datetime.now()),
+            )
             # Generate the script for execution on the fly.
-            record.setup_workspace()    # Generate the workspace.
+            record.setup_workspace()  # Generate the workspace.
             record.generate_script(adapter, self._tmp_dir)
 
         if self.dry_run:
@@ -552,22 +686,33 @@ class ExecutionGraph(DAG, PickleInterface):
             self.completed_steps.add(record.name)
             return
 
-        while retcode != SubmissionCode.OK and \
-                num_restarts < self._submission_attempts:
-            LOGGER.info("Attempting submission of '%s' (attempt %d of %d)...",
-                        record.name, num_restarts + 1,
-                        self._submission_attempts)
+        while (
+            retcode != SubmissionCode.OK
+            and num_restarts < self._submission_attempts
+        ):
+            LOGGER.info(
+                "Attempting submission of '%s' (attempt %d of %d)...",
+                record.name,
+                num_restarts + 1,
+                self._submission_attempts,
+            )
 
             # We're not restarting -- submit as usual.
             if not restart:
-                LOGGER.debug("Calling 'execute' on '%s' at %s",
-                             record.name, str(datetime.now()))
+                LOGGER.debug(
+                    "Calling 'execute' on '%s' at %s",
+                    record.name,
+                    str(datetime.now()),
+                )
                 retcode = record.execute(adapter)
             # Otherwise, it's a restart.
             else:
                 # If the restart is specified, use the record restart script.
-                LOGGER.debug("Calling 'restart' on '%s' at %s",
-                             record.name, str(datetime.now()))
+                LOGGER.debug(
+                    "Calling 'restart' on '%s' at %s",
+                    record.name,
+                    str(datetime.now()),
+                )
                 # Generate the script for execution on the fly.
                 record.generate_script(adapter, self._tmp_dir)
                 retcode = record.restart(adapter)
@@ -580,29 +725,44 @@ class ExecutionGraph(DAG, PickleInterface):
             self.in_progress.add(record.name)
 
             if record.is_local_step:
-                LOGGER.info("Local step %s executed with status OK. Complete.",
-                            record.name)
+                LOGGER.info(
+                    "Local step %s executed with status OK. Complete.",
+                    record.name,
+                )
                 record.mark_end(State.FINISHED)
                 self.completed_steps.add(record.name)
                 self.in_progress.remove(record.name)
         else:
             # Find the subtree, because anything dependent on this step now
             # failed.
-            LOGGER.warning("'%s' failed to submit properly. "
-                           "Step failed.", record.name)
+            LOGGER.warning(
+                "'%s' failed to submit properly. " "Step failed.", record.name
+            )
             path, parent = self.bfs_subtree(record.name)
             for node in path:
                 self.failed_steps.add(node)
                 self.values[node].mark_end(State.FAILED)
 
         # After execution state debug logging.
-        LOGGER.debug("After execution of '%s' -- New state is %s.",
-                     record.name, record.status)
+        LOGGER.debug(
+            "After execution of '%s' -- New state is %s.",
+            record.name,
+            record.status,
+        )
 
     def write_status(self, path):
-        """Write the status of the DAG to a CSV file."""
-        header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
-                 "Start Time,Submit Time,End Time,Number Restarts"
+        """Write the status of the DAG to a CSV file.
+
+        Args:
+          path:
+
+        Returns:
+
+        """
+        header = (
+            "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time,"
+            "Start Time,Submit Time,End Time,Number Restarts"
+        )
         status = [header]
         keys = set(self.values.keys()) - set(["_source"])
         for key in keys:
@@ -613,12 +773,17 @@ class ExecutionGraph(DAG, PickleInterface):
                 jobid_str = str(value.jobid[-1])
 
             _ = [
-                    value.name, jobid_str,
-                    os.path.split(value.workspace.value)[1],
-                    str(value.status.name), value.run_time, value.elapsed_time,
-                    value.time_start, value.time_submitted, value.time_end,
-                    str(value.restarts)
-                ]
+                value.name,
+                jobid_str,
+                os.path.split(value.workspace.value)[1],
+                str(value.status.name),
+                value.run_time,
+                value.elapsed_time,
+                value.time_start,
+                value.time_submitted,
+                value.time_end,
+                str(value.restarts),
+            ]
             _ = ",".join(_)
             status.append(_)
 
@@ -633,14 +798,16 @@ class ExecutionGraph(DAG, PickleInterface):
             pass
 
     def _check_study_completion(self):
+        """ """
         # We cancelled, return True marking study as complete.
         if self.is_canceled:
             LOGGER.info("Cancelled -- completing study.")
             return StudyStatus.CANCELLED
 
         # check for completion of all steps
-        resolved_set = \
+        resolved_set = (
             self.completed_steps | self.failed_steps | self.cancelled_steps
+        )
         if not set(self.values.keys()) - resolved_set:
             # some steps were cancelled and is_canceled wasn't set
             if len(self.cancelled_steps) > 0:
@@ -649,8 +816,9 @@ class ExecutionGraph(DAG, PickleInterface):
 
             # some steps were failures indicating failure
             if len(self.failed_steps) > 0:
-                logging.info("'%s' is complete with failures. Returning.",
-                             self.name)
+                logging.info(
+                    "'%s' is complete with failures. Returning.", self.name
+                )
                 return StudyStatus.FAILURE
 
             # everything completed were are done
@@ -660,8 +828,7 @@ class ExecutionGraph(DAG, PickleInterface):
         return StudyStatus.RUNNING
 
     def execute_ready_steps(self):
-        """
-        Execute any steps whose dependencies are satisfied.
+        """Execute any steps whose dependencies are satisfied.
 
         The 'execute_ready_steps' method is the core of how the ExecutionGraph
         manages execution. This method does the following:
@@ -672,7 +839,11 @@ class ExecutionGraph(DAG, PickleInterface):
           based on satisfied dependencies and executes steps whose
           dependencies are met.
 
-        :returns: True if the study has completed, False otherwise.
+        Args:
+
+        Returns:
+          True if the study has completed, False otherwise.
+
         """
         # TODO: We may want to move this to a singleton somewhere
         # so we can guarantee that all steps use the same adapter.
@@ -707,8 +878,11 @@ class ExecutionGraph(DAG, PickleInterface):
                 if status == State.FINISHED:
                     # Mark the step complete and notate its end time.
                     record.mark_end(State.FINISHED)
-                    LOGGER.info("Step '%s' marked as finished. Adding to "
-                                "complete set.", name)
+                    LOGGER.info(
+                        "Step '%s' marked as finished. Adding to "
+                        "complete set.",
+                        name,
+                    )
                     self.completed_steps.add(name)
                     self.in_progress.remove(name)
 
@@ -725,22 +899,29 @@ class ExecutionGraph(DAG, PickleInterface):
                         if record.mark_restart():
                             LOGGER.info(
                                 "Step '%s' timed out. Restarting (%s of %s).",
-                                name, record.restarts, record.restart_limit
+                                name,
+                                record.restarts,
+                                record.restart_limit,
                             )
                             self._execute_record(record, adapter, restart=True)
                         else:
-                            LOGGER.info("'%s' has been restarted %s of %s "
-                                        "times. Marking step and all "
-                                        "descendents as failed.",
-                                        name,
-                                        record.restarts,
-                                        record.restart_limit)
+                            LOGGER.info(
+                                "'%s' has been restarted %s of %s "
+                                "times. Marking step and all "
+                                "descendents as failed.",
+                                name,
+                                record.restarts,
+                                record.restart_limit,
+                            )
                             self.in_progress.remove(name)
                             cleanup_steps.update(self.bfs_subtree(name)[0])
                     # Otherwise, we can't restart so mark the step timed out.
                     else:
-                        LOGGER.info("'%s' timed out, but cannot be restarted."
-                                    " Marked as TIMEDOUT.", name)
+                        LOGGER.info(
+                            "'%s' timed out, but cannot be restarted."
+                            " Marked as TIMEDOUT.",
+                            name,
+                        )
                         # Mark that the step ended due to TIMEOUT.
                         record.mark_end(State.TIMEDOUT)
                         # Remove from in progress since it no longer is.
@@ -757,8 +938,11 @@ class ExecutionGraph(DAG, PickleInterface):
                     # TODO: Need to make sure that we do this a finite number
                     # of times.
                     # Resubmit the cmd.
-                    LOGGER.warning("Hardware failure detected. Attempting to "
-                                   "resubmit step '%s'.", name)
+                    LOGGER.warning(
+                        "Hardware failure detected. Attempting to "
+                        "resubmit step '%s'.",
+                        name,
+                    )
                     # We can just let the logic below handle submission with
                     # everything else.
                     self.ready_steps.append(name)
@@ -767,7 +951,7 @@ class ExecutionGraph(DAG, PickleInterface):
                     LOGGER.warning(
                         "Job failure reported. Aborting %s -- flagging all "
                         "dependent jobs as failed.",
-                        name
+                        name,
                     )
                     self.in_progress.remove(name)
                     record.mark_end(State.FAILED)
@@ -779,7 +963,9 @@ class ExecutionGraph(DAG, PickleInterface):
                         "Step '%s' found in UNKNOWN state. Step was found "
                         "in '%s' state previously, marking as UNKNOWN. "
                         "Adding to failed steps.",
-                        name, record.status)
+                        name,
+                        record.status,
+                    )
                     cleanup_steps.update(self.bfs_subtree(name)[0])
                     self.in_progress.remove(name)
 
@@ -811,22 +997,28 @@ class ExecutionGraph(DAG, PickleInterface):
             # If the record is only INITIALIZED, we have encountered a step
             # that needs consideration.
             if record.status == State.INITIALIZED:
-                LOGGER.debug("'%s' found to be initialized. Checking "
-                             "dependencies. ", key)
+                LOGGER.debug(
+                    "'%s' found to be initialized. Checking " "dependencies. ",
+                    key,
+                )
 
                 LOGGER.debug(
-                    "Unfulfilled dependencies: %s",
-                    self._dependencies[key])
+                    "Unfulfilled dependencies: %s", self._dependencies[key]
+                )
 
                 s_completed = filter(
                     lambda x: x in self.completed_steps,
-                    self._dependencies[key])
-                self._dependencies[key] = \
-                    self._dependencies[key] - set(s_completed)
+                    self._dependencies[key],
+                )
+                self._dependencies[key] = self._dependencies[key] - set(
+                    s_completed
+                )
                 LOGGER.debug(
                     "Completed dependencies: %s\n"
                     "Remaining dependencies: %s",
-                    s_completed, self._dependencies[key])
+                    s_completed,
+                    self._dependencies[key],
+                )
 
                 # If the gating dependencies set is empty, we can execute.
                 if not self._dependencies[key]:
@@ -874,12 +1066,16 @@ class ExecutionGraph(DAG, PickleInterface):
         return completion_status
 
     def check_study_status(self):
-        """
-        Check the status of currently executing steps in the graph.
+        """Check the status of currently executing steps in the graph.
 
         This method is used to check the status of all currently in progress
         steps in the ExecutionGraph. Each ExecutionGraph stores the adapter
         used to generate and execute its scripts.
+
+        Args:
+
+        Returns:
+
         """
         # Set up the job list and the map to get back to step names.
         joblist = []
@@ -895,8 +1091,9 @@ class ExecutionGraph(DAG, PickleInterface):
         # Use the adapter to grab the job statuses.
         retcode, job_status = adapter.check_jobs(joblist)
         # Map the job identifiers back to step names.
-        step_status = {jobmap[jobid]: status
-                       for jobid, status in job_status.items()}
+        step_status = {
+            jobmap[jobid]: status for jobid, status in job_status.items()
+        }
 
         # Based on return code, log something different.
         if retcode == JobStatusCode.OK:
@@ -929,7 +1126,8 @@ class ExecutionGraph(DAG, PickleInterface):
             LOGGER.info("Successfully requested to cancel all jobs.")
         elif crecord.cancel_status == CancelCode.ERROR:
             LOGGER.error(
-                "Failed to cancel jobs. (Code = %s)", crecord.return_code)
+                "Failed to cancel jobs. (Code = %s)", crecord.return_code
+            )
         else:
             LOGGER.error("Unknown Error (Code = %s)", crecord.return_code)
 

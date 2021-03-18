@@ -38,8 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 @six.add_metaclass(ABCMeta)
 class EnvObject:
-    """
-    An abstract class representing objects that exist in a study's environment.
+    """An abstract class representing objects that exist in a study's environment.
 
     The EnvObject is meant to be used to represent entities in the larger
     environment that affect the execution of a study (and therefore jobs).
@@ -47,12 +46,16 @@ class EnvObject:
     dependencies, code dependencies, variables, aliases, etc. The only method
     we require is _verify, to allow users to verify that they've provided the
     minimal information for the object to be valid.
+
+    Args:
+
+    Returns:
+
     """
 
     @abstractmethod
     def _verify(self):
-        """
-        Verify that the object is valid.
+        """Verify that the object is valid.
 
         Subclasses that inherit from the EnvObject abstract class are expected
         to provide a method for asserting that the contents contained within
@@ -60,14 +63,21 @@ class EnvObject:
         expected member variables are populated to asserting specific values of
         members, etc.
 
-        :returns: True if the EnvObject is verified, False otherwise.
+        Args:
+
+        Returns:
+          True if the EnvObject is verified, False otherwise.
+
         """
 
     def _verification(self, error):
-        """
-        A wrapper method for verifying for using a custom error message.
+        """A wrapper method for verifying for using a custom error message.
 
-        :param error: String containing a custom error message.
+        Args:
+          error: String containing a custom error message.
+
+        Returns:
+
         """
         if not self._verify():
             LOGGER.exception(error)
@@ -80,22 +90,24 @@ class Substitution(EnvObject):
 
     @abstractmethod
     def substitute(self, data):
-        """
-        Perform a replacement of some substring into data.
+        """Perform a replacement of some substring into data.
 
         The method takes the input string data and performs a replacement. This
         API is used to represent concepts such as variables or parameters that
         would want to be replaced within the string data.
 
-        :param data: A string to perform a replacement on.
-        :returns: A string equal to the original string data with substitutions
-            made (if any were performed).
+        Args:
+          data: A string to perform a replacement on.
+
+        Returns:
+          A string equal to the original string data with substitutions
+          made (if any were performed).
+
         """
 
 
 class Source(EnvObject):
-    """
-    Abstract class representing classes that alter environment sourcing.
+    """Abstract class representing classes that alter environment sourcing.
 
     WARNING: The API for this class is still in development.
     The Source environment class is meant to provide a way to programmatically
@@ -104,20 +116,28 @@ class Source(EnvObject):
 
         * Exporting of shell/environment variables (using 'export')
         * Setting of an environment package with the 'use' command
+
+    Args:
+
+    Returns:
+
     """
 
     @abstractmethod
     def apply(self, data):
-        """
-        Apply the Source to some string data.
+        """Apply the Source to some string data.
 
         Subclasses of Source should use this method in order to apply an
         environment altering change. The 'data' parameter should be a string
         representing a command to apply Source to or a list of other commands
         that Source should be included with.
 
-        :param data: A string representing a command or set of other sources.
-        :returns: A string with the Source applied.
+        Args:
+          data: A string representing a command or set of other sources.
+
+        Returns:
+          A string with the Source applied.
+
         """
         # NOTE: This functionality has not been settled yet. The use of this
         # class or this design may not be the best for applying script sources
@@ -126,8 +146,7 @@ class Source(EnvObject):
 
 @six.add_metaclass(ABCMeta)
 class Dependency(Substitution):
-    """
-    Abstract object representing a dependency.
+    """Abstract object representing a dependency.
 
     The Dependency base class is intended to be used to capture external items
     the workflow is dependent on. These items include (but are not limited to):
@@ -140,17 +159,26 @@ class Dependency(Substitution):
 
     The goal of this base class is to make it so that this package is able to
     pull external dependencies in a consistent manner.
+
+    Args:
+
+    Returns:
+
     """
 
     @abstractmethod
     def acquire(self, substitutions=None):
-        """
-        Acquire the dependency as specfied by the class instance.
+        """Acquire the dependency as specfied by the class instance.
 
         Subclasses that implement this interface should raise exceptions during
         acquisition should they be unable to retrieve their specified
         dependency. It is assumed that if acquiring throws an exception that
         the study cannot proceed forward.
 
-        :param substitutions: List of Substitution objects that can be applied.
+        Args:
+          substitutions: List of Substitution objects that can be applied.
+            (Default value = None)
+
+        Returns:
+
         """
