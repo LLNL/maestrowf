@@ -6,7 +6,6 @@ Test module for testing link methods.
 import os
 import pytest
 import shutil
-# import socket
 import tempfile
 import unittest
 
@@ -14,14 +13,6 @@ import unittest
 from maestrowf.utils import (
     splitall, recursive_render, next_path, Linker)
 from maestrowf.datastructures.core.study import StudyStep
-
-# from string import digits
-# from jinja2 import Template
-
-# from codepy.maestro_link import (
-#     next_path, splitall, maestro_split_index_directory,
-#     create_maestro_links)
-
 
 class TestLinkUtilsUnits(unittest.TestCase):
     """Unit tests for Linker helper functions"""

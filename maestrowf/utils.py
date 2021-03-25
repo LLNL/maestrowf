@@ -29,22 +29,21 @@
 
 """A collection of more general utility functions."""
 
+
 from collections import OrderedDict
+import re
+import random
+import coloredlogs
+from filelock import SoftFileLock as FileLock
+from jinja2 import Template
 import logging
 import os
 import string
 from subprocess import PIPE, Popen
-import time
-import datetime
-import re
-import random
-
-import coloredlogs
-
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
-from jinja2 import Template
-from filelock import SoftFileLock as FileLock
+import time
+import datetime
 
 LOGGER = logging.getLogger(__name__)
 

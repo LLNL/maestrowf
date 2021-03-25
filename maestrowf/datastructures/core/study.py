@@ -369,7 +369,7 @@ class Study(DAG, PickleInterface):
         self.add_node(step.real_name, step)
         LOGGER.info(
             "Adding step '%s' to study '%s'...", step.name, self.name)
-        # Apply the dag to the incoming step.
+        # Apply the environment to the incoming step.
         step.__dict__ = \
             apply_function(step.__dict__, self.environment.apply_environment)
 
