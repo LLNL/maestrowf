@@ -2,7 +2,10 @@
 Test module for testing link methods.
 """
 
-# import datetime
+# @TODO: test cases: index in front, middle, end, no index, two indexes
+#        with and without hash
+# @TODO: other error checking on template_string?
+
 import os
 import pytest
 import shutil

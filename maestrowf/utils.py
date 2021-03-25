@@ -29,7 +29,6 @@
 
 """A collection of more general utility functions."""
 
-
 from collections import OrderedDict
 import re
 import random
@@ -421,7 +420,7 @@ class Linker:
         (replacements['indexed_directory_prefix'],
             replacements['indexed_directory_suffix'],
             replacements['indexed_directory_template']) = (
-            self.split_indexed_directory(self.link_template))
+         self.split_indexed_directory(self.link_template))
         if record.step_label:
             replacements['step'] = record.step_label
             replacements['instance'] = (
