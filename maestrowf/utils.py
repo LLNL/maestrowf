@@ -369,8 +369,6 @@ class Linker:
         self.output_name = output_name
         self.output_root = output_root
 
-    # @TODO: fix pylint: error E0213
-    #        Method should have "self" as first argument (no-self-argument)
     def split_indexed_directory(self, template_string):
         """
         Returns a tuple of a indexed_directory prefix, suffix & template
