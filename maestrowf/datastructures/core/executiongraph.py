@@ -527,6 +527,7 @@ class ExecutionGraph(DAG, PickleInterface):
                 continue
 
             # Record generates its own script.
+            record.setup_workspace()
             record.generate_script(adapter, self._tmp_dir)
 
     def _execute_record(self, record, adapter, restart=False):

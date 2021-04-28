@@ -26,7 +26,7 @@ study:
       run:
           cmd: |
             echo "Bye, World!" > bye.txt
-          depends: [hello_world_*]
+          depends: [hello_world]
 
 global.parameters:
     NAME:

@@ -2,25 +2,19 @@
 Test module for testing link methods.
 """
 
-# import datetime
+# @TODO: test cases: index in front, middle, end, no index, two indexes
+#        with and without hash
+# @TODO: other error checking on template_string?
+
 import os
 import pytest
 import shutil
-# import socket
 import tempfile
 import unittest
-
 
 from maestrowf.utils import (
     splitall, recursive_render, next_path, Linker)
 from maestrowf.datastructures.core.study import StudyStep
-
-# from string import digits
-# from jinja2 import Template
-
-# from codepy.maestro_link import (
-#     next_path, splitall, maestro_split_index_directory,
-#     create_maestro_links)
 
 
 class TestLinkUtilsUnits(unittest.TestCase):
