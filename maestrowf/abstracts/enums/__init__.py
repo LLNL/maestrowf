@@ -65,7 +65,8 @@ class State(Enum):
     TIMEDOUT = 10
     UNKNOWN = 11
     CANCELLED = 12
-    DRYRUN = 13
+    NOTFOUND = 13
+    DRYRUN = 14
 
 
 class StudyStatus(Enum):

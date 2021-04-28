@@ -64,7 +64,8 @@
             "anyOf": [
               {"type": "boolean"},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
-            ]}
+            ]},
+            "use_broker": {"type": "boolean"}
         },
         "additionalProperties": false,
         "required": [
