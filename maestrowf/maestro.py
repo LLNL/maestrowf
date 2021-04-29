@@ -25,7 +25,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-###############################################################################
+#########################################################d######################
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
@@ -45,8 +45,7 @@ from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
-    start_process, Linker
-
+    start_process, Linker, valid_link_template
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -431,13 +430,13 @@ def setup_argparser():
         default="{{output_root}}/links",
         help="Jinja template for path where links to run directories \n"
         "are made. [Default: %(default)s]")
-
     run.add_argument(
         "--link-template",
-        type=str,
+        type=valid_link_template,
         default=(
             "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
         help="Jinja template for links to run directories\n"
+        "This template must include {{instance}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
         "{{output_root}} - Parent directory for this maestro study\n"
