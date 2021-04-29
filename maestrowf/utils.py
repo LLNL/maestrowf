@@ -346,7 +346,7 @@ def recursive_render(tpl, values):
 
 
 def valid_link_template(astring):
-    if astring == None:
+    if astring is None:
         return None
     error_text = (
             "\nTemplate error: '" + astring + "'\n"
@@ -382,8 +382,6 @@ class Linker:
         self.link_template = valid_link_template(link_template)
         self.output_name = output_name
         self.output_root = output_root
-
-
 
     def split_indexed_directory(self, template_string):
         """
@@ -530,7 +528,7 @@ class Linker:
         else:
             path = replacements['directory_prefix_path']
         if os.path.exists(path):
-            path = next_path(path + '-' + index_format)
+            path = next_path(path + '-' + self.index_format)
         try:
             # make full path; then make link
             os.makedirs(path)

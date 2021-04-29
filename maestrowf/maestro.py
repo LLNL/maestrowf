@@ -25,7 +25,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#########################################################d######################
+# #######################################################d######################
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
