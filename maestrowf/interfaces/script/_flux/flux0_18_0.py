@@ -19,7 +19,7 @@ except ImportError:
 
 
 class FluxInterface_0190(FluxInterface):
-    # This utility class is for Flux 0.17.0
+    # This utility class is for Flux 0.19.0
     key = "0.19.0"
 
     _FIELDATTRS = {
