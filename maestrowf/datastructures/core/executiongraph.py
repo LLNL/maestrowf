@@ -333,6 +333,9 @@ class ExecutionGraph(DAG, PickleInterface):
         self.ready_steps = deque()
         self.is_canceled = False
 
+        self._status_order = 'bfs'  # Set status order type
+        self._status_subtree = None  # Cache bfs_subtree for status writing
+
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
@@ -599,26 +602,28 @@ class ExecutionGraph(DAG, PickleInterface):
         LOGGER.debug("After execution of '%s' -- New state is %s.",
                      record.name, record.status)
 
+    @property
+    def status_subtree(self):
+        """Cache the status ordering to improve scaling"""
+        if not self._status_subtree:
+            if self._status_order == 'bfs':
+                subtree, _ = self.bfs_subtree("_source")
+
+            elif self._status_order == 'dfs':
+                subtree, _ = self.dfs_subtree("_source", par="_source")
+
+            self._status_subtree = [key for key in subtree
+                                    if key != '_source']
+
+        return self._status_subtree
+
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
                  "Start Time,Submit Time,End Time,Number Restarts"
         status = [header]
-        keys = set(self.values.keys()) - set(["_source"])
 
-        status_order = 'bfs'
-        if status_order == 'bfs':
-            subtree, _ = self.bfs_subtree("_source")
-            keys = [key for key in subtree if key != "_source"]
-
-        elif status_order == 'dfs':
-            subtree, _ = self.dfs_subtree("_source", par="_source")
-            LOGGER.info("DFS SUBTREE: {}".format(subtree))
-            keys = [key for key in subtree if key != '_source']
-            # keys = set(subtree) - set(["_source"])
-            LOGGER.info("DFS KEYS: {}".format(keys))
-
-        for key in keys:
+        for key in self.status_subtree:
             value = self.values[key]
 
             jobid_str = "--"
