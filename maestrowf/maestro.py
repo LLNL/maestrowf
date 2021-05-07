@@ -34,13 +34,13 @@ import logging
 import os
 from rich import box
 from rich.console import Console
-from rich.style import Style
+# from rich.style import Style
 from rich.table import Table
 from rich.theme import Theme
 import shutil
 import six
 import sys
-import tabulate
+# import tabulate
 import time
 
 from maestrowf import __version__
