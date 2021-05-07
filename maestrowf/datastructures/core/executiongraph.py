@@ -622,21 +622,8 @@ class ExecutionGraph(DAG, PickleInterface):
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
                  "Start Time,Submit Time,End Time,Number Restarts"
         status = [header]
-        keys = set(self.values.keys()) - set(["_source"])
 
-        status_order = 'bfs'
-        if status_order == 'bfs':
-            subtree, _ = self.bfs_subtree("_source")
-            keys = [key for key in subtree if key != "_source"]
-
-        elif status_order == 'dfs':
-            subtree, _ = self.dfs_subtree("_source", par="_source")
-            LOGGER.info("DFS SUBTREE: {}".format(subtree))
-            keys = [key for key in subtree if key != '_source']
-            # keys = set(subtree) - set(["_source"])
-            LOGGER.info("DFS KEYS: {}".format(keys))
-
-        for key in keys:
+        for key in self.status_subtree:
             value = self.values[key]
 
             jobid_str = "--"
