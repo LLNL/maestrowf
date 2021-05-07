@@ -339,7 +339,6 @@ def run_study(args):
     LOGGER.warning("WARNING Logging Level -- Enabled")
     LOGGER.critical("CRITICAL Logging Level -- Enabled")
     LOGGER.debug("DEBUG Logging Level -- Enabled")
-    LOGGER.info("WHY THE HELL ISN'T THIS WORKING?")
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
