@@ -34,7 +34,6 @@ import logging
 import os
 from rich import box
 from rich.console import Console
-from rich.panel import Panel
 from rich.style import Style
 from rich.table import Table
 from rich.theme import Theme
@@ -92,16 +91,12 @@ def status_study(args):
     LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
     directory_list = args.directory
-    
+
     if directory_list:
         header_format = "".ljust(150, "=")
 
         for path in directory_list:
             abs_path = os.path.abspath(path)
-
-            print(header_format)
-            print(abs_path)
-            print(header_format)
 
             status = Conductor.get_status(abs_path)
             status_layout = args.layout
@@ -110,8 +105,8 @@ def status_study(args):
                 # Colorized printer (rich)
                 RCONSOLE = Console(theme=STATUS_THEME_FLAT)
 
-                stat_table = Table(title="Study: {}".format(abs_path),)
-                                   # style=Style.combine([STATUS_THEME_FLAT.styles['color'], STATUS_THEME_FLAT.styles['bgcolor']]))
+                stat_table = Table(title="Study: {}".format(abs_path))
+
                 cols = list(status.keys())
 
                 for nom_col_num, col in enumerate(cols):
@@ -135,22 +130,16 @@ def status_study(args):
                     else:
                         row_style = 'none'
 
-                    stat_table.add_row(*['{}'.format(status[key][row]) for key in cols], style=row_style)
+                    stat_table.add_row(*['{}'.format(status[key][row])
+                                         for key in cols],
+                                       style=row_style)
 
             elif status and status_layout == 'narrow':
                 # Colorized printer (rich)
                 RCONSOLE = Console(theme=STATUS_THEME_NARROW)
-                
-                print(tabulate.tabulate(status, headers="keys"))
 
-                step_style = Style(color='cyan', bold=True)
-                wspc_style = Style(color='blue')
-                
-                print(["key: {}, type: {}, is step: {}".format(key, type(key), key != 'Step Name') for key in status.keys()])
-                cols = [key for key in status.keys() if (key != 'Step Name' and key != 'Workspace')]
-                print(cols)
-                colors = ['cyan', 'magenta', 'green', 'blue', 'yellow', 'red']
-                col_styles = {key: colors[idx%len(colors)] for idx, key in enumerate(cols)}
+                cols = [key for key in status.keys()
+                        if (key != 'Step Name' and key != 'Workspace')]
 
                 # Alternate format for narrow terminals
                 stat_table = Table.grid(padding=0)
@@ -161,14 +150,18 @@ def status_study(args):
                 stat_table.show_edge = False
                 stat_table.show_footer = True
                 stat_table.collapse_padding = True
-                
+
                 stat_table.add_column("Step",
                                       overflow="fold")
 
                 num_rows = len(status[cols[0]])
 
                 detail_rows = ['State', 'Job ID', 'Run Time', 'Elapsed Time']
-                sched_rows = ['Submit Time', 'Start Time', 'End Time', 'Number Restarts']
+                sched_rows = ['Submit Time',
+                              'Start Time',
+                              'End Time',
+                              'Number Restarts']
+
                 for row in range(num_rows):
                     step_table = Table(
                         box=box.SIMPLE_HEAVY,
@@ -194,6 +187,7 @@ def status_study(args):
                                       show_lines=True,
                                       # show_footer=True,
                                       box=box.HORIZONTALS)
+
                     step_info.add_column("key")
                     step_info.add_column("val")
                     for nom_row_cnt, detail_row in enumerate(detail_rows):
