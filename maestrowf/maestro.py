@@ -32,6 +32,12 @@ from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
 import jsonschema
 import logging
 import os
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.style import Style
+from rich.table import Table
+from rich.theme import Theme
 import shutil
 import six
 import sys
@@ -52,6 +58,27 @@ from maestrowf.utils import \
 LOGGER = logging.getLogger(__name__)
 LOG_UTIL = LoggerUtility(LOGGER)
 
+STATUS_THEME_FLAT = Theme({
+    "State": "bold red",
+    "Step Name": "bold cyan",
+    "Workspace": "blue",
+    "Job ID": "yellow",
+    "row_style": "none",
+    "row_style_dim": "dim",
+    "col_style_1": "cyan",
+    "col_style_2": "blue",
+    "bgcolor": "grey7",
+    "color": "cyan"
+})
+STATUS_THEME_NARROW = Theme({
+    "State": "bold red",
+    "Step Name": "bold cyan",
+    "Workspace": "blue",
+    "row_style": "cyan",
+    "row_style_dim": "cyan dim",
+    "background": "grey7"
+})
+
 # Configuration globals
 DEBUG_FORMAT = "[%(asctime)s: %(levelname)s] " \
                "[%(module)s: %(lineno)d] %(message)s"
@@ -65,7 +92,7 @@ def status_study(args):
     LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
     directory_list = args.directory
-
+    
     if directory_list:
         header_format = "".ljust(150, "=")
 
@@ -77,8 +104,133 @@ def status_study(args):
             print(header_format)
 
             status = Conductor.get_status(abs_path)
-            if status:
+            status_layout = args.layout
+
+            if status and status_layout == 'flat':
+                # Colorized printer (rich)
+                RCONSOLE = Console(theme=STATUS_THEME_FLAT)
+
+                stat_table = Table(title="Study: {}".format(abs_path),)
+                                   # style=Style.combine([STATUS_THEME_FLAT.styles['color'], STATUS_THEME_FLAT.styles['bgcolor']]))
+                cols = list(status.keys())
+
+                for nom_col_num, col in enumerate(cols):
+                    if col in list(STATUS_THEME_FLAT.styles.keys()):
+                        col_style = col
+                    else:
+                        if nom_col_num % 2 == 0:
+                            col_style = 'col_style_1'
+                        else:
+                            col_style = 'col_style_2'
+
+                    stat_table.add_column(col,
+                                          style=col_style,
+                                          overflow="fold")
+
+                num_rows = len(status[cols[0]])
+                # Alternate dim rows to differentiate them better
+                for row in range(num_rows):
+                    if row % 2 == 0:
+                        row_style = 'dim'
+                    else:
+                        row_style = 'none'
+
+                    stat_table.add_row(*['{}'.format(status[key][row]) for key in cols], style=row_style)
+
+            elif status and status_layout == 'narrow':
+                # Colorized printer (rich)
+                RCONSOLE = Console(theme=STATUS_THEME_NARROW)
+                
                 print(tabulate.tabulate(status, headers="keys"))
+
+                step_style = Style(color='cyan', bold=True)
+                wspc_style = Style(color='blue')
+                
+                print(["key: {}, type: {}, is step: {}".format(key, type(key), key != 'Step Name') for key in status.keys()])
+                cols = [key for key in status.keys() if (key != 'Step Name' and key != 'Workspace')]
+                print(cols)
+                colors = ['cyan', 'magenta', 'green', 'blue', 'yellow', 'red']
+                col_styles = {key: colors[idx%len(colors)] for idx, key in enumerate(cols)}
+
+                # Alternate format for narrow terminals
+                stat_table = Table.grid(padding=0)
+                # stat_table.style = "background"
+                stat_table.title = "STUDY: {}".format(abs_path)
+                stat_table.box = box.HEAVY
+                stat_table.show_lines = True
+                stat_table.show_edge = False
+                stat_table.show_footer = True
+                stat_table.collapse_padding = True
+                
+                stat_table.add_column("Step",
+                                      overflow="fold")
+
+                num_rows = len(status[cols[0]])
+
+                detail_rows = ['State', 'Job ID', 'Run Time', 'Elapsed Time']
+                sched_rows = ['Submit Time', 'Start Time', 'End Time', 'Number Restarts']
+                for row in range(num_rows):
+                    step_table = Table(
+                        box=box.SIMPLE_HEAVY,
+                        show_header=False,
+                    )
+                    step_table.add_column("key")
+                    step_table.add_column("val")
+
+                    step_table.add_row("STEP:",
+                                       status['Step Name'][row],
+                                       style='Step Name')
+                    step_table.add_row("WORKSPACE:",
+                                       status['Workspace'][row],
+                                       style='Workspace')
+
+                    step_table.add_row("", "")
+                    step_details = Table.grid(padding=1)
+                    step_details.add_column("details")
+
+                    step_info = Table(title="Step Details",
+                                      # show_edge=True,
+                                      show_header=False,
+                                      show_lines=True,
+                                      # show_footer=True,
+                                      box=box.HORIZONTALS)
+                    step_info.add_column("key")
+                    step_info.add_column("val")
+                    for nom_row_cnt, detail_row in enumerate(detail_rows):
+                        if detail_row == 'State':
+                            row_style = 'State'
+                        else:
+                            if nom_row_cnt % 2 == 0:
+                                row_style = 'row_style'
+                            else:
+                                row_style = 'row_style'
+
+                        step_info.add_row(detail_row,
+                                          status[detail_row][row],
+                                          style=row_style)
+
+                    step_details.add_column("scheduler")
+                    step_sched = Table(title="Scheduler Details",
+                                       show_header=False,
+                                       show_lines=True,
+                                       box=box.HORIZONTALS)
+                    step_sched.add_column("key")
+                    step_sched.add_column("val")
+                    for nom_row_cnt, sched_row in enumerate(sched_rows):
+                        if nom_row_cnt % 2 == 0:
+                            row_style = 'row_style'
+                        else:
+                            row_style = 'row_style'
+
+                        step_sched.add_row(sched_row,
+                                           status[sched_row][row],
+                                           style=row_style)
+
+                    step_details.add_row(step_info, step_sched)
+
+                    step_table.add_row('', step_details)
+                    stat_table.add_row(step_table, end_section=True)
+
             else:
                 print(
                     "\nNo status to report -- the Maestro study in this path "
@@ -86,6 +238,12 @@ def status_study(args):
                     "a Maestro study.")
             print("")
         print(header_format)
+
+        if status:
+            print("")
+
+            RCONSOLE.print(stat_table)
+
     else:
         print(
             "Path(s) or glob(s) did not resolve to a directory(ies) that "
@@ -181,7 +339,7 @@ def run_study(args):
     LOGGER.warning("WARNING Logging Level -- Enabled")
     LOGGER.critical("CRITICAL Logging Level -- Enabled")
     LOGGER.debug("DEBUG Logging Level -- Enabled")
-
+    LOGGER.info("WHY THE HELL ISN'T THIS WORKING?")
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
@@ -436,6 +594,10 @@ def setup_argparser():
     status.add_argument(
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
+    status.add_argument(
+        "--layout", type=str, choices=['flat', 'narrow'],
+        default='flat',
+        help="Alternate status table layouts")
     status.set_defaults(func=status_study)
 
     # global options
