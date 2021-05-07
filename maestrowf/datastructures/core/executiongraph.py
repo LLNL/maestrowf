@@ -626,7 +626,8 @@ class ExecutionGraph(DAG, PickleInterface):
 
         status_order = 'bfs'
         if status_order == 'bfs':
-            keys, _ = set(self.bfs_subtree("_source")) - set(["_source"])
+            subtree, _ = self.bfs_subtree("_source")
+            keys = [key for key in subtree if key != "_source"]
 
         elif status_order == 'dfs':
             subtree, _ = self.dfs_subtree("_source", par="_source")
