@@ -225,6 +225,43 @@ def status_study(args):
                     step_table.add_row('', step_details)
                     stat_table.add_row(step_table, end_section=True)
 
+                    # TODO: come up with better way to scale/size this
+                    print("STATUS keys: {}".format(list(status.keys())))
+                    param_list = status['Params'][row].split(';')
+                    if len(param_list) > 0 and param_list[0]:
+
+                        if len(param_list) % 2 != 0:
+                            param_list.append("")
+                        print("PARAMS: {}".format(param_list))
+                        num_param_rows = int(len(param_list)/2)
+
+                        step_params = Table(title="Step Parameters",
+                                            show_header=False,
+                                            show_lines=True,
+                                            box=box.HORIZONTALS)
+
+                        step_params.add_column("name", style="cyan")
+                        step_params.add_column("val", style="blue")
+                        step_params.add_column("name2", style="cyan")
+                        step_params.add_column("val2", style="blue")
+                        param_idx = 0
+                        for param_row in range(num_param_rows):
+                            this_row = []
+                            for param_str in param_list[param_idx:param_idx+2]:
+                                if param_str:
+                                    this_row.extend(param_str.split(':'))
+                                else:
+                                    this_row.extend(["", ""])
+
+                                param_idx+2
+                                print("THIS ROW: {}".format(this_row))
+
+                            step_params.add_row(*this_row,
+                                                style=row_style)
+
+                        step_table.add_row('', step_params)
+                        stat_table.add_row(step_table, end_section=True)
+
             else:
                 print(
                     "\nNo status to report -- the Maestro study in this path "
@@ -590,7 +627,7 @@ def setup_argparser():
     status.add_argument(
         "--layout", type=str, choices=['flat', 'narrow'],
         default='flat',
-        help="Alternate status table layouts")
+        help="Alternate status table layouts. [Default: %(default)s]")
     status.set_defaults(func=status_study)
 
     # global options
