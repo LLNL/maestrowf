@@ -227,7 +227,10 @@ def status_study(args):
 
                     # TODO: come up with better way to scale/size this
                     print("STATUS keys: {}".format(list(status.keys())))
-                    param_list = status['Params'][row].split(';')
+                    if 'Params' not in status.keys():
+                        param_list = []
+                    else:
+                        param_list = status['Params'][row].split(';')
                     if len(param_list) > 0 and param_list[0]:
 
                         if len(param_list) % 2 != 0:
