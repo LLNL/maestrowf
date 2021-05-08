@@ -613,7 +613,6 @@ class Study(DAG, PickleInterface):
                 node.run["restart"] = r_cmd
                 LOGGER.debug("New cmd = %s", cmd)
                 LOGGER.debug("New restart = %s", r_cmd)
-
                 dag.add_step(step, node, workspace, rlimit)
 
                 if self.depends[step] or self.hub_depends[step]:
@@ -629,6 +628,7 @@ class Study(DAG, PickleInterface):
                     # is not parameterized.
                     LOGGER.debug("Processing hub dependencies.")
                     for parent in self.hub_depends[step]:
+                        LOGGER.info("Step combos: {}, type: {}".format(self.step_combos[parent], type(self.step_combos[parent])))
                         for item in self.step_combos[parent]:
                             LOGGER.info("Adding edge (%s, %s)...", item, step)
                             dag.add_connection(item, step)
@@ -720,8 +720,12 @@ class Study(DAG, PickleInterface):
                     step_exp.run["cmd"] = cmd
                     step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
+                    LOGGER.info("Step combos: {}, type: {}".format(self.step_combos[step], type(self.step_combos[step])))
+                    LOGGER.info("Step params: {}, type: {}".format(self.used_params[step], type(self.used_params[step])))
+                    LOGGER.info("Combo: {}".format(list(combo.get_param_values(self.used_params[step]))))
                     dag.add_step(
-                        step_exp.real_name, step_exp, workspace, rlimit)
+                        step_exp.real_name, step_exp, workspace, rlimit,
+                        params=combo.get_param_values(self.used_params[step]))
 
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can

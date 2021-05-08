@@ -65,6 +65,19 @@ class _StepRecord:
         self._end_time = None
         self.status = kwargs.get("status", State.INITIALIZED)
 
+        # Parameter info
+        self._params = None
+
+    def add_params(self, params):
+        """Attaches param names/values used in this step"""
+        self._params = {param: value for param, value in params}
+
+    @property
+    def params(self):
+        if not self._params:
+            self._params = {}
+        return self._params
+
     def setup_workspace(self):
         """Initialize the record's workspace."""
         create_parentdir(self.workspace.value)
@@ -379,7 +392,7 @@ class ExecutionGraph(DAG, PickleInterface):
         if self._tmp_dir and not os.path.exists(self._tmp_dir):
             self._tmp_dir = tempfile.mkdtemp()
 
-    def add_step(self, name, step, workspace, restart_limit):
+    def add_step(self, name, step, workspace, restart_limit, params=None):
         """
         Add a StepRecord to the ExecutionGraph.
 
@@ -395,6 +408,9 @@ class ExecutionGraph(DAG, PickleInterface):
                     "restart_limit": restart_limit,
                 }
         record = _StepRecord(**data)
+        if params:
+            record.add_params(params)
+
         self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
 
@@ -620,7 +636,7 @@ class ExecutionGraph(DAG, PickleInterface):
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
-                 "Start Time,Submit Time,End Time,Number Restarts"
+                 "Start Time,Submit Time,End Time,Number Restarts,Params"
         status = [header]
 
         for key in self.status_subtree:
@@ -635,7 +651,9 @@ class ExecutionGraph(DAG, PickleInterface):
                     os.path.split(value.workspace.value)[1],
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
-                    str(value.restarts)
+                    str(value.restarts),
+                    ";".join(["{}:{}".format(param, value)
+                              for param, value in value.params.items()])
                 ]
             _ = ",".join(_)
             status.append(_)

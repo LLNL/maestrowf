@@ -142,7 +142,7 @@ class Combination(object):
         for key, value in self._labels.items():
             item = item.replace(key, str(value))
 
-        # Apply the Combination's values to the item.
+        # apply the Combination's values to the item.
         # These are substrings within item that are represented by the format
         # <self.token>(<key>)
         for key, value in self._params.items():
@@ -158,6 +158,17 @@ class Combination(object):
         # parameter item is simply reused since all we're doing is replacing
         # substrings.
         return item
+
+    def get_param_values(self, params):
+        """
+        Get the values for the specified parameters.
+
+        :param params: A set of parameters to be used in the string.
+        :returns: A string containing the labels for the parameters in params.
+        """
+        for key in params:
+            var = "{}({})".format(self._token, key)
+            yield key, self._params[var]
 
 
 class ParameterGenerator:
