@@ -47,14 +47,11 @@ SOURCE = "_source"
 WSREGEX = re.compile(
     r"\$\(([-!\$%\^&\*\(\)_\+\|~=`{}\[\]:;<>\?,\.\/\w]+)\.workspace\)"
 )
-ALL_COMBOS = re.compile(
-    r"_\*|\*"
-)
+ALL_COMBOS = re.compile(r"_\*|\*")
 
 
 class StudyStep:
-    """
-    Class that represents the data and API for a single study step.
+    """Class that represents the data and API for a single study step.
 
     This class is primarily a 1:1 mapping of a study step in the YAML spec in
     terms of data. The StudyStep's class API should capture all functions that
@@ -63,6 +60,11 @@ class StudyStep:
     * Applying a combination of parameters to itself.
     * Tests for equality and non-equality to check for changes.
     * Other -- WIP
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self):
@@ -71,25 +73,28 @@ class StudyStep:
         self.description = ""
         self.nickname = ""
         self.run = {
-                        "cmd":              "",
-                        "depends":          "",
-                        "pre":              "",
-                        "post":             "",
-                        "restart":          "",
-                        "nodes":            "",
-                        "procs":            "",
-                        "gpus":             "",
-                        "cores per task":   "",
-                        "walltime":         "",
-                        "reservation":      ""
-                    }
+            "cmd": "",
+            "depends": "",
+            "pre": "",
+            "post": "",
+            "restart": "",
+            "nodes": "",
+            "procs": "",
+            "gpus": "",
+            "cores per task": "",
+            "walltime": "",
+            "reservation": "",
+        }
 
     def apply_parameters(self, combo):
-        """
-        Apply a parameter combination to the StudyStep.
+        """Apply a parameter combination to the StudyStep.
 
-        :param combo: A Combination instance to be applied to a StudyStep.
-        :returns: A new StudyStep instance with combo applied to its members.
+        Args:
+          combo: A Combination instance to be applied to a StudyStep.
+
+        Returns:
+          A new StudyStep instance with combo applied to its members.
+
         """
         # Create a new StudyStep and populate it with substituted values.
         tmp = StudyStep()
@@ -100,10 +105,13 @@ class StudyStep:
 
     @property
     def name(self):
-        """
-        Get the name to assign to a task for this step.
+        """Get the name to assign to a task for this step.
 
-        :returns: A utf-8 formatted string of the task name.
+        Args:
+
+        Returns:
+          A utf-8 formatted string of the task name.
+
         """
         if self.nickname:
             return self.nickname
@@ -111,19 +119,25 @@ class StudyStep:
 
     @name.setter
     def name(self, value):
-        """
-        Set the name of a StudyStep instance.
+        """Set the name of a StudyStep instance.
 
-        :param value: A string value representing the name to give the step.
+        Args:
+          value: A string value representing the name to give the step.
+
+        Returns:
+
         """
         self._name = value
 
     @property
     def real_name(self):
-        """
-        Get the real name of the step (ignore nickname).
+        """Get the real name of the step (ignore nickname).
 
-        :returns: A string of the true name of a StudyStep instance.
+        Args:
+
+        Returns:
+          A string of the true name of a StudyStep instance.
+
         """
         return self._name
 
@@ -154,8 +168,7 @@ class StudyStep:
 
 
 class Study(DAG, PickleInterface):
-    """
-    Collection of high level objects to perform study construction.
+    """Collection of high level objects to perform study construction.
 
     The Study class is part of the meat and potatoes of this whole package. A
     Study object is where the intersection of the major moving parts are
@@ -191,10 +204,22 @@ class Study(DAG, PickleInterface):
       designed in whatever class ends up managing all of this to have
       machine learning applications pipe messages to spin up new studies
       using the same environment.
+
+    Args:
+
+    Returns:
+
     """
 
-    def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None, out_path="./"):
+    def __init__(
+        self,
+        name,
+        description,
+        studyenv=None,
+        parameters=None,
+        steps=None,
+        out_path="./",
+    ):
         """
         Study object used to represent the full workflow of a study.
 
@@ -257,10 +282,13 @@ class Study(DAG, PickleInterface):
 
     @property
     def output_path(self):
-        """
-        Property method for the OUTPUT_PATH specified for the study.
+        """Property method for the OUTPUT_PATH specified for the study.
 
-        :returns: The string path stored in the OUTPUT_PATH variable.
+        Args:
+
+        Returns:
+          The string path stored in the OUTPUT_PATH variable.
+
         """
         return self._out_path
 
@@ -273,7 +301,7 @@ class Study(DAG, PickleInterface):
         path = os.path.join(self._meta_path, "study")
         create_parentdir(path)
         path = os.path.join(path, "env.pkl")
-        with open(path, 'wb') as pkl:
+        with open(path, "wb") as pkl:
             pickle.dump(self, pkl)
 
         # Construct other metadata related to study construction.
@@ -284,8 +312,9 @@ class Study(DAG, PickleInterface):
             elif key in self.step_combos:
                 _workspaces[key] = os.path.split(value)[-1]
             else:
-                _workspaces[key] = \
-                    os.path.sep.join(value.rsplit(os.path.sep)[-2:])
+                _workspaces[key] = os.path.sep.join(
+                    value.rsplit(os.path.sep)[-2:]
+                )
 
         # Construct relative paths for the combinations and nest them in the
         # same way as the step combinations dictionary.
@@ -300,8 +329,9 @@ class Study(DAG, PickleInterface):
                 _step_combos[key] = {}
                 for combo in value:
                     _ws = self.workspaces[combo]
-                    _step_combos[key][combo] = \
-                        os.path.sep.join(_ws.rsplit(os.path.sep)[-2:])
+                    _step_combos[key][combo] = os.path.sep.join(
+                        _ws.rsplit(os.path.sep)[-2:]
+                    )
 
         metadata = {
             "dependencies": self.depends,
@@ -332,13 +362,16 @@ class Study(DAG, PickleInterface):
             return
 
         path = os.path.join(self._meta_path, "study", "env.pkl")
-        with open(path, 'rb') as pkl:
+        with open(path, "rb") as pkl:
             env = pickle.load(pkl)
 
         if not isinstance(env, type(self)):
-            msg = "Object loaded from {path} is of type {type}. Expected an" \
-                  " object of type '{cls}.'".format(path=path, type=type(env),
-                                                    cls=type(self))
+            msg = (
+                "Object loaded from {path} is of type {type}. Expected an"
+                " object of type '{cls}.'".format(
+                    path=path, type=type(env), cls=type(self)
+                )
+            )
             LOGGER.error(msg)
             raise TypeError(msg)
 
@@ -353,8 +386,7 @@ class Study(DAG, PickleInterface):
         self.step_combos = metadata["step_combinations"]
 
     def add_step(self, step):
-        """
-        Add a step to a study.
+        """Add a step to a study.
 
         For this helper to be most effective, it recommended to apply steps in
         the order that they will be encountered. The method attempts to be
@@ -362,38 +394,46 @@ class Study(DAG, PickleInterface):
         a step. When adding steps out of order it's recommended to just use the
         base class DAG functionality and manually make connections.
 
-        :param step: A StudyStep instance to be added to the Study instance.
+        Args:
+          step: A StudyStep instance to be added to the Study instance.
+
+        Returns:
+
         """
         # Add the node to the DAG.
         self.add_node(step.real_name, step)
-        LOGGER.info(
-            "Adding step '%s' to study '%s'...", step.name, self.name)
+        LOGGER.info("Adding step '%s' to study '%s'...", step.name, self.name)
         # Apply the environment to the incoming step.
-        step.__dict__ = \
-            apply_function(step.__dict__, self.environment.apply_environment)
+        step.__dict__ = apply_function(
+            step.__dict__, self.environment.apply_environment
+        )
 
         # If the step depends on a prior step, create an edge.
         if "depends" in step.run and step.run["depends"]:
             for dependency in step.run["depends"]:
-                LOGGER.info("{0} is dependent on {1}. Creating edge ("
-                            "{1}, {0})...".format(step.real_name, dependency))
+                LOGGER.info(
+                    "{0} is dependent on {1}. Creating edge ("
+                    "{1}, {0})...".format(step.real_name, dependency)
+                )
                 if "*" not in dependency:
                     self.add_edge(dependency, step.real_name)
                 else:
                     self.add_edge(
-                        re.sub(ALL_COMBOS, "", dependency),
-                        step.real_name
+                        re.sub(ALL_COMBOS, "", dependency), step.real_name
                     )
         else:
             # Otherwise, if no other dependency, just execute the step.
             self.add_edge(SOURCE, step.real_name)
 
     def walk_study(self, src=SOURCE):
-        """
-        Walk the study and create a spanning tree.
+        """Walk the study and create a spanning tree.
 
-        :param src: Source node to start the walk.
-        :returns: A generator of (parent, node name, node value) tuples.
+        Args:
+          src: Source node to start the walk. (Default value = SOURCE)
+
+        Returns:
+          A generator of (parent, node name, node value) tuples.
+
         """
         # Get a DFS spanning tree of the study. This method should always
         # return a complete tree because _source is flagged as a dependency
@@ -419,26 +459,39 @@ class Study(DAG, PickleInterface):
             LOGGER.debug("Environment is setting up.")
             self.environment.acquire_environment()
 
-    def configure_study(self, submission_attempts=1, restart_limit=1,
-                        throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False):
-        """
-        Perform initial configuration of a study. \
+    def configure_study(
+        self,
+        submission_attempts=1,
+        restart_limit=1,
+        throttle=0,
+        use_tmp=False,
+        hash_ws=False,
+        dry_run=False,
+    ):
+        """Perform initial configuration of a study.
 
-        The method is used for going through and actually acquiring each \
-        dependency, substituting variables, sources and labels. \
+        The method is used for going through and actually acquiring each
+        dependency, substituting variables, sources and labels.
 
-        :param submission_attempts: Number of attempted submissions before \
-        marking a step as failed. \
-        :param restart_limit: Upper limit on the number of times a step with \
-        a restart command can be resubmitted before it is considered failed. \
-        :param throttle: The maximum number of in-progress jobs allowed. [0 \
-        denotes no cap].\
-        :param use_tmp: Boolean value specifying if the generated \
-        ExecutionGraph dumps its information into a temporary directory. \
-        :param dry_run: Boolean value that toggles dry run to just generate \
-        study workspaces and scripts without execution or status checking. \
-        :returns: True if the Study is successfully setup, False otherwise. \
+        Args:
+          submission_attempts: Number of attempted submissions before marking
+            a step as failed.  (Default value = 1)
+          restart_limit: Upper limit on the number of times a step with a
+            restart command can be resubmitted before it is considered failed.
+            (Default value = 1)
+          throttle: The maximum number of in-progress jobs allowed. [0 denotes
+            no cap]. (Default value = 0)
+          use_tmp: Boolean value specifying if the generated ExecutionGraph
+            dumps its information into a temporary directory.
+            (Default value = False)
+          dry_run: Boolean value that toggles dry run to just generate study
+            workspaces and scripts without execution or status checking.
+            (Default value = False)
+          hash_ws:  (Default value = False)
+
+        Returns:
+          True if the Study is successfully setup, False otherwise.
+
         """
 
         self._submission_attempts = submission_attempts
@@ -458,27 +511,36 @@ class Study(DAG, PickleInterface):
             "Dry run enabled =           %s\n"
             "Output path =               %s\n"
             "------------------------------------------",
-            submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, self._out_path
+            submission_attempts,
+            restart_limit,
+            throttle,
+            use_tmp,
+            hash_ws,
+            dry_run,
+            self._out_path,
         )
 
         self.is_configured = True
 
     def _stage(self, dag):
-        """
-        Set up the ExecutionGraph of a parameterized study.
+        """Set up the ExecutionGraph of a parameterized study.
 
-        :param throttle: Maximum number of in progress jobs allowed.
-        :returns: The path to the study's global workspace and an expanded
-            ExecutionGraph based on the parameters and parameterized workflow
-            steps.
+        Args:
+          throttle: Maximum number of in progress jobs allowed.
+          dag:
+
+        Returns:
+          The path to the study's global workspace and an expanded
+          ExecutionGraph based on the parameters and parameterized workflow
+          steps.
+
         """
         # Items to store that should be reset.
         LOGGER.info(
             "\n==================================================\n"
             "Constructing parameter study '%s'\n"
             "==================================================\n",
-            self.name
+            self.name,
         )
 
         # Topological sorted list of steps.
@@ -504,7 +566,7 @@ class Study(DAG, PickleInterface):
                 "\n==================================================\n"
                 "Processing step '%s'\n"
                 "==================================================\n",
-                step
+                step,
             )
             # If we encounter SOURCE, just add it and continue.
             if step == SOURCE:
@@ -520,7 +582,7 @@ class Study(DAG, PickleInterface):
             self.step_combos[step] = set()
 
             s_params = self.parameters.get_used_parameters(node)
-            p_params = set()    # Used parameters excluding the current step.
+            p_params = set()  # Used parameters excluding the current step.
             # Iterate through dependencies to update the p_params
             LOGGER.debug("\n*** Processing dependencies ***")
             for parent in node.run["depends"]:
@@ -539,11 +601,14 @@ class Study(DAG, PickleInterface):
             # node because they may use parameters. These are likely to cause
             # a node to fall into the 'Parameter Dependent' case.
             used_spaces = re.findall(
-                WSREGEX, "{} {}".format(node.run["cmd"], node.run["restart"]))
+                WSREGEX, "{} {}".format(node.run["cmd"], node.run["restart"])
+            )
             for ws in used_spaces:
                 if ws not in self.used_params:
-                    msg = "Workspace for '{}' is being used before it would" \
-                          " be generated.".format(ws)
+                    msg = (
+                        "Workspace for '{}' is being used before it would"
+                        " be generated.".format(ws)
+                    )
                     LOGGER.error(msg)
                     raise Exception(msg)
 
@@ -553,12 +618,16 @@ class Study(DAG, PickleInterface):
                 if ws in self.hub_depends[step]:
                     LOGGER.info(
                         "'%s' parameter independent association found. "
-                        "Skipping.", ws)
+                        "Skipping.",
+                        ws,
+                    )
                     continue
 
                 LOGGER.debug(
                     "Found workspace '%s' using parameters %s",
-                    ws, self.used_params[ws])
+                    ws,
+                    self.used_params[ws],
+                )
                 p_params |= self.used_params[ws]
 
             # Total parameters used for this step are the union of each parent
@@ -577,7 +646,7 @@ class Study(DAG, PickleInterface):
                     "\n-------------------------------------------------\n"
                     "Adding step '%s' (No parameters used)\n"
                     "-------------------------------------------------\n",
-                    step
+                    step,
                 )
                 # If we're not using any parameters at all, we do:
                 # Copy the step and set to not modified.
@@ -646,14 +715,17 @@ class Study(DAG, PickleInterface):
                     "-------- Used Parameters --------\n"
                     "%s\n"
                     "---------------------------------",
-                    step, self.used_params[step]
+                    step,
+                    self.used_params[step],
                 )
                 # Now we iterate over the combinations and expand the step.
                 for combo in self.parameters:
-                    LOGGER.info("\n**********************************\n"
-                                "Combo [%s]\n"
-                                "**********************************",
-                                str(combo))
+                    LOGGER.info(
+                        "\n**********************************\n"
+                        "Combo [%s]\n"
+                        "**********************************",
+                        str(combo),
+                    )
                     # Compute this step's combination name and workspace.
                     nickname = None
                     combo_str = combo.get_param_string(self.used_params[step])
@@ -662,11 +734,12 @@ class Study(DAG, PickleInterface):
                     if self._hash_ws:
                         nickname = md5(combo_str.encode("utf-8")).hexdigest()
                         workspace = make_safe_path(
-                                        self._out_path,
-                                        *[step, nickname])
+                            self._out_path, *[step, nickname]
+                        )
                     else:
-                        workspace = \
-                            make_safe_path(self._out_path, *[step, combo_str])
+                        workspace = make_safe_path(
+                            self._out_path, *[step, combo_str]
+                        )
                         LOGGER.debug("Workspace: %s", workspace)
                     combo_str = "{}_{}".format(step, combo_str)
                     self.workspaces[combo_str] = workspace
@@ -701,15 +774,19 @@ class Study(DAG, PickleInterface):
                             # the unparameterized match.
                             ws = self.workspaces[match]
                             LOGGER.info(
-                                "Found unparameterized workspace -- %s", match)
+                                "Found unparameterized workspace -- %s", match
+                            )
                         else:
                             # Otherwise, we're dealing with a combination.
                             ws = "{}_{}".format(
                                 match,
-                                combo.get_param_string(self.used_params[match])
+                                combo.get_param_string(
+                                    self.used_params[match]
+                                ),
                             )
                             LOGGER.info(
-                                "Found parameterized workspace -- %s", ws)
+                                "Found parameterized workspace -- %s", ws
+                            )
                             ws = self.workspaces[ws]
 
                         # Replace in both the command and restart command.
@@ -721,7 +798,8 @@ class Study(DAG, PickleInterface):
                     step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
                     dag.add_step(
-                        step_exp.real_name, step_exp, workspace, rlimit)
+                        step_exp.real_name, step_exp, workspace, rlimit
+                    )
 
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can
@@ -731,7 +809,9 @@ class Study(DAG, PickleInterface):
                             if self.used_params[p]:
                                 p = "{}_{}".format(
                                     p,
-                                    combo.get_param_string(self.used_params[p])
+                                    combo.get_param_string(
+                                        self.used_params[p]
+                                    ),
                                 )
                             LOGGER.info(
                                 "Adding edge (%s, %s)...", p, combo_str
@@ -758,12 +838,16 @@ class Study(DAG, PickleInterface):
         return dag
 
     def _stage_linear(self, dag):
-        """
-        Execute a linear workflow without parameters.
+        """Execute a linear workflow without parameters.
 
-        :param throttle: Maximum number of in progress jobs allowed.
-        :returns: The path to the study's global workspace and an
-            ExecutionGraph based on linear steps in the study.
+        Args:
+          throttle: Maximum number of in progress jobs allowed.
+          dag:
+
+        Returns:
+          The path to the study's global workspace and an
+          ExecutionGraph based on linear steps in the study.
+
         """
         # For each step in the Study
         # Walk the study and add the steps to the ExecutionGraph.
@@ -824,27 +908,34 @@ class Study(DAG, PickleInterface):
         return dag
 
     def stage(self):
-        """
-        Generate the execution graph for a Study.
+        """Generate the execution graph for a Study.
 
         Staging creates an ExecutionGraph based on the combinations generated
         by the ParameterGeneration object stored in an instance of a Study.
         The stage method also sets up individual working directories (or
         workspaces) for each node in the workflow that requires it.
 
-        :returns: An ExecutionGraph object with the expanded workflow.
+        Args:
+
+        Returns:
+          An ExecutionGraph object with the expanded workflow.
+
         """
         # If the workspace doesn't exist, raise an exception.
         if not os.path.exists(self._out_path):
-            msg = "Study {} is not set up for staging. Workspace does not " \
-                  "exists (Output Dir = {}).".format(self.name, self._out_path)
+            msg = (
+                "Study {} is not set up for staging. Workspace does not "
+                "exists (Output Dir = {}).".format(self.name, self._out_path)
+            )
             LOGGER.error(msg)
             raise Exception(msg)
 
         # If the environment isn't set up, raise an exception.
         if not self.environment.is_set_up:
-            msg = "Study {} is not set up for staging. Environment is not " \
-                  "set up. Aborting.".format(self.name)
+            msg = (
+                "Study {} is not set up for staging. Environment is not "
+                "set up. Aborting.".format(self.name)
+            )
             LOGGER.error(msg)
             raise Exception(msg)
 
@@ -871,7 +962,9 @@ class Study(DAG, PickleInterface):
         dag = ExecutionGraph(
             submission_attempts=self._submission_attempts,
             submission_throttle=self._submission_throttle,
-            use_tmp=self._use_tmp, dry_run=self._dry_run)
+            use_tmp=self._use_tmp,
+            dry_run=self._dry_run,
+        )
         dag.add_description(**self.description)
         dag.log_description()
 
@@ -880,6 +973,7 @@ class Study(DAG, PickleInterface):
         # the execution graph. Because the execution graph is constructed from
         # the study steps, it won't contain a cycle.
         def _pass_detect_cycle(self):
+            """ """
             pass
 
         dag.detect_cycle = MethodType(_pass_detect_cycle, dag)

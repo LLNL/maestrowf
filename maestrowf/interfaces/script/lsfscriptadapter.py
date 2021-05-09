@@ -36,8 +36,12 @@ import re
 from subprocess import PIPE, Popen
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
-from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
-    SubmissionCode
+from maestrowf.abstracts.enums import (
+    CancelCode,
+    JobStatusCode,
+    State,
+    SubmissionCode,
+)
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 
 
@@ -88,22 +92,25 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._cmd_flags = {
-            "cmd":          "jsrun --bind rs",
-            "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "nodes":        "--nrs",
-            "gpus":         "-g",
-            "reservation":  "-J",
+            "cmd": "jsrun --bind rs",
+            "ntasks": "--tasks_per_rs {procs} --cpu_per_rs {procs}",
+            "nodes": "--nrs",
+            "gpus": "-g",
+            "reservation": "-J",
         }
 
         self._extension = ".lsf.sh"
 
     def get_header(self, step):
-        """
-        Generate the header present at the top of LSF execution scripts.
+        """Generate the header present at the top of LSF execution scripts.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the header based on internal batch parameters and
-                  the parameter step.
+        Args:
+          step: A StudyStep instance.
+
+        Returns:
+          A string of the header based on internal batch parameters and
+          the parameter step.
+
         """
         run = dict(step.run)
         batch_header = dict(self._batch)
@@ -120,9 +127,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             # If wall time is specified in three parts, we'll just calculate
             # the minutes off of the seconds and then shift up to hours if
             # needed.
-            seconds_minutes = ceil(float(wt_split[2])/60)
+            seconds_minutes = ceil(float(wt_split[2]) / 60)
             total_minutes = int(wt_split[1]) + seconds_minutes
-            hours = int(wt_split[0]) + int(total_minutes/60)
+            hours = int(wt_split[0]) + int(total_minutes / 60)
             total_minutes %= 60
             walltime = "{:02d}:{:02d}".format(hours, int(total_minutes))
 
@@ -135,64 +142,61 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         return "\n".join(modified_header)
 
     def get_parallelize_command(self, procs, nodes=None, **kwargs):
-        """
-        Generate the LSF parallelization segement of the command line.
+        """Generate the LSF parallelization segement of the command line.
 
-        :param procs: Number of processors to allocate to the parallel call.
-        :param nodes: Number of nodes to allocate to the parallel call
-                      (default = 1).
-        :returns: A string of the parallelize command configured using nodes
-                  and procs.
+        Args:
+          procs: Number of processors to allocate to the parallel call.
+          nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+          **kwargs:
+
+        Returns:
+          A string of the parallelize command configured using nodes
+          and procs.
+
         """
         args = [self._cmd_flags["cmd"]]
 
         if nodes:
             _nodes = nodes
-            args += [
-                self._cmd_flags["nodes"],
-                str(nodes)
-            ]
+            args += [self._cmd_flags["nodes"], str(nodes)]
         else:
             _nodes = 1
 
         # Compute the number of CPUs per node (rs)
-        _procs = int(procs)/int(_nodes)
+        _procs = int(procs) / int(_nodes)
 
         # Processors segment
-        args += [
-            self._cmd_flags["ntasks"].format(procs=_procs)
-        ]
+        args += [self._cmd_flags["ntasks"].format(procs=_procs)]
 
         # If we have GPUs being requested, add them to the command.
         gpus = kwargs.get("gpus", 0)
         if gpus:
-            args += [
-                self._cmd_flags["gpus"],
-                str(gpus)
-            ]
+            args += [self._cmd_flags["gpus"], str(gpus)]
 
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
-        """
-        Submit a script to the LSF scheduler.
+        """Submit a script to the LSF scheduler.
 
-        :param step: The StudyStep instance this submission is based on.
-        :param path: Local path to the script to be executed.
-        :param cwd: Path to the current working directory.
-        :param job_map: A dictionary mapping step names to their job
-                        identifiers.
-        :param env: A dict containing a modified environment for execution.
-        :returns: The return status of the submission command and job
-                  identiifer.
+        Args:
+          step: The StudyStep instance this submission is based on.
+          path: Local path to the script to be executed.
+          cwd: Path to the current working directory.
+          job_map: A dictionary mapping step names to their job
+        identifiers. (Default value = None)
+          env: A dict containing a modified environment for execution.
+            (Default value = None)
+
+        Returns:
+          The return status of the submission command and job
+          identiifer.
+
         """
         args = ["bsub"]
 
         if "reservation" in self._batch:
-            args += [
-                "-U",
-                self._batch["reservation"]
-            ]
+            args += ["-U", self._batch["reservation"]]
 
         args += ["-cwd", cwd, "<", path]
         cmd = " ".join(args)
@@ -210,22 +214,27 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
             return SubmissionRecord(
-                SubmissionCode.OK, retcode,
-                re.search('[0-9]+', output).group(0))
+                SubmissionCode.OK,
+                retcode,
+                re.search("[0-9]+", output).group(0),
+            )
         else:
             LOGGER.warning("Submission returned an error.")
             return SubmissionRecord(SubmissionCode.ERROR, retcode, -1)
 
     def check_jobs(self, joblist):
-        """
-        For the given job list, query execution status.
+        """For the given job list, query execution status.
 
         This method uses the scontrol show job <jobid> command and does a
         regex search for job information.
 
-        :param joblist: A list of job identifiers to be queried.
-        :returns: The return code of the status query, and a dictionary of job
-                  identifiers to their status.
+        Args:
+          joblist: A list of job identifiers to be queried.
+
+        Returns:
+          The return code of the status query, and a dictionary of job
+          identifiers to their status.
+
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
@@ -233,9 +242,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         # -t = list of job states to search for. 'all' for all states.
         # -o = status output formatting
         o_format = "jobid:7 stat:5 exit_code:10 exit_reason:50 delimiter='|'"
-        stat_cmd = "bjobs -a -u $USER -o \"{}\""
+        stat_cmd = 'bjobs -a -u $USER -o "{}"'
         cmd = stat_cmd.format(o_format)
-        LOGGER.debug("bjobs cmd = \"%s\"", cmd)
+        LOGGER.debug('bjobs cmd = "%s"', cmd)
         p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         retcode = p.wait()
@@ -255,8 +264,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             # system is configured to return 0.
             no_jobs = re.search(self.NOJOB_REGEX, output)
             if no_jobs:
-                LOGGER.warning("User '%s' has no jobs executing. Returning.",
-                               getpass.getuser())
+                LOGGER.warning(
+                    "User '%s' has no jobs executing. Returning.",
+                    getpass.getuser(),
+                )
                 return JobStatusCode.NOJOBS, {}
 
             # Otherwise, we can just process as normal.
@@ -272,8 +283,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.debug("Entry split: %s", job_split)
                 if len(job_split) < 4:
                     LOGGER.debug(
-                        "Entry has less than 4 fields. Skipping.",
-                        job_split)
+                        "Entry has less than 4 fields. Skipping.", job_split
+                    )
                     continue
 
                 while job_split[0] == "":
@@ -295,29 +306,36 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                     else:
                         _j_state = job_split[state_index]
                     _state = self._state(_j_state)
-                    LOGGER.debug("ID Found. %s -- %s",
-                                 job_split[state_index],
-                                 _state)
+                    LOGGER.debug(
+                        "ID Found. %s -- %s", job_split[state_index], _state
+                    )
                     status[job_split[jobid_index]] = _state
 
             return JobStatusCode.OK, status
         # NOTE: We're keeping this here for now since we could see it in the
         # future...
         elif retcode == 255:
-            LOGGER.warning("User '%s' has no jobs executing. Returning.",
-                           getpass.getuser())
+            LOGGER.warning(
+                "User '%s' has no jobs executing. Returning.",
+                getpass.getuser(),
+            )
             return JobStatusCode.NOJOBS, status
         else:
-            LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.", retcode)
+            LOGGER.error(
+                "Error code '%s' seen. Unexpected behavior " "encountered.",
+                retcode,
+            )
             return JobStatusCode.ERROR, status
 
     def cancel_jobs(self, joblist):
-        """
-        For the given job list, cancel each job.
+        """For the given job list, cancel each job.
 
-        :param joblist: A list of job identifiers to be cancelled.
-        :returns: The return code to indicate if jobs were cancelled.
+        Args:
+          joblist: A list of job identifiers to be cancelled.
+
+        Returns:
+          The return code to indicate if jobs were cancelled.
+
         """
         # If we don't have any jobs to check, just return status OK.
         if not joblist:
@@ -331,16 +349,22 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         if retcode == 0:
             return CancellationRecord(CancelCode.OK, retcode)
         else:
-            LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.", retcode)
+            LOGGER.error(
+                "Error code '%s' seen. Unexpected behavior " "encountered.",
+                retcode,
+            )
             return CancellationRecord(CancelCode.ERROR, retcode)
 
     def _state(self, lsf_state):
-        """
-        Map a scheduler specific job state to a Study.State enum.
+        """Map a scheduler specific job state to a Study.State enum.
 
-        :param slurm_state: String representation of scheduler job status.
-        :returns: A Study.State enum corresponding to parameter job_state.
+        Args:
+          slurm_state: String representation of scheduler job status.
+          lsf_state:
+
+        Returns:
+          A Study.State enum corresponding to parameter job_state.
+
         """
         # NOTE: fdinatale -- If I'm understanding this correctly, there are
         # four naturally occurring states (excluding states of suspension.)
@@ -368,8 +392,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             return State.UNKNOWN
 
     def _write_script(self, ws_path, step):
-        """
-        Write a LSF script to the workspace of a workflow step.
+        """Write a LSF script to the workspace of a workflow step.
 
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
@@ -377,11 +400,15 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         chain using a scheduler's dependency setting). The functionality of
         the parameter may change depending on both future intended use.
 
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: Boolean value (True if to be scheduled), the path to the
-                  written script for run["cmd"], and the path to the script
-                  written for run["restart"] (if it exists).
+        Args:
+          ws_path: Path to the workspace directory of the step.
+          step: An instance of a StudyStep.
+
+        Returns:
+          Boolean value (True if to be scheduled), the path to the
+          written script for run["cmd"], and the path to the script
+          written for run["restart"] (if it exists).
+
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
@@ -415,4 +442,5 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
     @property
     def extension(self):
+        """ """
         return self._extension

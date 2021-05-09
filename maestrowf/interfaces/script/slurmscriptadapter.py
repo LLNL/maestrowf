@@ -34,8 +34,12 @@ import os
 import re
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
-from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
-    CancelCode
+from maestrowf.abstracts.enums import (
+    JobStatusCode,
+    State,
+    SubmissionCode,
+    CancelCode,
+)
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.utils import start_process
 
@@ -85,13 +89,12 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             "queue": "#SBATCH --partition={queue}",
             "bank": "#SBATCH --account={bank}",
             "walltime": "#SBATCH --time={walltime}",
-            "job-name":
-                "#SBATCH --job-name=\"{job-name}\"\n"
-                "#SBATCH --output=\"{job-name}.out\"\n"
-                "#SBATCH --error=\"{job-name}.err\"",
-            "comment": "#SBATCH --comment \"{comment}\"",
-            "reservation": "#SBATCH --reservation=\"{reservation}\"",
-            "gpus": "#SBATCH --gres=gpu:{gpus}"
+            "job-name": '#SBATCH --job-name="{job-name}"\n'
+            '#SBATCH --output="{job-name}.out"\n'
+            '#SBATCH --error="{job-name}.err"',
+            "comment": '#SBATCH --comment "{comment}"',
+            "reservation": '#SBATCH --reservation="{reservation}"',
+            "gpus": "#SBATCH --gres=gpu:{gpus}",
         }
 
         self._ntask_header = "#SBATCH --ntasks={procs}"
@@ -109,12 +112,15 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
 
     def get_header(self, step):
-        """
-        Generate the header present at the top of Slurm execution scripts.
+        """Generate the header present at the top of Slurm execution scripts.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the header based on internal batch parameters and
-            the parameter step.
+        Args:
+          step: A StudyStep instance.
+
+        Returns:
+          A string of the header based on internal batch parameters and
+          the parameter step.
+
         """
 
         resources = {}
@@ -122,7 +128,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         procs_in_batch = bool("procs" in resources)
         resources.update(
             {
-                resource: value for (resource, value) in step.run.items()
+                resource: value
+                for (resource, value) in step.run.items()
                 if value
             }
         )
@@ -131,10 +138,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         nodes = resources.get("nodes")
 
         if not procs and not nodes:
-            err_msg = \
-                'No explicit resources specified in {}. At least one' \
-                ' of "procs" or "nodes" must be set to a non-zero' \
-                ' value.'.format(step.name)
+            err_msg = (
+                "No explicit resources specified in {}. At least one"
+                ' of "procs" or "nodes" must be set to a non-zero'
+                " value.".format(step.name)
+            )
             LOGGER.error(err_msg)
             raise RuntimeError(err_msg)
 
@@ -159,21 +167,25 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         return "\n".join(modified_header)
 
     def get_parallelize_command(self, procs, nodes=None, **kwargs):
-        """
-        Generate the SLURM parallelization segement of the command line.
+        """Generate the SLURM parallelization segement of the command line.
 
-        :param procs: Number of processors to allocate to the parallel call.
-        :param nodes: Number of nodes to allocate to the parallel call
-            (default = 1).
-        :returns: A string of the parallelize command configured using nodes
-            and procs.
+        Args:
+          procs: Number of processors to allocate to the parallel call.
+          nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+          **kwargs:
+
+        Returns:
+          A string of the parallelize command configured using nodes
+          and procs.
+
         """
         args = [
             # SLURM srun command
             self._cmd_flags["cmd"],
             # Processors segment
             self._cmd_flags["ntasks"],
-            str(procs)
+            str(procs),
         ]
 
         if nodes:
@@ -189,25 +201,26 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                 LOGGER.warning("'%s' is not supported -- omitted.", key)
                 continue
             if value:
-                args += [
-                    self._cmd_flags[key],
-                    "{}".format(str(value))
-                ]
+                args += [self._cmd_flags[key], "{}".format(str(value))]
 
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
-        """
-        Submit a script to the Slurm scheduler.
+        """Submit a script to the Slurm scheduler.
 
-        :param step: The StudyStep instance this submission is based on.
-        :param path: Local path to the script to be executed.
-        :param cwd: Path to the current working directory.
-        :param job_map: A dictionary mapping step names to their job
-            identifiers.
-        :param env: A dict containing a modified environment for execution.
-        :returns: The return status of the submission command and job
-            identiifer.
+        Args:
+          step: The StudyStep instance this submission is based on.
+          path: Local path to the script to be executed.
+          cwd: Path to the current working directory.
+          job_map: A dictionary mapping step names to their job
+            identifiers. (Default value = None)
+          env: A dict containing a modified environment for execution.
+            (Default value = None)
+
+        Returns:
+          The return status of the submission command and job
+          identiifer.
+
         """
         # Leading command is 'sbatch'
         cmd = ["sbatch"]
@@ -232,23 +245,27 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            jid = re.search('[0-9]+', output).group(0)
+            jid = re.search("[0-9]+", output).group(0)
             return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
             LOGGER.warning(
-                "Submission returned an error (see next line).\n%s", err)
+                "Submission returned an error (see next line).\n%s", err
+            )
             return SubmissionRecord(SubmissionCode.ERROR, retcode)
 
     def check_jobs(self, joblist):
-        """
-        For the given job list, query execution status.
+        """For the given job list, query execution status.
 
         This method uses the scontrol show job <jobid> command and does a
         regex search for job information.
 
-        :param joblist: A list of job identifiers to be queried.
-        :returns: The return code of the status query, and a dictionary of job
-            identifiers to their status.
+        Args:
+          joblist: A list of job identifiers to be queried.
+
+        Returns:
+          The return code of the status query, and a dictionary of job
+          identifiers to their status.
+
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
@@ -290,27 +307,37 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                     continue
 
                 if job_split[jobid_index] in status:
-                    LOGGER.debug("ID Found. %s -- %s", job_split[state_index],
-                                 self._state(job_split[state_index]))
-                    status[job_split[jobid_index]] = \
-                        self._state(job_split[state_index])
+                    LOGGER.debug(
+                        "ID Found. %s -- %s",
+                        job_split[state_index],
+                        self._state(job_split[state_index]),
+                    )
+                    status[job_split[jobid_index]] = self._state(
+                        job_split[state_index]
+                    )
 
             return JobStatusCode.OK, status
         elif retcode == 1:
-            LOGGER.warning("User '%s' has no jobs executing. Returning.",
-                           getpass.getuser())
+            LOGGER.warning(
+                "User '%s' has no jobs executing. Returning.",
+                getpass.getuser(),
+            )
             return JobStatusCode.NOJOBS, status
         else:
-            LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.")
+            LOGGER.error(
+                "Error code '%s' seen. Unexpected behavior " "encountered."
+            )
             return JobStatusCode.ERROR, status
 
     def cancel_jobs(self, joblist):
-        """
-        For the given job list, cancel each job.
+        """For the given job list, cancel each job.
 
-        :param joblist: A list of job identifiers to be cancelled.
-        :returns: The return code to indicate if jobs were cancelled.
+        Args:
+          joblist: A list of job identifiers to be cancelled.
+
+        Returns:
+          The return code to indicate if jobs were cancelled.
+
         """
         # If we don't have any jobs to check, just return status OK.
         if not joblist:
@@ -324,18 +351,22 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         if retcode == 0:
             _record = CancellationRecord(CancelCode.OK, retcode)
         else:
-            LOGGER.error("Error code '%s' seen. Unexpected behavior "
-                         "encountered.")
+            LOGGER.error(
+                "Error code '%s' seen. Unexpected behavior " "encountered."
+            )
             _record = CancellationRecord(CancelCode.ERROR, retcode)
 
         return _record
 
     def _state(self, slurm_state):
-        """
-        Map a scheduler specific job state to a Study.State enum.
+        """Map a scheduler specific job state to a Study.State enum.
 
-        :param slurm_state: String representation of scheduler job status.
-        :returns: A Study.State enum corresponding to parameter job_state.
+        Args:
+          slurm_state: String representation of scheduler job status.
+
+        Returns:
+          A Study.State enum corresponding to parameter job_state.
+
         """
         LOGGER.debug("Received SLURM State -- %s", slurm_state)
         if slurm_state == "R":
@@ -358,8 +389,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             return State.UNKNOWN
 
     def _write_script(self, ws_path, step):
-        """
-        Write a Slurm script to the workspace of a workflow step.
+        """Write a Slurm script to the workspace of a workflow step.
 
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
@@ -367,11 +397,15 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         chain using a scheduler's dependency setting). The functionality of
         the parameter may change depending on both future intended use.
 
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: Boolean value (True if to be scheduled), the path to the
-            written script for run["cmd"], and the path to the script written
-            for run["restart"] (if it exists).
+        Args:
+          ws_path: Path to the workspace directory of the step.
+          step: An instance of a StudyStep.
+
+        Returns:
+          Boolean value (True if to be scheduled), the path to the
+          written script for run["cmd"], and the path to the script written
+          for run["restart"] (if it exists).
+
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
@@ -400,4 +434,5 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
     @property
     def extension(self):
+        """ """
         return self._extension

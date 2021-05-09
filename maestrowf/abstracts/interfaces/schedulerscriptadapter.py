@@ -1,4 +1,3 @@
-
 ###############################################################################
 # Copyright (c) 2017, Lawrence Livermore National Security, LLC.
 # Produced at the Lawrence Livermore National Laboratory
@@ -41,21 +40,24 @@ LOGGER = logging.getLogger(__name__)
 
 @six.add_metaclass(ABCMeta)
 class SchedulerScriptAdapter(ScriptAdapter):
-    """
-    Abstract class representing the interface for scheduling scripts.
+    """Abstract class representing the interface for scheduling scripts.
 
     This class handles both the construction of scripts (as required by the
     ScriptAdapter base class) but also includes the necessary methods for
     constructing parallel commands. The adapter will substitute parallelized
     commands but also defines how to schedule and check job status.
+
+    Args:
+
+    Returns:
+
     """
 
     # The var tag to look for to replace for parallelized commands.
     launcher_var = "$(LAUNCHER)"
     # Allocation regex and compilation
     # Keeping this one here for legacy.
-    launcher_regex = re.compile(
-        re.escape(launcher_var) + r"\[(?P<alloc>.*)\]")
+    launcher_regex = re.compile(re.escape(launcher_var) + r"\[(?P<alloc>.*)\]")
 
     # We can have multiple requested submission properties.
     # Legacy allocation of nodes and procs.
@@ -83,50 +85,66 @@ class SchedulerScriptAdapter(ScriptAdapter):
         self._batch = {}
 
     def add_batch_parameter(self, name, value):
-        """
-        Add a parameter to the ScriptAdapter instance.
+        """Add a parameter to the ScriptAdapter instance.
 
-        :param name: String name of the parameter that's being added.
-        :param value: Value associated with the parameter name (should have a
-            str method).
+        Args:
+          name: String name of the parameter that's being added.
+          value: Value associated with the parameter name (should have a
+        str method).
+
+        Returns:
+
         """
         self._batch[name] = value
 
     @abstractmethod
     def get_header(self, step):
-        """
-        Generate the header present at the top of execution scripts.
+        """Generate the header present at the top of execution scripts.
 
-        :param step: A StudyStep instance.
-        :returns: A string of the header based on internal batch parameters and
-            the parameter step.
+        Args:
+          step: A StudyStep instance.
+
+        Returns:
+          A string of the header based on internal batch parameters and
+          the parameter step.
+
         """
         pass
 
     @abstractmethod
     def get_parallelize_command(self, procs, nodes, **kwargs):
-        """
-        Generate the parallelization segment of the command line.
+        """Generate the parallelization segment of the command line.
 
-        :param procs: Number of processors to allocate to the parallel call.
-        :param nodes: Number of nodes to allocate to the parallel call
-            (default = 1).
-        :returns: A string of the parallelize command configured using nodes
-            and procs.
+        Args:
+          procs: Number of processors to allocate to the parallel call.
+          nodes: Number of nodes to allocate to the parallel call
+        (default = 1).
+          **kwargs:
+
+        Returns:
+          A string of the parallelize command configured using nodes
+          and procs.
+
         """
         pass
 
     def _substitute_parallel_command(self, step_cmd, **kwargs):
-        """
-        Substitute parallelized segments into a specified command.
+        """Substitute parallelized segments into a specified command.
 
-        :param step_cmd: Command string to parallelize.
-        :param nodes: Total number of requested nodes.
-        :param procs: Total number of requested processors.
-        :returns: The new command with all allocations substituted.
+        Args:
+          step_cmd: Command string to parallelize.
+          nodes: Total number of requested nodes.
+          procs: Total number of requested processors.
+          **kwargs:
+
+        Returns:
+          The new command with all allocations substituted.
+
         """
-        err_msg = "{} attempting to allocate {} {} for a parallel call with" \
-                  " a maximum allocation of {}"
+        err_msg = (
+            "{} attempting to allocate {} {} for a parallel call with"
+            " a maximum allocation of {}"
+        )
 
         nodes = kwargs.get("nodes")
         procs = kwargs.get("procs")
@@ -139,9 +157,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
         alloc_search = list(re.finditer(self.launcher_regex, step_cmd))
         if alloc_search:
             # If we find that launcher nomenclature.
-            total_nodes = 0     # Total nodes we've allocated so far.
-            total_procs = 0     # Total processors we've allocated so far.
-            cmd = step_cmd      # The step command we'll substitute into.
+            total_nodes = 0  # Total nodes we've allocated so far.
+            total_procs = 0  # Total processors we've allocated so far.
+            cmd = step_cmd  # The step command we'll substitute into.
             for match in alloc_search:
                 LOGGER.debug("Found a match: %s", match.group())
                 _nodes = None
@@ -158,24 +176,28 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     LOGGER.debug(
                         "Legacy setup detected. (nodes=%s, procs=%s)",
                         _nodes,
-                        _procs
+                        _procs,
                     )
                 else:
                     # We're dealing with the new style.
                     # Make sure we only have at most one proc and node
                     # allocation specified.
                     if _alloc.count("p") > 1 or _alloc.count("n") > 1:
-                        msg = "cmd: {}\n Invalid allocations specified ({})." \
-                              " Number of nodes and/or procs must only be " \
-                              "specified once." \
-                              .format(step_cmd, _alloc)
+                        msg = (
+                            "cmd: {}\n Invalid allocations specified ({})."
+                            " Number of nodes and/or procs must only be "
+                            "specified once.".format(step_cmd, _alloc)
+                        )
                         LOGGER.error(msg)
                         raise ValueError(msg)
 
                     if _alloc.count("p") < 1:
-                        msg = "cmd: {}\n Invalid allocations specified ({})." \
-                              " Processors/tasks must be specified." \
-                              .format(step_cmd, _alloc)
+                        msg = (
+                            "cmd: {}\n Invalid allocations specified ({})."
+                            " Processors/tasks must be specified.".format(
+                                step_cmd, _alloc
+                            )
+                        )
                         LOGGER.error(msg)
                         raise ValueError(msg)
 
@@ -189,7 +211,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
                     LOGGER.debug(
                         "New setup detected. (nodes=%s, procs=%s)",
                         _nodes,
-                        _procs
+                        _procs,
                     )
 
                 msg = []
@@ -225,14 +247,18 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
             # Verify that the total nodes/procs used is within maximum.
             if total_procs > procs:
-                msg = "Total processors ({}) requested exceeds the " \
-                      "maximum requested ({})".format(total_procs, procs)
+                msg = (
+                    "Total processors ({}) requested exceeds the "
+                    "maximum requested ({})".format(total_procs, procs)
+                )
                 LOGGER.error(msg)
                 raise ValueError(msg)
 
             if total_nodes > nodes:
-                msg = "Total nodes ({}) requested exceeds the " \
-                      "maximum requested ({})".format(total_nodes, nodes)
+                msg = (
+                    "Total nodes ({}) requested exceeds the "
+                    "maximum requested ({})".format(total_nodes, nodes)
+                )
                 LOGGER.error(msg)
                 raise ValueError(msg)
 
@@ -246,24 +272,27 @@ class SchedulerScriptAdapter(ScriptAdapter):
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
                 LOGGER.debug(
-                    "'%s' found in cmd. Substituting", self.launcher_var)
+                    "'%s' found in cmd. Substituting", self.launcher_var
+                )
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
                 LOGGER.debug("The command did not specify an MPI command.")
                 return step_cmd
 
     def get_scheduler_command(self, step):
-        """
-        Generate the full parallelized command for use in a batch script.
+        """Generate the full parallelized command for use in a batch script.
 
-        :param step: A StudyStep instance.
-        :returns:
-            1. A Boolean value - True if command is to be scheduled, False
-            otherwise.
-            2. A string representing the parallelized batch command for the
-            specified step command.
-            3. A string representing the parallelized batch command for the
-            specified step restart command.
+        Args:
+          step: A StudyStep instance.
+
+        Returns:
+          1. A Boolean value - True if command is to be scheduled, False
+          otherwise.
+          2. A string representing the parallelized batch command for the
+          specified step command.
+          3. A string representing the parallelized batch command for the
+          specified step restart command.
+
         """
         # We should never get a study step that doesn't have a run entry; but
         # better to be safe.
@@ -279,8 +308,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         if _nodes or _procs:
             to_be_scheduled = True
             cmd = self._substitute_parallel_command(
-                step.run["cmd"],
-                **step.run
+                step.run["cmd"], **step.run
             )
             LOGGER.debug("Scheduling command: %s", cmd)
 
@@ -288,8 +316,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
             restart = ""
             if step.run["restart"]:
                 restart = self._substitute_parallel_command(
-                    step.run["restart"],
-                    **step.run
+                    step.run["restart"], **step.run
                 )
                 LOGGER.debug("Restart command: %s", cmd)
             LOGGER.info("Scheduling workflow step '%s'.", step.name)
@@ -304,8 +331,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
     @abstractmethod
     def _write_script(self, ws_path, step):
-        """
-        Write a script to the workspace of a workflow step.
+        """Write a script to the workspace of a workflow step.
 
         The job_map optional parameter is a map of workflow step names to job
         identifiers. This parameter so far is only planned to be used when a
@@ -314,19 +340,26 @@ class SchedulerScriptAdapter(ScriptAdapter):
         the parameter may change depending on both future intended use and
         derived classes.
 
-        :param ws_path: Path to the workspace directory of the step.
-        :param step: An instance of a StudyStep.
-        :returns: Boolean value (True if the workflow step is to be scheduled,
-            False otherwise) and the path to the written script.
+        Args:
+          ws_path: Path to the workspace directory of the step.
+          step: An instance of a StudyStep.
+
+        Returns:
+          Boolean value (True if the workflow step is to be scheduled,
+          False otherwise) and the path to the written script.
+
         """
         pass
 
     @abstractmethod
     def _state(self, job_state):
-        """
-        Map a scheduler specific job state to a Study.State enum.
+        """Map a scheduler specific job state to a Study.State enum.
 
-        :param job_state: String representation of scheduler job status.
-        :returns: A Study.State enum corresponding to parameter job_state.
+        Args:
+          job_state: String representation of scheduler job status.
+
+        Returns:
+          A Study.State enum corresponding to parameter job_state.
+
         """
         pass

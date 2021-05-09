@@ -44,11 +44,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_duration(time_delta):
-    """
-    Convert durations to HH:MM:SS format.
+    """Convert durations to HH:MM:SS format.
 
-    :params time_delta: A time difference in datatime format.
-    :returns: A formatted string in HH:MM:SS
+    Args:
+      s: time_delta: A time difference in datatime format.
+      time_delta:
+
+    Returns:
+      A formatted string in HH:MM:SS
+
     """
     duration = time_delta.total_seconds()
     days = int(duration / 86400)
@@ -56,19 +60,24 @@ def get_duration(time_delta):
     minutes = int((duration % 86400 % 3600) / 60)
     seconds = int((duration % 86400 % 3600) % 60)
 
-    return "{:d}d:{:02d}h:{:02d}m:{:02d}s" \
-           .format(days, hours, minutes, seconds)
+    return "{:d}d:{:02d}h:{:02d}m:{:02d}s".format(
+        days, hours, minutes, seconds
+    )
 
 
 def round_datetime_seconds(input_datetime):
-    """
-    Round datetime to the nearest whole second.
+    """Round datetime to the nearest whole second.
 
     Solution referenced from: https://stackoverflow.com/questions/47792242/
     rounding-time-off-to-the-nearest-second-python.
 
-    :params input_datetime: A datetime in datatime format.
-    :returns: ``input_datetime`` rounded to the nearest whole second
+    Args:
+      s: input_datetime: A datetime in datatime format.
+      input_datetime:
+
+    Returns:
+      input_datetime`` rounded to the nearest whole second
+
     """
     new_datetime = input_datetime
 
@@ -79,11 +88,14 @@ def round_datetime_seconds(input_datetime):
 
 
 def generate_filename(path, append_time=True):
-    """
-    Generate a non-conflicting file name.
+    """Generate a non-conflicting file name.
 
-    :param path: Path to file.
-    :param append_time: Setting to append a timestamp.
+    Args:
+      path: Path to file.
+      append_time: Setting to append a timestamp. (Default value = True)
+
+    Returns:
+
     """
     LOGGER.debug("Parameter path = %s", path)
     path = os.path.expanduser(path)
@@ -97,9 +109,9 @@ def generate_filename(path, append_time=True):
     LOGGER.debug("Filename = %s", fname)
 
     index = 0
-    timestamp = ''
+    timestamp = ""
     if append_time:
-        timestamp = '_{0}'.format(time.strftime("%Y%m%d-%H%M%S"))
+        timestamp = "_{0}".format(time.strftime("%Y%m%d-%H%M%S"))
 
     candidate = "{0}{1}{2}".format(fname, timestamp, ext)
     ls_files = set(os.listdir(parent))
@@ -112,25 +124,32 @@ def generate_filename(path, append_time=True):
 
 
 def create_parentdir(path):
-    """
-    Recursively create parent directories.
+    """Recursively create parent directories.
 
-    :param path: Path to a directory to be created.
+    Args:
+      path: Path to a directory to be created.
+
+    Returns:
+
     """
     if not os.path.exists(path):
-        LOGGER.info("Directory does not exist. Creating directories to %s",
-                    path)
+        LOGGER.info(
+            "Directory does not exist. Creating directories to %s", path
+        )
         path = os.path.expanduser(path)
         os.makedirs(path)
 
 
 def apply_function(item, func):
-    """
-    Apply a function to items depending on type.
+    """Apply a function to items depending on type.
 
-    :param item: A Python primitive to apply a function to.
-    :param func: Function that returns takes item as a parameter and returns
+    Args:
+      item: A Python primitive to apply a function to.
+      func: Function that returns takes item as a parameter and returns
         item modified in some way.
+
+    Returns:
+
     """
     if not item:
         return item
@@ -140,23 +159,29 @@ def apply_function(item, func):
         return [apply_function(x, func) for x in item]
     elif isinstance(item, dict):
         return {
-            key: apply_function(value, func) for key, value in item.items()}
+            key: apply_function(value, func) for key, value in item.items()
+        }
     elif isinstance(item, int):
         return item
     else:
-        msg = "Encountered an object of type '{}'. Expected a str, list, int" \
-              ", or dict.".format(type(item))
+        msg = (
+            "Encountered an object of type '{}'. Expected a str, list, int"
+            ", or dict.".format(type(item))
+        )
         LOGGER.error(msg)
         raise ValueError(msg)
 
 
 def csvtable_to_dict(fstream):
-    """
-    Convert a csv file stream into an in memory dictionary.
+    """Convert a csv file stream into an in memory dictionary.
 
-    :param fstream: An open file stream to a csv table (with header)
-    :returns: A dictionary with a key for each column header and a list of
-        column values for each key.
+    Args:
+      fstream: An open file stream to a csv table (with header)
+
+    Returns:
+      A dictionary with a key for each column header and a list of
+      column values for each key.
+
     """
     # Read in the lines from the file stream.
     lines = fstream.readlines()
@@ -188,12 +213,17 @@ def csvtable_to_dict(fstream):
 
 
 def make_safe_path(base_path, *args):
-    """
-    Construct a subpath that is path safe.
+    """Construct a subpath that is path safe.
 
-    :params base_path: The base path to append args to.
-    :params args: Path components to join into a path.
-    :returns: A joined subpath with invalid characters stripped.
+    Args:
+      s: base_path: The base path to append args to.
+      s: args: Path components to join into a path.
+      base_path:
+      *args:
+
+    Returns:
+      A joined subpath with invalid characters stripped.
+
     """
     valid = "-_.() {}{}".format(string.ascii_letters, string.digits)
     path = [base_path]
@@ -205,23 +235,29 @@ def make_safe_path(base_path, *args):
 
 
 def start_process(cmd, cwd=None, env=None, shell=True):
-    """
-    Start a new process using a specified command.
+    """Start a new process using a specified command.
 
-    :param cmd: A string or a list representing the command to be run.
-    :param cwd: Current working path that the process will be started in.
-    :param env: A dictionary containing the environment the process will use.
-    :param shell: Boolean that determines if the process will run a shell.
+    Args:
+      cmd: A string or a list representing the command to be run.
+      cwd: Current working path that the process will be started in.
+        (Default value = None)
+      env: A dictionary containing the environment the process will use.
+        (Default value = None)
+      shell: Boolean that determines if the process will run a shell.
+        (Default value = True)
+
+    Returns:
+
     """
     if isinstance(cmd, list):
         shell = False
 
     # Define kwargs for the upcoming Popen call.
     kwargs = {
-        "shell":                shell,
-        "universal_newlines":   True,
-        "stdout":               PIPE,
-        "stderr":               PIPE,
+        "shell": shell,
+        "universal_newlines": True,
+        "stdout": PIPE,
+        "stderr": PIPE,
     }
 
     # Individually check if cwd and env are set -- this prevents us from
@@ -237,10 +273,13 @@ def start_process(cmd, cwd=None, env=None, shell=True):
 
 
 def ping_url(url):
-    """
-    Load a webpage to test that it is accessible.
+    """Load a webpage to test that it is accessible.
 
-    :param url: URL string to be loaded.
+    Args:
+      url: URL string to be loaded.
+
+    Returns:
+
     """
     try:
         response = urlopen(url)
@@ -250,7 +289,10 @@ def ping_url(url):
     except URLError as e:
         LOGGER.error(
             "Check specified URL (%s) and that you are connected to the "
-            "internet. (%s)", url, e.code)
+            "internet. (%s)",
+            url,
+            e.code,
+        )
         raise e
     else:
         response.read()
@@ -258,12 +300,15 @@ def ping_url(url):
 
 
 def create_dictionary(list_keyvalues, token=":"):
-    """
-    Create a dictionary from a list of key-value pairs.
+    """Create a dictionary from a list of key-value pairs.
 
-    :param list_keyvalues: List of token separates key-values.
-    :param token: The token to split each key-value by.
-    :returns: A dictionary containing the key-value pairings in list_keyvalues.
+    Args:
+      list_keyvalues: List of token separates key-values.
+      token: The token to split each key-value by. (Default value = ":")
+
+    Returns:
+      A dictionary containing the key-value pairings in list_keyvalues.
+
     """
     _dict = {}
     for item in list_keyvalues:
@@ -271,9 +316,11 @@ def create_dictionary(list_keyvalues, token=":"):
             key, value = [i.strip() for i in item.split(token, 1)]
             _dict[key] = value
         except ValueError:
-            msg = "'{}' is not capable of being split by the token '{}'. " \
-                  "Verify that all other parameters are formatted properly." \
-                  .format(item, token)
+            msg = (
+                "'{}' is not capable of being split by the token '{}'. "
+                "Verify that all other parameters are formatted properly."
+                .format(item, token)
+            )
             LOGGER.exception(msg)
             raise ValueError(msg)
 
@@ -292,23 +339,35 @@ class LoggerUtility:
         self._logger = logger
 
     def configure(self, log_format, log_lvl=2, colors=True):
-        """
-        Configures the general logging facility.
+        """Configures the general logging facility.
 
-        :param log_format: String containing the desired logging format.
-        :param log_lvl: Integer level (1-5) to set the logger to.
+        Args:
+          log_format: String containing the desired logging format.
+          log_lvl: Integer level (1-5) to set the logger to.
+            (Default value = 2)
+          colors:  (Default value = True)
+
+        Returns:
+
         """
         logging.basicConfig(level=self.map_level(log_lvl), format=log_format)
         if colors:
-            coloredlogs.install(level=self.map_level(log_lvl),
-                                logger=self._logger, fmt=log_format)
+            coloredlogs.install(
+                level=self.map_level(log_lvl),
+                logger=self._logger,
+                fmt=log_format,
+            )
 
     def add_stream_handler(self, log_format, log_lvl=2):
-        """
-        Add a stream handler to logging.
+        """Add a stream handler to logging.
 
-        :param log_format: String containing the desired logging format.
-        :param log_lvl: Integer level (1-5) to set the logger to.
+        Args:
+          log_format: String containing the desired logging format.
+          log_lvl: Integer level (1-5) to set the logger to.
+            (Default value = 2)
+
+        Returns:
+
         """
         # Create the FileHandler and add it to the logger.
         sh = logging.StreamHandler()
@@ -317,12 +376,16 @@ class LoggerUtility:
         self._logger.addHandler(sh)
 
     def add_file_handler(self, log_path, log_format, log_lvl=2):
-        """
-        Add a file handler to logging.
+        """Add a file handler to logging.
 
-        :param log_path: String containing the file path to store logging.
-        :param log_format: String containing the desired logging format.
-        :param log_lvl: Integer level (1-5) to set the logger to.
+        Args:
+          log_path: String containing the file path to store logging.
+          log_format: String containing the desired logging format.
+          log_lvl: Integer level (1-5) to set the logger to.
+            (Default value = 2)
+
+        Returns:
+
         """
         # Create the FileHandler and add it to the logger.
         formatter = logging.Formatter(log_format)
@@ -334,10 +397,13 @@ class LoggerUtility:
 
     @staticmethod
     def map_level(log_lvl):
-        """
-        Map level 1-5 to their respective logging enumerations.
+        """Map level 1-5 to their respective logging enumerations.
 
-        :param log_lvl: Integer level (1-5) representing logging verbosity.
+        Args:
+          log_lvl: Integer level (1-5) representing logging verbosity.
+
+        Returns:
+
         """
         if log_lvl == 1:
             return logging.DEBUG

@@ -37,11 +37,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 class StudyEnvironment:
-    """
-    StudyEnvironment for managing a study environment.
+    """StudyEnvironment for managing a study environment.
 
     The StudyEnvironment provides the context where all study
     steps can find variables, sources, dependencies, etc.
+
+    Args:
+
+    Returns:
+
     """
 
     def __init__(self):
@@ -71,18 +75,24 @@ class StudyEnvironment:
 
     @property
     def is_set_up(self):
-        """
-        Check that the StudyEnvironment is set up.
+        """Check that the StudyEnvironment is set up.
 
-        :returns: True is the instance is set up, False otherwise.
+        Args:
+
+        Returns:
+          True is the instance is set up, False otherwise.
+
         """
         return self._is_set_up
 
     def add(self, item):
-        """
-        Add the item parameter to the StudyEnvironment.
+        """Add the item parameter to the StudyEnvironment.
 
-        :param item: EnvObject to be added to the environment.
+        Args:
+          item: EnvObject to be added to the environment.
+
+        Returns:
+
         """
         # TODO: Need to revist this to make this better. A label can get lost
         # because the necessary variable could have not been added yet
@@ -100,9 +110,9 @@ class StudyEnvironment:
             LOGGER.debug("Tokens: %s", self._tokens)
             name = item.name
             LOGGER.debug("Adding %s of type %s.", item.name, type(item))
-            if (
-                    isinstance(item.value, str) and
-                    any(token in item.value for token in self._tokens)):
+            if isinstance(item.value, str) and any(
+                token in item.value for token in self._tokens
+            ):
                 LOGGER.debug("Label detected. Adding %s to labels", item.name)
                 self.labels[item.name] = item
             else:
@@ -113,15 +123,18 @@ class StudyEnvironment:
             LOGGER.debug("Item source: %s", item.source)
             self.sources.append(item)
         else:
-            error = "Received an item of type {}. Expected an item of base " \
-                    "type Substitution, Source, or Dependency." \
-                    .format(type(item))
+            error = (
+                "Received an item of type {}. Expected an item of base "
+                "type Substitution, Source, or Dependency.".format(type(item))
+            )
             LOGGER.exception(error)
             raise TypeError(error)
 
         if name and name in self._names:
-            error = "A duplicate name '{}' has been detected. All names " \
-                    "must be unique. Aborting.".format(name)
+            error = (
+                "A duplicate name '{}' has been detected. All names "
+                "must be unique. Aborting.".format(name)
+            )
             LOGGER.exception(error)
             raise ValueError(error)
         else:
@@ -129,12 +142,15 @@ class StudyEnvironment:
             self._names.add(name)
 
     def find(self, key):
-        """
-        Find the environment object labeled by the specified key.
+        """Find the environment object labeled by the specified key.
 
-        :param key: Name of the environment object to find.
-        :returns: The environment object labeled by key, None if key is not
-            found.
+        Args:
+          key: Name of the environment object to find.
+
+        Returns:
+          The environment object labeled by key, None if key is not
+          found.
+
         """
         LOGGER.debug("Looking for '%s'...", key)
         if key in self.dependencies:
@@ -153,11 +169,14 @@ class StudyEnvironment:
         return None
 
     def remove(self, key):
-        """
-        Remove the environment object labeled by the specified key.
+        """Remove the environment object labeled by the specified key.
 
-        :param key: Name of the environment object to remove.
-        :returns: The environment object labeled by key.
+        Args:
+          key: Name of the environment object to remove.
+
+        Returns:
+          The environment object labeled by key.
+
         """
         LOGGER.debug("Looking to remove '%s'...", key)
 
@@ -196,11 +215,14 @@ class StudyEnvironment:
         self._is_set_up = True
 
     def apply_environment(self, item):
-        """
-        Apply the environment to the specified item.
+        """Apply the environment to the specified item.
 
-        :param item: String to apply environment to.
-        :returns: String with the environment applied.
+        Args:
+          item: String to apply environment to.
+
+        Returns:
+          String with the environment applied.
+
         """
         if not item:
             return item
