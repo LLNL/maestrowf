@@ -43,7 +43,7 @@ import sys
 # import tabulate
 import time
 
-from maestrowf import __version__
+from maestrowf import __version__, status_renderer_factory
 from maestrowf.conductor import Conductor
 from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
@@ -85,6 +85,9 @@ LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
 ACCEPTED_INPUT = set(["yes", "y"])
 
 
+
+
+
 def status_study(args):
     """Check and print the status of an executing study."""
     # Force logging to Warning and above
@@ -101,169 +104,184 @@ def status_study(args):
             status = Conductor.get_status(abs_path)
             status_layout = args.layout
 
-            if status and status_layout == 'flat':
-                # Colorized printer (rich)
-                RCONSOLE = Console(theme=STATUS_THEME_FLAT)
+            if status:
+                try:
+                    status_renderer = status_renderer_factory.get_renderer(
+                        status_layout)
 
-                stat_table = Table(title="Study: {}".format(abs_path))
+                except ValueError:
+                    print("Layout '{}' not implemented.".format(status_layout))
+                    raise
 
-                cols = list(status.keys())
+                status_renderer.layout(status_data=status,
+                                       study_title=abs_path,
+                                       filter_dict=None)
 
-                for nom_col_num, col in enumerate(cols):
-                    if col in list(STATUS_THEME_FLAT.styles.keys()):
-                        col_style = col
-                    else:
-                        if nom_col_num % 2 == 0:
-                            col_style = 'col_style_1'
-                        else:
-                            col_style = 'col_style_2'
+                status_renderer.render()
 
-                    stat_table.add_column(col,
-                                          style=col_style,
-                                          overflow="fold")
+            # if status and status_layout == 'flat':
+            #     # Colorized printer (rich)
+            #     RCONSOLE = Console(theme=STATUS_THEME_FLAT)
 
-                num_rows = len(status[cols[0]])
-                # Alternate dim rows to differentiate them better
-                for row in range(num_rows):
-                    if row % 2 == 0:
-                        row_style = 'dim'
-                    else:
-                        row_style = 'none'
+            #     stat_table = Table(title="Study: {}".format(abs_path))
 
-                    stat_table.add_row(*['{}'.format(status[key][row])
-                                         for key in cols],
-                                       style=row_style)
+            #     cols = list(status.keys())
 
-            elif status and status_layout == 'narrow':
-                # Colorized printer (rich)
-                RCONSOLE = Console(theme=STATUS_THEME_NARROW)
+            #     for nom_col_num, col in enumerate(cols):
+            #         if col in list(STATUS_THEME_FLAT.styles.keys()):
+            #             col_style = col
+            #         else:
+            #             if nom_col_num % 2 == 0:
+            #                 col_style = 'col_style_1'
+            #             else:
+            #                 col_style = 'col_style_2'
 
-                cols = [key for key in status.keys()
-                        if (key != 'Step Name' and key != 'Workspace')]
+            #         stat_table.add_column(col,
+            #                               style=col_style,
+            #                               overflow="fold")
 
-                # Alternate format for narrow terminals
-                stat_table = Table.grid(padding=0)
-                # stat_table.style = "background"
-                stat_table.title = "STUDY: {}".format(abs_path)
-                stat_table.box = box.HEAVY
-                stat_table.show_lines = True
-                stat_table.show_edge = False
-                stat_table.show_footer = True
-                stat_table.collapse_padding = True
+            #     num_rows = len(status[cols[0]])
+            #     # Alternate dim rows to differentiate them better
+            #     for row in range(num_rows):
+            #         if row % 2 == 0:
+            #             row_style = 'dim'
+            #         else:
+            #             row_style = 'none'
 
-                stat_table.add_column("Step",
-                                      overflow="fold")
+            #         stat_table.add_row(*['{}'.format(status[key][row])
+            #                              for key in cols],
+            #                            style=row_style)
 
-                num_rows = len(status[cols[0]])
+            # elif status and status_layout == 'narrow':
+            #     # Colorized printer (rich)
+            #     RCONSOLE = Console(theme=STATUS_THEME_NARROW)
 
-                detail_rows = ['State', 'Job ID', 'Run Time', 'Elapsed Time']
-                sched_rows = ['Submit Time',
-                              'Start Time',
-                              'End Time',
-                              'Number Restarts']
+            #     cols = [key for key in status.keys()
+            #             if (key != 'Step Name' and key != 'Workspace')]
 
-                for row in range(num_rows):
-                    step_table = Table(
-                        box=box.SIMPLE_HEAVY,
-                        show_header=False,
-                    )
-                    step_table.add_column("key")
-                    step_table.add_column("val")
+            #     # Alternate format for narrow terminals
+            #     stat_table = Table.grid(padding=0)
+            #     # stat_table.style = "background"
+            #     stat_table.title = "STUDY: {}".format(abs_path)
+            #     stat_table.box = box.HEAVY
+            #     stat_table.show_lines = True
+            #     stat_table.show_edge = False
+            #     stat_table.show_footer = True
+            #     stat_table.collapse_padding = True
 
-                    step_table.add_row("STEP:",
-                                       status['Step Name'][row],
-                                       style='Step Name')
-                    step_table.add_row("WORKSPACE:",
-                                       status['Workspace'][row],
-                                       style='Workspace')
+            #     stat_table.add_column("Step",
+            #                           overflow="fold")
 
-                    step_table.add_row("", "")
-                    step_details = Table.grid(padding=1)
-                    step_details.add_column("details")
+            #     num_rows = len(status[cols[0]])
 
-                    step_info = Table(title="Step Details",
-                                      # show_edge=True,
-                                      show_header=False,
-                                      show_lines=True,
-                                      # show_footer=True,
-                                      box=box.HORIZONTALS)
+            #     detail_rows = ['State', 'Job ID', 'Run Time', 'Elapsed Time']
+            #     sched_rows = ['Submit Time',
+            #                   'Start Time',
+            #                   'End Time',
+            #                   'Number Restarts']
 
-                    step_info.add_column("key")
-                    step_info.add_column("val")
-                    for nom_row_cnt, detail_row in enumerate(detail_rows):
-                        if detail_row == 'State':
-                            row_style = 'State'
-                        else:
-                            if nom_row_cnt % 2 == 0:
-                                row_style = 'row_style'
-                            else:
-                                row_style = 'row_style'
+            #     for row in range(num_rows):
+            #         step_table = Table(
+            #             box=box.SIMPLE_HEAVY,
+            #             show_header=False,
+            #         )
+            #         step_table.add_column("key")
+            #         step_table.add_column("val")
 
-                        step_info.add_row(detail_row,
-                                          status[detail_row][row],
-                                          style=row_style)
+            #         step_table.add_row("STEP:",
+            #                            status['Step Name'][row],
+            #                            style='Step Name')
+            #         step_table.add_row("WORKSPACE:",
+            #                            status['Workspace'][row],
+            #                            style='Workspace')
 
-                    step_details.add_column("scheduler")
-                    step_sched = Table(title="Scheduler Details",
-                                       show_header=False,
-                                       show_lines=True,
-                                       box=box.HORIZONTALS)
-                    step_sched.add_column("key")
-                    step_sched.add_column("val")
-                    for nom_row_cnt, sched_row in enumerate(sched_rows):
-                        if nom_row_cnt % 2 == 0:
-                            row_style = 'row_style'
-                        else:
-                            row_style = 'row_style'
+            #         step_table.add_row("", "")
+            #         step_details = Table.grid(padding=1)
+            #         step_details.add_column("details")
 
-                        step_sched.add_row(sched_row,
-                                           status[sched_row][row],
-                                           style=row_style)
+            #         step_info = Table(title="Step Details",
+            #                           # show_edge=True,
+            #                           show_header=False,
+            #                           show_lines=True,
+            #                           # show_footer=True,
+            #                           box=box.HORIZONTALS)
 
-                    step_details.add_row(step_info, step_sched)
+            #         step_info.add_column("key")
+            #         step_info.add_column("val")
+            #         for nom_row_cnt, detail_row in enumerate(detail_rows):
+            #             if detail_row == 'State':
+            #                 row_style = 'State'
+            #             else:
+            #                 if nom_row_cnt % 2 == 0:
+            #                     row_style = 'row_style'
+            #                 else:
+            #                     row_style = 'row_style'
 
-                    step_table.add_row('', step_details)
-                    stat_table.add_row(step_table, end_section=True)
+            #             step_info.add_row(detail_row,
+            #                               status[detail_row][row],
+            #                               style=row_style)
 
-                    # TODO: come up with better way to scale/size this
-                    print("STATUS keys: {}".format(list(status.keys())))
-                    if 'Params' not in status.keys():
-                        param_list = []
-                    else:
-                        param_list = status['Params'][row].split(';')
-                    if len(param_list) > 0 and param_list[0]:
+            #         step_details.add_column("scheduler")
+            #         step_sched = Table(title="Scheduler Details",
+            #                            show_header=False,
+            #                            show_lines=True,
+            #                            box=box.HORIZONTALS)
+            #         step_sched.add_column("key")
+            #         step_sched.add_column("val")
+            #         for nom_row_cnt, sched_row in enumerate(sched_rows):
+            #             if nom_row_cnt % 2 == 0:
+            #                 row_style = 'row_style'
+            #             else:
+            #                 row_style = 'row_style'
 
-                        if len(param_list) % 2 != 0:
-                            param_list.append("")
-                        print("PARAMS: {}".format(param_list))
-                        num_param_rows = int(len(param_list)/2)
+            #             step_sched.add_row(sched_row,
+            #                                status[sched_row][row],
+            #                                style=row_style)
 
-                        step_params = Table(title="Step Parameters",
-                                            show_header=False,
-                                            show_lines=True,
-                                            box=box.HORIZONTALS)
+            #         step_details.add_row(step_info, step_sched)
 
-                        step_params.add_column("name", style="cyan")
-                        step_params.add_column("val", style="blue")
-                        step_params.add_column("name2", style="cyan")
-                        step_params.add_column("val2", style="blue")
-                        param_idx = 0
-                        for param_row in range(num_param_rows):
-                            this_row = []
-                            for param_str in param_list[param_idx:param_idx+2]:
-                                if param_str:
-                                    this_row.extend(param_str.split(':'))
-                                else:
-                                    this_row.extend(["", ""])
+            #         step_table.add_row('', step_details)
+            #         stat_table.add_row(step_table, end_section=True)
 
-                                param_idx+2
-                                print("THIS ROW: {}".format(this_row))
+            #         # TODO: come up with better way to scale/size this
+            #         print("STATUS keys: {}".format(list(status.keys())))
+            #         if 'Params' not in status.keys():
+            #             param_list = []
+            #         else:
+            #             param_list = status['Params'][row].split(';')
+            #         if len(param_list) > 0 and param_list[0]:
 
-                            step_params.add_row(*this_row,
-                                                style=row_style)
+            #             if len(param_list) % 2 != 0:
+            #                 param_list.append("")
+            #             print("PARAMS: {}".format(param_list))
+            #             num_param_rows = int(len(param_list)/2)
 
-                        step_table.add_row('', step_params)
-                        stat_table.add_row(step_table, end_section=True)
+            #             step_params = Table(title="Step Parameters",
+            #                                 show_header=False,
+            #                                 show_lines=True,
+            #                                 box=box.HORIZONTALS)
+
+            #             step_params.add_column("name", style="cyan")
+            #             step_params.add_column("val", style="blue")
+            #             step_params.add_column("name2", style="cyan")
+            #             step_params.add_column("val2", style="blue")
+            #             param_idx = 0
+            #             for param_row in range(num_param_rows):
+            #                 this_row = []
+            #                 for param_str in param_list[param_idx:param_idx+2]:
+            #                     if param_str:
+            #                         this_row.extend(param_str.split(':'))
+            #                     else:
+            #                         this_row.extend(["", ""])
+
+            #                     param_idx+2
+            #                     print("THIS ROW: {}".format(this_row))
+
+            #                 step_params.add_row(*this_row,
+            #                                     style=row_style)
+
+            #             step_table.add_row('', step_params)
+            #             stat_table.add_row(step_table, end_section=True)
 
             else:
                 print(
@@ -273,10 +291,10 @@ def status_study(args):
             print("")
         print(header_format)
 
-        if status:
-            print("")
+        # if status:
+        #     print("")
 
-            RCONSOLE.print(stat_table)
+        #     RCONSOLE.print(stat_table)
 
     else:
         print(
