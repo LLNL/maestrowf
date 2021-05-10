@@ -125,10 +125,11 @@ class FlatStatusRenderer(BaseStatusRenderer):
         # Apply any filters: TODO
 
         cols = list(self._status_data.keys())
-
+        print("Columns: {}".format(cols))
         # Setup the column styles
         for nominal_col_num, col in enumerate(cols):
             if col in list(self._theme_dict.keys()):
+                print("Setting '{}' column to style '{}'".format(col, col))
                 col_style = col
             else:
                 if nominal_col_num % 2 == 0:
@@ -136,11 +137,11 @@ class FlatStatusRenderer(BaseStatusRenderer):
                 else:
                     col_style = 'col_style_2'
 
-                self._status_table.add_column(col,
-                                              style=col_style,
-                                              overflow="fold")
+            self._status_table.add_column(col,
+                                          style=col_style,
+                                          overflow="fold")
 
-                num_rows = len(self._status_data[cols[0]])
+        num_rows = len(self._status_data[cols[0]])
 
         # Alternate dim rows to differentiate them better
         for row in range(num_rows):
@@ -197,7 +198,8 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
         # Apply any filters: TODO
 
-        # Use grid (no headers) to contain the actual nested Table rows in single column table
+        # Use grid (no headers) to contain the actual nested Table rows in
+        # single column table
         self._status_table = Table.grid(padding=0)
         if study_title:
             self._status_table.title = "STUDY: {}".format(study_title)
@@ -211,7 +213,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
         self._status_table.add_column("Step", overflow="fold")
 
         # Note, filter on columns here
-        cols = [key for key in status.keys()
+        cols = [key for key in self._status_data.keys()
                 if (key != 'Step Name' and key != 'Workspace')]
 
         num_rows = len(self._status_data[cols[0]])
@@ -339,32 +341,8 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
         _printer.print(self._status_table)
 
+
 # Register renderers
 status_renderer_factory = StatusRendererFactory()
 status_renderer_factory.register_layout('flat', FlatStatusRenderer)
 status_renderer_factory.register_layout('narrow', NarrowStatusRenderer)
-
-
-# class StatusRendererBuilder:
-    
-#     def render_status(self, status_data, study_path, filter_dict, *args, **kwargs):
-#         renderer = status_render_factory.get_renderer(status_data,
-#                                                       study_path,
-#                                                       filter_dict,
-#                                                       *args,
-#                                                       **kwargs)
-#         renderer.layout()
-        
-#         return renderer.render()  # Rich renderable
-
-
-# """
-# Interface:
-#   layout -> generate table layout from status data, filters
-#     takes the status_data/path/filters as arguments?
-#   render -> use rich Console to render the output with a theme
-#     setup the theme in here, with overrides?
-
-#   want the data, filters, and theme to be instance vars
-
-# """
