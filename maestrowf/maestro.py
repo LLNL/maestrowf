@@ -386,57 +386,58 @@ def setup_argparser():
         formatter_class=RawTextHelpFormatter)
 
     run.add_argument("-a", "--attempts", type=int, default=1,
-                     help="Maximum number of submission attempts before a\n"
+                     help="Maximum number of submission attempts before a "
                      "step is marked as failed. [Default: %(default)d]")
     run.add_argument("-r", "--rlimit", type=int, default=1,
-                     help="Maximum number of restarts allowed when steps. \n"
-                     "specify a restart command (0 denotes no limit). \n"
+                     help="Maximum number of restarts allowed when steps. "
+                     "specify a restart command (0 denotes no limit). "
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
-                     help="Maximum number of inflight jobs allowed to \n"
+                     help="Maximum number of inflight jobs allowed to "
                      "execute simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
-                     help="Amount of time (in seconds) for the manager to \n"
+                     help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
     run.add_argument("--dry", action="store_true", default=False,
-                     help="Generate the directory structure and scripts for \n"
+                     help="Generate the directory structure and scripts for "
                      "a study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
-                     help="Path to a Python code file containing a function \n"
+                     help="Path to a Python code file containing a function "
                      "that returns a custom filled ParameterGenerator \n"
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
-                     help="A string that represents a single argument to  \n"
-                     "pass a custom parameter generation function. Reuse ' \n"
-                     "'--parg to pass multiple arguments. [Use with '--pgen']")
+                     help="A string that represents a single argument to  "
+                     "pass a custom parameter generation function.\n "
+                     "Reuse '--parg' to pass multiple arguments. "
+                     "[Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
-                     help="Output path to place study in. [NOTE: overrides \n"
+                     help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
     run.add_argument("-fg", action="store_true", default=False,
-                     help="Runs the backend conductor in the foreground \n"
+                     help="Runs the backend conductor in the foreground "
                      "instead of using nohup. [Default: %(default)s]")
     run.add_argument("--hashws", action="store_true", default=False,
                      help="Enable hashing of subdirectories in \n"
-                     "parameterized studies (NOTE: breaks commands that use \n"
+                     "parameterized studies (NOTE: breaks commands that use "
                      "parameter labels to search directories). \n"
                      " [Default: %(default)s]")
     run.add_argument("--make-links", action="store_true", default=False,
-                     help="Automatically make customizable, human-readable \n"
+                     help="Automatically make customizable, human-readable "
                      "links to run directories. [Default: %(default)s]")
     run.add_argument(
         "--link-directory",
         type=str,
         default="{{output_root}}/links",
-        help="Jinja template for path where links to run directories \n"
+        help="Jinja template for path where links to run directories "
         "are made. [Default: %(default)s]")
     run.add_argument(
         "--link-template",
         type=valid_link_template,
         default=(
             "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
-        help="Jinja template for links to run directories\n"
-        "This template must include {{instance}} and {{step}}.\n"
+        help="Jinja template for links to run directories.\n"
+        "NOTE: template must include {{instance}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
         "{{output_root}} - Parent directory for this maestro study\n"
@@ -459,11 +460,11 @@ def setup_argparser():
     # The only required positional argument for 'run' is a specification path.
     run.add_argument(
         "specification", type=str,
-        help="The path to a Study YAML specification that will be loaded \n"
+        help="The path to a Study YAML specification that will be loaded "
         "and executed.")
     run.add_argument(
         "--usetmp", action="store_true", default=False,
-        help="Make use of a temporary directory for dumping scripts and \n"
+        help="Make use of a temporary directory for dumping scripts and "
         "other Maestro related files.")
     run.set_defaults(func=run_study)
 
