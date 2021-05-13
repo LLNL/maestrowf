@@ -100,15 +100,15 @@ class FlatStatusRenderer(BaseStatusRenderer):
         # Setup default theme
         self._theme_dict = {
             "State": "bold red",
-            "Step Name": "bold cyan",
+            "Step Name": "bold",
             "Workspace": "blue",
             "Job ID": "yellow",
             "row_style": "none",
             "row_style_dim": "dim",
-            "col_style_1": "cyan",
+            "col_style_1": "",
             "col_style_2": "blue",
             "bgcolor": "grey7",
-            "color": "cyan"
+            "color": ""
         }
 
     def layout(self, status_data=None, study_title=None, filter_dict=None):
@@ -178,10 +178,10 @@ class NarrowStatusRenderer(BaseStatusRenderer):
         # Setup default theme
         self._theme_dict = {
             "State": "bold red",
-            "Step Name": "bold cyan",
+            "Step Name": "bold",
             "Workspace": "blue",
-            "row_style": "cyan",
-            "row_style_dim": "cyan dim",
+            "row_style": "",
+            "row_style_dim": "dim",
             "background": "grey7"
         }
 
@@ -292,40 +292,40 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                 param_list = []
             else:
                 param_list = self._status_data['Params'][row].split(';')
-
+                
             if len(param_list) > 0 and param_list[0]:
                 if len(param_list) % 2 != 0:
                     param_list.append("")
 
-                    num_param_rows = int(len(param_list)/2)
+                num_param_rows = int(len(param_list)/2)
 
-                    step_params = Table(title="Step Parameters",
-                                        show_header=False,
-                                        show_lines=True,
-                                        box=box.HORIZONTALS)
+                step_params = Table(title="Step Parameters",
+                                    show_header=False,
+                                    show_lines=True,
+                                    box=box.HORIZONTALS)
 
-                    # Note col names don't actually matter, just setting styles
-                    step_params.add_column("name", style="cyan")
-                    step_params.add_column("val", style="blue")
-                    step_params.add_column("name2", style="cyan")
-                    step_params.add_column("val2", style="blue")
+                # Note col names don't actually matter, just setting styles
+                step_params.add_column("name", style="")
+                step_params.add_column("val", style="blue")
+                step_params.add_column("name2", style="")
+                step_params.add_column("val2", style="blue")
 
-                    param_idx = 0
-                    for param_row in range(num_param_rows):
-                        this_row = []
-                        for param_str in param_list[param_idx:param_idx+2]:
-                            if param_str:
-                                this_row.extend(param_str.split(':'))
-                            else:
-                                this_row.extend(["", ""])
+                param_idx = 0
+                for param_row in range(num_param_rows):
+                    this_row = []
+                    for param_str in param_list[param_idx:param_idx+2]:
+                        if param_str:
+                            this_row.extend(param_str.split(':'))
+                        else:
+                            this_row.extend(["", ""])
 
-                            param_idx+2
+                        param_idx+2
 
-                        step_params.add_row(*this_row,
-                                            style=row_style)
+                    step_params.add_row(*this_row,
+                                        style=row_style)
 
-                    step_table.add_row('', step_params)
-                    self._status_table.add_row(step_table, end_section=True)
+                step_table.add_row('', step_params)
+                self._status_table.add_row(step_table, end_section=True)
 
     def render(self, theme=None):
         """Do the actual printing"""
