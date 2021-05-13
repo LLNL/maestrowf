@@ -1,5 +1,4 @@
 from datetime import datetime
-import errno
 import logging
 from math import ceil
 import os
@@ -129,13 +128,6 @@ class FluxInterface_0260(FluxInterface):
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
-
-        cb_args = {
-            "jobs":   [],
-            "handle": cls.flux_handle,
-            "count":  0,
-            "total": len(joblist),
-        }
 
         jobs_rpc = flux.job.list.JobList(cls.flux_handle, ids=joblist)
 
