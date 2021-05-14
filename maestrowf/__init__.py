@@ -316,7 +316,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                 param_list = []
             else:
                 param_list = self._status_data['Params'][row].split(';')
-                
+
             if len(param_list) > 0 and param_list[0]:
                 if len(param_list) % 2 != 0:
                     param_list.append("")
