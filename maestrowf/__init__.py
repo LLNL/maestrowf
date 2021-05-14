@@ -34,6 +34,7 @@ All core abstracts and implementations for core concept classes (Study,
 Environment, Parameter generation, etc.). This module also includes interface
 abstracts, base class abstracts, and general utilities.
 """
+from io import StringIO
 
 import logging
 
@@ -125,9 +126,15 @@ class FlatStatusRenderer(BaseStatusRenderer):
         # Apply any filters: TODO
 
         cols = list(self._status_data.keys())
-        print("Columns: {}".format(cols))
+
+        # Some temporary simple filters to exclude params col in this layout
+        col_filters = ['Params']
+
+        cols = [col for col in cols if col not in col_filters]
+
         # Setup the column styles
         for nominal_col_num, col in enumerate(cols):
+
             if col in list(self._theme_dict.keys()):
                 print("Setting '{}' column to style '{}'".format(col, col))
                 col_style = col
@@ -169,6 +176,23 @@ class FlatStatusRenderer(BaseStatusRenderer):
         _printer = Console(theme=status_theme)
 
         _printer.print(self._status_table)
+
+    def render_to_str(self, theme=None, width=200):
+        """Capture output to string"""
+
+        # Apply any theme customization
+        if theme:
+            for key, value in theme.items():
+                self._theme_dict[key] = value
+
+        status_theme = Theme(self._theme_dict)
+
+        _printer = Console(theme=status_theme,
+                           file=StringIO(),
+                           width=width)
+        _printer.print(self._status_table)
+
+        return _printer.file.getvalue()
 
 
 class NarrowStatusRenderer(BaseStatusRenderer):
@@ -340,6 +364,23 @@ class NarrowStatusRenderer(BaseStatusRenderer):
         _printer = Console(theme=status_theme)
 
         _printer.print(self._status_table)
+
+    def render_to_str(self, theme=None, width=120):
+        """Capture output to string"""
+
+        # Apply any theme customization
+        if theme:
+            for key, value in theme.items():
+                self._theme_dict[key] = value
+
+        status_theme = Theme(self._theme_dict)
+
+        _printer = Console(theme=status_theme,
+                           file=StringIO(),
+                           width=width)
+        _printer.print(self._status_table)
+
+        return _printer.file.getvalue()
 
 
 # Register renderers
