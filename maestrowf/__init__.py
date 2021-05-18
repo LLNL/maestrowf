@@ -136,7 +136,6 @@ class FlatStatusRenderer(BaseStatusRenderer):
         for nominal_col_num, col in enumerate(cols):
 
             if col in list(self._theme_dict.keys()):
-                print("Setting '{}' column to style '{}'".format(col, col))
                 col_style = col
             else:
                 if nominal_col_num % 2 == 0:
