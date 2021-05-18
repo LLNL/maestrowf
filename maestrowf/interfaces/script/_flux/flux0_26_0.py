@@ -64,6 +64,9 @@ class FluxInterface_0260(FluxInterface):
         # single node, don't use a broker -- but introduce a flag that can
         # force a single node to run in a broker.
 
+        if isinstance(ngpus, str) and ngpus.isdigit():
+            ngpus = int(ngpus)
+
         if force_broker or nodes > 1:
             LOGGER.debug(
                 "Launch under Flux sub-broker. [force_broker=%s, nodes=%d]",
