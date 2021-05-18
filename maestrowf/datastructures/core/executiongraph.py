@@ -646,9 +646,18 @@ class ExecutionGraph(DAG, PickleInterface):
             if value.jobid:
                 jobid_str = str(value.jobid[-1])
 
+            # Include step root in workspace when parameterized
+            if list(value.params.items()):
+                ws = os.path.join(
+                    * os.path.normpath(
+                        value.workspace.value).split(os.sep)[-2:]
+                )
+            else:
+                ws = os.path.split(value.workspace.value)[1]
+
             _ = [
                     value.name, jobid_str,
-                    os.path.split(value.workspace.value)[1],
+                    ws,
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
                     str(value.restarts),
