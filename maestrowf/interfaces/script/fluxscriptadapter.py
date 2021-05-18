@@ -172,7 +172,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
-        force_broker = step.run.get("use_broker", False)
+        force_broker = step.run.get("use_broker", True)
         walltime = step.run.get("walltime", "inf")
 
         # Compute cores per task
