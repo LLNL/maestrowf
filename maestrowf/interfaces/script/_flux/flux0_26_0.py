@@ -22,13 +22,40 @@ class FluxInterface_0260(FluxInterface):
     flux_handle = None
 
     @classmethod
+    def connect_to_flux(cls):
+        if not cls.flux_handle:
+            cls.flux_handle = flux.Flux()
+            LOGGER.debug("New Flux handle created.")
+            broker_version = cls.flux_handle.attr_get("version")
+            adaptor_version = cls.key
+            LOGGER.debug("Connected to Flux broker running version %s using maestro adaptor version %s.",
+                         broker_version, adaptor_version)
+            try:
+                from distutils.version import StrictVersion
+                adaptor_version = StrictVersion(adaptor_version)
+                broker_version = StrictVersion(broker_version)
+                if adaptor_version > broker_version:
+                    LOGGER.error(
+                        "Maestro adaptor version (%s) is too new for the Flux broker version (%s). "
+                        "Functionality not present in this Flux version may be required by the adaptor and cause errors. "
+                        "Please switch to an older adaptor.",
+                        adaptor_version, broker_version
+                    )
+                elif adaptor_version < broker_version:
+                    LOGGER.debug(
+                        "Maestro adaptor version (%s) is older than the Flux broker version (%s). "
+                        "This is usually OK, but if a newer Maestro adaptor is available, please consider upgrading to maximize performance and compatibility.",
+                        adaptor_version, broker_version
+                    )
+            except ImportError:
+                pass
+
+    @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
         ngpus=0, job_name=None, force_broker=False
     ):
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         # NOTE: This previously placed everything under a broker. However,
         # if there's a job that schedules items to Flux, it will schedule all
@@ -122,9 +149,7 @@ class FluxInterface_0260(FluxInterface):
     def get_statuses(cls, joblist):
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
@@ -157,9 +182,7 @@ class FluxInterface_0260(FluxInterface):
         """
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
