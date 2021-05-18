@@ -18,17 +18,36 @@ def load_csv_status(status_csv_path, request):
     return status
 
 
-@pytest.fixture(params=["hello_bye_world_flat_ref.txt"])
-def load_expected_status(status_csv_path, request):
-    with open(status_csv_path(request.param), "r") as expected_status_file:
-        expected_status = expected_status_file.readlines()
+@pytest.fixture
+def expected_status(status_csv_path):
+    def load_expected_status(expected_status_file):
+        with open(status_csv_path(expected_status_file), "r") as es_file:
+            expected_status = es_file.readlines()
 
-    return ''.join([line for line in expected_status])
+            return ''.join([line for line in expected_status])
+    return load_expected_status
 
 
-def test_status_layout(load_csv_status, load_expected_status):
-    status_renderer = status_renderer_factory.get_renderer('flat')
+@pytest.mark.parametrize(
+    "layout, title, expected",
+    [
+        (
+            "flat",
+            "Test Study Flat",
+            "hello_bye_world_flat_ref.txt",
+        ),
+        (
+            "narrow",
+            "Test Study Narrow",
+            "hello_bye_world_narrow_ref.txt",
+        ),
+    ],
+)
+def test_status_layout(load_csv_status, expected_status,
+                       layout, title, expected):
+    expected_status_output = expected_status(expected)
+    status_renderer = status_renderer_factory.get_renderer(layout)
     status_renderer.layout(status_data=load_csv_status,
-                           study_title='Test Study')
+                           study_title=title)
 
-    assert status_renderer.render_to_str() == load_expected_status
+    assert status_renderer.render_to_str() == expected_status_output
