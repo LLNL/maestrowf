@@ -121,39 +121,17 @@ Maestro will launch a conductor in the background using ``nohup`` in order to mo
 Monitoring a Running Study
 ***************************
 
-Once the conductor is spun up, you will be returned to the command line prompt. There should now be a ``.tests/lulesh`` directory within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the documentation about :doc:`Study Workspaces <./maestro_core>`.
+Once the conductor is spun up, you will be returned to the command line prompt. There should now be a ``./tests/lulesh`` directory within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the documentation about :doc:`Study Workspaces <./maestro_core>`.
 
 In order to check the status of a running study, use the ``maestro status`` subcommand. The only required parameter to the status command is the path to the running study's workspace. In this case, to find the status of the running study (from the root of the repository) is::
 
     $ maestro status ./tests/lulesh
 
-The resulting output will look something like below::
+The resulting output will look something like below:
 
-    Step Name                           Workspace            State        Run Time        Elapsed Time    Start Time                  Submit Time                 End Time                      Number Restarts
-    ----------------------------------  -------------------  -----------  --------------  --------------  --------------------------  --------------------------  --------------------------  -----------------
-    run-lulesh_ITER.20.SIZE.20          ITER.20.SIZE.20      FINISHED     0:00:00.226297  0:00:00.226320  2018-08-07 12:54:23.233567  2018-08-07 12:54:23.233544  2018-08-07 12:54:23.459864                  0
-    post-process-lulesh                 post-process-lulesh  INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.9  TRIAL.9              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.8  TRIAL.8              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-size_SIZE.10    SIZE.10              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.1  TRIAL.1              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.3  TRIAL.3              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.2  TRIAL.2              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.5  TRIAL.5              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.4  TRIAL.4              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.7  TRIAL.7              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    post-process-lulesh-trials_TRIAL.6  TRIAL.6              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    run-lulesh_ITER.30.SIZE.20          ITER.30.SIZE.20      FINISHED     0:00:00.543726  0:00:00.543743  2018-08-07 12:54:23.469009  2018-08-07 12:54:23.468992  2018-08-07 12:54:24.012735                  0
-    run-lulesh_ITER.10.SIZE.20          ITER.10.SIZE.20      FINISHED     0:00:00.148773  0:00:00.148794  2018-08-07 12:54:23.068119  2018-08-07 12:54:23.068098  2018-08-07 12:54:23.216892                  0
-    post-process-lulesh-size_SIZE.30    SIZE.30              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    run-lulesh_ITER.20.SIZE.30          ITER.20.SIZE.30      FINISHED     0:00:01.066736  0:00:01.066757  2018-08-07 12:54:24.892856  2018-08-07 12:54:24.892835  2018-08-07 12:54:25.959592                  0
-    run-lulesh_ITER.30.SIZE.10          ITER.30.SIZE.10      FINISHED     0:00:00.054475  0:00:00.054488  2018-08-07 12:54:23.005877  2018-08-07 12:54:23.005864  2018-08-07 12:54:23.060352                  0
-    make-lulesh                         make-lulesh          FINISHED     0:00:05.416096  0:00:05.416109  2018-08-07 12:53:17.395362  2018-08-07 12:53:17.395349  2018-08-07 12:53:22.811458                  0
-    run-lulesh_ITER.10.SIZE.10          ITER.10.SIZE.10      FINISHED     0:00:00.043584  0:00:00.043610  2018-08-07 12:54:22.905328  2018-08-07 12:54:22.905302  2018-08-07 12:54:22.948912                  0
-    run-lulesh_ITER.20.SIZE.10          ITER.20.SIZE.10      FINISHED     0:00:00.035449  0:00:00.035463  2018-08-07 12:54:22.958755  2018-08-07 12:54:22.958741  2018-08-07 12:54:22.994204                  0
-    run-lulesh_ITER.10.SIZE.30          ITER.10.SIZE.30      FINISHED     0:00:00.812721  0:00:00.812764  2018-08-07 12:54:24.069466  2018-08-07 12:54:24.069423  2018-08-07 12:54:24.882187                  0
-    post-process-lulesh-size_SIZE.20    SIZE.20              INITIALIZED  --:--:--        --:--:--        --                          --                          --                                          0
-    run-lulesh_ITER.30.SIZE.30          ITER.30.SIZE.30      FINISHED     0:00:01.376227  0:00:01.376240  2018-08-07 12:54:25.968730  2018-08-07 12:54:25.968717  2018-08-07 12:54:27.344957                  0
+.. image:: ./status_layouts/flat_layout_lulesh_in_progress.png
+   :width: 1735
+   :alt: Flat layout view of status of an in progress study
 
 
 The general statuses that are usually encountered are:
@@ -163,6 +141,7 @@ The general statuses that are usually encountered are:
     - ``FINISHED``: A step that has completed successfully.
     - ``FAILED``: A step that during execution encountered a non-zero error code.
 
+  
 Cancelling a Running Study
 ***************************
 
@@ -172,30 +151,25 @@ Similar to checking the status of a running study, cancelling a study uses the `
 
 .. note:: Cancelling a study is not instantaneous. The background conductor is a daemon which spins up periodically, so cancellation occurs the next time the conductor returns from sleeping and sees that a cancel has been triggered.
 
-When a study is cancelled, the cancellation is reflected in the status when calling the ``maestro status`` command::
+When a study is cancelled, the cancellation is reflected in the status when calling the ``maestro status`` command
 
-    Step Name                           Workspace            State      Run Time        Elapsed Time    Start Time                  Submit Time                 End Time                      Number Restarts
-    ----------------------------------  -------------------  ---------  --------------  --------------  --------------------------  --------------------------  --------------------------  -----------------
-    run-lulesh_ITER.20.SIZE.20          ITER.20.SIZE.20      FINISHED   0:00:00.238367  0:00:00.238549  2018-08-07 17:24:04.178433  2018-08-07 17:24:04.178251  2018-08-07 17:24:04.416800                  0
-    post-process-lulesh                 post-process-lulesh  CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.813454                  0
-    post-process-lulesh-trials_TRIAL.9  TRIAL.9              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.813207                  0
-    post-process-lulesh-trials_TRIAL.8  TRIAL.8              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.812957                  0
-    post-process-lulesh-size_SIZE.10    SIZE.10              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.809833                  0
-    post-process-lulesh-trials_TRIAL.1  TRIAL.1              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.810962                  0
-    post-process-lulesh-trials_TRIAL.3  TRIAL.3              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.811659                  0
-    post-process-lulesh-trials_TRIAL.2  TRIAL.2              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.811368                  0
-    post-process-lulesh-trials_TRIAL.5  TRIAL.5              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.812205                  0
-    post-process-lulesh-trials_TRIAL.4  TRIAL.4              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.811927                  0
-    post-process-lulesh-trials_TRIAL.7  TRIAL.7              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.812708                  0
-    post-process-lulesh-trials_TRIAL.6  TRIAL.6              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.812458                  0
-    run-lulesh_ITER.30.SIZE.20          ITER.30.SIZE.20      FINISHED   0:00:00.324670  0:00:00.324849  2018-08-07 17:24:04.425894  2018-08-07 17:24:04.425715  2018-08-07 17:24:04.750564                  0
-    run-lulesh_ITER.10.SIZE.20          ITER.10.SIZE.20      FINISHED   0:00:00.134795  0:00:00.135016  2018-08-07 17:24:04.032750  2018-08-07 17:24:04.032529  2018-08-07 17:24:04.167545                  0
-    post-process-lulesh-size_SIZE.30    SIZE.30              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.810583                  0
-    run-lulesh_ITER.20.SIZE.30          ITER.20.SIZE.30      FINISHED   0:00:00.678922  0:00:00.679114  2018-08-07 17:24:05.129377  2018-08-07 17:24:05.129185  2018-08-07 17:24:05.808299                  0
-    run-lulesh_ITER.30.SIZE.10          ITER.30.SIZE.10      FINISHED   0:00:00.048609  0:00:00.048803  2018-08-07 17:24:03.974073  2018-08-07 17:24:03.973879  2018-08-07 17:24:04.022682                  0
-    make-lulesh                         make-lulesh          FINISHED   0:00:04.979883  0:00:04.980055  2018-08-07 17:22:58.735953  2018-08-07 17:22:58.735781  2018-08-07 17:23:03.715836                  0
-    run-lulesh_ITER.10.SIZE.10          ITER.10.SIZE.10      FINISHED   0:00:00.045598  0:00:00.045783  2018-08-07 17:24:03.853461  2018-08-07 17:24:03.853276  2018-08-07 17:24:03.899059                  0
-    run-lulesh_ITER.20.SIZE.10          ITER.20.SIZE.10      FINISHED   0:00:00.044422  0:00:00.044655  2018-08-07 17:24:03.912904  2018-08-07 17:24:03.912671  2018-08-07 17:24:03.957326                  0
-    run-lulesh_ITER.10.SIZE.30          ITER.10.SIZE.30      FINISHED   0:00:00.359750  0:00:00.359921  2018-08-07 17:24:04.760954  2018-08-07 17:24:04.760783  2018-08-07 17:24:05.120704                  0
-    post-process-lulesh-size_SIZE.20    SIZE.20              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.810216                  0
-    run-lulesh_ITER.30.SIZE.30          ITER.30.SIZE.30      FINISHED   0:00:00.915474  0:00:00.915682  2018-08-07 17:24:05.818191  2018-08-07 17:24:05.817983  2018-08-07 17:24:06.733665                  0
+.. image:: ./status_layouts/flat_layout_lulesh_cancelled.png
+   :width: 1735
+   :alt: Flat layout view of status of a cancelled study
+
+
+Status Layouts
+**************
+
+There are currently two layouts for viewing the status.  The default `flat` layout shown above can be a little hard to read in narrow terminals or in studies with long step/parameter combo names.  For this purpose a `narrow` layout has also been implemented,
+compressing the width and making the status table taller.  Additionally, the extra room allows the addition of per step tables of parameter names and values.  To switch between these two simply use the `--layout` option with either `flat` or `narrow` as shown below::
+
+  $ maestro status ./tests/lulesh --layout narrow
+
+
+A snippet of the narrow layout for the above study is shown below.  These layouts are computed by status command, so can alternate between them in the same study without issue:
+
+.. image:: ./status_layouts/narrow_layout_lulesh_cancelled.png
+   :alt: Narrow layout view of status of an in progress study
+
+Note these layouts read some colors from your terminal theme, including the background color.  The red for the state, yellow for jobid and the blue color on alternating columns are currently fixed.  Snapshots reproduced using the encom theme for iTerm2.
