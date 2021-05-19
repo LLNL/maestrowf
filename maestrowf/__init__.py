@@ -308,7 +308,6 @@ class NarrowStatusRenderer(BaseStatusRenderer):
             step_details.add_row(step_info, step_sched)
 
             step_table.add_row('', step_details)
-            self._status_table.add_row(step_table, end_section=True)
 
             # Add optional parameter table, if step has parameters
             if 'Params' not in self._status_data.keys():
@@ -348,7 +347,8 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                                         style=row_style)
 
                 step_table.add_row('', step_params)
-                self._status_table.add_row(step_table, end_section=True)
+
+            self._status_table.add_row(step_table, end_section=True)
 
     def render(self, theme=None):
         """Do the actual printing"""
