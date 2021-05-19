@@ -76,6 +76,7 @@ def status_study(args):
 
             if status:
                 try:
+                    # Wasteful to not reuse this renderer for all paths?
                     status_renderer = status_renderer_factory.get_renderer(
                         status_layout)
 
@@ -445,7 +446,7 @@ def setup_argparser():
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     status.add_argument(
-        "--layout", type=str, choices=['flat', 'narrow'],
+        "--layout", type=str, choices=['flat', 'narrow', 'legacy'],
         default='flat',
         help="Alternate status table layouts. [Default: %(default)s]")
     status.set_defaults(func=status_study)

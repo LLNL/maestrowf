@@ -43,6 +43,8 @@ from rich.console import Console
 from rich.table import Table
 from rich.theme import Theme
 
+import tabulate
+
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
@@ -91,6 +93,46 @@ class BaseStatusRenderer:
 
     def render(self, theme=None):
         pass
+
+
+class LegacyStatusRenderer(BaseStatusRenderer):
+    """Legacy tabulate based flat table layout"""
+    def __init__(self, *args, **kwargs):
+        super(LegacyStatusRenderer, self).__init__(*args, **kwargs)
+
+    def layout(self, status_data=None, study_title=None, filter_dict=None):
+
+        """Construct the status table"""
+        if status_data:
+            # Exclude the parameter column
+            self._status_data = {key: value
+                                 for key, value in status_data.items()
+                                 if key != "Params"}
+        else:
+            raise ValueError("Status data required to layout a table")
+
+        # Get the data, and compute header format length
+        table_str = tabulate.tabulate(self._status_data, headers="keys")
+        header_chars = max([len(line) for line in table_str.split("\n")])
+        header_format = "".ljust(header_chars, "=")
+
+        self._status_table = ""
+        self._status_table += header_format + "\n"
+        self._status_table += study_title + "\n"
+        self._status_table += header_format + "\n"
+
+        self._status_table += table_str + "\n"
+
+        self._status_table += header_format + "\n"
+
+    def render(self, theme=None):
+        """Do the actual printing"""
+        print(self._status_table)
+
+    def render_to_str(self, theme=None, width=200):
+        """Capture output to string"""
+
+        return self._status_table
 
 
 class FlatStatusRenderer(BaseStatusRenderer):
@@ -386,3 +428,4 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 status_renderer_factory = StatusRendererFactory()
 status_renderer_factory.register_layout('flat', FlatStatusRenderer)
 status_renderer_factory.register_layout('narrow', NarrowStatusRenderer)
+status_renderer_factory.register_layout('legacy', LegacyStatusRenderer)
