@@ -34,14 +34,19 @@ All core abstracts and implementations for core concept classes (Study,
 Environment, Parameter generation, etc.). This module also includes interface
 abstracts, base class abstracts, and general utilities.
 """
+from abc import ABCMeta, abstractmethod
+import inspect
 from io import StringIO
 
 import logging
+import sys
 
 from rich import box
 from rich.console import Console
 from rich.table import Table
 from rich.theme import Theme
+
+import six
 
 import tabulate
 
@@ -62,25 +67,7 @@ __version_info__ = ("1", "1", "9dev1")
 __version__ = '.'.join(__version_info__)
 
 
-# Register status layout types
-class StatusRendererFactory:
-    """Factory for setting up alternate console status rendering formats"""
-    def __init__(self):
-        self._layouts = {}
-
-    def register_layout(self, layout, renderer):
-        self._layouts[layout] = renderer
-
-    def get_renderer(self, layout):
-        renderer = self._layouts.get(layout)
-
-        # Note, need to wrap renderer in try/catch too, or return default val?
-        if not renderer:
-            raise ValueError(layout)
-
-        return renderer()
-
-
+@six.add_metaclass(ABCMeta)
 class BaseStatusRenderer:
     def __init__(self, *args, **kwargs):
         self._status_data = {}
@@ -88,15 +75,20 @@ class BaseStatusRenderer:
         self._study_title = ''
         self._theme_dict = {}
 
+    @abstractmethod
     def layout(self, table_data=None, study_title=None, data_filters=None):
         pass
 
+    @abstractmethod
     def render(self, theme=None):
         pass
 
 
 class LegacyStatusRenderer(BaseStatusRenderer):
     """Legacy tabulate based flat table layout"""
+
+    layout_type = "legacy"      # Defines name in factory/cli
+
     def __init__(self, *args, **kwargs):
         super(LegacyStatusRenderer, self).__init__(*args, **kwargs)
 
@@ -137,6 +129,9 @@ class LegacyStatusRenderer(BaseStatusRenderer):
 
 class FlatStatusRenderer(BaseStatusRenderer):
     """Flat, simple table layout"""
+
+    layout_type = "flat"        # Defines name in factory/cli
+
     def __init__(self, *args, **kwargs):
         super(FlatStatusRenderer, self).__init__(*args, **kwargs)
 
@@ -237,6 +232,10 @@ class FlatStatusRenderer(BaseStatusRenderer):
 
 
 class NarrowStatusRenderer(BaseStatusRenderer):
+    """Narrow terminal layout with parameter info"""
+
+    layout_type = "narrow"      # Defines name in factory/cli
+
     def __init__(self, *args, **kwargs):
         super(NarrowStatusRenderer, self).__init__(*args, **kwargs)
 
@@ -424,8 +423,47 @@ class NarrowStatusRenderer(BaseStatusRenderer):
         return _printer.file.getvalue()
 
 
+def iter_status_renderers():
+    """Gets all concrete StatusRenderer implementations in this module"""
+    def member_is_renderer(member):
+        """Helper to test if member is a renderer subclass"""
+        return (inspect.isclass(member) and member.__module__ == __name__
+                and issubclass(member, BaseStatusRenderer)
+                and not inspect.isabstract(member))
+
+    for member in inspect.getmembers(sys.modules[__name__],
+                                     member_is_renderer):
+        yield member
+
+
+# Register status layout types
+class StatusRendererFactory:
+    """Factory for setting up alternate console status rendering formats"""
+    def __init__(self):
+        self._layouts = {}
+
+        # Auto-registration of implemented renderers
+        for layout, renderer in iter_status_renderers():
+            self.register_layout(renderer.layout_type, renderer)
+
+    def register_layout(self, layout, renderer):
+        """Register handle to layout renderer classes"""
+        self._layouts[layout] = renderer
+
+    def get_renderer(self, layout):
+        """Get handle for specific layout renderer to instantiate"""
+        renderer = self._layouts.get(layout)
+
+        # Note, need to wrap renderer in try/catch too, or return default val?
+        if not renderer:
+            raise ValueError(layout)
+
+        return renderer()
+
+    def get_layouts(self):
+        """Get list of registered layouts"""
+        return self._layouts.keys()
+
+
 # Register renderers
 status_renderer_factory = StatusRendererFactory()
-status_renderer_factory.register_layout('flat', FlatStatusRenderer)
-status_renderer_factory.register_layout('narrow', NarrowStatusRenderer)
-status_renderer_factory.register_layout('legacy', LegacyStatusRenderer)

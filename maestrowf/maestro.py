@@ -446,7 +446,7 @@ def setup_argparser():
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     status.add_argument(
-        "--layout", type=str, choices=['flat', 'narrow', 'legacy'],
+        "--layout", type=str, choices=status_renderer_factory.get_layouts(),
         default='flat',
         help="Alternate status table layouts. [Default: %(default)s]")
     status.set_defaults(func=status_study)
