@@ -28,23 +28,27 @@ class FluxInterface_0260(FluxInterface):
             LOGGER.debug("New Flux handle created.")
             broker_version = cls.flux_handle.attr_get("version")
             adaptor_version = cls.key
-            LOGGER.debug("Connected to Flux broker running version %s using maestro adaptor version %s.",
-                         broker_version, adaptor_version)
+            LOGGER.debug(
+                "Connected to Flux broker running version %s using Maestro "
+                "adapter version %s.", broker_version, adaptor_version)
             try:
                 from distutils.version import StrictVersion
                 adaptor_version = StrictVersion(adaptor_version)
                 broker_version = StrictVersion(broker_version)
                 if adaptor_version > broker_version:
                     LOGGER.error(
-                        "Maestro adaptor version (%s) is too new for the Flux broker version (%s). "
-                        "Functionality not present in this Flux version may be required by the adaptor and cause errors. "
-                        "Please switch to an older adaptor.",
+                        "Maestro adapter version (%s) is too new for the Flux "
+                        "broker version (%s). Functionality not present in "
+                        "this Flux version may be required by the adapter and "
+                        "cause errors. Please switch to an older adapter.",
                         adaptor_version, broker_version
                     )
                 elif adaptor_version < broker_version:
                     LOGGER.debug(
-                        "Maestro adaptor version (%s) is older than the Flux broker version (%s). "
-                        "This is usually OK, but if a newer Maestro adaptor is available, please consider upgrading to maximize performance and compatibility.",
+                        "Maestro adaptor version (%s) is older than the Flux "
+                        "broker version (%s). This is usually OK, but if a "
+                        "newer Maestro adapter is available, please consider "
+                        "upgrading to maximize performance and compatibility.",
                         adaptor_version, broker_version
                     )
             except ImportError:
@@ -132,9 +136,8 @@ class FluxInterface_0260(FluxInterface):
 
         if "gpus" in kwargs:
             ngpus = str(kwargs["gpus"])
-            if ngpus.isdecimal():
-                args.append("-g")
-                args.append(ngpus)
+            args.append("-g")
+            args.append(ngpus)
 
         # flux has additional arguments that can be passed via the '-o' flag.
         addtl = []
