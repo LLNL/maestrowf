@@ -76,7 +76,17 @@ class BaseStatusRenderer:
         self._theme_dict = {}
 
     @abstractmethod
-    def layout(self, table_data=None, study_title=None, data_filters=None):
+    def layout(self, status_data, study_title=None, data_filters=None):
+        """Setup concrete status layout
+
+        Lays out the table data in a formatted string, storing it
+        in renderer's `_status_table` attribute.
+
+        Args:
+            status_data (dict): study status dict, one column per key
+            study_title (str): optional title of this study
+            filter_dict (dict): optional data filter (not yet implemented)
+        """
         pass
 
     @abstractmethod
@@ -92,10 +102,20 @@ class LegacyStatusRenderer(BaseStatusRenderer):
     def __init__(self, *args, **kwargs):
         super(LegacyStatusRenderer, self).__init__(*args, **kwargs)
 
-    def layout(self, status_data=None, study_title=None, filter_dict=None):
+    def layout(self, status_data, study_title=None, filter_dict=None):
+        """Setup concrete status layout
 
-        """Construct the status table"""
-        if status_data:
+        Lays out the table data in a formatted string, storing it
+        in renderer's `_status_table` attribute.
+
+        Args:
+            status_data (dict): study status dict, one column per key
+            study_title (str): optional title of this study
+            filter_dict (dict): optional data filter (not yet implemented)
+        """
+
+        # Ensure status data is of type dict and isn't empty
+        if isinstance(status_data, dict) and status_data:
             # Exclude the parameter column
             self._status_data = {key: value
                                  for key, value in status_data.items()
@@ -149,12 +169,25 @@ class FlatStatusRenderer(BaseStatusRenderer):
             "color": ""
         }
 
-    def layout(self, status_data=None, study_title=None, filter_dict=None):
-        """Construct the Rich Table object"""
-        if status_data:
+    def layout(self, status_data, study_title=None, filter_dict=None):
+        """Setup concrete status layout
+
+        Lays out the table data in a formatted string, storing it
+        in renderer's `_status_table` attribute.
+
+        Args:
+            status_data (dict): study status dict, one column per key
+            study_title (str): optional title of this study
+            filter_dict (dict): optional data filter (not yet implemented)
+        """
+
+        # Ensure status data is of type dict and isn't empty
+        if isinstance(status_data, dict) and status_data:
             self._status_data = status_data
         else:
             raise ValueError("Status data required to layout a table")
+
+        """Construct the Rich Table object"""
 
         self._status_table = Table()
         if study_title:
