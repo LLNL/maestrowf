@@ -424,7 +424,12 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
 
 def iter_status_renderers():
-    """Gets all concrete StatusRenderer implementations in this module"""
+    """Finds all concrete StatusRenderer implementations in this module
+
+    Yields:
+        list of (name, class) pairs for all concrete implementations of
+        BaseStatusRenderer's in the current module
+    """
     def member_is_renderer(member):
         """Helper to test if member is a renderer subclass"""
         return (inspect.isclass(member) and member.__module__ == __name__
@@ -442,16 +447,29 @@ class StatusRendererFactory:
     def __init__(self):
         self._layouts = {}
 
-        # Auto-registration of implemented renderers
+        # Auto-registration of implemented renderers in this module
         for layout, renderer in iter_status_renderers():
             self.register_layout(renderer.layout_type, renderer)
 
     def register_layout(self, layout, renderer):
-        """Register handle to layout renderer classes"""
+        """Register layout renderer classes
+
+        Args:
+            layout (str): Name of layout to use as key/cli arg
+            renderer (BaseStatusRenderer): Any class that is a concrete
+                implementation of BaseStatusRenderer api
+        """
         self._layouts[layout] = renderer
 
     def get_renderer(self, layout):
-        """Get handle for specific layout renderer to instantiate"""
+        """Get handle for specific layout renderer to instantiate
+
+        Args:
+            layout (str): Name of layout renderer
+
+        Returns:
+            BaseStatusRenderer: The concrete status renderer class
+        """
         renderer = self._layouts.get(layout)
 
         # Note, need to wrap renderer in try/catch too, or return default val?
@@ -461,7 +479,11 @@ class StatusRendererFactory:
         return renderer()
 
     def get_layouts(self):
-        """Get list of registered layouts"""
+        """Get list of registered layouts
+
+        Returns:
+            list of str: registered status renderer layouts
+        """
         return self._layouts.keys()
 
 
