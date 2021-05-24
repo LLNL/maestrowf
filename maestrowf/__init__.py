@@ -249,9 +249,20 @@ class NarrowStatusRenderer(BaseStatusRenderer):
             "background": "grey7"
         }
 
-    def layout(self, status_data=None, study_title=None, filter_dict=None):
+    def layout(self, status_data, study_title=None, filter_dict=None):
+        """Setup concrete status layout
 
-        if status_data:
+        Lays out the table data in a formatted string, storing it
+        in renderer's `_status_table` attribute.
+
+        Args:
+            status_data (dict): study status dict, one column per key
+            study_title (str): optional title of this study
+            filter_dict (dict): optional data filter (not yet implemented)
+        """
+
+        # Ensure status data is of type dict and is not empty
+        if isinstance(status_data, dict) and status_data:
             self._status_data = status_data
         else:
             raise ValueError("Status data required to layout a table")
