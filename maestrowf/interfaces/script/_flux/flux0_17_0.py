@@ -60,9 +60,7 @@ class FluxInterface_0170(FluxInterface):
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
         ngpus=0, job_name=None, force_broker=False
     ):
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         # NOTE: This previously placed everything under a broker. However,
         # if there's a job that schedules items to Flux, it will schedule all
@@ -160,9 +158,7 @@ class FluxInterface_0170(FluxInterface):
     def get_statuses(cls, joblist):
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
@@ -245,9 +241,7 @@ class FluxInterface_0170(FluxInterface):
         """
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
