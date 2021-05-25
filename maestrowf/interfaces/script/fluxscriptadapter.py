@@ -186,7 +186,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         try:
             # Calculate ngpus
             ngpus = step.run.get("gpus", "0")
-            ngpus = int(ngpus)
+            ngpus = int(ngpus) if ngpus else 0
         except ValueError as val_error:
             msg = f"Specified gpus '{ngpus}' is not a decimal value."
             LOGGER.error(msg)
