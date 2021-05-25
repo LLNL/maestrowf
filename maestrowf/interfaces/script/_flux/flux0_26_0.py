@@ -24,11 +24,9 @@ class FluxInterface_0260(FluxInterface):
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=False
+        ngpus=0, job_name=None, force_broker=True
     ):
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         # NOTE: This previously placed everything under a broker. However,
         # if there's a job that schedules items to Flux, it will schedule all
@@ -45,7 +43,7 @@ class FluxInterface_0260(FluxInterface):
             ngpus_per_slot = int(ceil(ngpus / nodes))
             jobspec = flux.job.JobspecV1.from_nest_command(
                 [path], num_nodes=nodes, cores_per_slot=cores_per_task,
-                num_slots=nodes, gpus_per_slot=ngpus_per_slot)
+                num_slots=procs, gpus_per_slot=ngpus_per_slot)
         else:
             LOGGER.debug(
                 "Launch under root Flux broker. [force_broker=%s, nodes=%d]",
@@ -102,9 +100,8 @@ class FluxInterface_0260(FluxInterface):
 
         if "gpus" in kwargs:
             ngpus = str(kwargs["gpus"])
-            if ngpus.isdecimal():
-                args.append("-g")
-                args.append(ngpus)
+            args.append("-g")
+            args.append(ngpus)
 
         # flux has additional arguments that can be passed via the '-o' flag.
         addtl = []
@@ -122,9 +119,7 @@ class FluxInterface_0260(FluxInterface):
     def get_statuses(cls, joblist):
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
@@ -157,9 +152,7 @@ class FluxInterface_0260(FluxInterface):
         """
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = flux.Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))

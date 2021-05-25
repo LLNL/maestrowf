@@ -172,7 +172,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
-        force_broker = step.run.get("use_broker", False)
+        force_broker = step.run.get("use_broker", True)
         walltime = step.run.get("walltime", "inf")
 
         # Compute cores per task
@@ -183,9 +183,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 "'cores per task' set to a non-value. Populating with a "
                 "sensible default. (cores per task = %d", cores_per_task)
 
-        # Calculate ngpus
-        ngpus = step.run.get("gpus", 0)
-        ngpus = 0 if not ngpus else ngpus
+        try:
+            # Calculate ngpus
+            ngpus = step.run.get("gpus", "0")
+            ngpus = int(ngpus) if ngpus else 0
+        except ValueError as val_error:
+            msg = f"Specified gpus '{ngpus}' is not a decimal value."
+            LOGGER.error(msg)
+            raise val_error
 
         # Calculate nprocs
         ncores = cores_per_task * nodes
