@@ -98,10 +98,11 @@ class FluxInterface_0260(FluxInterface):
             args.append("-c")
             args.append(str(kwargs["cores per task"]))
 
-        if "gpus" in kwargs:
-            ngpus = str(kwargs["gpus"])
+        ngpus = kwargs.get("gpus", 0)
+        if ngpus:
+            gpus = str(ngpus)
             args.append("-g")
-            args.append(ngpus)
+            args.append(gpus)
 
         # flux has additional arguments that can be passed via the '-o' flag.
         addtl = []
