@@ -69,7 +69,11 @@ class _StepRecord:
         self._params = None
 
     def add_params(self, params):
-        """Attaches param names/values used in this step"""
+        """
+        Attaches param names/values used in this step
+
+        :param params: Iterable of tuples of param names, values
+        """
         self._params = {param: value for param, value in params}
 
     @property
@@ -400,6 +404,7 @@ class ExecutionGraph(DAG, PickleInterface):
         :param step: StudyStep instance to be recorded.
         :param workspace: Directory path for the step's working directory.
         :param restart_limit: Upper limit on the number of restart attempts.
+        :param params: Iterable of tuples of step parameter names, values
         """
         data = {
                     "step":          step,
