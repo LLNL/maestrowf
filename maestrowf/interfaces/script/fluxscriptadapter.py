@@ -170,48 +170,20 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                   identiifer.
         """
         # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
-        nodes = step.run.get("nodes")
-        processors = step.run.get("procs", 0)
-        force_broker = step.run.get("use_broker", True)
+        nodes = int(step.run.get("nodes", 1))
+        tasks = int(step.run.get("procs", 1))
+        cores_per_task = int(step.run.get("cores per task", 1))
+        gpus_per_task = int(step.run.get("gpus per task", 0))
+        force_broker = bool(step.run.get("use_broker", True))
         walltime = step.run.get("walltime", "inf")
 
-        # Compute cores per task
-        cores_per_task = step.run.get("cores per task", None)
-        if not cores_per_task:
-            cores_per_task = ceil(processors / nodes)
-            LOGGER.warn(
-                "'cores per task' set to a non-value. Populating with a "
-                "sensible default. (cores per task = %d", cores_per_task)
-
-        try:
-            # Calculate ngpus
-            ngpus = step.run.get("gpus", "0")
-            ngpus = int(ngpus) if ngpus else 0
-        except ValueError as val_error:
-            msg = f"Specified gpus '{ngpus}' is not a decimal value."
-            LOGGER.error(msg)
-            raise val_error
-
         # Calculate nprocs
-        ncores = cores_per_task * nodes
-        # Check to make sure that cores_per_task matches if processors
-        # is specified.
-        if processors > 0 and processors > ncores:
-            msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
-            LOGGER.error(msg)
-            raise ValueError(msg)
-
-        # Raise an exception if ncores is 0
-        if ncores <= 0:
-            msg = "Invalid number of cores specified. " \
-                  "Aborting. (ncores = {})".format(ncores)
-            LOGGER.error(msg)
-            raise ValueError(msg)
+        ncores = int(step.run.get("cores", cores_per_task * tasks))
+        ngpus = int(step.run.get("gpus", gpus_per_task * tasks))
 
         jobid, retcode, submit_status = \
             self._interface.submit(
-                nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
+                nodes, tasks, cores_per_task, path, cwd, walltime, ngpus,
                 job_name=step.name, force_broker=force_broker
             )
 
