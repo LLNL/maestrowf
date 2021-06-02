@@ -164,7 +164,7 @@ class Combination(object):
         Get the values for the specified parameters.
 
         :param params: A set of parameters to be used in the string.
-        :returns: A string containing the labels for the parameters in params.
+        :yields: Tuples of param names and values.
         """
         for key in params:
             var = "{}({})".format(self._token, key)
