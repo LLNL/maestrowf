@@ -42,6 +42,7 @@ setup(
         "dill",
         "jsonschema>=3.2.0",
         "coloredlogs",
+        "rich",
         "chainmap ; python_version<'3'",
     ],
     extras_require={},
