@@ -33,12 +33,13 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.6"
+python = ">=3.6,<4.0"
 coloredlogs = "*"
 dill = "*"
 filelock = "*"
 jsonschema = ">=3.2.0"
 pyyaml = ">=4.2b1"
+rich = "*"
 six = "*"
 tabulate = "*"
 
