@@ -341,7 +341,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
             )
             # Dummy columns
             step_table.add_column("key")
-            step_table.add_column("val")
+            step_table.add_column("val", overflow='fold')
 
             # Top level contains step name and workspace name, full table width
             step_table.add_row("STEP:",
@@ -413,10 +413,10 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
                 # Note col names don't actually matter, just setting styles
                 step_params.add_column("name", style="")
-                step_params.add_column("val", style="blue")
+                step_params.add_column("val", style="blue", justify="right")
                 step_params.add_column("name2", style="")
-                step_params.add_column("val2", style="blue")
-
+                step_params.add_column("val2", style="blue", justify="right")
+                print("Param list: {}".format(param_list))
                 param_idx = 0
                 for param_row in range(num_param_rows):
                     this_row = []
@@ -426,8 +426,9 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                         else:
                             this_row.extend(["", ""])
 
-                        param_idx+2
+                    param_idx += 2
 
+                    print("adding row: {}".format(this_row))
                     step_params.add_row(*this_row,
                                         style=row_style)
 
