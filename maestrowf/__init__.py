@@ -416,7 +416,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                 step_params.add_column("val", style="blue", justify="right")
                 step_params.add_column("name2", style="")
                 step_params.add_column("val2", style="blue", justify="right")
-                print("Param list: {}".format(param_list))
+
                 param_idx = 0
                 for param_row in range(num_param_rows):
                     this_row = []
@@ -428,7 +428,6 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
                     param_idx += 2
 
-                    print("adding row: {}".format(this_row))
                     step_params.add_row(*this_row,
                                         style=row_style)
 
