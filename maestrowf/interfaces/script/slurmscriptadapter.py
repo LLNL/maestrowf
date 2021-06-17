@@ -73,6 +73,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("reservation", kwargs.pop("reservation", ""))
+        self.add_batch_parameter("qos", kwargs.get("qos"))
 
         # Check for procs separately, as we don't want it in the header if it's
         # not present.
@@ -96,6 +97,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         self._ntask_header = "#SBATCH --ntasks={procs}"
         self._exclusive = "#SBATCH --exclusive"
+        self._qos = "#SBATCH --qos={qos}"
 
         self._cmd_flags = {
             "cmd": "srun",
@@ -155,6 +157,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         exclusive = resources.get("exclusive", False)
         if exclusive:
             modified_header.append(self._exclusive)
+
+        qos = resources.get("qos")
+        if qos:
+            modified_header.append(self._qos.format(qos=qos))
 
         return "\n".join(modified_header)
 

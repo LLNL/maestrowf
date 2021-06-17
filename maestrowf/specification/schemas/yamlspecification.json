@@ -65,7 +65,8 @@
               {"type": "boolean"},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
-            "use_broker": {"type": "boolean"}
+          "use_broker": {"type": "boolean"},
+          "qos": {"type": "string", "minLength": 1}
         },
         "additionalProperties": false,
         "required": [
