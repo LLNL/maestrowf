@@ -403,12 +403,8 @@ class ExecutionGraph(DAG, PickleInterface):
         if self._tmp_dir and not os.path.exists(self._tmp_dir):
             self._tmp_dir = tempfile.mkdtemp()
 
-<<<<<<< HEAD
-    def add_step(self, name, step, workspace, restart_limit, params=None):
-=======
     @critical_path(pointcut="around")
-    def add_step(self, name, step, workspace, restart_limit):
->>>>>>> Addition of more decorating of internals.
+    def add_step(self, name, step, workspace, restart_limit, params=None):
         """
         Add a StepRecord to the ExecutionGraph.
 
@@ -638,7 +634,6 @@ class ExecutionGraph(DAG, PickleInterface):
         LOGGER.debug("After execution of '%s' -- New state is %s.",
                      record.name, record.status)
 
-<<<<<<< HEAD
     @property
     def status_subtree(self):
         """Cache the status ordering to improve scaling"""
@@ -654,9 +649,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
         return self._status_subtree
 
-=======
     @critical_path(pointcut="around")
->>>>>>> Addition of more decorating of internals.
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
