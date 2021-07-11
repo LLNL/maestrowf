@@ -105,9 +105,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
-        if not walltime or walltime == "inf":
-            LOGGER.debug("Encountered inf walltime!")
-            return 0
+        if isinstance(walltime, int) or isinstance(walltime, float):
+            LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
+            return int(float(walltime) * 60.0)
         elif ":" in walltime:
             # Convert walltime to seconds.
             LOGGER.debug("Converting %s to seconds...", walltime)
@@ -115,8 +115,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             for i, value in enumerate(walltime.split(":")[::-1]):
                 seconds += float(value) * (60.0 ** i)
             return seconds
+        elif not walltime:
+            return 0
         else:
-            return int(float(walltime) * 60.0)
+            msg = \
+                f"Walltime value '{walltime}' is not an integer or colon-" \
+                f"separated string."
+            LOGGER.error(msg)
+            raise ValueError(msg)
 
     def get_header(self, step):
         """
