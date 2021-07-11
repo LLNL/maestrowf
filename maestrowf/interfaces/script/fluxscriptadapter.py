@@ -28,7 +28,6 @@
 ###############################################################################
 
 """Flux Scheduler interface implementation."""
-from datetime import datetime
 import logging
 from math import ceil
 import os
@@ -106,14 +105,18 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
-        if not walltime:
+        if not walltime or walltime == "inf":
             LOGGER.debug("Encountered inf walltime!")
-            return "inf"
-        # Convert walltime to seconds.
-        LOGGER.debug("Converting %s to seconds...", walltime)
-        wt = \
-            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
-        return int(wt.total_seconds())
+            return 0
+        elif ":" in walltime:
+            # Convert walltime to seconds.
+            LOGGER.debug("Converting %s to seconds...", walltime)
+            seconds = 0.0
+            for i, value in enumerate(walltime.split(":")[::-1]):
+                seconds += float(value) * (60.0 ** i)
+            return seconds
+        else:
+            return int(float(walltime) * 60.0)
 
     def get_header(self, step):
         """
