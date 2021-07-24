@@ -178,11 +178,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
                   identiifer.
         """
-        # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
         force_broker = step.run.get("use_broker", True)
-        walltime = step.run.get("walltime", "inf")
+        walltime = \
+            self._convert_walltime_to_seconds(step.run.get("walltime", 0))
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
