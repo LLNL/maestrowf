@@ -28,7 +28,6 @@
 ###############################################################################
 
 """Flux Scheduler interface implementation."""
-from datetime import datetime
 import logging
 from math import ceil
 import os
@@ -106,14 +105,24 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
-        if not walltime:
-            LOGGER.debug("Encountered inf walltime!")
-            return "inf"
-        # Convert walltime to seconds.
-        LOGGER.debug("Converting %s to seconds...", walltime)
-        wt = \
-            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
-        return int(wt.total_seconds())
+        if isinstance(walltime, int) or isinstance(walltime, float):
+            LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
+            return int(float(walltime) * 60.0)
+        elif ":" in walltime:
+            # Convert walltime to seconds.
+            LOGGER.debug("Converting %s to seconds...", walltime)
+            seconds = 0.0
+            for i, value in enumerate(walltime.split(":")[::-1]):
+                seconds += float(value) * (60.0 ** i)
+            return seconds
+        elif not walltime:
+            return 0
+        else:
+            msg = \
+                f"Walltime value '{walltime}' is not an integer or colon-" \
+                f"separated string."
+            LOGGER.error(msg)
+            raise ValueError(msg)
 
     def get_header(self, step):
         """
@@ -169,11 +178,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
                   identiifer.
         """
-        # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
         force_broker = step.run.get("use_broker", True)
-        walltime = step.run.get("walltime", "inf")
+        walltime = \
+            self._convert_walltime_to_seconds(step.run.get("walltime", 0))
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
