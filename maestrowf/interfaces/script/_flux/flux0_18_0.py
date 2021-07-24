@@ -1,4 +1,3 @@
-from datetime import datetime
 import errno
 import logging
 from math import ceil
@@ -96,10 +95,8 @@ class FluxInterface_0190(FluxInterface):
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
 
-        if walltime and walltime != "inf":
-            seconds = datetime.strptime(walltime, "%H:%M:%S")
-            seconds = seconds - datetime(1900, 1, 1)
-            jobspec.duration = seconds
+        if walltime > 0:
+            jobspec.duration = walltime
 
         jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
         jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
