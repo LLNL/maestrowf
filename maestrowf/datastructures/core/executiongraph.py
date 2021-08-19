@@ -4,8 +4,10 @@ from datetime import datetime
 import getpass
 import logging
 import os
+import random
 import shutil
 import tempfile
+from time import sleep
 from filelock import FileLock, Timeout
 
 from maestrowf.abstracts import PickleInterface
@@ -599,6 +601,7 @@ class ExecutionGraph(DAG, PickleInterface):
             # Increment the number of restarts we've attempted.
             LOGGER.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
+            sleep((random.random() + 1) * num_restarts)
 
         if retcode == SubmissionCode.OK:
             self.in_progress.add(record.name)
