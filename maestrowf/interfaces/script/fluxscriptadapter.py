@@ -183,7 +183,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
-        force_broker = step.run.get("use_broker", True)
+        force_broker = step.run.get("nested", False)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
 
