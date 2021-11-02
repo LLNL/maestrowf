@@ -75,3 +75,13 @@ class StudyStatus(Enum):
     RUNNING = 1    # The Study is currently running
     FAILURE = 2    # The Study has finished, but 1 or more steps failed
     CANCELLED = 3  # The Study has finished, but was cancelled
+
+
+class StepUrgency(Enum):
+    """Scheduler priority for submitted jobs"""
+    HELD = 0
+    MINIMAL = 1
+    LOW = 2
+    MEDIUM = 3
+    HIGH = 4
+    EXPEDITE = 5

@@ -2,6 +2,8 @@ from abc import ABC, abstractclassmethod, abstractmethod, \
     abstractstaticmethod
 import logging
 
+from maestrowf.abstracts.enums import StepUrgency
+
 LOGGER = logging.getLogger(__name__)
 
 try:
@@ -78,7 +80,7 @@ class FluxInterface(ABC):
     @abstractclassmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        npgus=0, job_name=None, force_broker=False
+        npgus=0, job_name=None, force_broker=False, urgency=StepUrgency.MEDIUM
     ):
         """
         Submit a job using this Flux interface's submit API.
@@ -92,6 +94,7 @@ class FluxInterface(ABC):
         :param ngpus: The number of GPUs to request on submission.
         :param job_name: A name string to assign the submitted job.
         :param force_broker: Forces the script to run under a Flux sub-broker.
+        :param urgency: Enumerated scheduling priority for the submitted job.
         :return: A string representing the jobid returned by Flux submit.
         :return: An integer of the return code submission returned.
         :return: SubmissionCode enumeration that reflects result of submission.

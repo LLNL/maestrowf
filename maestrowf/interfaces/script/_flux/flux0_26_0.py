@@ -3,7 +3,7 @@ from math import ceil
 import os
 
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
-    SubmissionCode
+    StepUrgency, SubmissionCode
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -19,11 +19,23 @@ class FluxInterface_0260(FluxInterface):
     key = "0.26.0"
 
     flux_handle = None
+    _urgencies = {
+        StepUrgency.HELD:     1,
+        StepUrgency.MINIMAL:  2,
+        StepUrgency.LOW:      9,
+        StepUrgency.MEDIUM:   16,
+        StepUrgency.HIGH:     24,
+        StepUrgency.EXPEDITE: 31,
+    }
+
+    @classmethod
+    def _get_flux_urgency(cls, urgency: StepUrgency) -> int:
+        return cls._urgencies[urgency]
 
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=True
+        ngpus=0, job_name=None, force_broker=True, urgency=StepUrgency.MEDIUM
     ):
         try:
             cls.connect_to_flux()
@@ -66,8 +78,10 @@ class FluxInterface_0260(FluxInterface):
             jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
 
             # Submit our job spec.
-            jobid = \
-                flux.job.submit(cls.flux_handle, jobspec, waitable=True)
+            jobid = flux.job.submit(
+                cls.flux_handle, jobspec, waitable=True,
+                urgency=cls._get_flux_urgency(urgency)
+            )
             submit_status = SubmissionCode.OK
             retcode = 0
 
