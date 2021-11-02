@@ -108,6 +108,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if isinstance(walltime, int) or isinstance(walltime, float):
             LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
             return int(float(walltime) * 60.0)
+        elif isinstance(walltime, str) and walltime.isdigit():
+            LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
+            return int(float(walltime) * 60.0)
         elif ":" in walltime:
             # Convert walltime to seconds.
             LOGGER.debug("Converting %s to seconds...", walltime)
@@ -115,7 +118,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             for i, value in enumerate(walltime.split(":")[::-1]):
                 seconds += float(value) * (60.0 ** i)
             return seconds
-        elif not walltime:
+        elif not walltime or (isinstance(walltime, str) and walltime == "inf"):
             return 0
         else:
             msg = \
