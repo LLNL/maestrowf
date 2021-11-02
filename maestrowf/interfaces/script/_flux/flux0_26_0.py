@@ -35,7 +35,7 @@ class FluxInterface_0260(FluxInterface):
             # for a single node, don't use a broker -- but introduce a flag
             # that can force a single node to run in a broker.
 
-            if force_broker or nodes > 1:
+            if force_broker:
                 LOGGER.debug(
                     "Launch under Flux sub-broker. [force_broker=%s, "
                     "nodes=%d]", force_broker, nodes
