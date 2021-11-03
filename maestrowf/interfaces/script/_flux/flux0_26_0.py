@@ -20,8 +20,8 @@ class FluxInterface_0260(FluxInterface):
 
     flux_handle = None
     _urgencies = {
-        StepUrgency.HELD:     1,
-        StepUrgency.MINIMAL:  2,
+        StepUrgency.HELD:     0,
+        StepUrgency.MINIMAL:  1,
         StepUrgency.LOW:      9,
         StepUrgency.MEDIUM:   16,
         StepUrgency.HIGH:     24,
