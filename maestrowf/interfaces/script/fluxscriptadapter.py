@@ -108,7 +108,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if isinstance(walltime, int) or isinstance(walltime, float):
             LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
             return int(float(walltime) * 60.0)
-        elif isinstance(walltime, str) and walltime.isdigit():
+        elif isinstance(walltime, str) and walltime.isnumeric():
             LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
             return int(float(walltime) * 60.0)
         elif ":" in walltime:
