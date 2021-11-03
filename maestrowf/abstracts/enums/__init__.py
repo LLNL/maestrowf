@@ -28,9 +28,12 @@
 ###############################################################################
 
 """Package for providing enumerations for interfaces"""
+from __future__ import annotations
 from enum import Enum
 
-__all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
+__all__ = (
+    "JobStatusCode", "State", "SubmissionCode", "StepUrgency", "StudyStatus"
+)
 
 
 class SubmissionCode(Enum):
@@ -85,3 +88,20 @@ class StepUrgency(Enum):
     MEDIUM = 3
     HIGH = 4
     EXPEDITE = 5
+
+    @classmethod
+    def from_str(cls, urgency: str) -> StepUrgency:
+        _urgency = urgency.lower()
+
+        if _urgency == "held":
+            return cls.HELD
+        if _urgency == "minimal":
+            return cls.MINIMAL
+        if _urgency == "medium":
+            return cls.MEDIUM
+        if _urgency == "high":
+            return cls.HIGH
+        if _urgency == "expedite":
+            return cls.EXPEDITE
+
+        raise ValueError(f"Urgency '{urgency}' not valid.")
