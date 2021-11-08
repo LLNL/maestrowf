@@ -146,8 +146,8 @@ def apply_function(item, func):
     else:
         msg = "Encountered an object of type '{}'. Expected a str, list, int" \
               ", or dict.".format(type(item))
-        LOGGER.error(msg)
-        raise ValueError(msg)
+        LOGGER.warning(msg)
+        # raise ValueError(msg)
 
 
 def csvtable_to_dict(fstream):
