@@ -72,15 +72,14 @@
             ]},
           "nested": {"type": "boolean"},
           "urgency": {
-            "type": "string",
-            "enum": [
-              "HELD",
-              "MINIMAL",
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "EXPEDITED"
-            ]},
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["HELD", "MINIMAL", "LOW", "MEDIUM", "HIGH", "EXPEDITED"]
+              },
+              {"type": "number", "minimum": 0.0, "maximum": 1.0}
+            ]
+          },
           "qos": {"type": "string", "minLength": 1}
         },
         "additionalProperties": false,
