@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 
-from maestrowf.abstracts.enums import StepUrgency
+from maestrowf.abstracts.enums import StepPriority
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class FluxInterface(ABC):
         """
         Map a fixed enumeration or floating point priority to a Flux urgency.
 
-        :param priority: Float or StepUrgency enum representing priorty.
+        :param priority: Float or StepPriority enum representing priorty.
         :returns: An integery mapping the urgency parameter to a Flux urgency.
         """
         raise NotImplementedError()
@@ -97,7 +97,7 @@ class FluxInterface(ABC):
     @abstractmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        npgus=0, job_name=None, force_broker=False, urgency=StepUrgency.MEDIUM
+        npgus=0, job_name=None, force_broker=False, urgency=StepPriority.MEDIUM
     ):
         """
         Submit a job using this Flux interface's submit API.

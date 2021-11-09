@@ -34,7 +34,7 @@ import os
 import re
 
 from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
-from maestrowf.abstracts.enums import JobStatusCode, CancelCode, StepUrgency
+from maestrowf.abstracts.enums import JobStatusCode, CancelCode, StepPriority
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord, \
     FluxFactory
 
@@ -185,10 +185,10 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         force_broker = step.run.get("nested", False)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
-        urgency = step.run.get("urgency", "medium")
+        urgency = step.run.get("priority", "medium")
 
         if isinstance(urgency, str):
-            urgency = self.get_priority(StepUrgency.from_str(urgency))
+            urgency = self.get_priority(StepPriority.from_str(urgency))
         urgency = self.get_priority(urgency)
 
         # Compute cores per task

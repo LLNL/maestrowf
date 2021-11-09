@@ -32,7 +32,7 @@ from __future__ import annotations
 from enum import Enum
 
 __all__ = (
-    "JobStatusCode", "State", "SubmissionCode", "StepUrgency", "StudyStatus"
+    "JobStatusCode", "State", "SubmissionCode",  "StepPriority", "StudyStatus"
 )
 
 
@@ -80,7 +80,7 @@ class StudyStatus(Enum):
     CANCELLED = 3  # The Study has finished, but was cancelled
 
 
-class StepUrgency(Enum):
+class StepPriority(Enum):
     """Scheduler priority for submitted jobs"""
     HELD = 0
     MINIMAL = 1
@@ -90,18 +90,18 @@ class StepUrgency(Enum):
     EXPEDITE = 5
 
     @classmethod
-    def from_str(cls, urgency: str) -> StepUrgency:
-        _urgency = urgency.lower()
+    def from_str(cls, priority: str) -> StepPriority:
+        _priority = priority.lower()
 
-        if _urgency == "held":
+        if _priority == "held":
             return cls.HELD
-        if _urgency == "minimal":
+        if _priority == "minimal":
             return cls.MINIMAL
-        if _urgency == "medium":
+        if _priority == "medium":
             return cls.MEDIUM
-        if _urgency == "high":
+        if _priority == "high":
             return cls.HIGH
-        if _urgency == "expedite":
+        if _priority == "expedite":
             return cls.EXPEDITE
 
-        raise ValueError(f"Urgency '{urgency}' not valid.")
+        raise ValueError(f"Priority '{priority}' not valid.")

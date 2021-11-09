@@ -335,7 +335,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
         """
         Map a fixed enumeration or floating point priority to a batch priority.
 
-        :param priority: Float or StepUrgency enum representing priorty.
+        :param priority: Float or StepPriority enum representing priorty.
         :returns: A string, integer, or float value representing the mapped
         priority to the batch scheduler.
         """

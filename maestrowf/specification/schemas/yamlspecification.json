@@ -71,7 +71,7 @@
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
           "nested": {"type": "boolean"},
-          "urgency": {
+          "priority": {
             "anyOf": [
               {
                 "type": "string",

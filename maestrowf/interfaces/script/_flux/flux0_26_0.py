@@ -3,7 +3,7 @@ from math import ceil
 import os
 
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
-    StepUrgency, SubmissionCode
+    StepPriority, SubmissionCode
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -20,17 +20,17 @@ class FluxInterface_0260(FluxInterface):
 
     flux_handle = None
     _urgencies = {
-        StepUrgency.HELD:     0,
-        StepUrgency.MINIMAL:  1,
-        StepUrgency.LOW:      9,
-        StepUrgency.MEDIUM:   16,
-        StepUrgency.HIGH:     24,
-        StepUrgency.EXPEDITE: 31,
+        StepPriority.HELD:     0,
+        StepPriority.MINIMAL:  1,
+        StepPriority.LOW:      9,
+        StepPriority.MEDIUM:   16,
+        StepPriority.HIGH:     24,
+        StepPriority.EXPEDITE: 31,
     }
 
     @classmethod
     def get_flux_urgency(cls, urgency) -> int:
-        if isinstance(urgency, StepUrgency):
+        if isinstance(urgency, StepPriority):
             return cls._urgencies[urgency]
         else:
             return ceil(float(urgency) * 31)
@@ -38,7 +38,7 @@ class FluxInterface_0260(FluxInterface):
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=True, urgency=StepUrgency.MEDIUM
+        ngpus=0, job_name=None, force_broker=True, urgency=StepPriority.MEDIUM
     ):
         try:
             cls.connect_to_flux()
