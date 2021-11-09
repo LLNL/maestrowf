@@ -96,8 +96,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.h = None
         # Store the interface we're using
         _version = kwargs.pop("version", FluxFactory.latest)
-        self.add_batch_parameter(
-            "version", _version)
+        self.add_batch_parameter("version", _version)
         self._interface = FluxFactory.get_interface(_version)
 
     @property
@@ -186,7 +185,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         force_broker = step.run.get("nested", False)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
-        urgency = StepUrgency.from_str(step.run.get("urgency", "medium"))
+        urgency = step.run.get("urgency", "medium")
+
+        if isinstance(urgency, str):
+            urgency = self.get_priority(StepUrgency.from_str(urgency))
+        urgency = self.get_priority(urgency)
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
@@ -329,3 +332,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    def get_priority(self, priority):
+        return self._interface.get_flux_urgency(priority)
