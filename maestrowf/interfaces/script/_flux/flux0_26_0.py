@@ -29,8 +29,11 @@ class FluxInterface_0260(FluxInterface):
     }
 
     @classmethod
-    def _get_flux_urgency(cls, urgency: StepUrgency) -> int:
-        return cls._urgencies[urgency]
+    def get_flux_urgency(cls, urgency) -> int:
+        if isinstance(urgency, StepUrgency):
+            return cls._urgencies[urgency]
+        else:
+            return ceil(float(urgency) * 31)
 
     @classmethod
     def submit(

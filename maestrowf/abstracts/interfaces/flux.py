@@ -1,5 +1,4 @@
-from abc import ABC, abstractclassmethod, abstractmethod, \
-    abstractstaticmethod
+from abc import ABC, abstractmethod
 import logging
 
 from maestrowf.abstracts.enums import StepUrgency
@@ -47,7 +46,19 @@ class FluxInterface(ABC):
             except ImportError:
                 pass
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
+    def get_flux_urgency(cls, urgency) -> int:
+        """
+        Map a fixed enumeration or floating point priority to a Flux urgency.
+
+        :param priority: Float or StepUrgency enum representing priorty.
+        :returns: An integery mapping the urgency parameter to a Flux urgency.
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    @abstractmethod
     def get_statuses(cls, joblist):
         """
         Return the statuses from a given Flux handle and joblist.
@@ -55,8 +66,10 @@ class FluxInterface(ABC):
         :param joblist: A list of jobs to check the status of.
         :return: A dictionary of job identifiers to statuses.
         """
+        ...
 
-    @abstractstaticmethod
+    @classmethod
+    @abstractmethod
     def state(state):
         """
         Map a scheduler specific job state to a Study.State enum.
@@ -65,8 +78,10 @@ class FluxInterface(ABC):
         :param state: A string of the state returned by Flux
         :return: The mapped Study.State enumeration
         """
+        ...
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def parallelize(cls, procs, nodes=None, **kwargs):
         """
         Create a parallelized Flux command for launching.
@@ -76,8 +91,10 @@ class FluxInterface(ABC):
         :param kwargs: Extra keyword arguments.
         :return: A string of a Flux MPI command.
         """
+        ...
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
         npgus=0, job_name=None, force_broker=False, urgency=StepUrgency.MEDIUM
@@ -99,8 +116,10 @@ class FluxInterface(ABC):
         :return: An integer of the return code submission returned.
         :return: SubmissionCode enumeration that reflects result of submission.
         """
+        ...
 
-    @abstractclassmethod
+    @classmethod
+    @abstractmethod
     def cancel(cls, joblist):
         """
         Cancel a job using this Flux interface's cancellation API.
@@ -108,6 +127,7 @@ class FluxInterface(ABC):
         :param joblist: A list of job identifiers to cancel.
         :return: CancelCode enumeration that reflects result of cancellation.
         """
+        ...
 
     @property
     @abstractmethod
@@ -120,3 +140,4 @@ class FluxInterface(ABC):
 
         :return: A string of the name of a FluxInterface class.
         """
+        ...
