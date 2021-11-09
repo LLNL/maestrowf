@@ -330,3 +330,13 @@ class SchedulerScriptAdapter(ScriptAdapter):
         :returns: A Study.State enum corresponding to parameter job_state.
         """
         pass
+
+    def get_priority(self, priority):
+        """
+        Map a fixed enumeration or floating point priority to a batch priority.
+
+        :param priority: Float or StepUrgency enum representing priorty.
+        :returns: A string, integer, or float value representing the mapped
+        priority to the batch scheduler.
+        """
+        raise NotImplementedError()
