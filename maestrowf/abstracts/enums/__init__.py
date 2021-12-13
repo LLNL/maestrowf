@@ -28,7 +28,6 @@
 ###############################################################################
 
 """Package for providing enumerations for interfaces"""
-from __future__ import annotations
 from enum import Enum
 
 __all__ = (
@@ -90,7 +89,7 @@ class StepPriority(Enum):
     EXPEDITE = 5
 
     @classmethod
-    def from_str(cls, priority: str) -> StepPriority:
+    def from_str(cls, priority):
         _priority = priority.lower()
 
         if _priority == "held":
