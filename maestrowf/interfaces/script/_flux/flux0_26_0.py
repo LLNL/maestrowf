@@ -30,9 +30,15 @@ class FluxInterface_0260(FluxInterface):
 
     @classmethod
     def get_flux_urgency(cls, urgency) -> int:
+        if isinstance(urgency, str):
+            LOGGER.debug("Found string urgency: %s", urgency)
+            urgency = StepPriority.from_str(urgency)
+
         if isinstance(urgency, StepPriority):
+            LOGGER.debug("StepUrgency urgency of '%s' given..", urgency)
             return cls._urgencies[urgency]
         else:
+            LOGGER.debug("Float urgency of '%s' given..", urgency)
             return ceil(float(urgency) * 31)
 
     @classmethod
@@ -83,7 +89,7 @@ class FluxInterface_0260(FluxInterface):
             # Submit our job spec.
             jobid = flux.job.submit(
                 cls.flux_handle, jobspec, waitable=True,
-                urgency=cls._get_flux_urgency(urgency)
+                urgency=urgency
             )
             submit_status = SubmissionCode.OK
             retcode = 0
