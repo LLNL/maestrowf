@@ -75,7 +75,11 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["held", "minimal", "low", "medium", "high", "expedited"]
+                "enum": [
+                  "HELD", "MINIMAL", "LOW", "MEDIUM", "HIGH", "EXPEDITED",
+                  "held", "minimal", "low", "medium", "high", "expedited",
+                  "Held", "Minimal", "Low", "Medium", "High", "Expedited"
+                ]
               },
               {"type": "number", "minimum": 0.0, "maximum": 1.0}
             ]
