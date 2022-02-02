@@ -240,7 +240,9 @@ If you change into this directory, you'll see that a similar set of files to the
 
 Now, if we start with our parameterized hello world specification, we add the "bye_world" step and make it dependent on the "hello_world" step. You should also update the description and study name to something meaningful for the new study.
 
-.. code-block:: YAML
+.. code-block:: yaml
+   :linenos:
+
     description:
         name: hello_bye_parameterized
         description: A study that says hello and bye to multiple people.
@@ -274,6 +276,7 @@ Now, if we start with our parameterized hello world specification, we add the "b
 The study workspace looks the same as the "hello_bye_world" study specified above at the top level;  however, like the multi-parameterized "hello_world" study you'll see that each step's workspaces have parameterized folders. The "hello_world" step has the same workspace set up as the previous parameterized study as expected.
 
 .. code-block:: bash
+
     drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Ciao.NAME.Jim
     drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Hello.NAME.Pam
     drwxr-xr-x  6 frank  staff   192B Jun 25 22:33 GREETING.Hey.NAME.Michael

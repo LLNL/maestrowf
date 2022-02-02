@@ -48,7 +48,8 @@ ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
 LOGGER = logging.getLogger(__name__)
 
 # Formatting of logger.
-LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
+LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
+          "%(levelname)s - %(message)s"
 
 
 def setup_logging(name, output_path, log_lvl=2, log_path=None,
@@ -104,13 +105,13 @@ def setup_parser():
     # Set up the parser for our conductor here.
     parser = ArgumentParser(prog="Conductor",
                             description="An application for checking and "
-                            "managing an ExecutionDAG within an executing"
+                            "managing an ExecutionDAG within an executing "
                             "study.",
                             formatter_class=RawTextHelpFormatter)
 
-    parser.add_argument("directory", type=str, help="The directory where"
-                        "a study has been set up and where a pickle file"
-                        " of an ExecutionGraph is stored.")
+    parser.add_argument("directory", type=str, help="The directory where "
+                        "a study has been set up and where a pickle file "
+                        "of an ExecutionGraph is stored.")
     parser.add_argument("-s", "--status", action="store_true",
                         help="Check the status of the ExecutionGraph "
                         "located as specified by the 'directory' "
@@ -227,7 +228,6 @@ class Conductor:
         study_glob = \
             glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
 
-        print(study_glob)
         if len(study_glob) == 1:
             # We only expect one result.If we only get one, let's assume and
             # check after.
@@ -295,7 +295,7 @@ class Conductor:
 
         :param batch_info: A dict containing batch information.
         :param sleeptime: The amount of sleep time between polling loops
-        [Default: 60s].
+                          [Default: 60s].
         """
         # Set our conductor's sleep time.
         self.sleep_time = sleeptime
@@ -348,7 +348,7 @@ class Conductor:
 
             LOGGER.info("Checking DAG status at %s", str(datetime.now()))
             # Execute steps that are ready
-            # Recieves StudyStatus enum
+            # Receives StudyStatus enum
             completion_status = dag.execute_ready_steps()
             # Re-pickle the ExecutionGraph.
             dag.pickle(pkl_path)

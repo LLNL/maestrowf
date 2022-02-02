@@ -60,10 +60,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         The expected keyword arguments that are expected when the Slurm adapter
         is instantiated are as follows:
-        - host: The cluster to execute scripts on.
-        - bank: The account to charge computing time to.
-        - queue: Scheduler queue scripts should be submitted to.
-        - tasks: The number of compute nodes to be reserved for computing.
+        * host: The cluster to execute scripts on.
+        * bank: The account to charge computing time to.
+        * queue: Scheduler queue scripts should be submitted to.
+        * tasks: The number of compute nodes to be reserved for computing.
 
         :param **kwargs: A dictionary with default settings for the adapter.
         """
@@ -75,8 +75,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        reservation = kwargs.get("reservation", None)
+        if reservation:
+            self.add_batch_parameter("reservation", reservation)
 
-        self._exec = "#!/bin/bash"
         self._header = {
             "nodes": "#BSUB -nnodes {nodes}",
             "queue": "#BSUB -q {queue}",
@@ -84,6 +86,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "walltime": "#BSUB -W {walltime}",
             "job-name": "#BSUB -J {job-name}",
             "output": "#BSUB -o {output}",
+            "reservation": "#BSUB -U {reservation}",
             "error": "#BSUB -e {error}",
         }
 
@@ -95,24 +98,33 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "reservation":  "-J",
         }
 
+        self._extension = "lsf.sh"
+
     def get_header(self, step):
         """
         Generate the header present at the top of LSF execution scripts.
 
         :param step: A StudyStep instance.
         :returns: A string of the header based on internal batch parameters and
-        the parameter step.
+                  the parameter step.
         """
-        run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
+        batch_header["nodes"] = step.run.get("nodes", self._batch["nodes"])
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["output"] = "{}.%J.out".format(batch_header["job-name"])
         batch_header["error"] = "{}.%J.err".format(batch_header["job-name"])
 
+        # Updte the batch header with the values from the step's resources
+        batch_header.update(
+            {
+                resource: value for (resource, value) in step.run.items()
+                if value
+            }
+        )
+
         # LSF requires an hour and minutes format. We need to attempt to split
         # and correct if we get something that's coming in as HH:MM:SS
-        walltime = run.pop("walltime")
+        walltime = step.run.get("walltime")
         wt_split = walltime.split(":")
         if len(wt_split) == 3:
             # If wall time is specified in three parts, we'll just calculate
@@ -126,9 +138,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         batch_header["walltime"] = walltime
 
-        modified_header = [self._exec]
+        modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
-            modified_header.append(value.format(**batch_header))
+            if key in batch_header:
+                modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
 
@@ -138,9 +151,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         :param procs: Number of processors to allocate to the parallel call.
         :param nodes: Number of nodes to allocate to the parallel call
-        (default = 1).
+                      (default = 1).
         :returns: A string of the parallelize command configured using nodes
-        and procs.
+                  and procs.
         """
         args = [self._cmd_flags["cmd"]]
 
@@ -153,7 +166,9 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         else:
             _nodes = 1
 
-        _procs = int(procs/_nodes)  # Compute the number of CPUs per node (rs)
+        # Compute the number of CPUs per node (rs)
+        _procs = int(procs)/int(_nodes)
+
         # Processors segment
         args += [
             self._cmd_flags["ntasks"].format(procs=_procs)
@@ -177,19 +192,12 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :param path: Local path to the script to be executed.
         :param cwd: Path to the current working directory.
         :param job_map: A dictionary mapping step names to their job
-        identifiers.
+                        identifiers.
         :param env: A dict containing a modified environment for execution.
         :returns: The return status of the submission command and job
-        identiifer.
+                  identiifer.
         """
         args = ["bsub"]
-
-        if "reservation" in self._batch:
-            args += [
-                "-U",
-                self._batch["reservation"]
-            ]
-
         args += ["-cwd", cwd, "<", path]
         cmd = " ".join(args)
         LOGGER.debug("cwd = %s", cwd)
@@ -221,7 +229,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
-        identifiers to their status.
+                  identifiers to their status.
         """
         # TODO: This method needs to be updated to use sacct.
         # squeue options:
@@ -376,12 +384,12 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :param ws_path: Path to the workspace directory of the step.
         :param step: An instance of a StudyStep.
         :returns: Boolean value (True if to be scheduled), the path to the
-        written script for run["cmd"], and the path to the script written for
-        run["restart"] (if it exists).
+                  written script for run["cmd"], and the path to the script
+                  written for run["restart"] (if it exists).
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
-        fname = "{}.lsf.cmd".format(step.name)
+        fname = "{}.{}".format(step.name, self._extension)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             if to_be_scheduled:
@@ -393,7 +401,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if restart:
-            rname = "{}.restart.lsf.cmd".format(step.name)
+            rname = "{}.restart.{}".format(step.name, self._extension)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
@@ -408,3 +416,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension

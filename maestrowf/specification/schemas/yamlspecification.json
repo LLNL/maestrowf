@@ -37,12 +37,41 @@
           "pre": {"type": "string", "minLength": 1},
           "post": {"type": "string", "minLength": 1},
           "restart": {"type": "string", "minLength": 1},
-          "nodes": {"type": "integer"},
-          "procs": {"type": "integer"},
-          "gpus": {"type": "integer"},
-          "cores per task": {"type": "integer"},
-          "walltime": {"type": "string", "minLength": 1},
-          "reservation": {"type": "string", "minLength": 1}
+          "nodes": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]
+          },
+          "procs": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "gpus": {
+            "anyOf": [
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "cores per task": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "walltime": {
+            "anyOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "reservation": {"type": "string", "minLength": 1},
+          "exclusive": {
+            "anyOf": [
+              {"type": "boolean"},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "use_broker": {"type": "boolean"},
+          "qos": {"type": "string", "minLength": 1}
         },
         "additionalProperties": false,
         "required": [
@@ -60,7 +89,17 @@
   "ENV": {
     "type": "object",
     "properties": {
-      "variables": {"type": "object"},
+      "variables": {
+        "type": "object",
+        "patternProperties": {
+          "^.*": {
+            "anyOf": [
+                {"type": "string", "minLength": 1},
+                {"type": "number"}
+            ]
+          }
+        }
+      },
       "labels": {"type": "object"},
       "sources": {"type": "array"},
       "dependencies": {
