@@ -429,7 +429,7 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                     step_procs = int(step_procs)
             except ValueError:
                 step_procs = 1
-                LOGGER.error("Starting step {} with no 'procs' attribute with 1 processor.".format(_record.step.name))
+                LOGGER.error("Starting step {} with no 'procs' attribute with 1 processor.".format(step.name))
 
             self.avail_procs -= step_procs
 
