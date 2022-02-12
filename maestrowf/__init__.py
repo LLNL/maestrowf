@@ -37,6 +37,7 @@ abstracts, base class abstracts, and general utilities.
 from abc import ABCMeta, abstractmethod
 import inspect
 from io import StringIO
+from collections import OrderedDict, defaultdict
 
 import logging
 import sys
@@ -262,6 +263,108 @@ class FlatStatusRenderer(BaseStatusRenderer):
         _printer.print(self._status_table)
 
         return _printer.file.getvalue()
+
+
+class SummaryStatusRenderer(FlatStatusRenderer):
+    """Flat, simple table layout"""
+
+    layout_type = "summary"        # Defines name in factory/cli
+
+    def __init__(self, *args, **kwargs):
+        super(SummaryStatusRenderer, self).__init__(*args, **kwargs)
+
+        # Setup default theme
+        self._theme_dict = {
+            "State": "bold red",
+            "Step Prefix": "blue",
+            "Count": "blue",
+            "row_style": "none",
+            "row_style_dim": "dim",
+            "col_style_1": "",
+            "col_style_2": "blue",
+            "bgcolor": "grey7",
+            "color": ""
+        }
+
+    def layout(self, status_data, study_title=None, filter_dict=None):
+        """Setup concrete status layout
+
+        Lays out the table data in a formatted string, storing it
+        in renderer's `_status_table` attribute.
+
+        Args:
+            status_data (dict): study status dict, one column per key
+            study_title (str): optional title of this study
+            filter_dict (dict): optional data filter (not yet implemented)
+        """
+
+        # Ensure status data is of type dict and isn't empty
+        if not (isinstance(status_data, dict) and status_data):
+            raise ValueError("Status data required to layout a table")
+
+        """Construct the summary dictionary"""
+        summary_data = OrderedDict()
+        summary_data["Step Prefix"] = []
+        summary_data["State"] = []
+        summary_data["Count"] = []
+        prefix_set = set()
+        for step_name in status_data["Step Name"]:
+            prefix_set.add(step_name.split("-")[0])
+        for step_prefix in sorted(list(prefix_set)):
+            state_count = defaultdict(int)
+            for step_name, state in zip(status_data["Step Name"], status_data["State"]):
+                if step_name.split("-")[0] == step_prefix:
+                    state_count[state] += 1
+            for state in sorted(list(state_count.keys())):
+                summary_data["Step Prefix"].append(step_prefix)
+                summary_data["State"].append(state)
+                summary_data["Count"].append(state_count[state])
+        self._status_data = summary_data
+
+        """Construct the Rich Table object"""
+
+        self._status_table = Table()
+        if study_title:
+            self._status_table.title = "Study: {}".format(study_title)
+
+        # Apply any filters: TODO
+
+        cols = list(self._status_data.keys())
+
+        # Some temporary simple filters to exclude params col in this layout
+        col_filters = ['Params']
+
+        cols = [col for col in cols if col not in col_filters]
+
+        # Setup the column styles
+        for nominal_col_num, col in enumerate(cols):
+
+            if col in list(self._theme_dict.keys()):
+                col_style = col
+            else:
+                if nominal_col_num % 2 == 0:
+                    col_style = 'col_style_1'
+                else:
+                    col_style = 'col_style_2'
+
+            self._status_table.add_column(col,
+                                          style=col_style,
+                                          overflow="fold")
+
+        num_rows = len(self._status_data[cols[0]])
+
+        # Alternate dim rows to differentiate them better
+        for row in range(num_rows):
+            if row % 2 == 0:
+                row_style = 'dim'
+            else:
+                row_style = 'none'
+
+            self._status_table.add_row(
+                *['{}'.format(self._status_data[key][row])
+                  for key in cols],
+                style=row_style
+            )
 
 
 class NarrowStatusRenderer(BaseStatusRenderer):
