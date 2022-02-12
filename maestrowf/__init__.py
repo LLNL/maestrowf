@@ -266,7 +266,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
 
 
 class SummaryStatusRenderer(FlatStatusRenderer):
-    """Flat, simple table layout"""
+    """Flat, simple summary table layout"""
 
     layout_type = "summary"        # Defines name in factory/cli
 
@@ -274,17 +274,10 @@ class SummaryStatusRenderer(FlatStatusRenderer):
         super(SummaryStatusRenderer, self).__init__(*args, **kwargs)
 
         # Setup default theme
-        self._theme_dict = {
-            "State": "bold red",
-            "Step Prefix": "blue",
-            "Count": "blue",
-            "row_style": "none",
-            "row_style_dim": "dim",
-            "col_style_1": "",
-            "col_style_2": "blue",
-            "bgcolor": "grey7",
-            "color": ""
-        }
+        self._theme_dict["State"] = "blue"
+        self._theme_dict["Step Prefix"] = "bold red"
+        self._theme_dict["Count"] = "blue"
+
 
     def layout(self, status_data, study_title=None, filter_dict=None):
         """Setup concrete status layout
