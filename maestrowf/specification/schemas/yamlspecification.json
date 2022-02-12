@@ -58,13 +58,20 @@
               {"type": "integer", "minimum": 1},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
-          "walltime": {"type": "string", "minLength": 1},
+          "walltime": {
+            "anyOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
           "reservation": {"type": "string", "minLength": 1},
           "exclusive": {
             "anyOf": [
               {"type": "boolean"},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
-            ]}
+            ]},
+          "use_broker": {"type": "boolean"},
+          "qos": {"type": "string", "minLength": 1}
         },
         "additionalProperties": false,
         "required": [

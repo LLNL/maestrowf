@@ -1,3 +1,4 @@
+
 ###############################################################################
 # Copyright (c) 2017, Lawrence Livermore National Security, LLC.
 # Produced at the Lawrence Livermore National Laboratory
@@ -134,7 +135,6 @@ class SchedulerScriptAdapter(ScriptAdapter):
         addl_args.pop("procs")
 
         LOGGER.debug("nodes=%s; procs=%s", nodes, procs)
-        LOGGER.debug("step_cmd=%s", step_cmd)
         # See if the command contains a launcher token in it.
         alloc_search = list(re.finditer(self.launcher_regex, step_cmd))
         if alloc_search:
@@ -245,14 +245,11 @@ class SchedulerScriptAdapter(ScriptAdapter):
             pcmd = self.get_parallelize_command(procs, nodes, **addl_args)
             # Catch the case where the launcher token appears on its own
             if self.launcher_var in step_cmd:
-                LOGGER.debug("'%s' found in cmd -- %s",
-                             self.launcher_var, step_cmd)
+                LOGGER.debug(
+                    "'%s' found in cmd. Substituting", self.launcher_var)
                 return step_cmd.replace(self.launcher_var, pcmd)
             else:
-                LOGGER.debug(
-                    "The command did not specify an MPI command. cmd=%s",
-                    step_cmd
-                )
+                LOGGER.debug("The command did not specify an MPI command.")
                 return step_cmd
 
     def get_scheduler_command(self, step):

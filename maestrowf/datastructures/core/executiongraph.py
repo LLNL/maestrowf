@@ -4,8 +4,10 @@ from datetime import datetime
 import getpass
 import logging
 import os
+import random
 import shutil
 import tempfile
+from time import sleep
 from filelock import FileLock, Timeout
 
 from maestrowf.abstracts import PickleInterface
@@ -64,6 +66,23 @@ class _StepRecord:
         self._start_time = None
         self._end_time = None
         self.status = kwargs.get("status", State.INITIALIZED)
+
+        # Parameter info
+        self._params = None
+
+    def add_params(self, params):
+        """
+        Attaches param names/values used in this step
+
+        :param params: Iterable of tuples of param names, values
+        """
+        self._params = {param: value for param, value in params}
+
+    @property
+    def params(self):
+        if not self._params:
+            self._params = {}
+        return self._params
 
     def setup_workspace(self):
         """Initialize the record's workspace."""
@@ -333,6 +352,9 @@ class ExecutionGraph(DAG, PickleInterface):
         self.ready_steps = deque()
         self.is_canceled = False
 
+        self._status_order = 'bfs'  # Set status order type
+        self._status_subtree = None  # Cache bfs_subtree for status writing
+
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
         self._submission_attempts = submission_attempts
@@ -376,7 +398,7 @@ class ExecutionGraph(DAG, PickleInterface):
         if self._tmp_dir and not os.path.exists(self._tmp_dir):
             self._tmp_dir = tempfile.mkdtemp()
 
-    def add_step(self, name, step, workspace, restart_limit):
+    def add_step(self, name, step, workspace, restart_limit, params=None):
         """
         Add a StepRecord to the ExecutionGraph.
 
@@ -384,6 +406,7 @@ class ExecutionGraph(DAG, PickleInterface):
         :param step: StudyStep instance to be recorded.
         :param workspace: Directory path for the step's working directory.
         :param restart_limit: Upper limit on the number of restart attempts.
+        :param params: Iterable of tuples of step parameter names, values
         """
         data = {
                     "step":          step,
@@ -392,6 +415,9 @@ class ExecutionGraph(DAG, PickleInterface):
                     "restart_limit": restart_limit,
                 }
         record = _StepRecord(**data)
+        if params:
+            record.add_params(params)
+
         self._dependencies[name] = set()
         super(ExecutionGraph, self).add_node(name, record)
 
@@ -575,6 +601,7 @@ class ExecutionGraph(DAG, PickleInterface):
             # Increment the number of restarts we've attempted.
             LOGGER.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
+            sleep((random.random() + 1) * num_restarts)
 
         if retcode == SubmissionCode.OK:
             self.in_progress.add(record.name)
@@ -599,25 +626,51 @@ class ExecutionGraph(DAG, PickleInterface):
         LOGGER.debug("After execution of '%s' -- New state is %s.",
                      record.name, record.status)
 
+    @property
+    def status_subtree(self):
+        """Cache the status ordering to improve scaling"""
+        if not self._status_subtree:
+            if self._status_order == 'bfs':
+                subtree, _ = self.bfs_subtree("_source")
+
+            elif self._status_order == 'dfs':
+                subtree, _ = self.dfs_subtree("_source", par="_source")
+
+            self._status_subtree = [key for key in subtree
+                                    if key != '_source']
+
+        return self._status_subtree
+
     def write_status(self, path):
         """Write the status of the DAG to a CSV file."""
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
-                 "Start Time,Submit Time,End Time,Number Restarts"
+                 "Start Time,Submit Time,End Time,Number Restarts,Params"
         status = [header]
-        keys = set(self.values.keys()) - set(["_source"])
-        for key in keys:
+
+        for key in self.status_subtree:
             value = self.values[key]
 
             jobid_str = "--"
             if value.jobid:
                 jobid_str = str(value.jobid[-1])
 
+            # Include step root in workspace when parameterized
+            if list(value.params.items()):
+                ws = os.path.join(
+                    * os.path.normpath(
+                        value.workspace.value).split(os.sep)[-2:]
+                )
+            else:
+                ws = os.path.split(value.workspace.value)[1]
+
             _ = [
                     value.name, jobid_str,
-                    os.path.split(value.workspace.value)[1],
+                    ws,
                     str(value.status.name), value.run_time, value.elapsed_time,
                     value.time_start, value.time_submitted, value.time_end,
-                    str(value.restarts)
+                    str(value.restarts),
+                    ";".join(["{}:{}".format(param, value)
+                              for param, value in value.params.items()])
                 ]
             _ = ",".join(_)
             status.append(_)
@@ -714,7 +767,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
                 elif status == State.RUNNING:
                     # When detect that a step is running, mark it.
-                    LOGGER.info("Step '%s' found to be running.")
+                    LOGGER.info("Step '%s' found to be running.", record.name)
                     record.mark_running()
 
                 elif status == State.TIMEDOUT:

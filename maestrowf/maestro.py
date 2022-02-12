@@ -35,10 +35,10 @@ import os
 import shutil
 import six
 import sys
-import tabulate
+# import tabulate
 import time
 
-from maestrowf import __version__
+from maestrowf import __version__, status_renderer_factory
 from maestrowf.conductor import Conductor
 from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
@@ -67,25 +67,35 @@ def status_study(args):
     directory_list = args.directory
 
     if directory_list:
-        header_format = "".ljust(150, "=")
 
         for path in directory_list:
             abs_path = os.path.abspath(path)
 
-            print(header_format)
-            print(abs_path)
-            print(header_format)
-
             status = Conductor.get_status(abs_path)
+            status_layout = args.layout
+
             if status:
-                print(tabulate.tabulate(status, headers="keys"))
+                try:
+                    # Wasteful to not reuse this renderer for all paths?
+                    status_renderer = status_renderer_factory.get_renderer(
+                        status_layout)
+
+                except ValueError:
+                    print("Layout '{}' not implemented.".format(status_layout))
+                    raise
+
+                status_renderer.layout(status_data=status,
+                                       study_title=abs_path,
+                                       filter_dict=None)
+
+                status_renderer.render()
+
             else:
                 print(
                     "\nNo status to report -- the Maestro study in this path "
                     "either unexpectedly crashed or the path does not contain "
                     "a Maestro study.")
-            print("")
-        print(header_format)
+
     else:
         print(
             "Path(s) or glob(s) did not resolve to a directory(ies) that "
@@ -100,13 +110,39 @@ def cancel_study(args):
     # Force logging to Warning and above
     LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
-    if not os.path.isdir(args.directory):
-        print("Attempted to cancel a path that was not a directory.")
-        return 1
+    directory_list = args.directory
 
-    Conductor.mark_cancelled(args.directory)
+    ret_code = 0
+    to_cancel = []
+    if directory_list:
+        for directory in directory_list:
+            abs_path = os.path.abspath(directory)
+            if not os.path.isdir(abs_path):
+                print(
+                    f"Attempted to cancel '{abs_path}' "
+                    "-- study directory not found.")
+                ret_code = 1
+            else:
+                print(f"Study in '{abs_path}' to be cancelled.")
+                to_cancel.append(abs_path)
 
-    return 0
+        if to_cancel:
+            ok_cancel = input("Are you sure? [y|[n]]: ")
+            try:
+                if ok_cancel in ACCEPTED_INPUT:
+                    for directory in to_cancel:
+                        Conductor.mark_cancelled(directory)
+            except Exception as excpt:
+                print(f"Error:\n{excpt}")
+                print("Error in cancellation. Aborting.")
+                return -1
+        else:
+            print("Cancellation aborted.")
+    else:
+        print("Path(s) or glob(s) did not resolve to a directory(ies).")
+        ret_code = 1
+
+    return ret_code
 
 
 def load_parameter_generator(path, env, kwargs):
@@ -155,7 +191,6 @@ def run_study(args):
     LOGGER.warning("WARNING Logging Level -- Enabled")
     LOGGER.critical("CRITICAL Logging Level -- Enabled")
     LOGGER.debug("DEBUG Logging Level -- Enabled")
-
     # Load the Specification
     try:
         spec = YAMLSpecification.load_specification(args.specification)
@@ -341,7 +376,7 @@ def setup_argparser():
         'cancel',
         help="Cancel all running jobs.")
     cancel.add_argument(
-        "directory", type=str,
+        "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     cancel.set_defaults(func=cancel_study)
 
@@ -410,6 +445,10 @@ def setup_argparser():
     status.add_argument(
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
+    status.add_argument(
+        "--layout", type=str, choices=status_renderer_factory.get_layouts(),
+        default='flat',
+        help="Alternate status table layouts. [Default: %(default)s]")
     status.set_defaults(func=status_study)
 
     # global options
