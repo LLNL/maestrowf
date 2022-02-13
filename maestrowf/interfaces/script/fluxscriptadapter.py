@@ -207,14 +207,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # Calculate nprocs
         ncores = cores_per_task * nodes
-        # Check to make sure that cores_per_task matches if processors
-        # is specified.
-        if processors > 0 and processors > ncores:
-            msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
-            LOGGER.error(msg)
-            raise ValueError(msg)
-
         # Raise an exception if ncores is 0
         if ncores <= 0:
             msg = "Invalid number of cores specified. " \
