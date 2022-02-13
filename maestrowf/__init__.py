@@ -308,14 +308,8 @@ class Narrow2StatusRenderer(FlatStatusRenderer):
 
     layout_type = "narrow2"        # Defines name in factory/cli
 
-    # def update_theme(self):
-    #     self._theme_dict["Step Prefix"] = "blue"
-    #     self._theme_dict["State"] = "bold red"
-    #     self._theme_dict["Count"] = "blue"
-
     def process_status_data(self, status_data):
         """Construct the summary dictionary"""
-        print(status_data)
         columns = [
             "Step Name", 
             "Job ID", 
