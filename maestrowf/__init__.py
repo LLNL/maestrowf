@@ -169,6 +169,13 @@ class FlatStatusRenderer(BaseStatusRenderer):
             "bgcolor": "grey7",
             "color": ""
         }
+        self.update_theme()
+
+    def update_theme(self):
+        pass
+
+    def process_status_data(self, status_data):
+        return status_data
 
     def layout(self, status_data, study_title=None, filter_dict=None):
         """Setup concrete status layout
@@ -184,7 +191,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
 
         # Ensure status data is of type dict and isn't empty
         if isinstance(status_data, dict) and status_data:
-            self._status_data = status_data
+            self._status_data = self.process_status_data(status_data)
         else:
             raise ValueError("Status data required to layout a table")
 
@@ -270,31 +277,12 @@ class SummaryStatusRenderer(FlatStatusRenderer):
 
     layout_type = "summary"        # Defines name in factory/cli
 
-    def __init__(self, *args, **kwargs):
-        super(SummaryStatusRenderer, self).__init__(*args, **kwargs)
-
-        # Setup default theme
-        self._theme_dict["State"] = "blue"
-        self._theme_dict["Step Prefix"] = "bold red"
+    def update_theme(self):
+        self._theme_dict["Step Prefix"] = "blue"
+        self._theme_dict["State"] = "bold red"
         self._theme_dict["Count"] = "blue"
 
-
-    def layout(self, status_data, study_title=None, filter_dict=None):
-        """Setup concrete status layout
-
-        Lays out the table data in a formatted string, storing it
-        in renderer's `_status_table` attribute.
-
-        Args:
-            status_data (dict): study status dict, one column per key
-            study_title (str): optional title of this study
-            filter_dict (dict): optional data filter (not yet implemented)
-        """
-
-        # Ensure status data is of type dict and isn't empty
-        if not (isinstance(status_data, dict) and status_data):
-            raise ValueError("Status data required to layout a table")
-
+    def process_status_data(self, status_data):
         """Construct the summary dictionary"""
         summary_data = OrderedDict()
         summary_data["Step Prefix"] = []
@@ -312,52 +300,9 @@ class SummaryStatusRenderer(FlatStatusRenderer):
                 summary_data["Step Prefix"].append(step_prefix)
                 summary_data["State"].append(state)
                 summary_data["Count"].append(state_count[state])
-        self._status_data = summary_data
+        return summary_data
 
-        """Construct the Rich Table object"""
-
-        self._status_table = Table()
-        if study_title:
-            self._status_table.title = "Study: {}".format(study_title)
-
-        # Apply any filters: TODO
-
-        cols = list(self._status_data.keys())
-
-        # Some temporary simple filters to exclude params col in this layout
-        col_filters = ['Params']
-
-        cols = [col for col in cols if col not in col_filters]
-
-        # Setup the column styles
-        for nominal_col_num, col in enumerate(cols):
-
-            if col in list(self._theme_dict.keys()):
-                col_style = col
-            else:
-                if nominal_col_num % 2 == 0:
-                    col_style = 'col_style_1'
-                else:
-                    col_style = 'col_style_2'
-
-            self._status_table.add_column(col,
-                                          style=col_style,
-                                          overflow="fold")
-
-        num_rows = len(self._status_data[cols[0]])
-
-        # Alternate dim rows to differentiate them better
-        for row in range(num_rows):
-            if row % 2 == 0:
-                row_style = 'dim'
-            else:
-                row_style = 'none'
-
-            self._status_table.add_row(
-                *['{}'.format(self._status_data[key][row])
-                  for key in cols],
-                style=row_style
-            )
+        return status_data
 
 
 class NarrowStatusRenderer(BaseStatusRenderer):
