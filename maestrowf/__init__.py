@@ -302,8 +302,6 @@ class SummaryStatusRenderer(FlatStatusRenderer):
                 summary_data["Count"].append(state_count[state])
         return summary_data
 
-        return status_data
-
 
 class NarrowStatusRenderer(BaseStatusRenderer):
     """Narrow terminal layout with parameter info"""
