@@ -146,8 +146,8 @@ study:
           # In this case, it points to './sample_output/lulesh/run-lulesh'.
           cmd: |
             echo "Unparameterized step with Parameter Independent dependencies." >> out.log
-            echo $(run-lulesh.workspace) > out.log
-            ls $(run-lulesh.workspace) > ls.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) >> out.log
           # The 'post-process-lulesh' step is dependent on the completion of
           # all parameterizations of 'run-lulesh' as represented by the '_*'.
           # Because this step is not parameterized, it is a singular step that
@@ -161,7 +161,7 @@ study:
             echo "Parameterized step that has Parameter Independent dependencies" >> out.log
             echo "TRIAL = $(TRIAL)" >> out.log
             echo $(run-lulesh.workspace) >> out.log
-            ls $(run-lulesh.workspace) > out.log
+            ls $(run-lulesh.workspace) >> out.log
           # 'post-process-lulesh-trials' like 'post-process-lulesh' is dependent
           # on all parameterizations of 'run-lulesh'. In this case, because this
           # step is parameterized based on $(TRIALS), there will be a version of
