@@ -118,7 +118,8 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
 
         print(f"self methods: {sorted(self.__dict__.keys())}")
         print(f"base methods: {sorted(LocalParallelScriptAdapter.__dict__.keys())}")
-        super(LocalParallelScriptAdapter, self).__init__(**kwargs)
+        super().__init__(**kwargs)
+        # super(LocalParallelScriptAdapter, self).__init__(**kwargs)
 
         # Register keys
         self.add_batch_parameter("proc_count", int(kwargs.pop("proc_count", "1")))
@@ -208,6 +209,9 @@ class LocalParallelScriptAdapter(SchedulerScriptAdapter):
                replacements later
         :note: need a mechanism to override these/set from outside adapter
         """
+        if self._parallelize_func:
+            return self._parallelize_func(procs, nodes, **kwargs)
+
         args = [
             self._cmd_flags["cmd"],
         ]

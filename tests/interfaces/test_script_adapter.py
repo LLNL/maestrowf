@@ -39,6 +39,7 @@ import os
 import pytest
 
 from maestrowf.interfaces import ScriptAdapterFactory
+from maestrowf.interfaces.script.slurmscriptadapter import SlurmParallelizeCmd
 from maestrowf.datastructures.core import StudyStep
 
 from rich.pretty import pprint
@@ -77,9 +78,11 @@ def test_adapter_script_generator():
     test_step.name = 'test-step'
     test_step.description = 'script writer test'
     test_step.run = {
-        'cmd': ['$(LAUNCHER) echo "Hello, $(NAME)!" > hello_world.txt',
-                'sleep 5'],
-        'procs': 1
+        'cmd': '\n'.join(['$(LAUNCHER) echo "Hello, $(NAME)!" > hello_world.txt',
+                          'sleep 5']),
+        'procs': 1,
+        'nodes': '',
+        'restart': '\n'.join([''])
     }
     pprint(test_step)
 
@@ -91,7 +94,8 @@ def test_adapter_script_generator():
     adapter = ScriptAdapterFactory.get_adapter(batch_info['type'])
 
     adapter2 = adapter(**batch_info)
-    
+    adapter2.register_parallelize_command(SlurmParallelizeCmd)
+
     print(adapter2)
     adapter2.write_script(os.path.abspath('.'), test_step)
 

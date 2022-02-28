@@ -134,7 +134,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
 
     def register_parallelize_command(self, parallelize_func):
         # Note do some validation here -> callable types only
-        self._parallelize_func = parallelize_func
+        self._parallelize_func = parallelize_func()
         
     @abstractmethod
     def get_parallelize_command(self, procs, nodes, **kwargs):

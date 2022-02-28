@@ -61,6 +61,15 @@ def get_default_slurm_cmd_flags():
 class SlurmParallelizeCmd(ParallelizeCmd):
     key = 'slurm'
 
+    def __init__(self, cmd_flags=None, unsupported=None):
+        self._cmd_flags = {}
+        self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
+
+        self._cmd_flags.update(get_default_slurm_cmd_flags())
+
+        if cmd_flags:
+            self._cmd_flags.update(cmd_flags)
+
     def __call__(self, procs, nodes=None, **kwargs):
         """
         Generate the SLURM parallelization segement of the command line.
