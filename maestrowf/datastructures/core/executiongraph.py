@@ -536,7 +536,9 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # Set up the adapter.
         LOGGER.info("Generating scripts...")
-        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        # adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"],
+        #                                            self._adapter.get('parallel_type')
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])                                                   
         adapter = adapter(**self._adapter)
 
         self._check_tmp_dir()
