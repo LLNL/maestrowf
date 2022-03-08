@@ -130,3 +130,26 @@ and then the per node packing of resource sets.  Consider a few examples:
              rs_per_node: 4
              tasks_per_rs: 1
              cores per task: 11
+
+
+* An mpi application that needs lots of memory per rank
+
+  .. code-block:: bash
+
+     jsrun -nrs 2 -a 1 -c 1 -g 0 -r 1 my_memory_hungry_application
+
+  .. code-block:: yaml
+
+     study:
+         - name: run-my-app
+           description: Use all the memory for single task per node
+           run:
+             cmd: |
+                 $(LAUNCHER) my_memory_hungry_application
+
+             procs: 2
+             nodes: 2
+             gpus:  0
+             rs_per_node: 1
+             tasks_per_rs: 1
+             cores per task: 1
