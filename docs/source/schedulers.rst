@@ -41,6 +41,26 @@ and then the per node packing of resource sets.  Consider a few examples:
 
      jsrun -nrs 8 -a 1 -c 1 -g 1 -r 4 my_awesome_gpu_application
 
+  And the corresponding maestro step that generates it
+
+  .. code-block:: yaml
+
+     study:
+         - name: run-my-app
+           description: launch the best gpu application.
+           run:
+             cmd: |
+                 $(LAUNCHER) my_awesome_gpu_application
+
+             procs: 8
+             nodes: 2
+             gpus:  1
+             rs_per_node: 4
+             tasks_per_rs: 1
+             cores per task: 1
+  
+  Note that `procs` here maps more to the tasks/resource set concept in lsf/jsrun, and
+  nodes is a multiplier on `rs_per_node` which yields the `nrs` jsrun key
 
 * 1 resource set per cpu, with no gpus, and using all 44 cpus on the node
 
@@ -48,11 +68,45 @@ and then the per node packing of resource sets.  Consider a few examples:
 
      jsrun -nrs 44 -a 1 -c 1 -g 0 -r 44 my_awesome_mpi_cpu_application
 
+  .. code-block:: yaml
+
+     study:
+         - name: run-my-app
+           description: launch a pure mpi-cpu application.
+           run:
+             cmd: |
+                 $(LAUNCHER) my_awesome_mpi_cpu_application
+
+             procs: 44
+             nodes: 1
+             gpus:  0
+             rs_per_node: 44
+             tasks_per_rs: 1
+             cores per task: 1
+
+     Again, note that `procs` is a multiple of `rs_per_node`.
+  
 * Several multithreaded mpi ranks per node, with no gpus
 
   .. code-block:: bash
 
      jsrun -nrs 4 -a 1 -c 11 -g 0 -r 4 my_awesome_omp_mpi_cpu_application
+
+  .. code-block:: yaml
+
+     study:
+         - name: run-my-app
+           description: launch an application using mpi and omp
+           run:
+             cmd: |
+                 $(LAUNCHER) my_awesome_omp_mpi_cpu_application
+
+             procs: 4
+             nodes: 1
+             gpus:  0
+             rs_per_node: 4
+             tasks_per_rs: 1
+             cores per task: 11
 
 * Several multithreaded mpi ranks per node with one gpu per rank, spanning multiple
   nodes having 4 gpu's each
@@ -60,3 +114,19 @@ and then the per node packing of resource sets.  Consider a few examples:
   .. code-block:: bash
 
      jsrun -nrs 8 -a 1 -c 11 -g 1 -r 4 my_awesome_all_the_threads_application
+
+  .. code-block:: yaml
+
+     study:
+         - name: run-my-app
+           description: Use all the threads!
+           run:
+             cmd: |
+                 $(LAUNCHER) my_awesome_all_the_threads_application
+
+             procs: 8
+             nodes: 2
+             gpus:  1
+             rs_per_node: 4
+             tasks_per_rs: 1
+             cores per task: 11
