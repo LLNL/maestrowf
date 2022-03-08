@@ -107,6 +107,7 @@ And, running the study is still as simple as:
    quick_start
    hello_world
    lulesh_breakdown
+   schedulers
    parameters
    maestro_core
 
