@@ -75,6 +75,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+
         reservation = kwargs.get("reservation", None)
         if reservation:
             self.add_batch_parameter("reservation", reservation)
@@ -90,11 +91,24 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "error": "#BSUB -e {error}",
         }
 
+        # JSRUN cmds
+        # procs maps to -r, --rs_per_host
+        #       tasks_per_rs and cpu_per_rs should be 1 by default   -> FIND USE CASE FOR > 1
+        #       gpus are per rs also (sierra = 4 per node, so 1 per rs, 4 rs per node
+        #       nrs = num tasks -> this is ~equivalent to -n on slurm in default config
+        #       -r = resource sets per host -> need this if under subscribing
+        #          r = 1 gives exclusive node use to a resource set
+        #          in general r = num gpu per host for LLNL clusters lassen/etc
+        #       
         self._cmd_flags = {
             "cmd":          "jsrun --bind rs",
-            "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "nodes":        "--nrs",
+            # "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
+            "rs_per_node":  "--r",
+            "ntasks":       "--nrs",  
+            # nrs must be divisible by rs_per_host -> cum num domains, not really nodes for lrun -> bsub headers this = node count...-> or nrs == rs_per_host*nodes?
+            "tasks_per_rs": "-a",
             "gpus":         "-g",
+            "cpus_per_rs":  "-c",
             "reservation":  "-J",
         }
 
@@ -155,23 +169,25 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
+
+        
         args = [self._cmd_flags["cmd"]]
 
-        if nodes:
-            _nodes = nodes
-            args += [
-                self._cmd_flags["nodes"],
-                str(nodes)
-            ]
-        else:
-            _nodes = 1
+        # if nodes:
+        #     _nodes = nodes
+        #     args += [
+        #         self._cmd_flags["nodes"],
+        #         str(nodes)
+        #     ]
+        # else:
+        #     _nodes = 1
 
         # Compute the number of CPUs per node (rs)
-        _procs = int(procs)/int(_nodes)
+        # _procs = int(int(procs)/int(_nodes))
 
         # Processors segment
         args += [
-            self._cmd_flags["ntasks"].format(procs=_procs)
+            self._cmd_flags["ntasks"].format(procs=procs)
         ]
 
         # If we have GPUs being requested, add them to the command.
@@ -182,6 +198,20 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 str(gpus)
             ]
 
+        # handle mappings from node/procs to tasks/rs/nodes
+        rs_per_node = kwargs.get("rs_per_node", 1)
+        tasks_per_rs = kwargs.get("tasks_per_rs", 1)
+        cpus_per_rs = kwargs.get("cores per task", 1)
+
+        args += [self._cmd_flags['tasks_per_rs'],
+                 str(tasks_per_rs)]
+
+        args += [self._cmd_flags['rs_per_node'],
+                 str(rs_per_node)]
+
+        args += [self._cmd_flags['cpus_per_rs'],
+                 str(cpus_per_rs)]
+        
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):

@@ -58,6 +58,16 @@
               {"type": "integer", "minimum": 1},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
+          "tasks_per_rs": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "rs_per_node": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
           "walltime": {
             "anyOf": [
               {"type": "string", "minLength": 1},
