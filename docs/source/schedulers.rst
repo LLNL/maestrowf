@@ -16,17 +16,41 @@ addition to the `procs`, `cores per task`, and `gpu` keys, there are also
 sets, with several keywords controlling these resource sets and mapping them to
 the actual machine/node allocations:
 
-* --nrs, -n:  Number of resource sets
+.. list-table:: Mapping of LSF args to Maestro step keys
 
-* --tasks_per_rs, -a: Number of MPI tasks (ranks) in a resource set
-
-* --cpu_per_rs, -c: Number of physical CPU cores in a resource set
-
-* --gpu_per_rs, -g: Number of GPU's per resource set
-
-* --bind, -b: Specifies binding of tasks within a resource set
-
-* --rs_per_host, -r: Number of resource sets per node 
+   * - LSF (jsrun)
+     - Maestro
+     - Description
+     - Default setting
+   * - -n, --nrs
+     - procs
+     - number of resource sets
+     -
+   * - -a, --tasks_per_rs
+     - tasks_per_rs
+     - Number of MPI tasks (ranks) in a resource
+     - 
+   * - -c, --cpu_per_rs
+     - cores per task
+     - Number of physical CPU cores in a resource set
+     - 
+   * - -g, --gpu_per_rs
+     - gpus
+     - Number of GPU's per resource set
+     - 
+   * - -b, --bind
+     -
+     - Controls binding of tasks in a resource set
+     - 
+   * - -B, --bind_gpus
+     -
+     - Controls binding of tasks to GPU's in a resource set
+     - 
+   * - -r, --rs_per_host
+     - rs_per_node
+     - Number of resource sets per node
+     -
+     
 
 Now for a few examples of how to map these to Maestro's resource specifications.
 Note the `node` key is not directly used for any of these, but is still used for
