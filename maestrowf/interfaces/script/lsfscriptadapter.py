@@ -103,12 +103,12 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         self._cmd_flags = {
             "cmd":          "jsrun",
             # "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "rs_per_node":  "--r",
+            "rs per node":  "--r",
             "ntasks":       "--nrs",
             # nrs must be divisible by rs_per_host -> cum num domains, not really nodes for lrun -> bsub headers this = node count...-> or nrs == rs_per_host*nodes?
             "tasks per rs": "-a",
             "gpus":         "-g",
-            "cpus_per_rs":  "-c",
+            "cpus per rs":  "-c",
             "reservation":  "-J",
             "bind":         "-b",
             "bind gpus":    "-B",
@@ -189,7 +189,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         # Processors segment
         args += [
-            self._cmd_flags["ntasks"].format(procs=procs)
+            self._cmd_flags["ntasks"],
+            procs
         ]
 
         # Binding
@@ -212,7 +213,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         if bind_gpus:
             args += [
                 self._cmd_flags["bind gpus"],
-                str(kwargs["bind gpus"])
+                str(bind_gpus)
             ]
 
         # handle mappings from node/procs to tasks/rs/nodes
