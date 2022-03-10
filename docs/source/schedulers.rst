@@ -25,31 +25,31 @@ the actual machine/node allocations:
    * - -n, --nrs
      - procs
      - number of resource sets
-     -
+     - 1
    * - -a, --tasks_per_rs
-     - tasks_per_rs
+     - tasks per rs
      - Number of MPI tasks (ranks) in a resource
-     - 
+     - 1
    * - -c, --cpu_per_rs
      - cores per task
      - Number of physical CPU cores in a resource set
-     - 
+     - 1
    * - -g, --gpu_per_rs
      - gpus
      - Number of GPU's per resource set
-     - 
+     - 0
    * - -b, --bind
-     -
+     - bind
      - Controls binding of tasks in a resource set
-     - 
+     - 'rs'
    * - -B, --bind_gpus
-     -
+     - bind gpus
      - Controls binding of tasks to GPU's in a resource set
-     - 
+     - 'none'
    * - -r, --rs_per_host
-     - rs_per_node
+     - rs per node
      - Number of resource sets per node
-     -
+     - 1
      
 
 Now for a few examples of how to map these to Maestro's resource specifications.

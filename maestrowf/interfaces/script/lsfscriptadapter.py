@@ -99,17 +99,19 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         #       -r = resource sets per host -> need this if under subscribing
         #          r = 1 gives exclusive node use to a resource set
         #          in general r = num gpu per host for LLNL clusters lassen/etc
-        #       
+        #
         self._cmd_flags = {
-            "cmd":          "jsrun --bind rs",
+            "cmd":          "jsrun",
             # "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
             "rs_per_node":  "--r",
-            "ntasks":       "--nrs",  
+            "ntasks":       "--nrs",
             # nrs must be divisible by rs_per_host -> cum num domains, not really nodes for lrun -> bsub headers this = node count...-> or nrs == rs_per_host*nodes?
-            "tasks_per_rs": "-a",
+            "tasks per rs": "-a",
             "gpus":         "-g",
             "cpus_per_rs":  "-c",
             "reservation":  "-J",
+            "bind":         "-b",
+            "bind gpus":    "-B",
         }
 
         self._extension = "lsf.sh"
@@ -190,6 +192,13 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             self._cmd_flags["ntasks"].format(procs=procs)
         ]
 
+        # Binding
+        bind = kwargs.get("bind", "rs")
+        args += [
+            self._cmd_flags["bind"],
+            str(bind)
+        ]
+
         # If we have GPUs being requested, add them to the command.
         gpus = kwargs.get("gpus", 0)
         if gpus:
@@ -198,20 +207,28 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 str(gpus)
             ]
 
+        # Optional gpu binding
+        bind_gpus = kwargs.get("bind gpus", "none")
+        if bind_gpus:
+            args += [
+                self._cmd_flags["bind gpus"],
+                str(kwargs["bind gpus"])
+            ]
+
         # handle mappings from node/procs to tasks/rs/nodes
-        rs_per_node = kwargs.get("rs_per_node", 1)
-        tasks_per_rs = kwargs.get("tasks_per_rs", 1)
+        rs_per_node = kwargs.get("rs per node", 1)
+        tasks_per_rs = kwargs.get("tasks per rs", 1)
         cpus_per_rs = kwargs.get("cores per task", 1)
 
-        args += [self._cmd_flags['tasks_per_rs'],
+        args += [self._cmd_flags['tasks per rs'],
                  str(tasks_per_rs)]
 
-        args += [self._cmd_flags['rs_per_node'],
+        args += [self._cmd_flags['rs per node'],
                  str(rs_per_node)]
 
-        args += [self._cmd_flags['cpus_per_rs'],
+        args += [self._cmd_flags['cpus per rs'],
                  str(cpus_per_rs)]
-        
+
         return " ".join(args)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
