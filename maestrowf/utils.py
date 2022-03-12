@@ -141,13 +141,12 @@ def apply_function(item, func):
     elif isinstance(item, dict):
         return {
             key: apply_function(value, func) for key, value in item.items()}
-    elif isinstance(item, int):
-        return item
     else:
-        msg = "Encountered an object of type '{}'. Expected a str, list, int" \
-              ", or dict.".format(type(item))
-        LOGGER.error(msg)
-        raise ValueError(msg)
+        msg = \
+            "Encountered an object of type '{}'. Passing." \
+            .format(type(item))
+        LOGGER.debug(msg)
+        return item
 
 
 def csvtable_to_dict(fstream):

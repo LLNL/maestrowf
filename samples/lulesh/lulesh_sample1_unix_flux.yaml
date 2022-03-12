@@ -42,7 +42,8 @@ study:
           nodes: 1
           procs: 1
           cores per task: 1
-          use_broker: True
+          nested: True
+          priority: high
           walltime: "00:02:00"
 
 global.parameters:
