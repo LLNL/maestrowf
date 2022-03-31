@@ -52,6 +52,10 @@ the actual machine/node allocations:
      - 1
      
 
+.. note::
+
+   ``bind_gpus`` is new in lsf 10.1 and may not be available on all systems
+   
 Now for a few examples of how to map these to Maestro's resource specifications.
 Note the `node` key is not directly used for any of these, but is still used for
 the reservation itself.  The rest of the keys serve to control the per task resources
@@ -63,7 +67,7 @@ and then the per node packing of resource sets.  Consider a few examples:
 
   .. code-block:: bash
 
-     jsrun -nrs 8 -a 1 -c 1 -g 1 -r 4 my_awesome_gpu_application
+     jsrun -nrs 8 -a 1 -c 1 -g 1 -r 4 --bind rs my_awesome_gpu_application
 
   And the corresponding maestro step that generates it
 
@@ -90,7 +94,7 @@ and then the per node packing of resource sets.  Consider a few examples:
 
   .. code-block:: bash
 
-     jsrun -nrs 44 -a 1 -c 1 -g 0 -r 44 my_awesome_mpi_cpu_application
+     jsrun -nrs 44 -a 1 -c 1 -g 0 -r 44 --bind rs my_awesome_mpi_cpu_application
 
   .. code-block:: yaml
 
@@ -114,7 +118,7 @@ and then the per node packing of resource sets.  Consider a few examples:
 
   .. code-block:: bash
 
-     jsrun -nrs 4 -a 1 -c 11 -g 0 -r 4 my_awesome_omp_mpi_cpu_application
+     jsrun -nrs 4 -a 1 -c 11 -g 0 -r 4 --bind rs my_awesome_omp_mpi_cpu_application
 
   .. code-block:: yaml
 
@@ -137,7 +141,7 @@ and then the per node packing of resource sets.  Consider a few examples:
 
   .. code-block:: bash
 
-     jsrun -nrs 8 -a 1 -c 11 -g 1 -r 4 my_awesome_all_the_threads_application
+     jsrun -nrs 8 -a 1 -c 11 -g 1 -r 4 --bind rs my_awesome_all_the_threads_application
 
   .. code-block:: yaml
 
@@ -160,7 +164,7 @@ and then the per node packing of resource sets.  Consider a few examples:
 
   .. code-block:: bash
 
-     jsrun -nrs 2 -a 1 -c 1 -g 0 -r 1 my_memory_hungry_application
+     jsrun -nrs 2 -a 1 -c 1 -g 0 -r 1 --bind rs my_memory_hungry_application
 
   .. code-block:: yaml
 
