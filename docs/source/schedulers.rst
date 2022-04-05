@@ -1,6 +1,54 @@
 Scheduling Studies (a.k.a. the Batch Block)
 ===========================================
 
+The batch block is an optional component of the workflow specification that enables
+job submission and management on remote clusters.  The block contains a handful of
+keys for specifying system level information that's applicable to all scheduled
+steps:
+
+.. list-table:: Batch block keys
+
+   * - Key
+     - Description
+   * - type
+     - Select scheduler adapter to use. Currently supported are ``slurm``, ``lsf``, and
+       ``flux``, ``local``.  Default is ``local``, non-scheduled job steps.
+   * - host
+     - Name of cluster being run on
+   * - queue
+     - Machine partition to schedule jobs to.  '--partition' for slurm systems, '-q' for
+       lsf systems, ...
+   * - bank
+     - Account which runs the job; this is used for computing job priority on the cluster.
+       '--account' on slurm, '-G' on lsf, ...
+   * - reservation
+     - Name of any prereserved machine partition to submit jobs to
+   * - qos
+     - Optional quality of service options (slurm only)
+   * - flux_uri
+     - Flux specific reservation functionality
+
+The information in this block is used to populate the step specific batch scripts with the appropriate
+header comment blocks (e.g. '#SBATCH --partition' for slurm).  Additional keys such as step specific
+resource requirements (number of nodes, cpus/tasks, gpus, ...) get added here when processing
+individual steps; see subsequent sections for scheduler specific details.  Note that job steps will
+run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.
+
+LOCAL
+*****
+
+Stub
+
+SLURM
+*****
+
+Stub
+
+FLUX
+****
+
+Stub
+
 LSF: a Tale of Two Launchers
 ****************************
 
