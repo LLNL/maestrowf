@@ -69,8 +69,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         super(LSFScriptAdapter, self).__init__()
 
-        # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
-        # current host is where submission occurs.
+        # NOTE: Host doesn't seem to matter for LSF
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
@@ -91,21 +90,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "error": "#BSUB -e {error}",
         }
 
-        # JSRUN cmds
-        # procs maps to -r, --rs_per_host
-        #       tasks_per_rs and cpu_per_rs should be 1 by default   -> FIND USE CASE FOR > 1
-        #       gpus are per rs also (sierra = 4 per node, so 1 per rs, 4 rs per node
-        #       nrs = num tasks -> this is ~equivalent to -n on slurm in default config
-        #       -r = resource sets per host -> need this if under subscribing
-        #          r = 1 gives exclusive node use to a resource set
-        #          in general r = num gpu per host for LLNL clusters lassen/etc
-        #
         self._cmd_flags = {
             "cmd":          "jsrun",
-            # "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
             "rs per node":  "-r",
             "ntasks":       "--nrs",
-            # nrs must be divisible by rs_per_host -> cum num domains, not really nodes for lrun -> bsub headers this = node count...-> or nrs == rs_per_host*nodes?
             "tasks per rs": "-a",
             "gpus":         "-g",
             "cpus per rs":  "-c",
