@@ -160,13 +160,59 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                   and procs.
         """
 
-        
         args = [self._cmd_flags["cmd"]]
 
-        # Processors segment
+        # Processors segment, checking
+        # Need to account for processors per rs -> tasks per rs
+        rs_per_node = kwargs.get("rs per node", 1)
+        tasks_per_rs = kwargs.get("tasks per rs", 1)
+
+        if int(procs) > int((int(rs_per_node)*int(nodes)*int(tasks_per_rs))):
+
+            LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                         " must be a multiple of "
+                         "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                         " where 'rs per node' = %s, 'nodes' = %s, and"
+                         " 'tasks per rs' = %s",
+                         procs,
+                         rs_per_node*nodes*tasks_per_rs,
+                         rs_per_node,
+                         nodes,
+                         tasks_per_rs)
+            
+        if nodes:
+            rs_tasks = int(rs_per_node)*int(nodes)*int(tasks_per_rs)
+            if (int(procs) > rs_tasks) or (int(procs) % rs_tasks) > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = %s, 'nodes' = %s, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             rs_per_node*nodes*tasks_per_rs,
+                             rs_per_node,
+                             nodes,
+                             tasks_per_rs)
+
+        else:
+            # NOTE: is this case even allowed on lsf allocations? will it auto
+            #       compute the number of nodes on the allocation if scheduling
+            #       this to a reservation?  If so, might want to revisit
+            rs_tasks = int(rs_per_node)*int(tasks_per_rs)
+            if int(procs) > rs_tasks or int(procs) % rs_tasks > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = {}, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             rs_per_node*tasks_per_rs,
+                             rs_per_node,
+                             tasks_per_rs)
+
         args += [
             self._cmd_flags["ntasks"],
-            procs
+            str(procs)
         ]
 
         # Binding
@@ -178,6 +224,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         # If we have GPUs being requested, add them to the command.
         gpus = kwargs.get("gpus", 0)
+        if not gpus:     # Initialized to "" in study step, FIX THIS
+            gpus = 0
         if gpus:
             args += [
                 self._cmd_flags["gpus"],
@@ -193,9 +241,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             ]
 
         # handle mappings from node/procs to tasks/rs/nodes
-        rs_per_node = kwargs.get("rs per node", 1)
-        tasks_per_rs = kwargs.get("tasks per rs", 1)
+
         cpus_per_rs = kwargs.get("cores per task", 1)
+        if not cpus_per_rs:     # Initialized to "" in study step, FIX THIS
+            cpus_per_rs = 1
 
         args += [self._cmd_flags['tasks per rs'],
                  str(tasks_per_rs)]
