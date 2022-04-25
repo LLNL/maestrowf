@@ -131,8 +131,8 @@ and then the per node packing of resource sets.  Consider a few examples:
              procs: 8
              nodes: 2
              gpus:  1
-             rs_per_node: 4
-             tasks_per_rs: 1
+             rs per node: 4
+             tasks per rs: 1
              cores per task: 1
   
   Note that `procs` here maps more to the tasks/resource set concept in lsf/jsrun, and
@@ -156,8 +156,8 @@ and then the per node packing of resource sets.  Consider a few examples:
              procs: 44
              nodes: 1
              gpus:  0
-             rs_per_node: 44
-             tasks_per_rs: 1
+             rs per node: 44
+             tasks per rs: 1
              cores per task: 1
 
      Again, note that `procs` is a multiple of `rs_per_node`.
@@ -180,8 +180,8 @@ and then the per node packing of resource sets.  Consider a few examples:
              procs: 4
              nodes: 1
              gpus:  0
-             rs_per_node: 4
-             tasks_per_rs: 1
+             rs per node: 4
+             tasks per rs: 1
              cores per task: 11
 
 * Several multithreaded mpi ranks per node with one gpu per rank, spanning multiple
@@ -203,8 +203,8 @@ and then the per node packing of resource sets.  Consider a few examples:
              procs: 8
              nodes: 2
              gpus:  1
-             rs_per_node: 4
-             tasks_per_rs: 1
+             rs per node: 4
+             tasks per rs: 1
              cores per task: 11
 
 
@@ -226,6 +226,6 @@ and then the per node packing of resource sets.  Consider a few examples:
              procs: 2
              nodes: 2
              gpus:  0
-             rs_per_node: 1
-             tasks_per_rs: 1
+             rs per node: 1
+             tasks per rs: 1
              cores per task: 1
