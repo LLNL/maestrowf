@@ -189,7 +189,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                              " where 'rs per node' = %s, 'nodes' = %s, and"
                              " 'tasks per rs' = %s",
                              procs,
-                             rs_per_node*nodes*tasks_per_rs,
+                             int(rs_per_node)*int(nodes)*int(tasks_per_rs),
                              rs_per_node,
                              nodes,
                              tasks_per_rs)
@@ -206,7 +206,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                              " where 'rs per node' = {}, and"
                              " 'tasks per rs' = %s",
                              procs,
-                             rs_per_node*tasks_per_rs,
+                             int(rs_per_node)*int(tasks_per_rs),
                              rs_per_node,
                              tasks_per_rs)
 
@@ -242,7 +242,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         # handle mappings from node/procs to tasks/rs/nodes
 
-        cpus_per_rs = kwargs.get("cores per task", 1)
+        cpus_per_rs = kwargs.get("cpus per rs", 1)
         if not cpus_per_rs:     # Initialized to "" in study step, FIX THIS
             cpus_per_rs = 1
 
