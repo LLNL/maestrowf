@@ -106,6 +106,7 @@ class _StepRecord:
         LOGGER.info("Generating script for %s into %s", self.name, scr_dir)
         self.to_be_scheduled, self.script, self.restart_script = \
             adapter.write_script(scr_dir, self.step)
+        LOGGER.debug("STEP: %s", self.step)
         LOGGER.info("Script: %s\nRestart: %s\nScheduled?: %s",
                     self.script, self.restart_script, self.to_be_scheduled)
 

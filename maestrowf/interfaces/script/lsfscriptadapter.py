@@ -69,12 +69,12 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         super(LSFScriptAdapter, self).__init__()
 
-        # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
-        # current host is where submission occurs.
+        # NOTE: Host doesn't seem to matter for LSF
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+
         reservation = kwargs.get("reservation", None)
         if reservation:
             self.add_batch_parameter("reservation", reservation)
@@ -91,11 +91,15 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._cmd_flags = {
-            "cmd":          "jsrun --bind rs",
-            "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "nodes":        "--nrs",
+            "cmd":          "jsrun",
+            "rs per node":  "-r",
+            "ntasks":       "--nrs",
+            "tasks per rs": "-a",
             "gpus":         "-g",
+            "cpus per rs":  "-c",
             "reservation":  "-J",
+            "bind":         "-b",
+            "bind gpus":    "-B",
         }
 
         self._extension = "lsf.sh"
@@ -155,32 +159,101 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
+
         args = [self._cmd_flags["cmd"]]
 
+        # Processors segment, checking
+        # Need to account for processors per rs -> tasks per rs
+        rs_per_node = kwargs.get("rs per node", 1)
+        tasks_per_rs = kwargs.get("tasks per rs", 1)
+
+        if int(procs) > int((int(rs_per_node)*int(nodes)*int(tasks_per_rs))):
+
+            LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                         " must be a multiple of "
+                         "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                         " where 'rs per node' = %s, 'nodes' = %s, and"
+                         " 'tasks per rs' = %s",
+                         procs,
+                         rs_per_node*nodes*tasks_per_rs,
+                         rs_per_node,
+                         nodes,
+                         tasks_per_rs)
+            
         if nodes:
-            _nodes = nodes
-            args += [
-                self._cmd_flags["nodes"],
-                str(nodes)
-            ]
+            rs_tasks = int(rs_per_node)*int(nodes)*int(tasks_per_rs)
+            if (int(procs) > rs_tasks) or (int(procs) % rs_tasks) > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = %s, 'nodes' = %s, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             int(rs_per_node)*int(nodes)*int(tasks_per_rs),
+                             rs_per_node,
+                             nodes,
+                             tasks_per_rs)
+
         else:
-            _nodes = 1
+            # NOTE: is this case even allowed on lsf allocations? will it auto
+            #       compute the number of nodes on the allocation if scheduling
+            #       this to a reservation?  If so, might want to revisit
+            rs_tasks = int(rs_per_node)*int(tasks_per_rs)
+            if int(procs) > rs_tasks or int(procs) % rs_tasks > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = {}, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             int(rs_per_node)*int(tasks_per_rs),
+                             rs_per_node,
+                             tasks_per_rs)
 
-        # Compute the number of CPUs per node (rs)
-        _procs = int(procs)/int(_nodes)
-
-        # Processors segment
         args += [
-            self._cmd_flags["ntasks"].format(procs=_procs)
+            self._cmd_flags["ntasks"],
+            str(procs)
+        ]
+
+        # Binding
+        bind = kwargs.get("bind", "rs")
+        args += [
+            self._cmd_flags["bind"],
+            str(bind)
         ]
 
         # If we have GPUs being requested, add them to the command.
         gpus = kwargs.get("gpus", 0)
+        if not gpus:     # Initialized to "" in study step, FIX THIS
+            gpus = 0
         if gpus:
             args += [
                 self._cmd_flags["gpus"],
                 str(gpus)
             ]
+
+        # Optional gpu binding -> LSF 10.1+
+        bind_gpus = kwargs.get("bind gpus", None)
+        if bind_gpus:
+            args += [
+                self._cmd_flags["bind gpus"],
+                str(bind_gpus)
+            ]
+
+        # handle mappings from node/procs to tasks/rs/nodes
+
+        cpus_per_rs = kwargs.get("cpus per rs", 1)
+        if not cpus_per_rs:     # Initialized to "" in study step, FIX THIS
+            cpus_per_rs = 1
+
+        args += [self._cmd_flags['tasks per rs'],
+                 str(tasks_per_rs)]
+
+        args += [self._cmd_flags['rs per node'],
+                 str(rs_per_node)]
+
+        args += [self._cmd_flags['cpus per rs'],
+                 str(cpus_per_rs)]
 
         return " ".join(args)
 
