@@ -425,8 +425,8 @@ class YAMLSpecification(Specification):
                     .strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "In {0}, {1} must be of type '{2}'."
-                    .format(parent_key, path, expected_type)
+                    "In {0}, {1} must be of type '{2}', but found '{3}'."
+                    .format(parent_key, path, expected_type, type(instance[path]).__name__)
                 )
 
             elif error.validator == "required":
