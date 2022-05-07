@@ -209,7 +209,7 @@ class YAMLSpecification(Specification):
                 logger.error(msg)
                 raise ValueError(msg)
 
-            if not value:
+            if isinstance(value, str) and not value:
                 msg = (
                     "All variables must have a valid value. Empty strings "
                     "are not allowed."
@@ -275,9 +275,7 @@ class YAMLSpecification(Specification):
     def verify_environment(self, schema):
         """Verify that the environment in a specification is valid."""
         # validate environment against json schema
-        YAMLSpecification.validate_schema(
-            "env", self.environment, schema
-        )
+        YAMLSpecification.validate_schema("env", self.environment, schema)
         # Verify the variables section of the specification.
         keys_seen = self._verify_variables()
         # Verify the sources section of the specification.
@@ -412,8 +410,9 @@ class YAMLSpecification(Specification):
                     re.search(r"'.+'", error.message).group(0).strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "Unrecognized key '{0}' found in {1}."
-                    .format(unrecognized, parent_key)
+                    "Unrecognized key '{0}' found in {1}.".format(
+                        unrecognized, parent_key
+                    )
                 )
 
             elif error.validator == "type":
@@ -424,8 +423,9 @@ class YAMLSpecification(Specification):
                     .strip("'")
                 )
                 raise jsonschema.ValidationError(
-                    "In {0}, {1} must be of type '{2}', but found '{3}'."
-                    .format(parent_key, path, expected_type, type(instance[path]).__name__)
+                    f"In {parent_key}, {path} must be of type "
+                    f"'{expected_type}', but found "
+                    f"'{type(instance[path]).__name__}'."
                 )
 
             elif error.validator == "required":
@@ -440,27 +440,34 @@ class YAMLSpecification(Specification):
 
             elif error.validator == "uniqueItems":
                 raise jsonschema.ValidationError(
-                    "Non-unique step names in {0}.run.depends."
-                    .format(parent_key)
+                    "Non-unique step names in {0}.run.depends.".format(
+                        parent_key
+                    )
                 )
 
             elif error.validator == "minLength":
                 raise jsonschema.ValidationError(
-                    "In {0}, empty string found as value for {1}."
-                    .format(parent_key, path)
+                    "In {0}, empty string found as value for {1}.".format(
+                        parent_key, path
+                    )
                 )
 
             elif error.validator == "anyOf":
                 path = ".".join(list(error.path))
                 context_message = error.context[0].message
-                context_message = re.sub(r"'.+' ", "'{0}' ".format(
-                    path
-                ), context_message)
+                context_message = re.sub(
+                    r"'.+' ", "'{0}' ".format(path), context_message
+                )
                 raise jsonschema.ValidationError(
-                    ("The value '{0}' in field {1} of {2} is not of type "
-                     "'{3}' or does not conform to the format '$(VARNAME)'.")
-                    .format(error.instance, path, parent_key,
-                            error.validator_value[0]["type"])
+                    (
+                        "The value '{0}' in field {1} of {2} is not of type "
+                        "'{3}' or does not conform to the format '$(VARNAME)'."
+                    ).format(
+                        error.instance,
+                        path,
+                        parent_key,
+                        error.validator_value[0]["type"],
+                    )
                 )
 
             else:
