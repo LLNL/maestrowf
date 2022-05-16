@@ -32,23 +32,23 @@ jobs:
     steps:
     - name: Check out
       uses: actions/checkout@v2
-    - name: Setup Python
-      uses: actions/setup-python@v1
+      
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
-    - name: Install Poetry
-      uses: dschep/install-poetry-action@v1.2
+        
+    - name: Install Poetry 
+      uses: snok/install-poetry-action@v1
 
     # Cache lock dependencies to speed up workflows
     - name: Cache Poetry virtualenv
       uses: actions/cache@v1
-      id: cache
+      id: cached-poetry-dependencies
       with:
-        path: ~/.virtualenvs
-        key: poetry-$
-        restore-keys: |
-          poetry-$
+        path: .venv
+        key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }
 
     - name: Install Dependencies using Poetry
       run: poetry install
