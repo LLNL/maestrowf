@@ -42,17 +42,15 @@ jobs:
     - name: Install Poetry 
       uses: snok/install-poetry@v1
 
-    # Cache lock dependencies to speed up workflows
-    # - name: Cache Poetry virtualenv
-    #   uses: actions/cache@v1
-    #   id: cached-poetry-dependencies
-    #   with:
-    #     path: .venv
-    #     key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
-
     - name: Install Dependencies using Poetry
       run: poetry install
-      # if: steps.cache.outputs.cache-hit != 'true'
 
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
     - name: Run pytest
       run: poetry run pytest
