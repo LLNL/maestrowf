@@ -147,7 +147,7 @@ class CancellationRecord(Record):
 class FluxFactory(object):
     """A factory for swapping out Flux's backend interface based on version."""
 
-    latest = "0.26.0"
+    latest = "0.31.0"
 
     def _iter_flux():
         """
