@@ -40,7 +40,7 @@ jobs:
         architecture: x64
         
     - name: Install Poetry 
-      uses: snok/install-poetry-action@v1
+      uses: snok/install-poetry@v1
 
     # Cache lock dependencies to speed up workflows
     - name: Cache Poetry virtualenv
