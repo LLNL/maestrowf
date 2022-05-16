@@ -43,16 +43,16 @@ jobs:
       uses: snok/install-poetry@v1
 
     # Cache lock dependencies to speed up workflows
-    - name: Cache Poetry virtualenv
-      uses: actions/cache@v1
-      id: cached-poetry-dependencies
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+    # - name: Cache Poetry virtualenv
+    #   uses: actions/cache@v1
+    #   id: cached-poetry-dependencies
+    #   with:
+    #     path: .venv
+    #     key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
 
     - name: Install Dependencies using Poetry
       run: poetry install
-      if: steps.cache.outputs.cache-hit != 'true'
+      # if: steps.cache.outputs.cache-hit != 'true'
 
     - name: Run pytest
       run: poetry run pytest
