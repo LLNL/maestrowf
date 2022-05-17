@@ -27,13 +27,20 @@ jobs:
         
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      
-  test-install:
-    needs: [ linting ]
+        
+  create-matrices:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
+        
+  test-install:
+    needs: [ linting, create-matrices ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.create-matrices.outputs.python-version) }}
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
+    name: Python ${{ matrix.python-version }} pip editable install
 
     steps:
     - uses: actions/checkout@v2
@@ -43,11 +50,12 @@ jobs:
         python -m pip install -e .
         
   tests:
+    needs: [ create-matrices ]
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
-    name: Python ${{ matrix.python-version }}
+      matrix: ${{ fromJSON(needs.create-matrices.outputs.python-version) }}
+        # python-version: ['3.7', '3.8', '3.9', '3.10']
+    name: Python ${{ matrix.python-version }} poetry install and tests
     steps:
     - name: Check out
       uses: actions/checkout@v2
