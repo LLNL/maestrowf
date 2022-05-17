@@ -52,6 +52,7 @@ jobs:
         python -m pip install -e .
         
   tests:
+    needs: [ linting ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
