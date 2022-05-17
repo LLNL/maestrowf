@@ -28,23 +28,25 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         
-  create-matrices:
+  test-install:
+    needs: [ linting ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
-        
-  test-install:
-    needs: [ linting, create-matrices ]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJSON(needs.create-matrices.outputs.python-version) }}
-        # python-version: ["3.7", "3.8", "3.9", "3.10"]
-    name: Python ${{ matrix.python-version }} pip editable install
+    name: Python ${{ matrix.python-version }} with pip
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Test install in editable
+    - name: Check out
+      uses: actions/checkout@v2
+      
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: x64
+        
+    - name: Test editable install
       run: |
         python -m pip install --upgrade pip
         python -m pip install -e .
@@ -53,9 +55,10 @@ jobs:
     needs: [ create-matrices ]
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJSON(needs.create-matrices.outputs.python-version) }}
-        # python-version: ['3.7', '3.8', '3.9', '3.10']
-    name: Python ${{ matrix.python-version }} poetry install and tests
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10']
+    name: Python ${{ matrix.python-version }} with poetry
+    
     steps:
     - name: Check out
       uses: actions/checkout@v2
