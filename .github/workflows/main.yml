@@ -52,7 +52,6 @@ jobs:
         python -m pip install -e .
         
   tests:
-    needs: [ create-matrices ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
