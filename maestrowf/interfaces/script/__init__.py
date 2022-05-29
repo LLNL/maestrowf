@@ -29,10 +29,15 @@
 
 """Module for interfaces that support various schedulers."""
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
+import inspect
+import logging
+import pkgutil
 
-
+from maestrowf.abstracts.interfaces.flux import FluxInterface
 from maestrowf.abstracts.containers import Record
 from maestrowf.abstracts.enums import CancelCode, SubmissionCode
+
+LOGGER = logging.getLogger(__name__)
 
 
 class SubmissionRecord(Record):
@@ -58,7 +63,7 @@ class SubmissionRecord(Record):
         """
         Property for the job identifier for the record.
 
-        :returns: A string representing the job identifer assigned by the
+        :returns: A string representing the job identifier assigned by the
                   scheduler.
         """
         return self._info.get("jobid", None)
@@ -137,3 +142,61 @@ class CancellationRecord(Record):
         :returns: Set of job identifiers that match the requested status.
         """
         return self._status.get(cancel_status, set())
+
+
+class FluxFactory(object):
+    """A factory for swapping out Flux's backend interface based on version."""
+
+    latest = "0.26.0"
+
+    def _iter_flux():
+        """
+        Based off of packaging.python.org loop over a namespace and find the
+        modules. This has been adapted for this particular use case of loading
+        all classes implementing FluxInterface loaded from all modules in
+        maestrowf.interfaces.script._flux.
+        :return: an iterable of the classes existing in the namespace
+        """
+        # get loader for the script adapter package
+        loader = pkgutil.get_loader('maestrowf.interfaces.script._flux')
+        # get all of the modules in the package
+        mods = [(name, ispkg) for finder, name, ispkg in pkgutil.iter_modules(
+            loader.load_module('maestrowf.interfaces.script._flux').__path__,
+            loader.load_module(
+                'maestrowf.interfaces.script._flux').__name__ + "."
+            )
+        ]
+        cs = []
+        for name, _ in mods:
+            # get loader for every module
+            m = pkgutil.get_loader(name).load_module(name)
+            # get all classes that implement ScriptAdapter and are not abstract
+            for n, cls in m.__dict__.items():
+                if isinstance(cls, type) and \
+                 issubclass(cls, FluxInterface) and \
+                 not inspect.isabstract(cls):
+                    cs.append(cls)
+        return cs
+
+    factories = {
+       interface.key: interface for interface in _iter_flux()
+    }
+
+    @classmethod
+    def get_interface(cls, interface_id):
+        if interface_id.lower() not in cls.factories:
+            msg = "Interface '{0}' not found. Specify a supported version " \
+                  "of Flux or implement a new one mapping to the '{0}'" \
+                  .format(str(interface_id))
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        return cls.factories[interface_id]
+
+    @classmethod
+    def get_valid_interfaces(cls):
+        return cls.factories.keys()
+
+    @classmethod
+    def get_latest_interface(cls):
+        return cls.factories[cls.latest]

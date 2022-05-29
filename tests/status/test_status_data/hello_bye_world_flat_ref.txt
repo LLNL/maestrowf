@@ -1,0 +1,22 @@
+                                                                                         Study: Test Study Flat                                                                                         
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Step Name                   ┃ Job ID ┃ Workspace                    ┃ State    ┃ Run Time       ┃ Elapsed Time   ┃ Start Time          ┃ Submit Time         ┃ End Time            ┃ Number Restarts ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ hello_world_GREETING.Hello. │ 36260  │ hello_world/GREETING.Hello.N │ FINISHED │ 0d:00h:00m:01s │ 0d:00h:00m:01s │ 2021-05-17 22:45:23 │ 2021-05-17 22:45:23 │ 2021-05-17 22:45:24 │ 0               │
+│ NAME.Pam                    │        │ AME.Pam                      │          │                │                │                     │                     │                     │                 │
+│ hello_world_GREETING.Ciao.N │ 36264  │ hello_world/GREETING.Ciao.NA │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 0               │
+│ AME.Jim                     │        │ ME.Jim                       │          │                │                │                     │                     │                     │                 │
+│ hello_world_GREETING.Hey.NA │ 36265  │ hello_world/GREETING.Hey.NAM │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 0               │
+│ ME.Michael                  │        │ E.Michael                    │          │                │                │                     │                     │                     │                 │
+│ hello_world_GREETING.Hi.NAM │ 36266  │ hello_world/GREETING.Hi.NAME │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 2021-05-17 22:45:24 │ 0               │
+│ E.Dwight                    │        │ .Dwight                      │          │                │                │                     │                     │                     │                 │
+│ bye_world_GREETING.Hello.NA │ 36268  │ bye_world/GREETING.Hello.NAM │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 0               │
+│ ME.Pam                      │        │ E.Pam                        │          │                │                │                     │                     │                     │                 │
+│ bye_world_GREETING.Ciao.NAM │ 36269  │ bye_world/GREETING.Ciao.NAME │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 0               │
+│ E.Jim                       │        │ .Jim                         │          │                │                │                     │                     │                     │                 │
+│ bye_world_GREETING.Hey.NAME │ 36270  │ bye_world/GREETING.Hey.NAME. │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 0               │
+│ .Michael                    │        │ Michael                      │          │                │                │                     │                     │                     │                 │
+│ bye_world_GREETING.Hi.NAME. │ 36272  │ bye_world/GREETING.Hi.NAME.D │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 2021-05-17 22:45:25 │ 0               │
+│ Dwight                      │        │ wight                        │          │                │                │                     │                     │                     │                 │
+│ bye_all                     │ 36276  │ bye_all                      │ FINISHED │ 0d:00h:00m:00s │ 0d:00h:00m:00s │ 2021-05-17 22:45:26 │ 2021-05-17 22:45:26 │ 2021-05-17 22:45:26 │ 0               │
+└─────────────────────────────┴────────┴──────────────────────────────┴──────────┴────────────────┴────────────────┴─────────────────────┴─────────────────────┴─────────────────────┴─────────────────┘

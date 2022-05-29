@@ -1,0 +1,55 @@
+description:
+    name: lulesh_sample1
+    description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations on SLURM.
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/lulesh
+
+    labels:
+        outfile: $(SIZE.label).$(ITERATIONS.label).log
+
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
+
+batch:
+    type        : flux
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+
+study:
+    - name: make-lulesh
+      description: Build the MPI enabled version of LULESH.
+      run:
+          cmd: |
+            cd $(LULESH)
+            mkdir build
+            cd build
+            cmake -WITH_MPI=Off -WITH_OPENMP=Off ..
+            make
+          depends: []
+
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
+          depends: [make-lulesh]
+          nodes: 1
+          procs: 1
+          cores per task: 1
+          nested: True
+          priority: high
+          walltime: "00:02:00"
+
+global.parameters:
+    SIZE:
+        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%

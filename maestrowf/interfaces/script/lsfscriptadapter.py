@@ -69,14 +69,16 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         super(LSFScriptAdapter, self).__init__()
 
-        # NOTE: Host doesn't seem to matter for SLURM. sbatch assumes that the
-        # current host is where submission occurs.
+        # NOTE: Host doesn't seem to matter for LSF
         self.add_batch_parameter("host", kwargs.pop("host"))
         self.add_batch_parameter("bank", kwargs.pop("bank"))
         self.add_batch_parameter("queue", kwargs.pop("queue"))
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
 
-        self._exec = "#!/bin/bash"
+        reservation = kwargs.get("reservation", None)
+        if reservation:
+            self.add_batch_parameter("reservation", reservation)
+
         self._header = {
             "nodes": "#BSUB -nnodes {nodes}",
             "queue": "#BSUB -q {queue}",
@@ -84,16 +86,23 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             "walltime": "#BSUB -W {walltime}",
             "job-name": "#BSUB -J {job-name}",
             "output": "#BSUB -o {output}",
+            "reservation": "#BSUB -U {reservation}",
             "error": "#BSUB -e {error}",
         }
 
         self._cmd_flags = {
-            "cmd":          "jsrun --bind rs",
-            "ntasks":       "--tasks_per_rs {procs} --cpu_per_rs {procs}",
-            "nodes":        "--nrs",
+            "cmd":          "jsrun",
+            "rs per node":  "-r",
+            "ntasks":       "--nrs",
+            "tasks per rs": "-a",
             "gpus":         "-g",
+            "cpus per rs":  "-c",
             "reservation":  "-J",
+            "bind":         "-b",
+            "bind gpus":    "-B",
         }
+
+        self._extension = "lsf.sh"
 
     def get_header(self, step):
         """
@@ -103,16 +112,23 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the header based on internal batch parameters and
                   the parameter step.
         """
-        run = dict(step.run)
         batch_header = dict(self._batch)
-        batch_header["nodes"] = run.pop("nodes", self._batch["nodes"])
+        batch_header["nodes"] = step.run.get("nodes", self._batch["nodes"])
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["output"] = "{}.%J.out".format(batch_header["job-name"])
         batch_header["error"] = "{}.%J.err".format(batch_header["job-name"])
 
+        # Updte the batch header with the values from the step's resources
+        batch_header.update(
+            {
+                resource: value for (resource, value) in step.run.items()
+                if value
+            }
+        )
+
         # LSF requires an hour and minutes format. We need to attempt to split
         # and correct if we get something that's coming in as HH:MM:SS
-        walltime = run.pop("walltime")
+        walltime = step.run.get("walltime")
         wt_split = walltime.split(":")
         if len(wt_split) == 3:
             # If wall time is specified in three parts, we'll just calculate
@@ -126,9 +142,10 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         batch_header["walltime"] = walltime
 
-        modified_header = [self._exec]
+        modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
-            modified_header.append(value.format(**batch_header))
+            if key in batch_header:
+                modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
 
@@ -142,30 +159,101 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
                   and procs.
         """
+
         args = [self._cmd_flags["cmd"]]
 
-        if nodes:
-            _nodes = nodes
-            args += [
-                self._cmd_flags["nodes"],
-                str(nodes)
-            ]
-        else:
-            _nodes = 1
+        # Processors segment, checking
+        # Need to account for processors per rs -> tasks per rs
+        rs_per_node = kwargs.get("rs per node", 1)
+        tasks_per_rs = kwargs.get("tasks per rs", 1)
 
-        _procs = int(procs/_nodes)  # Compute the number of CPUs per node (rs)
-        # Processors segment
+        if int(procs) > int((int(rs_per_node)*int(nodes)*int(tasks_per_rs))):
+
+            LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                         " must be a multiple of "
+                         "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                         " where 'rs per node' = %s, 'nodes' = %s, and"
+                         " 'tasks per rs' = %s",
+                         procs,
+                         rs_per_node*nodes*tasks_per_rs,
+                         rs_per_node,
+                         nodes,
+                         tasks_per_rs)
+            
+        if nodes:
+            rs_tasks = int(rs_per_node)*int(nodes)*int(tasks_per_rs)
+            if (int(procs) > rs_tasks) or (int(procs) % rs_tasks) > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'nodes' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = %s, 'nodes' = %s, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             int(rs_per_node)*int(nodes)*int(tasks_per_rs),
+                             rs_per_node,
+                             nodes,
+                             tasks_per_rs)
+
+        else:
+            # NOTE: is this case even allowed on lsf allocations? will it auto
+            #       compute the number of nodes on the allocation if scheduling
+            #       this to a reservation?  If so, might want to revisit
+            rs_tasks = int(rs_per_node)*int(tasks_per_rs)
+            if int(procs) > rs_tasks or int(procs) % rs_tasks > 0:
+                LOGGER.error("Resource Specification Error: 'procs' (%s)"
+                             " must be a multiple of "
+                             "'rs per node' * 'tasks per rs' (%s)"
+                             " where 'rs per node' = {}, and"
+                             " 'tasks per rs' = %s",
+                             procs,
+                             int(rs_per_node)*int(tasks_per_rs),
+                             rs_per_node,
+                             tasks_per_rs)
+
         args += [
-            self._cmd_flags["ntasks"].format(procs=_procs)
+            self._cmd_flags["ntasks"],
+            str(procs)
+        ]
+
+        # Binding
+        bind = kwargs.get("bind", "rs")
+        args += [
+            self._cmd_flags["bind"],
+            str(bind)
         ]
 
         # If we have GPUs being requested, add them to the command.
         gpus = kwargs.get("gpus", 0)
+        if not gpus:     # Initialized to "" in study step, FIX THIS
+            gpus = 0
         if gpus:
             args += [
                 self._cmd_flags["gpus"],
                 str(gpus)
             ]
+
+        # Optional gpu binding -> LSF 10.1+
+        bind_gpus = kwargs.get("bind gpus", None)
+        if bind_gpus:
+            args += [
+                self._cmd_flags["bind gpus"],
+                str(bind_gpus)
+            ]
+
+        # handle mappings from node/procs to tasks/rs/nodes
+
+        cpus_per_rs = kwargs.get("cpus per rs", 1)
+        if not cpus_per_rs:     # Initialized to "" in study step, FIX THIS
+            cpus_per_rs = 1
+
+        args += [self._cmd_flags['tasks per rs'],
+                 str(tasks_per_rs)]
+
+        args += [self._cmd_flags['rs per node'],
+                 str(rs_per_node)]
+
+        args += [self._cmd_flags['cpus per rs'],
+                 str(cpus_per_rs)]
 
         return " ".join(args)
 
@@ -183,13 +271,6 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                   identiifer.
         """
         args = ["bsub"]
-
-        if "reservation" in self._batch:
-            args += [
-                "-U",
-                self._batch["reservation"]
-            ]
-
         args += ["-cwd", cwd, "<", path]
         cmd = " ".join(args)
         LOGGER.debug("cwd = %s", cwd)
@@ -381,7 +462,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         """
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
-        fname = "{}.lsf.cmd".format(step.name)
+        fname = "{}.{}".format(step.name, self._extension)
         script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             if to_be_scheduled:
@@ -393,7 +474,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             script.write(cmd)
 
         if restart:
-            rname = "{}.restart.lsf.cmd".format(step.name)
+            rname = "{}.restart.{}".format(step.name, self._extension)
             restart_path = os.path.join(ws_path, rname)
 
             with open(restart_path, "w") as script:
@@ -408,3 +489,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    @property
+    def extension(self):
+        return self._extension

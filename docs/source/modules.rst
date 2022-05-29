@@ -6,3 +6,4 @@ Maestro Workflow Conductor
 
    maestrowf
    setup
+   tests

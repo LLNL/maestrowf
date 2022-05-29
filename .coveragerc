@@ -1,0 +1,6 @@
+[report]
+omit =
+    tests/*
+    setup.py
+    .venv/*
+    .tox/*

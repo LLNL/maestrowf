@@ -59,15 +59,17 @@ class StudyStep:
     This class is primarily a 1:1 mapping of a study step in the YAML spec in
     terms of data. The StudyStep's class API should capture all functions that
     a step can be expected to perform, including:
-        - Applying a combination of parameters to itself.
-        - Tests for equality and non-equality to check for changes.
-        - Other -- WIP
+
+    * Applying a combination of parameters to itself.
+    * Tests for equality and non-equality to check for changes.
+    * Other -- WIP
     """
 
     def __init__(self):
         """Object that represents a single workflow step."""
-        self.name = ""
+        self._name = ""
         self.description = ""
+        self.nickname = ""
         self.run = {
                         "cmd":              "",
                         "depends":          "",
@@ -96,6 +98,35 @@ class StudyStep:
 
         return self.__ne__(tmp), tmp
 
+    @property
+    def name(self):
+        """
+        Get the name to assign to a task for this step.
+
+        :returns: A utf-8 formatted string of the task name.
+        """
+        if self.nickname:
+            return self.nickname
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        """
+        Set the name of a StudyStep instance.
+
+        :param value: A string value representing the name to give the step.
+        """
+        self._name = value
+
+    @property
+    def real_name(self):
+        """
+        Get the real name of the step (ignore nickname).
+
+        :returns: A string of the true name of a StudyStep instance.
+        """
+        return self._name
+
     def __eq__(self, other):
         """
         Equality operator for the StudyStep class.
@@ -104,7 +135,7 @@ class StudyStep:
         : returns: True if other is equal to self, False otherwise.
         """
         if isinstance(other, self.__class__):
-            # This works because the classes are currently intefaces over
+            # This works because the classes are currently interfaces over
             # internals that are all based on Python builtin classes.
             # NOTE: This method will need to be reworked if something more
             # complex is done with the class.
@@ -129,40 +160,37 @@ class Study(DAG, PickleInterface):
     The Study class is part of the meat and potatoes of this whole package. A
     Study object is where the intersection of the major moving parts are
     collected. These moving parts include:
-        - ParameterGenerator for getting combinations of user parameters
-        - StudyEnvironment for managing and applying the environment to studies
-        - Study flow, which is a DAG of the abstract workflow
+
+    * ParameterGenerator for getting combinations of user parameters
+    * StudyEnvironment for managing and applying the environment to studies
+    * Study flow, which is a DAG of the abstract workflow
 
     The class is responsible for a number of the major key steps in study setup
     as well. Those responsibilities include (but are not limited to):
-        - Setting up the workspace where a simulation campaign will be run.
-        - Applying the StudyEnvionment to the abstract flow DAG:
-            - Creating the global workspace for a study.
-            - Setting up the parameterized workspaces for each combination.
-            - Acquiring dependencies as specified in the StudyEnvironment.
 
-        - Intelligently constructing the expanded DAG to be able to:
-            - Recognize when a step executes in a parameterized workspace
-            - Recognize when a step executes in the global workspace
+    * Setting up the workspace where a simulation campaign will be run.
+    * Applying the StudyEnvionment to the abstract flow DAG:
+        * Creating the global workspace for a study.
+        * Setting up the parameterized workspaces for each combination.
+        * Acquiring dependencies as specified in the StudyEnvironment.
 
-        - Expanding the abstract flow to the full set of specified parameters.
+    * Intelligently constructing the expanded DAG to be able to:
+        * Recognize when a step executes in a parameterized workspace
+        * Recognize when a step executes in the global workspace
+
+    * Expanding the abstract flow to the full set of specified parameters.
 
     Future functionality that makes sense to add here:
-        - Metadata collection. If we're setting things up here, collect the
-        general information. We might even want to venture to say that a set
-        of directives may be useful so that they could be placed into
-        Dependency classes as hooks for dumping that data automatically.
-        - A way of packaging an instance of the class up into something that is
-        easy to store in the ExecutionDAG class so that an API can be
-        designed in whatever class ends up managing all of this to have
-        machine learning applications pipe messages to spin up new studies
-        using the same environment.
-            - The current solution to this is VERY basic. Currently the plan is
-            to write a parameterized specification (not unlike the method of
-            using parameterized .dat files for simulators) and just have the
-            ML engine string replace those. It's crude because currently we'd
-            have to just construct a new environment, with no way to manage
-            injecting the new set into an existing workspace.
+
+    * Metadata collection. If we're setting things up here, collect the
+      general information. We might even want to venture to say that a set
+      of directives may be useful so that they could be placed into
+      Dependency classes as hooks for dumping that data automatically.
+    * A way of packaging an instance of the class up into something that is
+      easy to store in the ExecutionDAG class so that an API can be
+      designed in whatever class ends up managing all of this to have
+      machine learning applications pipe messages to spin up new studies
+      using the same environment.
     """
 
     def __init__(self, name, description,
@@ -334,10 +362,10 @@ class Study(DAG, PickleInterface):
         a step. When adding steps out of order it's recommended to just use the
         base class DAG functionality and manually make connections.
 
-         :param step: A StudyStep instance to be added to the Study instance.
+        :param step: A StudyStep instance to be added to the Study instance.
         """
         # Add the node to the DAG.
-        self.add_node(step.name, step)
+        self.add_node(step.real_name, step)
         LOGGER.info(
             "Adding step '%s' to study '%s'...", step.name, self.name)
         # Apply the environment to the incoming step.
@@ -348,17 +376,17 @@ class Study(DAG, PickleInterface):
         if "depends" in step.run and step.run["depends"]:
             for dependency in step.run["depends"]:
                 LOGGER.info("{0} is dependent on {1}. Creating edge ("
-                            "{1}, {0})...".format(step.name, dependency))
+                            "{1}, {0})...".format(step.real_name, dependency))
                 if "*" not in dependency:
-                    self.add_edge(dependency, step.name)
+                    self.add_edge(dependency, step.real_name)
                 else:
                     self.add_edge(
                         re.sub(ALL_COMBOS, "", dependency),
-                        step.name
+                        step.real_name
                     )
         else:
             # Otherwise, if no other dependency, just execute the step.
-            self.add_edge(SOURCE, step.name)
+            self.add_edge(SOURCE, step.real_name)
 
     def walk_study(self, src=SOURCE):
         """
@@ -585,7 +613,6 @@ class Study(DAG, PickleInterface):
                 node.run["restart"] = r_cmd
                 LOGGER.debug("New cmd = %s", cmd)
                 LOGGER.debug("New restart = %s", r_cmd)
-
                 dag.add_step(step, node, workspace, rlimit)
 
                 if self.depends[step] or self.hub_depends[step]:
@@ -627,11 +654,15 @@ class Study(DAG, PickleInterface):
                                 "**********************************",
                                 str(combo))
                     # Compute this step's combination name and workspace.
+                    nickname = None
                     combo_str = combo.get_param_string(self.used_params[step])
+                    # We must encode explicitly to utf-8
+                    # combo_str = combo_str.encode("utf-8")
                     if self._hash_ws:
+                        nickname = md5(combo_str.encode("utf-8")).hexdigest()
                         workspace = make_safe_path(
                                         self._out_path,
-                                        *[step, md5(combo_str).hexdigest()])
+                                        *[step, nickname])
                     else:
                         workspace = \
                             make_safe_path(self._out_path, *[step, combo_str])
@@ -647,6 +678,7 @@ class Study(DAG, PickleInterface):
 
                     modified, step_exp = node.apply_parameters(combo)
                     step_exp.name = combo_str
+                    step_exp.nickname = nickname
 
                     # Substitute workspaces into the combination.
                     cmd = step_exp.run["cmd"]
@@ -687,7 +719,9 @@ class Study(DAG, PickleInterface):
                     step_exp.run["cmd"] = cmd
                     step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
-                    dag.add_step(step_exp.name, step_exp, workspace, rlimit)
+                    dag.add_step(
+                        step_exp.real_name, step_exp, workspace, rlimit,
+                        params=combo.get_param_values(self.used_params[step]))
 
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can
@@ -764,7 +798,7 @@ class Study(DAG, PickleInterface):
             used_spaces = re.findall(WSREGEX, cmd)
             for match in used_spaces:
                 # In this case we don't need to look for any parameters, or
-                # combination depdendent ("funnel") steps. It's a simple sub.
+                # combination dependent ("funnel") steps. It's a simple sub.
                 LOGGER.info("Workspace found -- %s", match)
                 workspace_var = "$({}.workspace)".format(match)
                 ws = self.workspaces[match]
