@@ -6,14 +6,14 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.tabbed
   - pymdownx.emoji:
-      emoji_index: "!!python/name:materialx.emoji.twemoji"
-      emoji_generator: "!!python/name:materialx.emoji.to_svg"
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.superfences:
       # make exceptions to highlighting of code:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: "!!python/name:mermaid2.fence_mermaid"
+          format: !!python/name:mermaid2.fence_mermaid
 
 plugins:
     - search
