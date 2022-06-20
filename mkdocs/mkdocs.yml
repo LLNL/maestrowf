@@ -1,0 +1,55 @@
+site_name: Maestro Design Docs
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.details
+  - pymdownx.tabbed
+  - pymdownx.emoji:
+      emoji_index: "!!python/name:materialx.emoji.twemoji"
+      emoji_generator: "!!python/name:materialx.emoji.to_svg"
+  - pymdownx.superfences:
+      # make exceptions to highlighting of code:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: "!!python/name:mermaid2.fence_mermaid"
+
+plugins:
+    - search
+    - mermaid2:
+        arguments:
+          securityLevel: 'loose'
+          theme: 'dark'
+extra_javascript:
+    - https://unpkg.com/mermaid/dist/mermaid.min.js
+
+theme:
+  name: material
+  logo: assets/logo2.png
+  features:
+    - header.autohide
+    - navigation.tabs.sticky
+    - navigation.tabs
+    - navigation.expand
+    - toc.integrate
+  palette:
+    scheme: slate
+    primary: black
+    accent: blue
+nav:
+    - Home: 'index.md'
+    - Philosophy:
+        - Background: "Philosophy/index.md"
+        - How are Workflows Represented?: "Philosophy/representation.md"
+        - Principles: "Philosophy/principles.md"
+    - Maestro:
+        - Overview: 'Maestro/index.md'
+        - Installation: 'Maestro/install.md'
+        - Specification: 'Maestro/specification.md'
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/LLNL/maestrowf
+      name: Maestro on GitHub
+copyright: Copyright &copy; 2021 | Francesco Di Natale
