@@ -122,7 +122,6 @@ Git dependencies are used to clone remotely hosted items to located at the URL s
 You specify the various `git` type dependency as follows:
 
 === "Latest Main Branch"
-
     ``` yaml
     REPO1:
       type: git
@@ -131,7 +130,6 @@ You specify the various `git` type dependency as follows:
     ```
 
 === "Custom Branch"
-
     ``` yaml
     REPO1:
       type: git
@@ -141,7 +139,6 @@ You specify the various `git` type dependency as follows:
     ```
 
 === "Tagged Version"
-
     ``` yaml
     REPO1:
       type: git
@@ -151,7 +148,6 @@ You specify the various `git` type dependency as follows:
     ```
 
 === "Commit Hash"
-
     ``` yaml
     REPO1:
       type: git
@@ -178,7 +174,6 @@ Just as you would refer to a `path` or `git` dependency, you refer to a `binary`
 You specify a `binary` dependency as follows:
 
 === "Versioned Binary"
-
     ``` yaml
     BIN1:
       type:    binary
@@ -187,7 +182,6 @@ You specify a `binary` dependency as follows:
     ```
 
 === "Hashed Binary"
-
     ``` yaml
     BIN1:
       type:    binary
