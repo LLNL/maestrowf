@@ -4,7 +4,6 @@ markdown_extensions:
   - attr_list
   - pymdownx.highlight
   - pymdownx.details
-  - pymdownx.tabbed
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
@@ -14,6 +13,8 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
     - search
