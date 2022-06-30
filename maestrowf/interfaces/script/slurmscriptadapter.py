@@ -255,12 +255,31 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :param joblist: A list of job identifiers to be queried.
         :returns: The return code of the status query, and a dictionary of job
             identifiers to their status.
+
+        .. note:: slurm versions > 21.08 enable json/yaml output options
         """
-        # TODO: This method needs to be updated to use sacct.
-        # squeue options:
-        # -u = username to search queues for.
-        # -t = list of job states to search for. 'all' for all states.
-        cmd = "squeue -u $USER -t all"
+        cmd = "sacct -u $USER --jobs={}"
+        # Note: can add similar columns as squeue defaults to, but do we want it?
+        # sacct -u $USER --jobs=jobid1,jobid2,jobid3 --format=jobid,partition,jobname,user,state,time,nnodes,nodelist,reason
+        # NOTE: --jobs works different from querying without fixed list ->
+        # not specifying this requires manual specification of time frames which
+        # could be error prone when resuming studies some time later
+
+        # columns exposed in sacct
+        # 1 - JobID (includes entries for job steps too: jobid.step)
+        # 2 - JobName (includes job step names
+        # 3 - Partition
+        # 4 - Account
+        # 5 - AllocCPUs
+        # 6 - State
+        # 7 - ExitCode
+
+        # First two rows define columns and then header separators '----'
+        data_row_offset = 2
+        state_index = 5
+        jobid_index = 0
+
+        cmd = cmd.format(','.join(joblist))        
         p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
@@ -271,24 +290,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
             status[jobid] = None
 
         if retcode == 0:
-            for job in output.split("\n")[1:]:
+            for job in output.split("\n")[data_row_offset:]:
                 LOGGER.debug("Job Entry: %s", job)
-                # The squeue command output is split with the following indices
-                # used for specific information:
-                # 0 - Job Identifier
-                # 1 - Queue
-                # 2 - Job name
-                # 3 - User
-                # 4 - State [Passed to _state]
-                # 5 - Current Execution Time
-                # 6 - Assigned Node Count
-                # 7 - Hostname and assigned node identifier list
                 job_split = re.split(r"\s+", job)
-                state_index = 4
-                jobid_index = 0
-                if job_split[0] == "":
-                    LOGGER.debug("Removing blank entry from head of status.")
-                    job_split = job_split[1:]
 
                 LOGGER.debug("Entry split: %s", job_split)
                 if not job_split:
@@ -301,6 +305,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
                     status[job_split[jobid_index]] = \
                         self._state(job_split[state_index])
 
+            if any([jstatus is None for _, jstatus in status.items()]):
+                missing_jobids = [jobid for jobid, jstatus in status.items() if jstatus is None]
+                LOGGER.debug("Lost track of Job Entries: %s",
+                             ', '.join([str(jobid) for jobid in missing_jobids]))
+                    
             return JobStatusCode.OK, status
         elif retcode == 1:
             LOGGER.warning("User '%s' has no jobs executing. Returning.",
@@ -344,21 +353,24 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A Study.State enum corresponding to parameter job_state.
         """
         LOGGER.debug("Received SLURM State -- %s", slurm_state)
-        if slurm_state == "R":
+        if slurm_state == "R" or slurm_state == "RUNNING":
             return State.RUNNING
-        elif slurm_state == "PD":
+        elif slurm_state == "PD" or slurm_state == "PENDING":
             return State.PENDING
-        elif slurm_state == "CG":
+        elif slurm_state == "CG" or slurm_state == "COMPLETING":
+            # NOTE: this doesn't appear to show up with sacct, so maybe remove?
             return State.FINISHING
-        elif slurm_state == "CD":
+        elif slurm_state == "CD" or slurm_state == "COMPLETED":
             return State.FINISHED
-        elif slurm_state == "NF":
+        elif slurm_state == "NF" or slurm_state == "NODE_FAIL":
             return State.HWFAILURE
-        elif slurm_state == "TO":
+        elif slurm_state == "TO" or slurm_state == "TIMEOUT":
             return State.TIMEDOUT
-        elif slurm_state == "ST" or slurm_state == "F":
+        elif (slurm_state == "ST" or
+              slurm_state == "F" or
+              slurm_state == "FAILED"):
             return State.FAILED
-        elif slurm_state == "CA":
+        elif slurm_state == "CA" or slurm_state == "CANCELLED":
             return State.CANCELLED
         else:
             return State.UNKNOWN
