@@ -230,7 +230,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
                 LOGGER.error(msg)
                 raise ValueError(msg)
 
-            if total_nodes > nodes:
+            if nodes and total_nodes > nodes:
                 msg = "Total nodes ({}) requested exceeds the " \
                       "maximum requested ({})".format(total_nodes, nodes)
                 LOGGER.error(msg)
