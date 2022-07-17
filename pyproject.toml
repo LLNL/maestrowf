@@ -45,6 +45,11 @@ tabulate = "*"
 
 [tool.poetry.dev-dependencies]
 coverage = "*"
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocs-material-extensions = "*"
+mkdocs-mermaid2-plugin = "*"
+pymdown-extensions = "*"
 sphinx_rtd_theme = "*"
 sphinx = "*"
 flake8 = "*"

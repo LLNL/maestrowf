@@ -9,3 +9,13 @@ build:
       - pip install poetry>=1.2
       - poetry config virtualenvs.create false
       - poetry install
+
+mkdocs:
+  configuration: mkdocs/mkdocs.yml
+  # Temporarily allow warnings
+  fail_on_warning: false
+
+# # Optionally declare the Python requirements required to build your docs
+# python:
+#    install:
+#    - requirements: docs/requirements.txt
