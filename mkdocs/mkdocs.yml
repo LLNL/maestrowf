@@ -25,6 +25,9 @@ plugins:
 extra_javascript:
     - https://unpkg.com/mermaid/dist/mermaid.min.js
 
+extra_css:
+  - custom.css
+  
 theme:
   name: material
   logo: assets/logo2.png
