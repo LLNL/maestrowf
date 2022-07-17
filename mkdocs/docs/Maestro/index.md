@@ -4,10 +4,71 @@ Maestro is an open-source HPC software tool that defines a YAML-based study spec
 
 ----------------
 
-## An Example Study using LULESH
+## Getting Started is Quick and Easy
 
-Maestro comes packed with a basic example using [LULESH](https://github.com/LLNL/LULESH), a proxy application provided by LLNL. You can find the example [here](https://maestrowf.readthedocs.io/en/latest/quick_start.html#).
+Create a `YAML` file named `study.yaml` and paste the following content into the file:
 
+``` yaml
+description:
+    name: hello_world
+    description: A simple 'Hello World' study.
+
+study:
+    - name: say-hello
+      description: Say hello to the world!
+      run:
+          cmd: |
+            echo "Hello, World!" > hello_world.txt
+```
+
+> *PHILOSOPHY*: Maestro believes in the principle of a clearly defined process, specified as a list of tasks, that are self-documenting and clear in their intent.
+
+Running the `hello_world` study is as simple as...
+
+    maestro run study.yaml
+    
+Doing so will generate your hello_world.txt in an isolated workspace next to your study.yaml workflow specification:
+
+![Hello World Workspace](../assets/images/examples/hello_world/hello_world_workspace.svg)
+
+
+## Creating a Parameter Study is just as Easy
+
+With the addition of the `global.parameters` block, and a few simple tweaks to your `study` block, the complete specification should look like this:
+
+``` yaml
+description:
+    name: hello_planet
+    description: A simple study to say hello to planets (and Pluto)
+
+study:
+    - name: say-hello
+      description: Say hello to a planet!
+      run:
+          cmd: |
+            echo "Hello, $(PLANET)!" > hello_$(PLANET).txt
+
+global.parameters:
+    PLANET:
+        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto]
+        label: PLANET.%%
+```
+
+> *PHILOSOPHY*: Maestro believes that a workflow should be easily parameterized with minimal modifications to the core process.
+
+Maestro will automatically expand each parameter into its own isolated workspace, generate a script for each parameter, and automatically monitor execution of each task.
+
+And, running the study is still as simple as:
+
+``` bash
+    maestro run study.yaml
+```
+
+Doing so will generate many hello_planet.txt files in an isolated workspace next to this hello_planet.yaml workflow specification:
+
+![Hello Planet Workspace](../assets/images/examples/hello_planet/hello_planet_workspace.svg)
+
+Continue on to the tutorials and how-to-guides to continue layering on all of the available features including multi-step workflows, scheduling studies on HPC clusters, custom parameter generation facilities.  For a complete overview of the yaml specification see [Specification](specification.md)
 
 ## Contributors
 
