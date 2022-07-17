@@ -4,7 +4,7 @@ for the documentation
 
 Todo
 ----
-- [ ] Obfuscate abs paths to hide user/machine name info
+- [X] Obfuscate abs paths to hide user/machine name info
 - [X] Add argparse opts to control output settings
 - [ ] Tweak theme to better match mkdocs material dark? the tree branches
       are a little bright
@@ -12,12 +12,12 @@ Todo
       font and line heights to inherit from mkdocs css settings
       NOTE: something doesn't quite work right -> size 12 renders larger than
       both the size 20 default and size 16 when read in by mkdocs..
-- [ ] Custom sizing to remove terminal width dependency for better reproducibility
+- [ ] Custom sizing to remove terminal width dependency for better
+      reproducibility
 - [ ] Make an svg renderer for status layouts
 - [ ] Store these in the docs and make better org for the assets/scripts
 """
 import argparse
-from functools import partial
 import os
 import pathlib
 import sys
@@ -70,28 +70,32 @@ MKDOCS_CONSOLE_SVG_FORMAT = """\
     </g>
     </g>
 </svg>
-"""
+""" # noqa E501
 from rich import _export_format
 _export_format.CONSOLE_SVG_FORMAT = MKDOCS_CONSOLE_SVG_FORMAT
 
 from rich._export_format import CONSOLE_SVG_FORMAT
 # CONSOLE_SVG_FORMAT = MKDOCS_CONSOLE_SVG_FORMAT
 
-from rich import print
-from rich.color import parse_rgb_hex
+# Why does flake8 not like this import?a
+from rich import print          # noqa E999
+from rich.color import parse_rgb_hex, blend_rgb
 from rich.console import Console
 from rich.filesize import decimal
 from rich.markup import escape
-from rich.terminal_theme import TerminalTheme
+from rich.terminal_theme import TerminalTheme, SVG_EXPORT_THEME
 from rich.text import Text
 from rich.tree import Tree
 from rich.segment import Segment
 from rich.style import Style
-from typing import Optional
+
+from typing import Optional, Dict, List
 import zlib
 from math import ceil
 from rich.traceback import install
 install(show_locals=True)
+
+
 # Override svg export to change char height/width units from pixels to em
 def export_svg(
     self,
@@ -112,7 +116,7 @@ def export_svg(
         code_format (str): Format string used to generate the SVG. Rich will inject a number of variables
             into the string in order to form the final SVG output. The default template used and the variables
             injected by Rich can be found by inspecting the ``console.CONSOLE_SVG_FORMAT`` variable.
-    """
+    """ # noqa E501
 
     from rich.cells import cell_len
 
@@ -216,7 +220,8 @@ def export_svg(
         )
     )
     y = 0
-    for y, line in enumerate(Segment.split_and_crop_lines(segments, length=width)):
+    segments = Segment.split_and_crop_lines(segments, length=width)
+    for y, line in enumerate(segments):
         x = 0
         for text, style, _control in line:
             style = style or Style()
@@ -274,12 +279,12 @@ def export_svg(
     lines = "\n".join(
         f"""<clipPath id="{unique_id}-line-{line_no}">
 {make_tag("rect", x=0, y=offset, width=char_width * width, height=line_height + 0.25)}
-        </clipPath>"""
+        </clipPath>"""          # noqa E501
         for line_no, offset in enumerate(line_offsets)
     )
 
     styles = "\n".join(
-        f".{unique_id}-r{rule_no} {{ {css} }}" for css, rule_no in classes.items()
+        f".{unique_id}-r{rule_no} {{ {css} }}" for css, rule_no in classes.items()  # noqa E501
     )
     backgrounds = "".join(text_backgrounds)
     matrix = "".join(text_group)
@@ -309,7 +314,7 @@ def export_svg(
             x=terminal_width // 2,
             y=margin_top + char_height + 6,
         )
-    chrome += f"""
+    chrome += """
         <g transform="translate(26,22)">
         <circle cx="0" cy="0" r="7" fill="#ff5f57"/>
         <circle cx="22" cy="0" r="7" fill="#febc2e"/>
@@ -337,38 +342,55 @@ def export_svg(
     return svg
 
 
-Console.export_svg = export_svg # partial(export_svg, char_height=16)
+Console.export_svg = export_svg
 
 # # Mkdocs material colors
 # # Defaults
-#   --md-default-fg-color:               hsla(0, 0%, 0%, 0.87);        rgba(0, 0, 0, 0.87)
-#   --md-default-fg-color--light:        hsla(0, 0%, 0%, 0.54);        rgba(0, 0, 0, 0.54)
-#   --md-default-fg-color--lighter:      hsla(0, 0%, 0%, 0.32);        rgba(0, 0, 0, 0.32)
-#   --md-default-fg-color--lightest:     hsla(0, 0%, 0%, 0.07);        rgba(0, 0, 0, 0.07)
-#   --md-default-bg-color:               hsla(0, 0%, 100%, 1);         rgba(255, 255, 255, 1)
-#   --md-default-bg-color--light:        hsla(0, 0%, 100%, 0.7);       rgba(255, 255, 255, 0.7)
-#   --md-default-bg-color--lighter:      hsla(0, 0%, 100%, 0.3);       rgba(255, 255, 255, 0.3)
-#   --md-default-bg-color--lightest:     hsla(0, 0%, 100%, 0.12);      rgba(255, 255, 255, 0.12)
+#   --md-default-fg-color:           hsla(0, 0%, 0%, 0.87);
+#                                    rgba(0, 0, 0, 0.87)
+#   --md-default-fg-color--light:    hsla(0, 0%, 0%, 0.54);
+#                                    rgba(0, 0, 0, 0.54)
+#   --md-default-fg-color--lighter:  hsla(0, 0%, 0%, 0.32);
+#                                    rgba(0, 0, 0, 0.32)
+#   --md-default-fg-color--lightest: hsla(0, 0%, 0%, 0.07);
+#                                    rgba(0, 0, 0, 0.07)
+#   --md-default-bg-color:           hsla(0, 0%, 100%, 1);
+#                                    rgba(255, 255, 255, 1)
+#   --md-default-bg-color--light:    hsla(0, 0%, 100%, 0.7);
+#                                    rgba(255, 255, 255, 0.7)
+#   --md-default-bg-color--lighter:  hsla(0, 0%, 100%, 0.3);
+#                                    rgba(255, 255, 255, 0.3)
+#   --md-default-bg-color--lightest: hsla(0, 0%, 100%, 0.12);
+#                                    rgba(255, 255, 255, 0.12)
 
 # # code
 
-#   --md-code-fg-color:                  hsla(200, 18%, 26%, 1);       rgba(54, 70, 78, 1)
-#   --md-code-bg-color:                  hsla(0, 0%, 96%, 1);          rgba(244, 244, 244, 1)
+#   --md-code-fg-color:          hsla(200, 18%, 26%, 1);
+#                                rgba(54, 70, 78, 1)
+#   --md-code-bg-color:          hsla(0, 0%, 96%, 1);
+#                                rgba(244, 244, 244, 1)
 
 #   // Code highlighting color shades
-#   --md-code-hl-color:                  hsla(#{hex2hsl($clr-yellow-a200)}, 0.5);  rgba(254, 255, 0, 0.5)
-#   --md-code-hl-number-color:           hsla(0, 67%, 50%, 1);                     rgba(212, 42, 42, 1)
-#   --md-code-hl-special-color:          hsla(340, 83%, 47%, 1);                   rgba(219, 20, 86, 1)
-#   --md-code-hl-function-color:         hsla(291, 45%, 50%, 1);                   rgba(167, 70, 184, 1)
-#   --md-code-hl-constant-color:         hsla(250, 63%, 60%, 1);                   rgba(110, 88, 217, 1)
-#   --md-code-hl-keyword-color:          hsla(219, 54%, 51%, 1);                   rgba(62, 109, 197, 1)
-#   --md-code-hl-string-color:           hsla(150, 63%, 30%, 1);                   rgba(28, 124, 76, 1)
-#   --md-code-hl-name-color:             var(--md-code-fg-color);
-#   --md-code-hl-operator-color:         var(--md-default-fg-color--light);
-#   --md-code-hl-punctuation-color:      var(--md-default-fg-color--light);
-#   --md-code-hl-comment-color:          var(--md-default-fg-color--light);
-#   --md-code-hl-generic-color:          var(--md-default-fg-color--light);
-#   --md-code-hl-variable-color:         var(--md-default-fg-color--light);
+#   --md-code-hl-color:          hsla(#{hex2hsl($clr-yellow-a200)}, 0.5);
+#                                rgba(254, 255, 0, 0.5)
+#   --md-code-hl-number-color:   hsla(0, 67%, 50%, 1);
+#                                rgba(212, 42, 42, 1)
+#   --md-code-hl-special-color:  hsla(340, 83%, 47%, 1);
+#                                rgba(219, 20, 86, 1)
+#   --md-code-hl-function-color: hsla(291, 45%, 50%, 1);
+#                                rgba(167, 70, 184, 1)
+#   --md-code-hl-constant-color: hsla(250, 63%, 60%, 1);
+#                                rgba(110, 88, 217, 1)
+#   --md-code-hl-keyword-color:  hsla(219, 54%, 51%, 1);
+#                                rgba(62, 109, 197, 1)
+#   --md-code-hl-string-color:   hsla(150, 63%, 30%, 1);
+#                                rgba(28, 124, 76, 1)
+#   --md-code-hl-name-color:        var(--md-code-fg-color);
+#   --md-code-hl-operator-color:    var(--md-default-fg-color--light);
+#   --md-code-hl-punctuation-color: var(--md-default-fg-color--light);
+#   --md-code-hl-comment-color:     var(--md-default-fg-color--light);
+#   --md-code-hl-generic-color:     var(--md-default-fg-color--light);
+#   --md-code-hl-variable-color:    var(--md-default-fg-color--light);
 
 # Color picker based from dark mode setting:
 # --md-code-hl-number-color            rgb(215, 112, 97)
@@ -416,13 +438,13 @@ MATERIAL_DARK = TerminalTheme(
 
 MATERIAL_DARK_2 = TerminalTheme(
     (33, 34, 43),            # background
-    (213, 215, 225),         # foreground    
+    (213, 215, 225),         # foreground
     # parse_rgb_hex('263238'),            # background
     # parse_rgb_hex('ECEFF1'),            # foreground
     # Normal colorset
     [parse_rgb_hex('546E7A'),           # black
      parse_rgb_hex('FF5252'),           # red
-     (28, 124, 76), # parse_rgb_hex('5CF19E'),           # green
+     (28, 124, 76),       # parse_rgb_hex('5CF19E'),  # green
      parse_rgb_hex('FFD740'),           # yellow
      parse_rgb_hex('40C4FF'),           # blue
      parse_rgb_hex('FF4081'),           # magenta
@@ -444,23 +466,24 @@ MKDOCS_MATERIAL_DARK = TerminalTheme(
     (213, 215, 225),         # foreground
     # Normal colorset
     [parse_rgb_hex('546E7A'),           # black
-     (215, 112, 97), # parse_rgb_hex('FF5252'),           # red
-     (28, 124, 76), # parse_rgb_hex('5CF19E'),           # green
-     (144, 134, 220), # parse_rgb_hex('FFD740'),           # yellow     
-     (111, 146, 218), # parse_rgb_hex('40C4FF'),           # blue
-     (223, 105, 144), # parse_rgb_hex('FF4081'),           # magenta
-     (90, 174, 118), # parse_rgb_hex('64FCDA'),           # cyan
+     (215, 112, 97),      # parse_rgb_hex('FF5252'),  # red
+     (28, 124, 76),       # parse_rgb_hex('5CF19E'),  # green
+     (144, 134, 220),  # parse_rgb_hex('FFD740'),     # yellow
+     (111, 146, 218),  # parse_rgb_hex('40C4FF'),     # blue
+     (223, 105, 144),  # parse_rgb_hex('FF4081'),     # magenta
+     (90, 174, 118),   # parse_rgb_hex('64FCDA'),     # cyan
      parse_rgb_hex('FFFFFF')],          # white
     # Bright colorset
     [parse_rgb_hex('B0BEC5'),           # black
      parse_rgb_hex('FF8A80'),           # red
      parse_rgb_hex('B9F6CA'),           # green
      parse_rgb_hex('FFE57F'),           # yellow
-     parse_rgb_hex('82B1FF'), # parse_rgb_hex('80D8FF'),           # blue
+     parse_rgb_hex('82B1FF'),  # parse_rgb_hex('80D8FF'),  # blue
      parse_rgb_hex('FF80AB'),           # magenta
-     parse_rgb_hex('00BCD4'), # parse_rgb_hex('A7FDEB'),           # cyan
+     parse_rgb_hex('00BCD4'),  # parse_rgb_hex('A7FDEB'),  # cyan
      parse_rgb_hex('FFFFFF')],          # white
 )
+
 
 def walk_directory(directory: pathlib.Path,
                    tree: Tree,
@@ -507,11 +530,15 @@ def walk_directory(directory: pathlib.Path,
             style = "dim" if path.name.startswith("__") else ""
 
             branch = tree.add(
-                f"[bold magenta]:open_file_folder: [link file://{path}]{escape(path.name)}",
+                "[bold magenta]:open_file_folder: " +
+                f"[link file://{path}]{escape(path.name)}",
                 style=style,
                 guide_style=style,
             )
-            walk_directory(path, branch, path_filt=path_filt, ext_filt=ext_filt)
+            walk_directory(path,
+                           branch,
+                           path_filt=path_filt,
+                           ext_filt=ext_filt)
         else:
             text_filename = Text(path.name, "green")
             text_filename.highlight_regex(r"\..*$", "bold red")
@@ -585,8 +612,6 @@ def main(args):
 
     console = Console(record=True)
     console.print(tree)
-    # print(tree)
-    # console.save_svg("hello_planet_workspace.svg", title="hello_planet")
     console.save_svg(args.save_name,
                      title=args.title,
                      theme=MATERIAL_DARK_2)
