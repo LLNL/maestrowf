@@ -14,6 +14,87 @@ components:
 
 This page will break down the keys available in each section and what they provide.
 
+
+<br/>
+
+## Description: `description`
+----
+
+This section is meant primarily for documentation purposes, providing a general
+overview of what this study is meant to achieve.  This is both an important part
+of the provenance of the instantiated studies (via the workspace copy) and to
+enhance the shareability of the study with other users.
+
+**Key**     |   **Required?**  | **Type**  |  **Description**  |
+:-:         |        :-:       |   :-:     |      :-:          |
+`name`      |       Yes        |   str     | Name of the study that is easily identifiable/indicative of purpose |
+`description` |     Yes        |   str     | A short overview/description of what this study intends to achieve |
+
+``` yaml
+description:
+    name: lulesh_sample1
+    description: | 
+      A sample LULESH study that downloads, builds, and runs a parameter study
+      of varying problem sizes and iterations.
+
+```
+
+!!! note
+
+    You can add other keys to this block for custom documentation.  Maestro
+    currently only verifies the presence of the required set enumerated above.
+
+
+<br/>
+
+## Environment: `env`
+----
+
+The environment block is where items describing the study's environment are
+defined. This includes static information that the study needs to know about
+and dependencies that the workflow requires for execution.  This is a good
+place for global parameters that aren't varying in each step.
+
+!!! note
+
+    This block isn't strictly required as a study may not depend on anything.
+
+
+**Key/Subsection**           | **Description** |
+:-:                 | :-              |
+[variables](#variables)       | Static values that are substituted into steps ahead of all other values |
+[labels](#labels) | Static values that can contain variables and parameters which, like variables, can be substituted into all steps |
+[dependencies](#dependencies) | Items that must be "acquired" before the workflow can proceed |
+
+
+### Variables: `variables`
+
+Variables represent static, one-time substitutions into the steps that make a
+study. Variables are great for encouraging consistency throughout a workflow,
+and are useful for things like propagating fixed settings or setting control
+logic flags. These are similar in concept to Unix environment variables, but are
+more portable.
+
+``` yaml
+env:
+  variables:
+    VAR1: value1
+    VAR2: value2
+    OUTPUT_PATH: ./sample_output/lulesh
+```
+
+There are some special tokens/variables available in Maestro specifications, the first of which is shown above: `OUTPUT_PATH`.  This is a keyword variable that Maestro looks for in order to set a custom output path for concrete study instance workspaces.  These workspaces are usually timestamped folder names based on the [`name`](#description-description) in the description block, stored inside `OUTPUT_PATH`.  The `OUTPUT_PATH` can use relative pathing semantics, as shown above, where the `./` is starting from the same parent directory as the study specification is read from. 
+
+!!! note
+    
+    If not specified `OUTPUT_PATH` is assumed to be the path where Maestro was launched from.
+    
+!!! note
+
+    If the '-o' flag is specified for the run subcommand, `OUTPUT_PATH` will be taken from there and will not generate a timestamped path.
+
+
+
 <br/>
 
 ## `study`
