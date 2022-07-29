@@ -94,6 +94,55 @@ There are some special tokens/variables available in Maestro specifications, the
     If the '-o' flag is specified for the run subcommand, `OUTPUT_PATH` will be taken from there and will not generate a timestamped path.
 
 
+### Labels: `labels`
+
+Labels are similar to variables, representing static, one-time substitutions into steps. The difference from variables is that they support variable and parameter substitution.  This functionality can be useful for enforcing fixed formatting on output files, or fixed formatting of components of steps.
+
+``` yaml
+env:
+  labels:
+    outfile: $(SIZE.label).$(ITERATIONS.label).log
+
+```
+
+<!-- NOTE: come up with some better examples of labels/variables? -->
+
+### Dependencies: `dependencies`
+
+Dependencies represent external artifacts that should be present before a workflow can run.  This includes things such as acquirable inputs from a directory or version control system/repository, e.g. input files for programs, code, data, etc...  They can be used in steps via Maestro's token syntax using each dependencies `name` key as the token name.  Labels and variables
+can also be used in the definition of these dependencies, as shown in the example
+
+There are currently two types of dependencies:
+
+* `path`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.
+
+    | **Key** |   **Required?**  | **Type**  |  **Description**                                                           |
+    | :-:     |        :-:       |   :-:     |      :-:                                                                   |
+    | `name`  |       Yes        |   str     | Unique name for the identifying/referring to the path dependency           |
+    | `path`  |       Yes        |   str     | Path to acquire and make available for substitution into string data/steps |
+
+* `git`: clones the specified repository before excution of the study.  This is a list of (`-` prefixed) dictionaries of repositories to clone
+
+    | **Key** |   **Required?**  | **Type**  |  **Description**                                                   |
+    | :-:     |        :-:       |   :-:     |      :-:                                                           |
+    | `name`  |       Yes        |   str     | Unique name for the identifying/referring to repository dependency |
+    | `path`  |       Yes        |   str     | Parent path in which to clone the repo to                          |
+    | `url`   |       Yes        |   str     | Url/path to repo to clone                                          |
+    | `tag`   |        No        |   str     | Optional git tag to checkout after cloning                         |
+
+    <!-- NOTE: can using abs path enable clones shared across study instances instead of one clone per study? -->
+    <!-- NOTE: add comments about permissions -> will maestro prompt for password for protected repo, or is ssh key the way to enable? -->
+    <!-- NOTE: tag/add link to full example below for using tokens to refer to dependencies -->
+    <!-- NOTE: update schema to enable the hash/branch features too -->
+    
+``` yaml
+env:
+  dependencies:
+    git:
+      - name: LULESH
+        path: $(OUTPUT_PATH)
+        url: https://github.com/LLNL/LULESH.git
+```
 
 <br/>
 
