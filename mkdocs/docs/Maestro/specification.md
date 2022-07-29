@@ -114,12 +114,16 @@ can also be used in the definition of these dependencies, as shown in the exampl
 
 There are currently two types of dependencies:
 
-* `path`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.
+* `path`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.  If a path's existence cannot be verified, then Maestro will throw an exception and halt the study launching process.
 
     | **Key** |   **Required?**  | **Type**  |  **Description**                                                           |
     | :-:     |        :-:       |   :-:     |      :-:                                                                   |
     | `name`  |       Yes        |   str     | Unique name for the identifying/referring to the path dependency           |
     | `path`  |       Yes        |   str     | Path to acquire and make available for substitution into string data/steps |
+
+    !!! info
+        
+        A path dependency will only check for the exact path that is specified.  Maestro will not attempt to verify any sub-paths or sub-directories underneath that path.
 
 * `git`: clones the specified repository before excution of the study.  This is a list of (`-` prefixed) dictionaries of repositories to clone
 
@@ -143,6 +147,9 @@ env:
         path: $(OUTPUT_PATH)
         url: https://github.com/LLNL/LULESH.git
 ```
+
+The `git` type dependency will attempt to clone the specified remote repository, and on success continue onto the next step in the launch process; however, if the clone fails then the process will throw an exception without launching any part of the workflow. 
+
 
 <br/>
 
