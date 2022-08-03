@@ -310,7 +310,42 @@ global.parameters:
         label   : ITER.%%
 ```
 
+For more programmatic creation of these parameter combinations, see the section on the `pgen` functionality <!-- ADD LINK -->.  This alternate mode acts like an override of the `global.parameters` block and is injected at run time rather
+than being baked into the study specification.
 
+# Full Example
+----
+
+Finally, we can pull all of this together into a complete example.  This and other versions of the lulesh study
+specification and other problems can be found in the samples directory in the repo: [samples](https://github.com/LLNL/maestrowf/tree/develop/samples)
+
+=== "Local"
+
+    ``` yaml title="lulesh_sample1_unix.yaml"
+    --8<-- "../samples/lulesh/lulesh_sample1_unix.yaml"
+    
+    ```
+    
+=== "Slurm"
+
+    ``` yaml title="lulesh_sample1_unix_slurm.yaml"
+    --8<-- "../samples/lulesh/lulesh_sample1_unix_slurm.yaml"
+    
+    ```
+    
+=== "LSF"
+
+    ``` yaml title="lulesh_sample1_unix_lsf.yaml"
+    --8<-- "../samples/lulesh/lulesh_sample1_unix_lsf.yaml"
+    
+    ```
+    
+=== "Flux"
+
+    ``` yaml title="lulesh_sample1_unix_flux.yaml"
+    --8<-- "../samples/lulesh/lulesh_sample1_unix_flux.yaml"
+    
+    ```
 
 <br/>
 
@@ -614,3 +649,4 @@ parameters:
     type: x-product
     label: ITER.%%
 ```
+    
