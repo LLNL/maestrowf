@@ -4,13 +4,13 @@ The study specification is the main definition of work and is the main record of
 a user specified workflow. A complete specification is made up of the following
 components:
 
-**Key**       |  **Required?** | **Description** |
-    :-:       |   :-:          |  :-             |
-[`description`](#description)        | Yes | General information about a study and its high-level purpose |
-[`batch`](#batch) | No | Settings for submission to batch systems |
-[`env`](#environment)  | No  | Fixed constants and other values that a globally set and referenced |
-[`study`](#workflow)        | Yes | Tasks that the study is composed of and are executed in a defined order |
-[`global.parameters`](#parameters)    | No  | Parameters that are user varied and applied to the workflow |
+**Key**                           |  **Required?** | **Description** |
+    :-                            |   :-:          |  :-             |
+[`description`](#description)     | Yes            | General information about a study and its high-level purpose |
+[`batch`](#batch)                 | No             | Settings for submission to batch systems |
+[`env`](#environment)             | No             | Fixed constants and other values that are globally set and referenced |
+[`study`](#workflow)              | Yes            | Tasks that the study is composed of and are executed in a defined order |
+[`global.parameters`](#parameters)| No             | Parameters that are user varied and applied to the workflow |
 
 This page will break down the keys available in each section and what they provide.
 
@@ -25,10 +25,10 @@ overview of what this study is meant to achieve.  This is both an important part
 of the provenance of the instantiated studies (via the workspace copy) and to
 enhance the shareability of the study with other users.
 
-**Key**     |   **Required?**  | **Type**  |  **Description**  |
-:-:         |        :-:       |   :-:     |      :-:          |
-`name`      |       Yes        |   str     | Name of the study that is easily identifiable/indicative of purpose |
-`description` |     Yes        |   str     | A short overview/description of what this study intends to achieve |
+**Key**       |   **Required?**  | **Type**  |  **Description**                                                    |
+:-            |        :-:       |   :-:     |      :-                                                             |
+`name`        |       Yes        |   str     | Name of the study that is easily identifiable/indicative of purpose |
+`description` |       Yes        |   str     | A short overview/description of what this study intends to achieve  |
 
 ``` yaml
 description:
@@ -60,10 +60,10 @@ place for global parameters that aren't varying in each step.
     This block isn't strictly required as a study may not depend on anything.
 
 
-**Key/Subsection**           | **Description** |
-:-:                 | :-              |
+**Key/Subsection**            | **Description** |
+:-                            | :-              |
 [variables](#variables)       | Static values that are substituted into steps ahead of all other values |
-[labels](#labels) | Static values that can contain variables and parameters which, like variables, can be substituted into all steps |
+[labels](#labels)             | Static values that can contain variables and parameters which, like variables, can be substituted into all steps |
 [dependencies](#dependencies) | Items that must be "acquired" before the workflow can proceed |
 
 
@@ -117,7 +117,7 @@ There are currently two types of dependencies:
 * `path`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.  If a path's existence cannot be verified, then Maestro will throw an exception and halt the study launching process.
 
     | **Key** |   **Required?**  | **Type**  |  **Description**                                                           |
-    | :-:     |        :-:       |   :-:     |      :-:                                                                   |
+    |  :-     |        :-:       |   :-:     |      :-                                                                    |
     | `name`  |       Yes        |   str     | Unique name for the identifying/referring to the path dependency           |
     | `path`  |       Yes        |   str     | Path to acquire and make available for substitution into string data/steps |
 
@@ -128,7 +128,7 @@ There are currently two types of dependencies:
 * `git`: clones the specified repository before excution of the study.  This is a list of (`-` prefixed) dictionaries of repositories to clone
 
     | **Key** |   **Required?**  | **Type**  |  **Description**                                                   |
-    | :-:     |        :-:       |   :-:     |      :-:                                                           |
+    |  :-     |        :-:       |   :-:     |      :-                                                            |
     | `name`  |       Yes        |   str     | Unique name for the identifying/referring to repository dependency |
     | `path`  |       Yes        |   str     | Parent path in which to clone the repo to                          |
     | `url`   |       Yes        |   str     | Url/path to repo to clone                                          |
@@ -149,6 +149,89 @@ env:
 ```
 
 The `git` type dependency will attempt to clone the specified remote repository, and on success continue onto the next step in the launch process; however, if the clone fails then the process will throw an exception without launching any part of the workflow. 
+
+
+<br/>
+
+## Batch: `batch`
+----
+
+The `batch` block is an optional block that enables specification of HPC scheduler information to enable writing steps that are decoupled from particular machines and thus more portable/reusable.  The base/general keys that show up in this block are shown below.  Each scheduler type may have some unique keys, and further discussion will be in <!-- NOTE: add link to hpc sections describing each scheduler -->
+
+|  **Key**      |  **Required**  | **Type** | **Description** |
+|    :-         |      :-:       |    :-:   |       :-        |
+|  `type`       |      Yes        |   str    | Type of scheduler managing execution.  Currently one of: {`local`, `slurm`, `lsf`, `flux`} |
+|  `shell`      |      No        |   str    | Optional specification path to shell to use for execution.  Defaults to `"/bin/bash"` |
+| `bank`        |      Yes       |   str    | Account to charge computing time to |
+| `host`        |      Yes       |   str    | The name of the cluster to execute this study on |
+| `queue`       |      Yes       |   str    | Scheduler queue/partition to submit jobs (study steps) to |
+| `nodes`       |      No        |   int    | Number of compute nodes to be reserved for jobs: note this is also a per step key |
+| `reservation` |      No        |   str    | Optional reserved allocation to submit jobs to |
+| `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
+| `gpus`        |      No        |   str    | Optional reservation of gpu resources for jobs |
+| `procs`       |      No        |   int    | Optional number of tasks in batch allocations: note this is also a per step key |
+| `flux_uri`    |      Yes*      |   str    | Uri of flux instance to schedule jobs to: only required with `type`=`flux` |
+| `version`     |      No        |   str    | Optional version of flux scheduler; for accomodating api changes |
+| `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
+
+
+=== "Slurm"
+    ``` yaml
+    batch:
+        type        : slurm
+        host        : quartz
+        bank        : baasic
+        queue       : pbatch
+        reservation : test_reservation
+    ```
+    
+=== "Flux"
+    ``` yaml
+    batch:
+        type        : flux
+        host        : quartz
+        bank        : baasic
+        queue       : pbatch
+        flux_uri    : <!-- WHAT DOES THIS LOOK LIKE? -->
+    ```
+
+<!-- NOTE: flux lulesh sample is missing the supposedly required uri key -->
+
+
+<br/>
+
+## Study: `study`
+----
+
+The `study` block is where the steps to be executed in the Maestro study are defined.  This section represents the unexpanded set of tasks that the study is composed of.  Here, unexpanded means no parameter substitution; the steps only contain references to the parameters.  Steps are given as a list (`-` prefixed) dictionaries of keys:
+
+|  **Key**       |  **Required?** | **Type** | **Description**                                               |
+|    :-          |       :-:      |   :-:    |       :-:                                                     |
+|  `name`        |       Yes      |   str    | Unique name for identifying and referring to a task           |
+|  `description` |       Yes      |   str    | A general description of what this step is intended to do     |
+|  `run`         |       Yes      |   dict   | Properties that describe the actual specification of the task |
+
+### `run`:
+----
+
+The `run` key contains several other keys that define what a task does and how it relates to other tasks.  This is where you define the concrete shell commands the task needs to execute, any `parameter` or `env` tokens to inject, and step/task dependencies that dictate the topology of the study task graph.
+
+|  **Key**       |  **Required?** | **Type** | **Description**                                               |
+|    :-          |       :-:      |   :-:    |       :-                                                      |
+|  `cmd`         |       Yes      |   str    | The actual task (shell commands) to be executed           |
+|  `depends`     |       Yes      |   list   | List of other tasks which must successfully execute before this task can be executed |
+|  `restart`     |       No       |   str    | Similar to `cmd`, providing optional alternate commands to run upon restarting, e.g. after a scheduler timeout |
+
+There are also a number of optional keys for describing resource requirements to pass to the scheduler and associated `$(LAUNCHER)` tokens used to execute applications on HPC systems.  Presence of the `nodes` and/or `procs` keys have particular importance here: they tell Maestro that this step needs to be scheduled and not run locally on login nodes.
+
+|  **Key**       |  **Required?** | **Type** | **Description**                                               |
+|    :-          |       :-:      |   :-:    |       :-                                                      |
+|  `nodes`       |       No       |   str    | Number of nodes to reserve for executing this task            |
+|  `procs`       |       No       |   str    | Number of processors needed for task execution: primarily used by `$(LAUNCHER)` expansion |
+|  `walltime`    |       No       |   str    | Specifies maximum amount of time to reserve HPC resources for |
+
+<!-- NOTE: how to transition this into the scheduler specifics?  enumerate everything here even scheduler specific ones? -->
+<!--       may want references to how-to guide here for the numerous parallel run modes/options users can invoke -->
 
 
 <br/>
