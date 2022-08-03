@@ -211,6 +211,14 @@ The `study` block is where the steps to be executed in the Maestro study are def
 |  `description` |       Yes      |   str    | A general description of what this step is intended to do     |
 |  `run`         |       Yes      |   dict   | Properties that describe the actual specification of the task |
 
+
+!!! note
+
+    Unlike the previous blocks, almost every key in the study section can accept parameter tokens.  The primary benefit
+    of this is in the resource specification keys, allowing easy parameterization of numbers of tasks, cores, nodes,
+    walltime, etc on a per step basis.
+
+
 ### `run`:
 ----
 
@@ -229,9 +237,79 @@ There are also a number of optional keys for describing resource requirements to
 |  `nodes`       |       No       |   str    | Number of nodes to reserve for executing this task            |
 |  `procs`       |       No       |   str    | Number of processors needed for task execution: primarily used by `$(LAUNCHER)` expansion |
 |  `walltime`    |       No       |   str    | Specifies maximum amount of time to reserve HPC resources for |
+|  `reservation` |       No       |   str    | Reservation to schedule this step to; overrides batch block |
+|  `qos`         |       No       |   str    | Quality of service options for this step; overrides batch block |
+
 
 <!-- NOTE: how to transition this into the scheduler specifics?  enumerate everything here even scheduler specific ones? -->
 <!--       may want references to how-to guide here for the numerous parallel run modes/options users can invoke -->
+
+Additionally there are more fine grained resource/scheduler control enabled by the various schedulers.
+
+!!! note
+
+    The remaining keys have been gradually appended and thus are not uniform across schedulers.
+    Version 2.0 of the study specification will be refactoring these into a uniform/portable set.
+    Full documentation/explanation of the resource keys can be seen in the scheduler specific
+    sections: <!-- ADD LINKS -->
+
+
+The following keys are all optional and get into scheduler specific features.  See the respective sections
+before using them:
+
+|  **Key**         | **Type**     | **Description**                                               |
+|    :-            |   :-:        |       :-                                                      |
+| `cores per task` |   str/int    | Number of cores to use for each task        |
+|  `exclusive`     |   str        | Flag for ensuring batch job has exclusive access to it's requested resources |
+|  `gpus`          |   str/int    | Number of gpus to allocate with this step |
+|  `tasks per rs`  |   str/int    | Number of tasks per resource set (LSF/jsrun) |
+|  `rs per node`   |   str/int    | Number of resource sets per node |
+|  `cpus per rs`   |   str/int    | Number of cpus in each resource set |
+|  `bind`          |   str        | Controls binding of tasks in resource sets |
+|  `bind gpus`     |   str        | Controls binding of gpus in resource sets |
+
+
+## Parameters: `global.parameters`
+----
+
+The `global.parameters` block of the specification contains all of the things that you are going to vary in the
+study; this is where we setup the parameter tokens and values that get substituted into the study steps.  This
+block is optional, and when present the defined study steps get expanded into one concrete instance per parameter
+combination specified in this block. These parameter combinations are defined as a set of keys that are the
+parameter names (for use in steps via the `$(PARAM)` token syntax), and then dictionaries defining the list of
+values in each parameter combination and a format string for constructing labels from those values.
+
+Parameter keys:
+
+|  **Key**  | **Required?** |  **Type**  |  **Description** |
+|    :-     |      :-:      |     :-:    |     :-           |
+|  `values` |      Yes      |    list    |  List of values in each parameter combination used to expand the study |
+|  `label`  |      Yes      |    str     |  Format string for constructing labels from the values list |
+
+
+In the example below we are generating three parameters with the tokens `$(TRIAL)`, `$(SIZE)`, and `$(ITERATIONS)`
+that can reference them in study steps and the environments' labels block.  We are also constructing 9 parameter
+combinations, meaning that steps that use these variables will have 9 instances, one for each parameter combination.
+
+The label format syntax is currently limited to simple `str(param)` type formatting that injects the string form of
+the parameter values in place of the `%%` placeholder, with the parameter name prefix here being a user settable
+string.  For `TRIAL`, the paramters block below will create the following labels: `TRIAL.1, TRIAL.2, TRIAL.3, 
+TRIAL.4, TRIAL.5, TRIAL.6, TRIAL.7, TRIAL.8, TRIAL.9`.  These labels get used in naming of the directories created
+for each steps' outputs as well as in the logging.
+
+``` yaml
+global.parameters:
+    TRIAL:
+        values  : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        label   : TRIAL.%%
+    SIZE:
+        values  : [10, 10, 10, 20, 20, 20, 30, 30, 30]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
+        label   : ITER.%%
+```
+
 
 
 <br/>
