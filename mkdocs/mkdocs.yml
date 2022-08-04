@@ -4,15 +4,24 @@ markdown_extensions:
   - attr_list
   - pymdownx.highlight
   - pymdownx.details
+  - pymdownx.snippets:
+      base_path: ['.']
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.superfences:
       # make exceptions to highlighting of code:
+      # custom_fences:
+      #   - name: mermaid
+      #     class: mermaid
+      #     format: !!python/name:pymdownx.superfences.fence_div_format #mermaid2.fence_mermaid
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid
+        - name: mermaid_center
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
   - pymdownx.tabbed:
       alternate_style: true
 
@@ -50,7 +59,10 @@ nav:
     - Maestro:
         - Overview: 'Maestro/index.md'
         - Installation: 'Maestro/install.md'
-        - Specification: 'Maestro/specification.md'
+        - Specification:
+            - Specification 1.0: 'Maestro/specification.md'
+            - Scheduling Studies: 'Maestro/scheduling.md'
+              
 extra:
   social:
     - icon: fontawesome/brands/github
