@@ -29,7 +29,6 @@
 
 """A collection of more general utility functions."""
 
-from collections import OrderedDict
 import coloredlogs
 import logging
 import os
@@ -165,7 +164,7 @@ def csvtable_to_dict(fstream):
     # 2. A map of index to header title
     _ = lines.pop(0).strip("\n").split(",")
     # Retain the order of the columns as they're added.
-    table = OrderedDict()
+    table = {}
     # A map of row index to the appropriate header.
     indices = {}
     i = 0

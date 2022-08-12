@@ -37,7 +37,7 @@ abstracts, base class abstracts, and general utilities.
 from abc import ABCMeta, abstractmethod
 import inspect
 from io import StringIO
-from collections import OrderedDict, defaultdict
+from collections import defaultdict, Counter
 
 import logging
 import sys
@@ -314,22 +314,22 @@ class Narrow2StatusRenderer(FlatStatusRenderer):
     def process_status_data(self, status_data):
         """Construct the summary dictionary"""
         columns = [
-            "Step Name", 
-            "Job ID", 
-            "Workspace", 
-            "State", 
-            "Submit Time", 
-            "Start Time", 
-            "End Time", 
+            "Step Name",
+            "Job ID",
+            "Workspace",
+            "State",
+            "Submit Time",
+            "Start Time",
+            "End Time",
             "Number Restarts",
         ]
-        narrow_data = OrderedDict()
+        narrow_data = {}
         for column in columns:
             narrow_data[column] = status_data[column]
         date_columns = [
-            "Submit Time", 
-            "Start Time", 
-            "End Time", 
+            "Submit Time",
+            "Start Time",
+            "End Time",
         ]
         for column in date_columns:
             narrow_data[column] = [date[:-3] for date in narrow_data[column]]
