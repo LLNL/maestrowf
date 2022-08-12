@@ -369,6 +369,9 @@ def setup_argparser():
         description="The Maestro Workflow Conductor for specifying, launching"
         ", and managing general workflows.",
         formatter_class=RawTextHelpFormatter)
+    # This call applies a default function to the main parser as described
+    # here: https://stackoverflow.com/a/61680800
+    parser.set_defaults(func=lambda args: parser.print_help())
     subparsers = parser.add_subparsers(dest='subparser')
 
     # subparser for a cancel subcommand

@@ -54,8 +54,8 @@ study:
       run:
           cmd: |
             echo "Unparameterized step with Parameter Independent dependencies." >> out.log
-            echo $(run-lulesh.workspace) > out.log
-            ls $(run-lulesh.workspace) > ls.log
+            echo $(run-lulesh.workspace) >> out.log
+            ls $(run-lulesh.workspace) >> out.log
           depends: [run-lulesh_*]
 
     - name: post-process-lulesh-trials

@@ -3,7 +3,7 @@ from math import ceil
 import os
 
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
-    SubmissionCode
+    StepPriority, SubmissionCode
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -19,11 +19,32 @@ class FluxInterface_0260(FluxInterface):
     key = "0.26.0"
 
     flux_handle = None
+    _urgencies = {
+        StepPriority.HELD:     0,
+        StepPriority.MINIMAL:  1,
+        StepPriority.LOW:      9,
+        StepPriority.MEDIUM:   16,
+        StepPriority.HIGH:     24,
+        StepPriority.EXPEDITE: 31,
+    }
+
+    @classmethod
+    def get_flux_urgency(cls, urgency) -> int:
+        if isinstance(urgency, str):
+            LOGGER.debug("Found string urgency: %s", urgency)
+            urgency = StepPriority.from_str(urgency)
+
+        if isinstance(urgency, StepPriority):
+            LOGGER.debug("StepUrgency urgency of '%s' given..", urgency)
+            return cls._urgencies[urgency]
+        else:
+            LOGGER.debug("Float urgency of '%s' given..", urgency)
+            return ceil(float(urgency) * 31)
 
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=True
+        ngpus=0, job_name=None, force_broker=True, urgency=StepPriority.MEDIUM
     ):
         try:
             cls.connect_to_flux()
@@ -35,7 +56,7 @@ class FluxInterface_0260(FluxInterface):
             # for a single node, don't use a broker -- but introduce a flag
             # that can force a single node to run in a broker.
 
-            if force_broker or nodes > 1:
+            if force_broker:
                 LOGGER.debug(
                     "Launch under Flux sub-broker. [force_broker=%s, "
                     "nodes=%d]", force_broker, nodes
@@ -66,8 +87,10 @@ class FluxInterface_0260(FluxInterface):
             jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
 
             # Submit our job spec.
-            jobid = \
-                flux.job.submit(cls.flux_handle, jobspec, waitable=True)
+            jobid = flux.job.submit(
+                cls.flux_handle, jobspec, waitable=True,
+                urgency=urgency
+            )
             submit_status = SubmissionCode.OK
             retcode = 0
 
