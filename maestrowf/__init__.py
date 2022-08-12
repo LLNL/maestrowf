@@ -284,22 +284,25 @@ class SummaryStatusRenderer(FlatStatusRenderer):
 
     def process_status_data(self, status_data):
         """Construct the summary dictionary"""
-        summary_data = OrderedDict()
-        summary_data["Step Prefix"] = []
-        summary_data["State"] = []
-        summary_data["Count"] = []
-        prefix_set = set()
-        for step_name in status_data["Step Name"]:
-            prefix_set.add(step_name.split("-")[0])
-        for step_prefix in sorted(list(prefix_set)):
-            state_count = defaultdict(int)
-            for step_name, state in zip(status_data["Step Name"], status_data["State"]):
-                if step_name.split("-")[0] == step_prefix:
-                    state_count[state] += 1
-            for state in sorted(list(state_count.keys())):
-                summary_data["Step Prefix"].append(step_prefix)
-                summary_data["State"].append(state)
-                summary_data["Count"].append(state_count[state])
+        summary_data = {
+            "Step Prefix": [],
+            "State": [],
+            "Count": [],
+        }
+
+        status_info = zip(status_data["Step Name"], status_data["State"])
+        status_info = sorted(status_info, key=lambda x: x[1])
+        working_data = defaultdict(list)
+        for step_name, state in status_info:
+            prefix = step_name.split("-")[0]
+            working_data[prefix].append(state)
+
+        for prefix, states in working_data.items():
+            counts = Counter(states)
+            summary_data["Step Prefix"] += ([prefix] * len(counts))
+            summary_data["State"] += counts.keys()
+            summary_data["Count"] += counts.values()
+
         return summary_data
 
 
