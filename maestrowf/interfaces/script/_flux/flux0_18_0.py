@@ -1,4 +1,3 @@
-from datetime import datetime
 import errno
 import logging
 from math import ceil
@@ -13,13 +12,12 @@ LOGGER = logging.getLogger(__name__)
 try:
     from flux import constants as flux_constants
     from flux import job as flux_job
-    from flux import Flux
 except ImportError:
     LOGGER.info("Failed to import Flux. Continuing.")
 
 
 class FluxInterface_0190(FluxInterface):
-    # This utility class is for Flux 0.17.0
+    # This utility class is for Flux 0.19.0
     key = "0.19.0"
 
     _FIELDATTRS = {
@@ -64,9 +62,7 @@ class FluxInterface_0190(FluxInterface):
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
         ngpus=0, job_name=None, force_broker=False
     ):
-        if not cls.flux_handle:
-            cls.flux_handle = Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         # NOTE: This previously placed everything under a broker. However,
         # if there's a job that schedules items to Flux, it will schedule all
@@ -99,10 +95,8 @@ class FluxInterface_0190(FluxInterface):
         jobspec.cwd = cwd
         jobspec.environment = dict(os.environ)
 
-        if walltime and walltime != "inf":
-            seconds = datetime.strptime(walltime, "%H:%M:%S")
-            seconds = seconds - datetime(1900, 1, 1)
-            jobspec.duration = seconds
+        if walltime > 0:
+            jobspec.duration = walltime
 
         jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
         jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
@@ -174,9 +168,7 @@ class FluxInterface_0190(FluxInterface):
     def get_statuses(cls, joblist):
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))
@@ -257,9 +249,7 @@ class FluxInterface_0190(FluxInterface):
         """
         # We need to import flux here, as it may not be installed on
         # all systems.
-        if not cls.flux_handle:
-            cls.flux_handle = Flux()
-            LOGGER.debug("New Flux instance created.")
+        cls.connect_to_flux()
 
         LOGGER.debug(
             "Handle address -- %s", hex(id(cls.flux_handle)))

@@ -30,7 +30,9 @@
 """Package for providing enumerations for interfaces"""
 from enum import Enum
 
-__all__ = ("JobStatusCode", "State", "SubmissionCode", "StudyStatus")
+__all__ = (
+    "JobStatusCode", "State", "SubmissionCode",  "StepPriority", "StudyStatus"
+)
 
 
 class SubmissionCode(Enum):
@@ -75,3 +77,30 @@ class StudyStatus(Enum):
     RUNNING = 1    # The Study is currently running
     FAILURE = 2    # The Study has finished, but 1 or more steps failed
     CANCELLED = 3  # The Study has finished, but was cancelled
+
+
+class StepPriority(Enum):
+    """Scheduler priority for submitted jobs"""
+    HELD = 0
+    MINIMAL = 1
+    LOW = 2
+    MEDIUM = 3
+    HIGH = 4
+    EXPEDITE = 5
+
+    @classmethod
+    def from_str(cls, priority):
+        _priority = priority.lower()
+
+        if _priority == "held":
+            return cls.HELD
+        if _priority == "minimal":
+            return cls.MINIMAL
+        if _priority == "medium":
+            return cls.MEDIUM
+        if _priority == "high":
+            return cls.HIGH
+        if _priority == "expedite":
+            return cls.EXPEDITE
+
+        raise ValueError(f"Priority '{priority}' not valid.")

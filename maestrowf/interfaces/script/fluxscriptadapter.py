@@ -28,7 +28,6 @@
 ###############################################################################
 
 """Flux Scheduler interface implementation."""
-from datetime import datetime
 import logging
 from math import ceil
 import os
@@ -97,8 +96,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.h = None
         # Store the interface we're using
         _version = kwargs.pop("version", FluxFactory.latest)
-        self.add_batch_parameter(
-            "version", _version)
+        self.add_batch_parameter("version", _version)
         self._interface = FluxFactory.get_interface(_version)
 
     @property
@@ -106,14 +104,27 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         return self._extension
 
     def _convert_walltime_to_seconds(self, walltime):
-        if not walltime:
-            LOGGER.debug("Encountered inf walltime!")
-            return "inf"
-        # Convert walltime to seconds.
-        LOGGER.debug("Converting %s to seconds...", walltime)
-        wt = \
-            (datetime.strptime(walltime, "%H:%M:%S") - datetime(1900, 1, 1))
-        return int(wt.total_seconds())
+        if isinstance(walltime, int) or isinstance(walltime, float):
+            LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
+            return int(float(walltime) * 60.0)
+        elif isinstance(walltime, str) and walltime.isnumeric():
+            LOGGER.debug("Encountered numeric walltime = %s", str(walltime))
+            return int(float(walltime) * 60.0)
+        elif ":" in walltime:
+            # Convert walltime to seconds.
+            LOGGER.debug("Converting %s to seconds...", walltime)
+            seconds = 0.0
+            for i, value in enumerate(walltime.split(":")[::-1]):
+                seconds += float(value) * (60.0 ** i)
+            return seconds
+        elif not walltime or (isinstance(walltime, str) and walltime == "inf"):
+            return 0
+        else:
+            msg = \
+                f"Walltime value '{walltime}' is not an integer or colon-" \
+                f"separated string."
+            LOGGER.error(msg)
+            raise ValueError(msg)
 
     def get_header(self, step):
         """
@@ -169,11 +180,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
                   identiifer.
         """
-        # walltime = self._convert_walltime_to_seconds(step.run["walltime"])
         nodes = step.run.get("nodes")
         processors = step.run.get("procs", 0)
-        force_broker = step.run.get("use_broker", False)
-        walltime = step.run.get("walltime", "inf")
+        force_broker = step.run.get("nested", False)
+        walltime = \
+            self._convert_walltime_to_seconds(step.run.get("walltime", 0))
+        urgency = step.run.get("priority", "medium")
+        urgency = self.get_priority(urgency)
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
@@ -183,20 +196,17 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 "'cores per task' set to a non-value. Populating with a "
                 "sensible default. (cores per task = %d", cores_per_task)
 
-        # Calculate ngpus
-        ngpus = step.run.get("gpus", 0)
-        ngpus = 0 if not ngpus else ngpus
+        try:
+            # Calculate ngpus
+            ngpus = step.run.get("gpus", "0")
+            ngpus = int(ngpus) if ngpus else 0
+        except ValueError as val_error:
+            msg = f"Specified gpus '{ngpus}' is not a decimal value."
+            LOGGER.error(msg)
+            raise val_error
 
         # Calculate nprocs
         ncores = cores_per_task * nodes
-        # Check to make sure that cores_per_task matches if processors
-        # is specified.
-        if processors > 0 and processors > ncores:
-            msg = "Calculated ncores (nodes * cores per task) = {} " \
-                  "-- procs = {}".format(ncores, processors)
-            LOGGER.error(msg)
-            raise ValueError(msg)
-
         # Raise an exception if ncores is 0
         if ncores <= 0:
             msg = "Invalid number of cores specified. " \
@@ -207,7 +217,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         jobid, retcode, submit_status = \
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
-                job_name=step.name, force_broker=force_broker
+                job_name=step.name, force_broker=force_broker, urgency=urgency
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)
@@ -311,3 +321,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             restart_path = None
 
         return to_be_scheduled, script_path, restart_path
+
+    def get_priority(self, priority):
+        return self._interface.get_flux_urgency(priority)

@@ -58,14 +58,58 @@
               {"type": "integer", "minimum": 1},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
-          "walltime": {"type": "string", "minLength": 1},
+          "tasks per rs": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "rs per node": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "cpus per rs": {
+            "anyOf": [
+              {"type": "integer", "minimum": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},            
+          "bind": {
+            "anyOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
+          "bind gpus": {
+            "anyOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},            
+          "walltime": {
+            "anyOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "integer", "minimum": 0},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+            ]},
           "reservation": {"type": "string", "minLength": 1},
           "exclusive": {
             "anyOf": [
               {"type": "boolean"},
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
-            "use_broker": {"type": "boolean"}
+          "nested": {"type": "boolean"},
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "HELD", "MINIMAL", "LOW", "MEDIUM", "HIGH", "EXPEDITED",
+                  "held", "minimal", "low", "medium", "high", "expedited",
+                  "Held", "Minimal", "Low", "Medium", "High", "Expedited"
+                ]
+              },
+              {"type": "number", "minimum": 0.0, "maximum": 1.0}
+            ]
+          },
+          "qos": {"type": "string", "minLength": 1}
         },
         "additionalProperties": false,
         "required": [

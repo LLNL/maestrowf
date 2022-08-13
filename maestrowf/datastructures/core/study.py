@@ -620,7 +620,6 @@ class Study(DAG, PickleInterface):
                 node.run["restart"] = r_cmd
                 LOGGER.debug("New cmd = %s", cmd)
                 LOGGER.debug("New restart = %s", r_cmd)
-
                 dag.add_step(step, node, workspace, rlimit)
 
                 if self.depends[step] or self.hub_depends[step]:
@@ -729,7 +728,8 @@ class Study(DAG, PickleInterface):
                     step_exp.run["restart"] = r_cmd
                     # Add to the step to the DAG.
                     dag.add_step(
-                        step_exp.real_name, step_exp, workspace, rlimit)
+                        step_exp.real_name, step_exp, workspace, rlimit,
+                        params=combo.get_param_values(self.used_params[step]))
 
                     if self.depends[step] or self.hub_depends[step]:
                         # So, because we don't have used parameters, we can
