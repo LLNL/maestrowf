@@ -68,7 +68,6 @@ class StudyStep:
     def __init__(self):
         """Object that represents a single workflow step."""
         self.name = ""
-        self.step_label = ""
         self.description = ""
         self.nickname = ""
         self.run = {
@@ -685,7 +684,6 @@ class Study(DAG, PickleInterface):
 
                     modified, step_exp = node.apply_parameters(combo)
                     step_exp.name = combo_str
-                    step_exp.step_label = step
                     step_exp.nickname = nickname
 
                     # Substitute workspaces into the combination.

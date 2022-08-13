@@ -253,16 +253,6 @@ class _StepRecord:
         return self.step.real_name
 
     @property
-    def step_label(self):
-        """
-        Get step label of the step represented by the record instance.
-        This is the name of the step without any parameter substitutions.
-
-        :returns: The step label of the StudyStep contained within the record.
-        """
-        return self.step.step_label
-
-    @property
     def walltime(self):
         """
         Get the requested wall time of the record instance.

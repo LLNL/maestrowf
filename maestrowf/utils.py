@@ -381,6 +381,7 @@ class Linker:
         self.link_template = valid_link_template(link_template)
         self.output_name = output_name
         self.output_root = output_root
+        self._study_datetime = datetime.datetime.now()
 
     def split_indexed_directory(self, template_string):
         """
@@ -422,20 +423,20 @@ class Linker:
             indexed_directory_template)
 
     def build_replacements(self, record):
-        """ build replacements dictionary """
+        """ build replacements dictionary from StepRecord"""
         replacements = {}
         # t = Template(self.link_directory)
         # replacements["link_directory"] = t.render(replacements)
         replacements['output_root'] = self.output_root
-        replacements['date'] = time.strftime('%Y-%m-%d')
+        replacements['date'] = self._study_datetime.strftime('%Y-%m-%d')
         (replacements['indexed_directory_prefix'],
             replacements['indexed_directory_suffix'],
             replacements['indexed_directory_template']) = (
          self.split_indexed_directory(self.link_template))
-        if record.step_label:
-            replacements['step'] = record.step_label
+        if record._params:
+            replacements['step'] = record.step
             replacements['instance'] = (
-                record.name.replace(record.step_label + '_', ''))
+                record.name.replace(record.step.real_name + '_', ''))
         else:
             replacements['step'] = record.name
             replacements['instance'] = "all_records"
@@ -499,6 +500,7 @@ class Linker:
         return index_directory_string
 
     def link(self, record):
+        """Create link for StepRecord"""
         # @TODO: test cases: index in front, middle, end, no index, two indexes
         #        with and without hash
         if not self.make_links_flag:
