@@ -302,6 +302,7 @@ def run_study(args):
         make_links_flag=args.make_links,
         link_directory=args.link_directory,
         link_template=args.link_template,
+        hashws=args.hashws,
         output_name=out_name,
         output_root=out_dir
         )

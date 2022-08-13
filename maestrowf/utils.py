@@ -365,7 +365,7 @@ class Linker:
     maestro_index_file = 'maestro_index_file'
 
     def __init__(
-            self, make_links_flag=False, link_directory=None,
+            self, make_links_flag=False, link_directory=None, hashws=False,
             link_template=None, output_name=None, output_root=None):
         """
         Initialize a new Linker class instance.
@@ -376,6 +376,10 @@ class Linker:
             run directories are made.
         :param link_template: Jinja template for links to run directories.
         """
+        if hashws:
+            LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
+            self.make_links_flag = False
+            return
         self.make_links_flag = make_links_flag
         self.link_directory = link_directory
         self.link_template = valid_link_template(link_template)
