@@ -329,8 +329,6 @@ class ParameterGenerator:
         """
         if not item:
             return
-        elif isinstance(item, int):
-            return
         elif isinstance(item, str):
             for key in self.parameters.keys():
                 _ = r"\{}\({}\.*\w*\)".format(self.token, key)
@@ -344,10 +342,11 @@ class ParameterGenerator:
             for each in item.values():
                 self._get_used_parameters(each, params)
         else:
-            msg = "Encountered an object of type '{}'. Expected a str, list," \
-                  " int, or dict.".format(type(item))
-            logger.error(msg)
-            raise ValueError(msg)
+            msg = \
+                "Encountered an object of type '{}'. Passing."\
+                .format(type(item))
+            logger.debug(msg)
+            return
 
     def get_used_parameters(self, step):
         """

@@ -230,7 +230,7 @@ class SchedulerScriptAdapter(ScriptAdapter):
                 LOGGER.error(msg)
                 raise ValueError(msg)
 
-            if total_nodes > nodes:
+            if nodes and total_nodes > nodes:
                 msg = "Total nodes ({}) requested exceeds the " \
                       "maximum requested ({})".format(total_nodes, nodes)
                 LOGGER.error(msg)
@@ -330,3 +330,13 @@ class SchedulerScriptAdapter(ScriptAdapter):
         :returns: A Study.State enum corresponding to parameter job_state.
         """
         pass
+
+    def get_priority(self, priority):
+        """
+        Map a fixed enumeration or floating point priority to a batch priority.
+
+        :param priority: Float or StepPriority enum representing priorty.
+        :returns: A string, integer, or float value representing the mapped
+        priority to the batch scheduler.
+        """
+        raise NotImplementedError()
