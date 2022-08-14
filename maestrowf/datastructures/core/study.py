@@ -70,6 +70,7 @@ class StudyStep:
         self.name = ""
         self.description = ""
         self.nickname = ""
+        self.combo = None
         self.run = {
                         "cmd":              "",
                         "depends":          "",
@@ -94,6 +95,7 @@ class StudyStep:
         # Create a new StudyStep and populate it with substituted values.
         tmp = StudyStep()
         tmp.__dict__ = apply_function(self.__dict__, combo.apply)
+        tmp.combo = combo
         # Return if the new step is modified and the step itself.
 
         return self.__ne__(tmp), tmp

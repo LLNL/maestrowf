@@ -16,7 +16,6 @@ from maestrowf.utils import (
     splitall, recursive_render, next_path, Linker)
 from maestrowf.datastructures.core.study import StudyStep
 
-
 class TestLinkUtilsUnits(unittest.TestCase):
     """Unit tests for Linker helper functions"""
 
