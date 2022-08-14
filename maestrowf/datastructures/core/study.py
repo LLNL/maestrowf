@@ -67,7 +67,7 @@ class StudyStep:
 
     def __init__(self):
         """Object that represents a single workflow step."""
-        self.name = ""
+        self._name = ""
         self.description = ""
         self.nickname = ""
         self.combo = None
