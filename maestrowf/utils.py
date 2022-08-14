@@ -367,7 +367,7 @@ class Linker:
     def __init__(
             self, make_links_flag=False, link_directory=None, hashws=False,
             link_template=None, output_name=None, output_root=None,
-            ):
+            dir_float_format=['{:.2f}','{:.2e}']):
         """
         Initialize a new Linker class instance.
 
@@ -386,43 +386,28 @@ class Linker:
         self.link_template = valid_link_template(link_template)
         self.output_name = output_name
         self.output_root = output_root
+        self.dir_float_format = dir_float_format
         self._study_datetime = datetime.datetime.now()
 
     @staticmethod
-    def float_format(float, format_list):
+    def float_format(num, format_list):
             """
-            Return float as string using format_list.
+            Return num as string using format_list.
             
             format_list, for example (['{:.2f}','{:.2e}']),
             contains "".format() style format strings for 
             numbers with small exponents and for numbers with
             large exponents.
             """
-            float_string = "{}".format(float)
+            if type(num) != float:
+                return str(num)
+            float_string = "{}".format(num)
             if float_string.find("e") > -1:
-                formatted_string = format_list[1].format(float)
+                formatted_string = format_list[1].format(num)
             else:
-                formatted_string = format_list[0].format(float)
+                formatted_string = format_list[0].format(num)
             return formatted_string
     
-    def step_short_label(self):
-        pass
-        # self._params = {}
-        # self._labels = OrderedDict()
-        # self._names = {}
-        # self._token = token
-
-        # for i in range(0, self.length):
-        #     combo = Combination()
-        #     for key in self.parameters.keys():
-        #         pvalue = self.parameters[key][i]
-        #         if isinstance(self.labels[key], list):
-        #             tlabel = self.labels[key][i]
-        #         else:
-        #             tlabel = self.labels[key].replace(self.label_token,
-        #                                               str(pvalue))
-        #         name = self.names[key]
-        #         combo.add(key, name, pvalue, tlabel)
 
     def split_indexed_directory(self, template_string):
         """
@@ -466,30 +451,26 @@ class Linker:
     def build_replacements(self, record):
         """ build replacements dictionary from StepRecord"""
         replacements = {}
-        # t = Template(self.link_directory)
-        # replacements["link_directory"] = t.render(replacements)
-
         replacements['output_root'] = self.output_root
         replacements['date'] = self._study_datetime.strftime('%Y-%m-%d')
         (replacements['indexed_directory_prefix'],
             replacements['indexed_directory_suffix'],
             replacements['indexed_directory_template']) = (
          self.split_indexed_directory(self.link_template))
-        if record.step.combo != None:
-            LOGGER.info(f"DEBUG combo1.params: {record.step.combo._params}")
-            LOGGER.info(f"DEBUG combo1.labels: {record.step.combo._labels}")
-            LOGGER.info(f"DEBUG combo1.names: {record.step.combo._names}")
-            short_name = []
+        if record.step.combo != None and record._params:
+            instance = os.path.basename(record.workspace.value)
+            step = record.name.replace("_" + instance,"")
             for param, name in zip(
                 record.step.combo._params.values(),
                 record.step.combo._labels.values()):
-                short_name.append(name, name.replace(param, self.float_format(param)))
-
-            short_name = short_name.replace()
-        if record._params:
-            replacements['step'] = record.step
-            replacements['instance'] = (
-                record.name.replace(record.step.real_name + '_', ''))
+                instance = instance.replace(
+                    name, 
+                    name.replace(
+                        str(param), 
+                        self.float_format(param, self.dir_float_format))
+                )
+            replacements['step'] = step
+            replacements['instance'] = instance
         else:
             replacements['step'] = record.name
             replacements['instance'] = "all_records"
@@ -560,7 +541,6 @@ class Linker:
             return
 
         replacements = self.build_replacements(record)
-
         # make link directories
         if len(replacements['indexed_directory_prefix']) == 0:
             raise(ValueError(
@@ -603,7 +583,6 @@ class Linker:
                     ))
             else:
                 raise(ValueError)
-
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""
