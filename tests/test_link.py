@@ -21,11 +21,9 @@ class TestLinkUtilsUnits(unittest.TestCase):
 
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
-        self.orig_dir = os.path.os.getcwd()
         self.sleep_time = 5
 
     def tearDown(self):
-        os.chdir(self.orig_dir)
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
     def test_splitall(self):
@@ -71,13 +69,11 @@ class TestLinkUtilUnits(unittest.TestCase):
     # @TODO rename link_directory to link_directory template
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
-        self.orig_dir = os.path.os.getcwd()
         self.sleep_time = 5
         self.linker = Linker()
         self.record = StudyStep()
 
     def tearDown(self):
-        os.chdir(self.orig_dir)
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
     def test_split_indexed_directory(self):
