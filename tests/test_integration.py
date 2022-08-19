@@ -12,6 +12,7 @@ import tempfile
 import unittest
 import time
 import datetime
+import sys
 
 
 class TestLinkIntegration(unittest.TestCase):
@@ -21,9 +22,14 @@ class TestLinkIntegration(unittest.TestCase):
     def spec_path(self, spec_path):
        self.spec_path = spec_path
 
+    @pytest.fixture(autouse=True)
+    def temp_dir(self, temp_dir):
+       self.temp_dir = temp_dir
+
     # @pytest.fixture(autouse=True)
     def setUp(self):
-        self.tmp_dir = tempfile.mkdtemp()
+        self.tmp_dir = self.temp_dir()
+        print
         
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
@@ -101,7 +107,7 @@ class TestLinkIntegration(unittest.TestCase):
         os.chdir(self.tmp_dir)
         integration_spec_path = self.spec_path("link_integration_fast.yml")
 
-        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "1", "--make-links",
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
                "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
                integration_spec_path]
@@ -124,7 +130,7 @@ class TestLinkIntegration(unittest.TestCase):
         os.chdir(self.tmp_dir)
         integration_spec_path = self.spec_path("link_integration.yml")
 
-        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "1", "--make-links",
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
                "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
                integration_spec_path]

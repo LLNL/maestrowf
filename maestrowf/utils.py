@@ -390,7 +390,7 @@ class Linker:
         self._study_datetime = datetime.datetime.now()
 
     @staticmethod
-    def float_format(num, format_list):
+    def format_float(num, format_list):
             """
             Return num as string using format_list.
             
@@ -467,7 +467,7 @@ class Linker:
                     name, 
                     name.replace(
                         str(param), 
-                        self.float_format(param, self.dir_float_format))
+                        self.format_float(param, self.dir_float_format))
                 )
             replacements['step'] = step
             replacements['instance'] = instance
