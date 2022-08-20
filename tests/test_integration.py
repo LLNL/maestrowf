@@ -29,7 +29,6 @@ class TestLinkIntegration(unittest.TestCase):
     # @pytest.fixture(autouse=True)
     def setUp(self):
         self.tmp_dir = self.temp_dir()
-        print
         
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
@@ -50,11 +49,11 @@ class TestLinkIntegration(unittest.TestCase):
             "test-directory-hashing/VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152",
         "run-0001/VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19/test-directory-hashing": 
             "test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838",
-        "run-0002/VAR1.0.36.VAR2.0.17.VAR3.0.44.VAR4.0.39/test-directory-hashing": 
+        "run-0002/VAR1.0.359.VAR2.0.171.VAR3.0.441.VAR4.0.392/test-directory-hashing":
             "test-directory-hashing/VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696",
-        "run-0002/VAR1.0.39.VAR2.0.75.VAR3.0.72.VAR4.0.55/test-directory-hashing": 
+        "run-0002/VAR1.0.387.VAR2.0.752.VAR3.0.719.VAR4.0.549/test-directory-hashing":
             "test-directory-hashing/VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152",
-        "run-0002/VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19/test-directory-hashing": 
+        "run-0002/VAR1.0.837.VAR2.0.730.VAR3.0.896.VAR4.0.190/test-directory-hashing":
             "test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838",
     }
     LINKS_0003 = {
@@ -109,7 +108,7 @@ class TestLinkIntegration(unittest.TestCase):
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
+               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 
@@ -117,6 +116,12 @@ class TestLinkIntegration(unittest.TestCase):
         cmd_output = subprocess.run(tree_cmd, capture_output=True)
         tree_result = cmd_output.stdout.decode()
         self.compare_tree_to_reference(tree_result, self.LINKS_0001)
+
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
+               "--dir-float-format", '{:.3f}', '{:.3e}',
+               "--link-template", 
+               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
+               integration_spec_path]
 
         subprocess.run(maestro_cmd)
         cmd_output = subprocess.run(tree_cmd, capture_output=True)
@@ -132,7 +137,7 @@ class TestLinkIntegration(unittest.TestCase):
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
+               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 

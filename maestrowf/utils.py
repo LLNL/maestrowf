@@ -365,16 +365,14 @@ class Linker:
     maestro_index_file = 'maestro_index_file'
 
     def __init__(
-            self, make_links_flag=False, link_directory=None, hashws=False,
-            link_template=None, output_name=None, output_root=None,
+            self, make_links_flag=False, hashws=False,
+            link_template=None, output_name=None, output_path=None,
             dir_float_format=['{:.2f}','{:.2e}']):
         """
         Initialize a new Linker class instance.
 
         :param make_links_flag: Enable customizable, human-readable links to
             run directories.
-        :param link_directory: Jinja template for path where links to
-            run directories are made.
         :param link_template: Jinja template for links to run directories.
         """
         if hashws:
@@ -382,10 +380,9 @@ class Linker:
             self.make_links_flag = False
             return
         self.make_links_flag = make_links_flag
-        self.link_directory = link_directory
         self.link_template = valid_link_template(link_template)
         self.output_name = output_name
-        self.output_root = output_root
+        self.output_path = output_path
         self.dir_float_format = dir_float_format
         self._study_datetime = datetime.datetime.now()
 
@@ -450,8 +447,9 @@ class Linker:
 
     def build_replacements(self, record):
         """ build replacements dictionary from StepRecord"""
+        # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
-        replacements['output_root'] = self.output_root
+        replacements['output_path'] = self.output_path
         replacements['date'] = self._study_datetime.strftime('%Y-%m-%d')
         (replacements['indexed_directory_prefix'],
             replacements['indexed_directory_suffix'],
@@ -474,9 +472,6 @@ class Linker:
         else:
             replacements['step'] = record.name
             replacements['instance'] = "all_records"
-        replacements['link_directory'] = (
-            recursive_render(
-                self.link_directory, replacements))
         replacements['indexed_directory_prefix'] = [
             recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_prefix']]
@@ -489,7 +484,7 @@ class Linker:
         """ helper function """
         maestro_index_file_path = (
             os.path.join(
-                self.output_root,
+                self.output_path,
                 self.output_name,
                 self.maestro_index_file))
         if os.path.exists(maestro_index_file_path):

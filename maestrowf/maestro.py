@@ -25,7 +25,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# #############################################################################
+###############################################################################
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
@@ -300,11 +300,11 @@ def run_study(args):
     # Set up the study workspace and configure it for execution.
     linker = Linker(
         make_links_flag=args.make_links,
-        link_directory=args.link_directory,
         link_template=args.link_template,
         hashws=args.hashws,
         output_name=out_name,
-        output_root=out_dir
+        output_path=out_dir,
+        dir_float_format=args.dir_float_format,
         )
     study.setup_workspace()
     study.configure_study(
@@ -435,26 +435,24 @@ def setup_argparser():
                      "parameterized studies (NOTE: breaks commands that use "
                      "parameter labels to search directories). \n"
                      " [Default: %(default)s]")
+    run.add_argument("--dir-float-format", nargs=2, 
+                     metavar=('(small-exponent-format)', '(large-exponent-format)'),
+                     default=['{:.2f}','{:.2e}'],
+                     help=("Format for float parameters when used in directory "
+                     "names [Default: %(default)s]."))
     run.add_argument("--make-links", action="store_true", default=False,
                      help="Automatically make customizable, human-readable "
                      "links to run directories. [Default: %(default)s]")
     run.add_argument(
-        "--link-directory",
-        type=str,
-        default="{{output_root}}/links",
-        help="Jinja template for path where links to run directories "
-        "are made. [Default: %(default)s]")
-    run.add_argument(
         "--link-template",
         type=valid_link_template,
         default=(
-            "{{link_directory}}/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
+            "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
         help="Jinja template for links to run directories.\n"
         "NOTE: template must include {{instance}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
-        "{{output_root}} - Parent directory for this maestro study\n"
-        "{{link_directory}} - Link directory for this maestro study\n"
+        "{{output_path}} - Parent directory for this maestro study\n"
         "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
         "{{instance}} - Maestro label for a set of parameters\n"
         "               (e.g. 'X1.5.X2.5.X3.20')\n"
