@@ -382,8 +382,8 @@ class Linker:
         error_text = (
                 "\nTemplate error: '" + link_template + "'\n"
                 "    does not include required substrings "
-                "{{instance}} and {{step}}.\n")
-        if (link_template.find('{{instance}}') == -1
+                "{{combo}} and {{step}}.\n")
+        if (link_template.find('{{combo}}') == -1
         or link_template.find('{{step}}') == -1):
             print(error_text)
             raise ValueError(error_text)
@@ -414,7 +414,7 @@ class Linker:
         Returns a tuple of a indexed_directory prefix, suffix & template
 
         Example `link_directory_template`: {{output_path_root}}/links/{{date}}/
-            run-{{INDEX}}/{{instance}}/{{step}}
+            run-{{INDEX}}/{{combo}}/{{step}}
 
         Example `indexed_directory_prefix`: studies/links/2020_07_30
         Example `indexed_directory_suffix`: bar.1.foo.1/run-codepy-baseline/
@@ -468,23 +468,23 @@ class Linker:
             replacements['indexed_directory_template']) = (
          self.split_indexed_directory(self.link_template))
         if record.step.combo != None and record._params:
-            instance = os.path.basename(record.workspace.value)
-            replacements['long_instance'] = instance
-            step = record.name.replace("_" + instance,"")
+            combo = os.path.basename(record.workspace.value)
+            replacements['long_combo'] = combo
+            step = record.name.replace("_" + combo,"")
             for param, name in zip(
                 record.step.combo._params.values(),
                 record.step.combo._labels.values()):
-                instance = instance.replace(
+                combo = combo.replace(
                     name, 
                     name.replace(
                         str(param), 
                         self.format_float(param, self.dir_float_format))
                 )
             replacements['step'] = step
-            replacements['instance'] = instance
+            replacements['combo'] = combo
         else:
             replacements['step'] = record.name
-            replacements['instance'] = "all_records"
+            replacements['combo'] = "all_records"
         replacements['indexed_directory_prefix'] = [
             recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_prefix']]

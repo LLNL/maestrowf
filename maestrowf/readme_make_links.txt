@@ -1,12 +1,3 @@
-============================================================== short test summary info ===============================================================
-FAILED tests/test_link.py::TestLinkUtilUnits::test_build_replacements - AttributeError: 'Linker' object has no attribute 'validate_link_template'
-FAILED tests/test_link.py::TestLinkUtilUnits::test_split_indexed_directory - AttributeError: 'Linker' object has no attribute 'validate_link_template'
-===================================================== 2 failed, 30 passed, 2 deselected in 4.49s =====================================================
-(maestrowf-F8Kxbm4v-py3.8) (base) crkrenn@admins-MBP-2 maestrowf_crk % open tests/test_link.py    
-(maestrowf-F8Kxbm4v-py3.8) (base) crkrenn@admins-MBP-2 maestrowf_crk % open tests/test_link.py
-(maestrowf-F8Kxbm4v-py3.8) (base) crkrenn@admins-MBP-2 maestrowf_crk % code tests/test_link.py
-(maestrowf-F8Kxbm4v-py3.8) (base) crkrenn@admins-MBP-2 maestrowf_crk % pytest -k "not test_integration"
-
 # rename instance -> combo
 
 # Write yaml index_directory index path

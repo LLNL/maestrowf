@@ -447,14 +447,14 @@ def setup_argparser():
         "--link-template",
         type=str,
         default=(
-            "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
+            "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}"),
         help="Jinja template for links to run directories.\n"
-        "NOTE: template must include {{instance}} and {{step}}.\n"
+        "NOTE: template must include {{combo}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"
         "Currently supported Jinja variables:\n"
         "{{output_path}} - Parent directory for this maestro study\n"
         "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
-        "{{instance}} - Maestro label for a set of parameters\n"
+        "{{combo}} - Maestro label for a set of parameters\n"
         "               (e.g. 'X1.5.X2.5.X3.20')\n"
         "               [maximum length: 255 characters]\n"
         "{{step}} - Maestro label for a given step (e.g. 'run')\n"

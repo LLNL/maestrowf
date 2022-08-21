@@ -82,20 +82,20 @@ class TestLinkUtilUnits(unittest.TestCase):
         """
         template_string = (
             "{{output_path_root}}/links/{{date}}/"
-            "run-{{INDEX}}/{{instance}}/{{step}}")
+            "run-{{INDEX}}/{{combo}}/{{step}}")
         split_list = self.linker.split_indexed_directory(template_string)
         self.assertEqual(
             split_list[0],
             ["{{output_path_root}}", "links", "{{date}}"])
         self.assertEqual(
             split_list[1],
-            ["{{instance}}", "{{step}}"])
+            ["{{combo}}", "{{step}}"])
         self.assertEqual(
             split_list[2],
             "run-{{INDEX}}")
 
         template_string = (
-            "run-{{INDEX}}/{{instance}}/{{step}}")
+            "run-{{INDEX}}/{{combo}}/{{step}}")
         split_list = self.linker.split_indexed_directory(template_string)
         self.assertEqual(split_list[0], [])
 
@@ -113,7 +113,7 @@ class TestLinkUtilUnits(unittest.TestCase):
 
         template_string = (
             "{{output_path_root}}/run-{{INDEX}}/{{date}}/"
-            "run-{{INDEX}}/{{instance}}/{{step}}")
+            "run-{{INDEX}}/{{combo}}/{{step}}")
         with pytest.raises(ValueError) as excinfo:
             self.linker.split_indexed_directory(template_string)
         assert ("at most one '{{INDEX}}' can be in link"
