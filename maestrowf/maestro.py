@@ -45,7 +45,7 @@ from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
-    start_process, Linker, valid_link_template
+    start_process, Linker
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -445,7 +445,7 @@ def setup_argparser():
                      "links to run directories. [Default: %(default)s]")
     run.add_argument(
         "--link-template",
-        type=valid_link_template,
+        type=str,
         default=(
             "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}"),
         help="Jinja template for links to run directories.\n"

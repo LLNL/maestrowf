@@ -43,6 +43,7 @@ from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
+import pprint
 
 LOGGER = logging.getLogger(__name__)
 
@@ -344,18 +345,6 @@ def recursive_render(tpl, values):
             return curr
 
 
-def valid_link_template(astring):
-    if astring is None:
-        return None
-    error_text = (
-            "\nTemplate error: '" + astring + "'\n"
-            "    does not include required substrings "
-            "{{instance}} and {{step}}.\n")
-    if (astring.find('{{instance}}') == -1
-       or astring.find('{{step}}') == -1):
-        print(error_text)
-        raise ValueError(error_text)
-    return astring
 
 
 class Linker:
@@ -379,12 +368,26 @@ class Linker:
             LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
             self.make_links_flag = False
             return
+        self.validate_link_template(link_template)
         self.make_links_flag = make_links_flag
-        self.link_template = valid_link_template(link_template)
+        self.link_template = link_template
         self.output_name = output_name
         self.output_path = output_path
         self.dir_float_format = dir_float_format
         self._study_datetime = datetime.datetime.now()
+
+    def validate_link_template(self, link_template):
+        if link_template is None:
+            return None
+        error_text = (
+                "\nTemplate error: '" + link_template + "'\n"
+                "    does not include required substrings "
+                "{{instance}} and {{step}}.\n")
+        if (link_template.find('{{instance}}') == -1
+        or link_template.find('{{step}}') == -1):
+            print(error_text)
+            raise ValueError(error_text)
+        return link_template
 
     @staticmethod
     def format_float(num, format_list):
@@ -449,6 +452,15 @@ class Linker:
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
+        output_name = self.output_name
+        study_time = output_name.split("-")[-1]
+        replacements['study_time'] = study_time
+        study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
+        replacements['study_date'] = study_date
+        study_name = output_name.replace(f"_{study_date}-{study_time}","")
+        replacements['study_name'] = study_name
+        replacements['link_template'] = self.link_template
+        replacements['output_name'] = self.output_name
         replacements['output_path'] = self.output_path
         replacements['date'] = self._study_datetime.strftime('%Y-%m-%d')
         (replacements['indexed_directory_prefix'],
@@ -457,6 +469,7 @@ class Linker:
          self.split_indexed_directory(self.link_template))
         if record.step.combo != None and record._params:
             instance = os.path.basename(record.workspace.value)
+            replacements['long_instance'] = instance
             step = record.name.replace("_" + instance,"")
             for param, name in zip(
                 record.step.combo._params.values(),
@@ -478,6 +491,16 @@ class Linker:
         replacements['indexed_directory_suffix'] = [
             recursive_render(template_string, replacements)
             for template_string in replacements['indexed_directory_suffix']]
+        if record.step.combo != None and record._params:
+            for param, name in zip(
+                record.step.combo._params.items(),
+                record.step.combo._names.items()):
+                key = name[1]
+                value = param[1]
+                if key not in replacements:
+                    replacements[key] = value
+        print("step_name", record.step.name)
+        pprint.pprint(replacements)
         return replacements
 
     def read_or_make_index_directory(self, replacements):

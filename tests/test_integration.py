@@ -111,8 +111,11 @@ class TestLinkIntegration(unittest.TestCase):
                "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{instance}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
+        # assert False
 
         subprocess.run(maestro_cmd)
+        print(subprocess.run(["tree", "-f", "-i", self.tmp_dir, "output", "links"], 
+            capture_output=True).stdout.decode())
         cmd_output = subprocess.run(tree_cmd, capture_output=True)
         tree_result = cmd_output.stdout.decode()
         self.compare_tree_to_reference(tree_result, self.LINKS_0001)
