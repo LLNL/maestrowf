@@ -1,4 +1,7 @@
-# rename instance -> combo
+# update validate template
+
+# write test for study part of validation
+# write validation for combo part of the template (based on pgen and globals)
 
 # Write yaml index_directory index path
 # labels.yaml

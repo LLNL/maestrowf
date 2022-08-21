@@ -305,6 +305,8 @@ def run_study(args):
         output_name=out_name,
         output_path=out_dir,
         dir_float_format=args.dir_float_format,
+        pgen=args.pgen,
+        globals=spec.globals,
         )
     study.setup_workspace()
     study.configure_study(
@@ -447,7 +449,7 @@ def setup_argparser():
         "--link-template",
         type=str,
         default=(
-            "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}"),
+            "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}"),
         help="Jinja template for links to run directories.\n"
         "NOTE: template must include {{combo}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"
@@ -458,7 +460,7 @@ def setup_argparser():
         "               (e.g. 'X1.5.X2.5.X3.20')\n"
         "               [maximum length: 255 characters]\n"
         "{{step}} - Maestro label for a given step (e.g. 'run')\n"
-        "{{INDEX}} - Unique number for each maestro execution (e.g. '0001')")
+        "{{study_index}} - Unique number for each maestro execution (e.g. '0001')")
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(

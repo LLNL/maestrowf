@@ -356,7 +356,7 @@ class Linker:
     def __init__(
             self, make_links_flag=False, hashws=False,
             link_template=None, output_name=None, output_path=None,
-            dir_float_format=['{:.2f}','{:.2e}']):
+            dir_float_format=['{:.2f}','{:.2e}'], pgen=None, globals={}):
         """
         Initialize a new Linker class instance.
 
@@ -368,7 +368,8 @@ class Linker:
             LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
             self.make_links_flag = False
             return
-        self.validate_link_template(link_template)
+        if make_links_flag:
+            self.validate_link_template(link_template)
         self.make_links_flag = make_links_flag
         self.link_template = link_template
         self.output_name = output_name
@@ -377,17 +378,34 @@ class Linker:
         self._study_datetime = datetime.datetime.now()
 
     def validate_link_template(self, link_template):
-        if link_template is None:
-            return None
+        """ Validate link template: date+time or index; all var or combo or index"""
+        error = False
         error_text = (
                 "\nTemplate error: '" + link_template + "'\n"
-                "    does not include required substrings "
-                "{{combo}} and {{step}}.\n")
-        if (link_template.find('{{combo}}') == -1
-        or link_template.find('{{step}}') == -1):
+                "    does not include required substrings \n")
+        study_index_index = link_template.find('{{study_index}}')
+        study_time_index = link_template.find('{{study_time}}')
+        study_date_index = link_template.find('{{study_date}}')
+        date_index = link_template.find('{{date}}')
+        if study_index_index == -1:
+            if study_time_index == -1:
+                error = True
+            if study_date_index == -1 and date_index == -1:
+                error = True
+            if error:
+                error_text += (
+                    "    {{study_time}} and {{study_date}} or {{date}}\n"
+                    "    or {{study_index}}\n")
+        max_study_index = max(
+            study_index_index, study_time_index, study_date_index, date_index)
+        combo_index_index = link_template.find('{{combo_index}}')
+        combo_index = link_template.find('{{combo}}')
+        if combo_index_index == -1:
+            if combo_index == -1:
+                pass
+        if error:
             print(error_text)
             raise ValueError(error_text)
-        return link_template
 
     @staticmethod
     def format_float(num, format_list):
@@ -414,11 +432,11 @@ class Linker:
         Returns a tuple of a indexed_directory prefix, suffix & template
 
         Example `link_directory_template`: {{output_path_root}}/links/{{date}}/
-            run-{{INDEX}}/{{combo}}/{{step}}
+            run-{{study_index}}/{{combo}}/{{step}}
 
         Example `indexed_directory_prefix`: studies/links/2020_07_30
         Example `indexed_directory_suffix`: bar.1.foo.1/run-codepy-baseline/
-        Example `indexed_directory_template`: run-{{INDEX}}
+        Example `indexed_directory_template`: run-{{study_index}}
 
         :param link_directory_template: one line jinja directory path template
         :param defs: a dictionary containing replacement definitions for
@@ -433,16 +451,16 @@ class Linker:
         indexed_directory_prefix = []
         indexed_directory_template = ""
         indexed_directory_suffix = []
-        while dir_list and not re.match(r".*{{INDEX}}.*", dir_list[0]):
+        while dir_list and not re.match(r".*{{study_index}}.*", dir_list[0]):
             indexed_directory_prefix.append(dir_list.pop(0))
         if dir_list:
             indexed_directory_template = dir_list.pop(0)
         if dir_list:
-            while dir_list and not re.match(r".*{{INDEX}}.*", dir_list[0]):
+            while dir_list and not re.match(r".*{{study_index}}.*", dir_list[0]):
                 indexed_directory_suffix.append(dir_list.pop(0))
             if dir_list:
                 raise(ValueError(
-                    "at most one '{{INDEX}}' can be in "
+                    "at most one '{{study_index}}' can be in "
                     "link path template string"))
         return(
             indexed_directory_prefix, indexed_directory_suffix,
@@ -516,7 +534,7 @@ class Linker:
         else:
             index_directory_template_string = (
                 replacements['indexed_directory_template'].replace(
-                    '{{INDEX}}', self.index_format))
+                    '{{study_index}}', self.index_format))
             success = False
             timeout = time.time() + self.mkdir_timeout
             lock = FileLock(

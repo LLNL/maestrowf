@@ -82,7 +82,7 @@ class TestLinkUtilUnits(unittest.TestCase):
         """
         template_string = (
             "{{output_path_root}}/links/{{date}}/"
-            "run-{{INDEX}}/{{combo}}/{{step}}")
+            "run-{{study_index}}/{{combo}}/{{step}}")
         split_list = self.linker.split_indexed_directory(template_string)
         self.assertEqual(
             split_list[0],
@@ -92,16 +92,16 @@ class TestLinkUtilUnits(unittest.TestCase):
             ["{{combo}}", "{{step}}"])
         self.assertEqual(
             split_list[2],
-            "run-{{INDEX}}")
+            "run-{{study_index}}")
 
         template_string = (
-            "run-{{INDEX}}/{{combo}}/{{step}}")
+            "run-{{study_index}}/{{combo}}/{{step}}")
         split_list = self.linker.split_indexed_directory(template_string)
         self.assertEqual(split_list[0], [])
 
         template_string = (
             "{{output_path_root}}/links/{{date}}/"
-            "run-{{INDEX}}")
+            "run-{{study_index}}")
         split_list = self.linker.split_indexed_directory(template_string)
         self.assertEqual(split_list[1], [])
 
@@ -112,11 +112,11 @@ class TestLinkUtilUnits(unittest.TestCase):
         self.assertEqual(split_list[2], "")
 
         template_string = (
-            "{{output_path_root}}/run-{{INDEX}}/{{date}}/"
-            "run-{{INDEX}}/{{combo}}/{{step}}")
+            "{{output_path_root}}/run-{{study_index}}/{{date}}/"
+            "run-{{study_index}}/{{combo}}/{{step}}")
         with pytest.raises(ValueError) as excinfo:
             self.linker.split_indexed_directory(template_string)
-        assert ("at most one '{{INDEX}}' can be in link"
+        assert ("at most one '{{study_index}}' can be in link"
                 in str(excinfo.value))
 
     def test_build_replacements(self):

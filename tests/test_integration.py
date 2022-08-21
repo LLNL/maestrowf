@@ -108,7 +108,7 @@ class TestLinkIntegration(unittest.TestCase):
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}",
+               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
         # assert False
@@ -123,7 +123,7 @@ class TestLinkIntegration(unittest.TestCase):
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--dir-float-format", '{:.3f}', '{:.3e}',
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}",
+               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
 
         subprocess.run(maestro_cmd)
@@ -140,7 +140,7 @@ class TestLinkIntegration(unittest.TestCase):
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}",
+               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 
