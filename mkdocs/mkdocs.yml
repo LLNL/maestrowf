@@ -59,6 +59,7 @@ nav:
     - Maestro:
         - Overview: 'Maestro/index.md'
         - Installation: 'Maestro/install.md'
+        - Tutorials: 'Maestro/tutorials.md'
         - Specification:
             - Specification 1.0: 'Maestro/specification.md'
             - Scheduling Studies: 'Maestro/scheduling.md'
