@@ -37,6 +37,66 @@ class TestLinkUtilsUnits(unittest.TestCase):
         dir = os.path.join("foo", "bar", "foo")
         self.assertEqual(splitall(dir), ["foo", "bar", "foo"])
 
+    def test_validate_study_template(self):
+        """
+        tests validation of study templates
+        """
+        # Validate link template: date+time or index; 
+        linker = Linker()
+        linker.validate_link_template("{{study_index}}")
+        linker.validate_link_template("{{study_date}}{{study_time}}")
+        linker.validate_link_template("{{date}}{{study_time}}")
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("foo")
+        self.assertTrue(
+            "does not include required substrings"
+            in str(context.exception))
+        self.assertTrue(
+            "{{study_time}} and {{study_date}}"
+            in str(context.exception))
+
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{study_date}}")
+        self.assertTrue(
+            "{{study_time}} and {{study_date}}"
+            in str(context.exception))
+
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{date}}")
+        self.assertTrue(
+            "{{study_time}} and {{study_date}}"
+            in str(context.exception))
+
+    # def test_validate_combo_template(self):
+    #     """
+    #     tests validation of study templates
+    #     """
+    #     # Validate link template: date+time or index; 
+    #     linker = Linker()
+    #     linker.validate_link_template("{{study_index}}")
+    #     linker.validate_link_template("{{study_date}}{{study_time}}")
+    #     linker.validate_link_template("{{date}}{{study_time}}")
+    #     with self.assertRaises(ValueError) as context:
+    #         linker.validate_link_template("foo")
+    #     self.assertTrue(
+    #         "does not include required substrings"
+    #         in str(context.exception))
+    #     self.assertTrue(
+    #         "{{study_time}} and {{study_date}}"
+    #         in str(context.exception))
+
+    #     with self.assertRaises(ValueError) as context:
+    #         linker.validate_link_template("{{study_date}}")
+    #     self.assertTrue(
+    #         "{{study_time}} and {{study_date}}"
+    #         in str(context.exception))
+
+    #     with self.assertRaises(ValueError) as context:
+    #         linker.validate_link_template("{{date}}")
+    #     self.assertTrue(
+    #         "{{study_time}} and {{study_date}}"
+    #         in str(context.exception))
+
     def test_recursive_render(self):
         self.assertEqual(
             recursive_render("Hello {{X}}!", dict(X="{{name}}", name="world")),

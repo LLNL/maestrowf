@@ -364,18 +364,20 @@ class Linker:
             run directories.
         :param link_template: Jinja template for links to run directories.
         """
+        self.make_links_flag = make_links_flag
+        self.link_template = link_template
+        self.output_name = output_name
+        self.output_path = output_path
+        self.dir_float_format = dir_float_format
+        self.pgen = pgen
+        self.globals = globals
+        self._study_datetime = datetime.datetime.now()
         if hashws:
             LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
             self.make_links_flag = False
             return
         if make_links_flag:
             self.validate_link_template(link_template)
-        self.make_links_flag = make_links_flag
-        self.link_template = link_template
-        self.output_name = output_name
-        self.output_path = output_path
-        self.dir_float_format = dir_float_format
-        self._study_datetime = datetime.datetime.now()
 
     def validate_link_template(self, link_template):
         """ Validate link template: date+time or index; all var or combo or index"""
@@ -396,13 +398,18 @@ class Linker:
                 error_text += (
                     "    {{study_time}} and {{study_date}} or {{date}}\n"
                     "    or {{study_index}}\n")
-        max_study_index = max(
-            study_index_index, study_time_index, study_date_index, date_index)
-        combo_index_index = link_template.find('{{combo_index}}')
-        combo_index = link_template.find('{{combo}}')
-        if combo_index_index == -1:
-            if combo_index == -1:
-                pass
+        # print("DEBUG", self.globals.keys())
+        # if self.pgen != None or self.globals != {}:
+        #     max_study_index = max(
+        #         study_index_index, study_time_index, study_date_index, date_index)
+        #     combo_index_index = link_template.find('{{combo_index}}')
+        #     combo_index = link_template.find('{{combo}}')
+        #     if combo_index_index == -1:
+        #         if combo_index == -1:
+        #             for key in self.globals.keys():
+        #                 if link_template.find('{{' + key + '}}') == -1:
+        #                     error = True
+        #                 combo_index}}')
         if error:
             print(error_text)
             raise ValueError(error_text)
