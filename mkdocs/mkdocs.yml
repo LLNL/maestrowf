@@ -18,21 +18,25 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid
-        - name: mermaid_center
-          class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid_custom
+          format: !!python/name:pymdownx.superfences.fence_code_format #mermaid.fence_mermaid 
+        # - name: mermaid_center
+        #   class: mermaid
+        #   format: !!python/name:mermaid2.fence_mermaid_custom
   - pymdownx.tabbed:
       alternate_style: true
 
 plugins:
     - search
-    - mermaid2:
-        arguments:
-          securityLevel: 'loose'
-          theme: 'dark'
+    # - mermaid2:
+    #     arguments:
+    #       securityLevel: 'loose'
+    #       theme: 'default'
+            # darkMode: True
+          # theme: |
+          #   ^(JSON.parse(__md_get("__palette").index == 1)) ? 'dark' : 'light'
 extra_javascript:
     - https://unpkg.com/mermaid/dist/mermaid.min.js
+    # - extra/refresh_on_toggle_dark_light.js
 
 extra_css:
   - custom.css

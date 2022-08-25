@@ -105,8 +105,52 @@ study:
             echo "Hello, World!" > hello_world.txt
 ```
 
+### Workflow topology
+
+One final detail to note here is the topology of the workflow we have built.  Studies are organized using directed acyclic graphs, or DAG's, and Maestro's input features enable building DAG's with several topologies which we will highlight as we go.  This example uses the simplest, which is a single step, unparameterized (or linear) graph as shown below
+
+``` mermaid
+graph TD;
+    A(_source)-->B(say-hello);
+```
+
+Here `_source` has special meaning, and is always the root of the DAG's that define a study.
 
 ## Hello, Bye World
 ----
 
-Now that we've got a taste for what a Maestro specification looks like, how to run it, and what it generates, it's time to look into more interesting workflow topologies.  That was a lot of work for echoing "Hello World", but we now have a framework to build on and do a whole lot more with minimal extra work.  
+Now that we've got a taste for what a Maestro specification looks like, how to run it, and what it generates, it's time to look into more interesting workflow topologies.  That was a lot of work for echoing "Hello World", but we now have a framework to build on and do a whole lot more with minimal extra work.  A common next step in defining studies and workflows is to add dependent or child steps using the optional `depends` key in study steps' `run` block.  Let's add a second step that says 'good-bye', but we also don't want this to run until after we say 'hello'.  The `depends` key simply takes a list of other step names, which tells Maestro to not run this step until those dependencies have successfully completed.
+
+``` yaml hl_lines="21"
+description:
+    name: hello_world
+    description: A simple 'Hello World' study.
+   
+env:
+    variables:
+      OUTPUT_PATH: ./samples
+      
+study:
+    - name: say-hello
+      description: Say hello to the world!
+      run:
+          cmd: |
+            echo "Hello, World!" > hello_world.txt
+            
+    - name: say-bye
+      description: Say good bye to the world!
+      run:
+          cmd: |
+            echo "Good-bye, World!" > good_bye_world.txt
+          depends: [say-hello]
+```
+
+### Toplogy
+
+Now our topology is slightly more interesting:
+
+``` mermaid
+graph TD;
+    A(_source)-->B(say-hello);
+    B(say-hello)-->C(say-bye);
+```
