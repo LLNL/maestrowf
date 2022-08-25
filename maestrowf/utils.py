@@ -30,6 +30,7 @@
 """A collection of more general utility functions."""
 
 from collections import OrderedDict
+from decimal import MIN_EMIN
 import re
 import random
 import coloredlogs
@@ -382,9 +383,7 @@ class Linker:
     def validate_link_template(self, link_template):
         """ Validate link template: date+time or index; all var or combo or index"""
         error = False
-        error_text = (
-                "\nTemplate error: '" + link_template + "'\n"
-                "    does not include required substrings \n")
+        error_text = ""
         study_index_index = link_template.find('{{study_index}}')
         study_time_index = link_template.find('{{study_time}}')
         study_date_index = link_template.find('{{study_date}}')
@@ -396,20 +395,48 @@ class Linker:
                 error = True
             if error:
                 error_text += (
+                   f"Template error: '{link_template}'\n"
+                    "    does not include required 'study' substrings \n"                    
                     "    {{study_time}} and {{study_date}} or {{date}}\n"
                     "    or {{study_index}}\n")
-        # print("DEBUG", self.globals.keys())
-        # if self.pgen != None or self.globals != {}:
-        #     max_study_index = max(
-        #         study_index_index, study_time_index, study_date_index, date_index)
-        #     combo_index_index = link_template.find('{{combo_index}}')
-        #     combo_index = link_template.find('{{combo}}')
-        #     if combo_index_index == -1:
-        #         if combo_index == -1:
-        #             for key in self.globals.keys():
-        #                 if link_template.find('{{' + key + '}}') == -1:
-        #                     error = True
-        #                 combo_index}}')
+        # pprint.pprint("DEBUG")
+        # pprint.pprint(self.globals)
+        if self.pgen != None or self.globals != {}:
+            max_study_index = max(
+                study_index_index, study_time_index, study_date_index, date_index)
+            combo_index_index = link_template.find('{{combo_index}}')
+            combo_index = link_template.find('{{combo}}')
+            min_key_index = float("inf")
+            var_list = ["{{" + var + "}}" for var in self.globals.keys()]
+            for key in self.globals.keys():
+                key_index = link_template.find('{{' + key + '}}')
+                if key_index < min_key_index:
+                    min_key_index = key_index
+            min_combo_list = ([var for var in [combo_index, combo_index_index, min_key_index]
+                                   if var > -1])
+            if min_combo_list:
+                min_combo_index = min(min_combo_list)
+            else:
+                min_combo_index = -1
+            if combo_index_index == -1 and combo_index == -1 and min_key_index == -1:
+                error = True
+                error_text += (
+                    f"Template error: '{link_template}'\n"
+                    f"    does not include required 'combo' substrings \n"                    
+                        "    {{combo_index}}, or {{combo}},\n"
+                    f"    or all global variables ({var_list})\n")
+            if min_combo_index < max_study_index:
+                error = True
+                error_text += (
+                    f"Template error: in '{link_template}'\n"
+                        "    This code requires all combo substrings to be to the right\n"
+                        "    of all study stubstrings.\n"
+                        "    The position of the rightmost 'study' substrings \n"
+                        "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"
+                        "    is to the right of the leftmost 'combo' substrings\n"
+                        "    ({{combo}}, {{combo_index}}, or all global variables\n"
+                    f"     ({var_list})).\n"
+                        )                    
         if error:
             print(error_text)
             raise ValueError(error_text)
