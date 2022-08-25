@@ -68,9 +68,13 @@ options:
 
 ### Checking the status
 
-After invoking `maestro run hello_world.yaml -s 1` you won't see any output directly.  Looking back at the specification that was written, the "Hello World!" output we are looking for is actually written to a file `hello_world.txt`.  Do an `ls` on your current workspace and you will see Maestro created some new folders when it executed the study.  In this case it will simply be the name of the study, from the `description` block, with a date-timestamp appended to it using an `_`.  To see if anything actually ran, maestro provides a `status` sub command, which takes that `study_name_date-timestamp` directory as the only required argument.  There are some additional layout options you can explore via `maestro status -h`.  For this study, the default layout will be fine, and it shows the following:
+After invoking `maestro run hello_world.yaml -s 1` you won't see any output directly.  Looking back at the specification that was written, the "Hello World!" output we are looking for is actually written to a file `hello_world.txt`.  Do an `ls` on your current workspace and you will see Maestro created some new folders when it executed the study.  In this case it will simply be the name of the study, from the `description` block, with a date-timestamp appended to it using an `_`.  To see if anything actually ran, maestro provides a `status` sub command, which takes that `study_name_date-timestamp` directory as the only required argument.  There are some additional layout options you can explore via `maestro status -h`.
 
-<!-- NOTE: add the svg snapshot to the status renderers for this -->
+``` console
+maestro status /path/to/study/output/hello_world_20220712-230235
+```
+
+![Hellow World Status](../assets/images/examples/hello_world/hello_world_status.svg)
 
 ### Outputs
 
