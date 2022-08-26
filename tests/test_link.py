@@ -120,9 +120,15 @@ class TestLinkUtilsUnits(unittest.TestCase):
             in str(context.exception))
 
         with self.assertRaises(ValueError) as context:
-            linker.validate_link_template("{{combo_index}}{{study_index}}")
+            linker.validate_link_template("{{combo_index}}{{combo_index}}")
         self.assertTrue(
-            "This code requires all combo substrings to be to the right"
+            "'{{combo_index}}' can not be repeated"
+            in str(context.exception))
+
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{study_index}}{{study_index}}")
+        self.assertTrue(
+            "'{{study_index}}' can not be repeated"
             in str(context.exception))
 
     def test_recursive_render(self):

@@ -399,8 +399,6 @@ class Linker:
                     "    does not include required 'study' substrings \n"                    
                     "    {{study_time}} and {{study_date}} or {{date}}\n"
                     "    or {{study_index}}\n")
-        # pprint.pprint("DEBUG")
-        # pprint.pprint(self.globals)
         if self.pgen != None or self.globals != {}:
             max_study_index = max(
                 study_index_index, study_time_index, study_date_index, date_index)
@@ -429,14 +427,24 @@ class Linker:
                 error = True
                 error_text += (
                     f"Template error: in '{link_template}'\n"
-                        "    This code requires all combo substrings to be to the right\n"
-                        "    of all study stubstrings.\n"
-                        "    The position of the rightmost 'study' substrings \n"
-                        "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"
-                        "    is to the right of the leftmost 'combo' substrings\n"
-                        "    ({{combo}}, {{combo_index}}, or all global variables\n"
+                    "    This code requires all combo substrings to be to the right\n"
+                    "    of all study stubstrings.\n"
+                    "    The position of the rightmost 'study' substrings \n"
+                    "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"
+                    "    is to the right of the leftmost 'combo' substrings\n"
+                    "    ({{combo}}, {{combo_index}}, or all global variables\n"
                     f"     ({var_list})).\n"
-                        )                    
+                        )  
+        if link_template.count('{{study_index}}') > 1:
+            error = True
+            error_text += (
+                f"Template error: in '{link_template}'\n"
+                "    '{{study_index}}' can not be repeated.")
+        if link_template.count('{{combo_index}}') > 1:
+            error = True
+            error_text += (
+                f"Template error: in '{link_template}'\n"
+                "    '{{combo_index}}' can not be repeated.")
         if error:
             print(error_text)
             raise ValueError(error_text)
@@ -603,56 +611,90 @@ class Linker:
                             raise(ValueError(e))
         return index_directory_string
 
+    def split_directory(self, dir, split_string):
+        if dir.find(split_string) == -1:
+            return (dir, "", "")
+        dir_list = splitall(dir)
+        left_dirs = []
+        right_dirs = []
+        found = False
+        for dir in dir_list:
+            if found:
+                right_dirs.append(dir)
+            else:
+                if dir.find("{{study_index}}") == -1:
+                    left_dirs.append(dir)
+                else:
+                    index_dir = dir
+                    found = True
+        return (
+            os.path.join(*left_dirs), 
+            index_dir, 
+            os.path.join(*right_dirs))
+
     def link(self, record):
         """Create link for StepRecord"""
         # @TODO: test cases: index in front, middle, end, no index, two indexes
         #        with and without hash
         if not self.make_links_flag:
             return
-
         replacements = self.build_replacements(record)
-        # make link directories
-        if len(replacements['indexed_directory_prefix']) == 0:
-            raise(ValueError(
-                "link_directory (" + self.link_directory + ")" +
-                "and link_template (" + self.link_template + ")" +
-                "do not result in a valid path for links."))
+        link_new = False
+        if link_new:
+            replacements["study_index"] = "{{study_index}}"
+            replacements["combo_index"] = "{{combo_index}}"
+            link_path = recursive_render(self.link_template, replacements)
+            print("t:", self.link_template)
+            print("p:", link_path)
+            print("r:", record.workspace.value)
+            left_dirs, index_dir, right_dirs = self.split_directory(link_path, "{{study_index}}")
+            print("dl:", left_dirs, index_dir, right_dirs)
+            os.makedirs(left_dirs)
+            assert False                
 
-        # len(replacements['indexed_directory_prefix']) must be 1
-        # because of error check in split_indexed_directory
-        replacements['directory_prefix_path'] = (
-            os.path.join(
-                *replacements['indexed_directory_prefix']))
-        if replacements['indexed_directory_template']:
-            index_directory_string = (
-                self.read_or_make_index_directory(replacements))
-            path = os.path.join(
-                index_directory_string,
-                *replacements['indexed_directory_suffix'])
         else:
-            path = replacements['directory_prefix_path']
-        if os.path.exists(path):
-            path = next_path(path + '-' + self.index_format)
-        try:
-            # make full path; then make link
-            os.makedirs(path)
-            os.rmdir(path)
-            os.symlink(record.workspace.value, path)
-        except OSError as e:
-            if e.args[1] == 'File exists':
+            # make link directories
+            if len(replacements['indexed_directory_prefix']) == 0:
                 raise(ValueError(
-                    "Could not create a unique directory.\n\n" +
-                    "Attempted path: " + path + "\n" +
-                    "Template string: " + self.link_template))
-            elif e.args[1] == 'Permission denied':
-                raise(ValueError(
-                    "Could not create a unique directory because of a " +
-                    "permissions error.\n\n" +
-                    "Attempted path: " + path + "\n" +
-                    "Template string: " + self.link_template
-                    ))
+                    "link_directory (" + self.link_directory + ")" +
+                    "and link_template (" + self.link_template + ")" +
+                    "do not result in a valid path for links."))
+
+            # len(replacements['indexed_directory_prefix']) must be 1
+            # because of error check in split_indexed_directory
+            replacements['directory_prefix_path'] = (
+                os.path.join(
+                    *replacements['indexed_directory_prefix']))
+            if replacements['indexed_directory_template']:
+                index_directory_string = (
+                    self.read_or_make_index_directory(replacements))
+                path = os.path.join(
+                    index_directory_string,
+                    *replacements['indexed_directory_suffix'])
             else:
-                raise(ValueError)
+                path = replacements['directory_prefix_path']
+            if os.path.exists(path):
+                path = next_path(path + '-' + self.index_format)
+            try:
+                # make full path; then make link
+                os.makedirs(path)
+                os.rmdir(path)
+                os.symlink(record.workspace.value, path)
+            except OSError as e:
+                if e.args[1] == 'File exists':
+                    raise(ValueError(
+                        "Could not create a unique directory.\n\n" +
+                        "Attempted path: " + path + "\n" +
+                        "Template string: " + self.link_template))
+                elif e.args[1] == 'Permission denied':
+                    raise(ValueError(
+                        "Could not create a unique directory because of a " +
+                        "permissions error.\n\n" +
+                        "Attempted path: " + path + "\n" +
+                        "Template string: " + self.link_template
+                        ))
+                else:
+                    raise(ValueError)
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""

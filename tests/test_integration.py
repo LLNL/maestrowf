@@ -131,6 +131,28 @@ class TestLinkIntegration(unittest.TestCase):
         tree_result = cmd_output.stdout.decode()
         self.compare_tree_to_reference(tree_result, self.LINKS_0002)
 
+    def test_simple_templates(self):
+        """
+        test additional templates
+        """
+        os.chdir(self.tmp_dir)
+        integration_spec_path = self.spec_path("link_integration_fast.yml")
+
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
+               "--link-template", 
+               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
+               integration_spec_path]
+        tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
+        # assert False
+
+        subprocess.run(maestro_cmd)
+        print(subprocess.run(["tree", "-f", "-i", self.tmp_dir, "output", "links"], 
+            capture_output=True).stdout.decode())
+        cmd_output = subprocess.run(tree_cmd, capture_output=True)
+        tree_result = cmd_output.stdout.decode()
+        self.compare_tree_to_reference(tree_result, self.LINKS_0001)
+
+
     def test_all_links(self):
         """
         test all links
