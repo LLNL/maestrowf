@@ -1,6 +1,6 @@
 # add more options  
 
-# add output_name for study naming
+# store indices in object
 
 # Write yaml index_directory index path
 # labels.yaml

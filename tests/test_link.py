@@ -44,6 +44,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
         # Validate link template: date+time or index; 
         linker = Linker()
         linker.validate_link_template("{{study_index}}")
+        linker.validate_link_template("{{output_name}}")
         linker.validate_link_template("{{study_date}}{{study_time}}")
         linker.validate_link_template("{{date}}{{study_time}}")
         with self.assertRaises(ValueError) as context:

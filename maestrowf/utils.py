@@ -45,6 +45,7 @@ from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
 import pprint
+from collections import defaultdict
 
 LOGGER = logging.getLogger(__name__)
 
@@ -372,6 +373,8 @@ class Linker:
         self.dir_float_format = dir_float_format
         self.pgen = pgen
         self.globals = globals
+        self.study_index = 0
+        self.combo_index = defaultdict(int)
         self._study_datetime = datetime.datetime.now()
         if hashws:
             LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
@@ -385,10 +388,11 @@ class Linker:
         error = False
         error_text = ""
         study_index_index = link_template.find('{{study_index}}')
+        output_name_index = link_template.find('{{output_name}}')
         study_time_index = link_template.find('{{study_time}}')
         study_date_index = link_template.find('{{study_date}}')
         date_index = link_template.find('{{date}}')
-        if study_index_index == -1:
+        if study_index_index == -1 and output_name_index == -1:
             if study_time_index == -1:
                 error = True
             if study_date_index == -1 and date_index == -1:
@@ -397,11 +401,11 @@ class Linker:
                 error_text += (
                    f"Template error: '{link_template}'\n"
                     "    does not include required 'study' substrings \n"                    
-                    "    {{study_time}} and {{study_date}} or {{date}}\n"
-                    "    or {{study_index}}\n")
+                    "    {{study_time}} and {{study_date}} or {{date}},\n"
+                    "    or {{study_index}}, or {{output_name}}.\n")
         if self.pgen != None or self.globals != {}:
-            max_study_index = max(
-                study_index_index, study_time_index, study_date_index, date_index)
+            max_study_index = max(study_index_index, output_name_index,
+                study_time_index, study_date_index, date_index)
             combo_index_index = link_template.find('{{combo_index}}')
             combo_index = link_template.find('{{combo}}')
             min_key_index = float("inf")
@@ -512,6 +516,14 @@ class Linker:
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
+        if self.study_index == None:
+            replacements["study_index"] = "{{study_index}}"
+        else:
+            replacements["study_index"] = self.study_index
+        if self.combo_index == None:
+            replacements["combo_index"] = "{{combo_index}}"
+        else:
+            replacements["combo_index"] = self.combo_index
         output_name = self.output_name
         study_time = output_name.split("-")[-1]
         replacements['study_time'] = study_time
@@ -622,7 +634,7 @@ class Linker:
             if found:
                 right_dirs.append(dir)
             else:
-                if dir.find("{{study_index}}") == -1:
+                if dir.find(split_string) == -1:
                     left_dirs.append(dir)
                 else:
                     index_dir = dir
@@ -641,15 +653,20 @@ class Linker:
         replacements = self.build_replacements(record)
         link_new = False
         if link_new:
-            replacements["study_index"] = "{{study_index}}"
-            replacements["combo_index"] = "{{combo_index}}"
             link_path = recursive_render(self.link_template, replacements)
             print("t:", self.link_template)
             print("p:", link_path)
             print("r:", record.workspace.value)
-            left_dirs, index_dir, right_dirs = self.split_directory(link_path, "{{study_index}}")
-            print("dl:", left_dirs, index_dir, right_dirs)
-            os.makedirs(left_dirs)
+            if self.study_index == 0:
+                self.study_index = self.new_index(
+                    link_path, "{{study_index}}")
+            if self.combo_index[long_combo] == 0:
+                self.combo_index[long_combo] = self.new_index(
+                    link_path, "{{combo_index}}")                    
+            #     left_dirs, index_dir, right_dirs = (
+            #         self.split_directory(link_path, "{{study_index}}"))
+            # print("dl:", left_dirs, index_dir, right_dirs)
+            # os.makedirs(left_dirs)
             assert False                
 
         else:
