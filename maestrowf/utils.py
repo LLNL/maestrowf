@@ -516,11 +516,11 @@ class Linker:
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
-        if self.study_index == None:
+        if type(self.study_index) == int:
             replacements["study_index"] = "{{study_index}}"
         else:
             replacements["study_index"] = self.study_index
-        if self.combo_index == None:
+        if type(self.combo_index) == int:
             replacements["combo_index"] = "{{combo_index}}"
         else:
             replacements["combo_index"] = self.combo_index
@@ -644,6 +644,11 @@ class Linker:
             index_dir, 
             os.path.join(*right_dirs))
 
+    def new_index(self, dir, split_string):
+        if dir.find(split_string) == -1:
+            return self.index_format % 0
+
+
     def link(self, record):
         """Create link for StepRecord"""
         # @TODO: test cases: index in front, middle, end, no index, two indexes
@@ -657,12 +662,14 @@ class Linker:
             print("t:", self.link_template)
             print("p:", link_path)
             print("r:", record.workspace.value)
-            if self.study_index == 0:
+            if type(self.study_index) == int:
                 self.study_index = self.new_index(
                     link_path, "{{study_index}}")
-            if self.combo_index[long_combo] == 0:
+                replacements = self.build_replacements(record)
+            if type(self.combo_index[long_combo]) == int:
                 self.combo_index[long_combo] = self.new_index(
-                    link_path, "{{combo_index}}")                    
+                    link_path, "{{combo_index}}")    
+                                
             #     left_dirs, index_dir, right_dirs = (
             #         self.split_directory(link_path, "{{study_index}}"))
             # print("dl:", left_dirs, index_dir, right_dirs)

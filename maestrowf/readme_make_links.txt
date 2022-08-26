@@ -1,3 +1,13 @@
+# working on adding indices to link_directory
+
+            if type(self.study_index) == int:
+                self.study_index = self.new_index(
+                    link_path, "{{study_index}}")
+                replacements = self.build_replacements(record)
+            if type(self.combo_index[long_combo]) == int:
+                self.combo_index[long_combo] = self.new_index(
+                    link_path, "{{combo_index}}")   
+
 # add more options  
 
 # store indices in object
