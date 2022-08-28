@@ -66,9 +66,36 @@ options:
   --usetmp              Make use of a temporary directory for dumping scripts and other Maestro related files.
 ```
 
+<!-- ADD IN SAMPLE OUTPUT YOU SEE WHEN CALLING MAESTRO RUN -> including the prompt to submit or not -->
+
+
+``` console title='Running the Hello World study'
+$ maestro run hello_world.yaml -s 1
+[2022-08-27 23:42:48: INFO] INFO Logging Level -- Enabled
+[2022-08-27 23:42:48: WARNING] WARNING Logging Level -- Enabled
+[2022-08-27 23:42:48: CRITICAL] CRITICAL Logging Level -- Enabled
+[2022-08-27 23:42:48: INFO] Loading specification -- path = hello_world.yaml
+[2022-08-27 23:42:48: INFO] Directory does not exist. Creating directories to /path/to/maestro/outputs/hello_world/hello_world_20220827-234248/logs
+[2022-08-27 23:42:48: INFO] Adding step 'hello_world' to study 'hello_world'...
+[2022-08-27 23:42:48: INFO]
+------------------------------------------
+Submission attempts =       1
+Submission restart limit =  1
+Submission throttle limit = 0
+Use temporary directory =   False
+Hash workspaces =           False
+Dry run enabled =           False
+Output path =               /path/to/maestro/outputs/hello_world/hello_world_20220827-234248
+------------------------------------------
+Would you like to launch the study? [yn] y
+Study launched successfully.
+```
+
+Maestro will prompt you to actually launch the study before submitting, letting you confirm some of the settings first.  These options will be covered later in these tutorials and the how-to sections <!-- NOTE: LINK TO HOW-TO-GUIDES -->.
+
 ### Checking the status
 
-After invoking `maestro run hello_world.yaml -s 1` you won't see any output directly.  Looking back at the specification that was written, the "Hello World!" output we are looking for is actually written to a file `hello_world.txt`.  Do an `ls` on your current workspace and you will see Maestro created some new folders when it executed the study.  In this case it will simply be the name of the study, from the `description` block, with a date-timestamp appended to it using an `_`.  To see if anything actually ran, maestro provides a `status` sub command, which takes that `study_name_date-timestamp` directory as the only required argument.  There are some additional layout options you can explore via `maestro status -h`.
+After invoking `maestro run hello_world.yaml -s 1` you won't see any output directly.  Looking back at the specification that was written, the "Hello World!" output we are looking for is actually written to a file `hello_world.txt`.  Do an `ls` on your current workspace and you will see Maestro created some new folders when it executed the study.  In this case it will simply be the name of the study, from the `description` block, with a date-timestamp appended to it using an `_`.  To see if anything actually ran, maestro provides a `status` sub command, which takes that `study_name_date-timestamp` directory as the only required argument.  Note that the status output automatically wraps text in columns so that the table fits within the current width of your terminal, which you can see happening in the sample output below.  There are some additional layout options you can explore via `maestro status -h` such as `narrow` which can help with this if you have trouble making your terminal wide enough.  The output also adapts to your terminal's color theme, and thus the sample below may look different for you.
 
 ``` console
 maestro status /path/to/study/output/hello_world_20220712-230235
@@ -88,7 +115,7 @@ Now let's take a look at what actually got written to that date-timestamped outp
     
 Inside that date-timestamped workspace that contains this instance of the executed study is more than you might expect to get generated for a study who's only output is the "hello_world.txt" that is generated in the actual study step.  Most of this is metadata Maestro needs for generating and running the study (`meta` folder), log files which you can use to debug your studies (see `maestro -h` for debug/log options), the pickle file Maestro creates for managing study data while running, and then finally the workspaces for each of the steps in the study.  In this case we have a single directory with `name` from the specification, combined with error and standard outputs from the executed shell script, the generated output file `hello_world.txt` and the shell script itself `hello_world.sh`.  This last file is one of the more important pieces as it is the shell script as Maestro ran it.  This enables both debugging and verifying pre run (using `--dry` argument to the `run` command), as well as rerunning.  This shell script is runnable as is without Maestro, enabling more rapid debugging and testing of it.  
 
-### `env` block
+### Environment (`env`) block
 
 If you keep launching new instances of this study you will quickly have a whole bunch of `hello_world_date-timestamp` directories cluttering up the local workspace along side where your `hello_world.yaml` study specification is.  Maestro provides a facility to help with this in the optional `env`, or environment block.  In this block, under the `variables` sub-block you can specify an optional `OUTPUT_PATH` variable, which is a special token maestro looks for to generate a parent directory to write all those timestamped study instances to and keep them more organized.  Adding that to our specification, all timestamped directories will now be written into a `samples` directory that is located at the same level as our `hello_world.yaml` study specification.  Note that relative pathing works and is relative to the study specification, but absolute paths can also be used.
 
@@ -115,24 +142,24 @@ One final detail to note here is the topology of the workflow we have built.  St
 
 ``` mermaid
 graph TD;
-    A(_source)-->B(say-hello);
+    A(study root)-->B(say-hello);
 ```
 
-Here `_source` has special meaning, and is always the root of the DAG's that define a study.
+Here `study root` has special meaning, and is always the root of the DAG's that define a study despite not being an actual step in your workflow.
 
 ## Hello, Bye World
 ----
 
 Now that we've got a taste for what a Maestro specification looks like, how to run it, and what it generates, it's time to look into more interesting workflow topologies.  That was a lot of work for echoing "Hello World", but we now have a framework to build on and do a whole lot more with minimal extra work.  A common next step in defining studies and workflows is to add dependent or child steps using the optional `depends` key in study steps' `run` block.  Let's add a second step that says 'good-bye', but we also don't want this to run until after we say 'hello'.  The `depends` key simply takes a list of other step names, which tells Maestro to not run this step until those dependencies have successfully completed.
 
-``` yaml hl_lines="21"
+``` yaml
 description:
-    name: hello_world
+    name: hello_bye_world
     description: A simple 'Hello World' study.
    
 env:
     variables:
-      OUTPUT_PATH: ./samples
+      OUTPUT_PATH: ./samples/hello_bye_world
       
 study:
     - name: say-hello
@@ -149,12 +176,22 @@ study:
           depends: [say-hello]
 ```
 
-### Toplogy
+### Workflow Topology
 
 Now our topology is slightly more interesting:
 
 ``` mermaid
 graph TD;
-    A(_source)-->B(say-hello);
+    A(study root)-->B(say-hello);
     B(say-hello)-->C(say-bye);
 ```
+
+### Outputs
+
+The outputs for this new study now have an extra step, as well as some more isolation via the `OUTPUT_PATH` set to contain all of this study's outputs in it's own sub-directory `hello_bye_world`.
+
+![Hello World Workspace](../assets/images/examples/hello_bye_world/hello_bye_world_workspace.svg)
+
+!!! note
+
+    The step listing in the workspace will reflect file system ordering, not the order defined in the workflow/study specification.
