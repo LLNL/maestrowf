@@ -389,8 +389,16 @@ global.parameters:
 !!! note
 
     An important effect of this dependency type is that any step with it requires all parent steps to complete successfully.  If you need the funnel/depends-all step to run no matter what you need to account for a successful return type in the parameterized steps.  See HOW_TO_GUIDES and OTHER_SECTIONS <!-- HOW_TO_GUIDE --> for more discussion of this behavior and how to deal with it.
-    
+
 ### Workflow Topology
+
+The new parameter expands the parameter combinations in the workflow:
+
+|            | Combo #1 | Combo #2 | Combo #3 | Combo #4      |
+| :-         | :-:      | :-:      | :-:      | :-:           |
+| `NAME`     | Pam      | Jim      | Michael  | Dwight        |
+| `GREETING` | Hello    | Ciao     | Hey      | Hi            |
+| `FAREWELL` | Goodbye  | Farewell | So long  | See you later |
 
 ``` mermaid
 flowchart TD;
