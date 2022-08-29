@@ -540,8 +540,9 @@ class Linker:
             replacements['indexed_directory_template']) = (
          self.split_indexed_directory(self.link_template))
         if record.step.combo != None and record._params:
-            combo = os.path.basename(record.workspace.value)
-            replacements['long_combo'] = combo
+            long_combo = os.path.basename(record.workspace.value)
+            combo = long_combo
+            replacements['long_combo'] = long_combo
             step = record.name.replace("_" + combo,"")
             for param, name in zip(
                 record.step.combo._params.values(),
@@ -647,6 +648,61 @@ class Linker:
     def new_index(self, dir, split_string):
         if dir.find(split_string) == -1:
             return self.index_format % 0
+        left_dirs, index_dir, right_dirs = (
+            self.split_directory(dir, split_string))
+        LOGGER.info("DEBUG:", left_dirs, "--", index_dir, "--", right_dirs)
+        os.makedirs(left_dirs, exist_ok=True)
+
+    def next_path_w_lock(self, template):
+        pass
+
+    # def read_or_make_index_directory(self, replacements):
+    #     """ helper function """
+    #     maestro_index_file_path = (
+    #         os.path.join(
+    #             self.output_path,
+    #             self.output_name,
+    #             self.maestro_index_file))
+    #     if os.path.exists(maestro_index_file_path):
+    #         with open(maestro_index_file_path, "r") as f:
+    #             index_directory_string = f.readlines()[0].strip(" \n")
+    #     else:
+    #         index_directory_template_string = (
+    #             replacements['indexed_directory_template'].replace(
+    #                 '{{study_index}}', self.index_format))
+    #         success = False
+    #         timeout = time.time() + self.mkdir_timeout
+    #         lock = FileLock(
+    #             maestro_index_file_path + ".lock",
+    #             timeout=2*self.mkdir_timeout)
+    #         with lock:
+    #             while not success and time.time() < timeout:
+    #                 try:
+    #                     index_directory_string = next_path(os.path.join(
+    #                         replacements['directory_prefix_path'],
+    #                         index_directory_template_string
+    #                         ))
+    #                     os.makedirs(index_directory_string)
+    #                     with open(maestro_index_file_path, "w") as f:
+    #                         f.write(index_directory_string + "\n")
+    #                     success = True
+
+    #                 except OSError as e:
+    #                     if e.args[1] == 'File exists':
+    #                         time.sleep(random.uniform(
+    #                             0.05*self.mkdir_timeout,
+    #                             0.10*self.mkdir_timeout))
+    #                     elif e.args[1] == 'Permission denied':
+    #                         raise(ValueError(
+    #                             "Could not create a unique directory " +
+    #                             "because of a " +
+    #                             "permissions error.\n\n" +
+    #                             "Attempted path: " + index_directory_string +
+    #                             "\nTemplate string: " + self.link_template
+    #                             ))
+    #                     else:
+    #                         raise(ValueError(e))
+    #     return index_directory_string        
 
 
     def link(self, record):
@@ -656,7 +712,7 @@ class Linker:
         if not self.make_links_flag:
             return
         replacements = self.build_replacements(record)
-        link_new = False
+        link_new = True
         if link_new:
             link_path = recursive_render(self.link_template, replacements)
             print("t:", self.link_template)
