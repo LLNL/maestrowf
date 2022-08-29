@@ -190,8 +190,264 @@ graph TD;
 
 The outputs for this new study now have an extra step, as well as some more isolation via the `OUTPUT_PATH` set to contain all of this study's outputs in it's own sub-directory `hello_bye_world`.
 
-![Hello World Workspace](../assets/images/examples/hello_bye_world/hello_bye_world_workspace.svg)
+![Hello Bye World Workspace](../assets/images/examples/hello_bye_world/hello_bye_world_workspace.svg)
 
 !!! note
 
     The step listing in the workspace will reflect file system ordering, not the order defined in the workflow/study specification.
+
+## Parameterized Hello World
+
+This example introduces a new block: `global.parameters`.  With this we can further change the workflow topology by layering on parameters to the `Hello Bye World` example which Maestro will expand into multiple chains of 'Hello' -> 'Bye' steps.  Two parameters are added, each with multiple values: `NAME` and `GREETING`.  These are added in a dictionary style with keys being the parameter names and their values being dictionaries themselves with a `values` key that is a list of values to map the study steps/graph onto, and a label which is a `<string>.%%` format, where the `.%%` is replaced with parameter values.  These labels are used for constructing unique step names and workspaces as will be shown below.
+
+``` yaml
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
+```
+
+These parameter values are 1-1 pairings that define the set of parameter combinations, not cross products.  The above parameter set builds 4 parameter combos:
+
+|            | Combo #1 | Combo #2 | Combo #3 | Combo #4 |
+| :-         | :-:      | :-:      | :-:      | :-:      |
+| `NAME`     | Pam      | Jim      | Michael  | Dwight   |
+| `GREETING` | Hello    | Ciao     | Hey      | Hi       |
+
+Maestro automatically scans steps and their keys for tokens matching these `global.parameters` entries using a special syntax with the token name wrapped in `$()` constructs.  Below is the hello bye world specification with these two parameters added into the say-hello step:
+
+``` yaml
+description:
+    name: hello_bye_parameterized
+    description: A study that says hello and bye to multiple people.
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/hello_bye_parameterized
+
+study:
+    - name: say-hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "$(GREETING), $(NAME)!" > hello.txt
+
+    - name: say-bye
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "Good-bye, World!" > good_bye_world.txt
+          depends: [say-hello]
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
+```
+
+### Workflow Topology
+
+``` mermaid
+flowchart TD;
+    A(study root) --> COMBO1;
+    subgraph COMBO1 [Combo #1]
+      subgraph say_hello1 [say-hello]
+        B(Hello, Pam) ;
+      end
+      say_hello1 --> C(say-bye);
+    end
+    A --> COMBO2
+    subgraph COMBO2 [Combo #2]
+      direction TB
+      subgraph say_hello2 [say-hello]
+        D(Ciao, Jim)
+      end
+      
+      say_hello2 --> E(say-bye);
+    end
+    A --> COMBO3
+    subgraph COMBO3 [Combo #3]
+      subgraph say_hello3 [say-hello]
+        F(Hey, Michael)
+      end
+      say_hello3 --> G(say-bye);
+    end
+    A --> COMBO4
+    subgraph COMBO4 [Combo #4]
+      subgraph say_hello4 [say-hello]
+        H(Hi, Dwight)
+      end
+      say_hello4 --> I(say-bye);
+    end
+```
+
+### Outputs
+
+The outputs for parameterized studies look a little different.  In each parameterized step there is an additional hierarchy in the directory structure.  Each step still has it's own directory, but inside of those there is now one directory for each parameterized instance of the step.  You'll note the `label` values shown in the `YAML` specification for each parameter are used to construct unique paths to identify each parameter combination.
+
+![Hello Bye Parameterized Workspace](../assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_workspace.svg)
+
+A few details stick out here.  You may notice that the `say-bye` step appears to be parameterized even though we did not put any `$(NAME), $(GREETING)` tokens in that step in the study specification.  When Maestro encounters a step that depends upon a parameterized step it will automatically propagate those parameters down, creating parameterized instances of any child steps.  The exception is the [depends on all](#parameterized-hello-bye-study-with-funnel-dependency) type of dependency, which will be discussed in the next example extension.
+
+### Labels
+
+One more detail that is potentially confusing when working with these outputs is that they all have the same name `'hello.txt'` even though each one contains a different string.  We can use another feature of the Environment (`env`) block to parameterize that as well.  Labels are intepreted as strings, and are processed before expansion of the `global.parameters`, enabling their use for dynamic formatting/naming of things in steps in a reusable way.  The study specification with these few additions is below:
+
+``` yaml hl_lines="8 9 16"
+description:
+    name: hello_bye_parameterized
+    description: A study that says hello and bye to multiple people.
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/hello_bye_parameterized
+    labels:
+        OUT_FORMAT: $(GREETING)_$(NAME).txt
+
+study:
+    - name: say-hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
+
+    - name: say-bye
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "Good-bye, World!" > good_bye_world.txt
+          depends: [say-hello]
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
+```
+
+And with that slight change we have output files that don't require any file system context to identify.
+
+![Labeled Hello Bye Parameterized Workspace](../assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_workspace.svg)
+
+## Parameterized Hello, Bye Study with Funnel Dependency
+
+There is one more type of dependency that can be used to create a new topology in your workflow/study graphs.  Steps can be made dependent on the successful completion of all parameterized versions of the named parent step using the syntax `[<step-name>_*]`, with the `_*`.  The new study will add both an extra step and an extra parameter.  A new step will say bye to someone, each with a different greeting, before a final good bye step directed at everyone after the individual goodbyes are said.  Note the highlighted changes in this new study
+
+``` yaml hl_lines="9 10 17 23 26-31 40-42"
+description:
+    name: hello_bye_parameterized_funnel
+    description: A study that says hello and bye to multiple people, and a final good bye to all.
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/hello_bye_parameterized_funnel
+    labels:
+        HELLO_FORMAT: $(GREETING)_$(NAME).txt
+        BYE_FORMAT: $(FAREWELL)_$(NAME).txt
+
+study:
+    - name: say-hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "$(GREETING), $(NAME)!" > $(HELLO_FORMAT)
+
+    - name: say-bye
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "$(FAREWELL), $(NAME)!" > $(BYE_FORMAT)
+          depends: [say-hello]
+
+    - name: bye-all
+      description: Say bye to everyone!
+      run:
+          cmd: |
+            echo "Good-bye, World!" > good_bye_all.txt
+          depends: [say-bye_*]
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
+    FAREWELL:
+        values: [Goodbye, Farewell, So long, See you later]
+        label: FAREWELL.%%
+```
+
+!!! note
+
+    An important effect of this dependency type is that any step with it requires all parent steps to complete successfully.  If you need the funnel/depends-all step to run no matter what you need to account for a successful return type in the parameterized steps.  See HOW_TO_GUIDES and OTHER_SECTIONS <!-- HOW_TO_GUIDE --> for more discussion of this behavior and how to deal with it.
+    
+### Workflow Topology
+
+``` mermaid
+flowchart TD;
+    A(study root) --> COMBO1;
+    subgraph COMBO1 [Combo #1]
+      subgraph say_hello1 [say-hello]
+        B(Hello, Pam)
+      end
+      subgraph say_bye1 [say-bye]
+        C(Goodbye, Pam)
+      end
+      say_hello1 --> say_bye1
+    end
+    A --> COMBO2
+    subgraph COMBO2 [Combo #2]
+      direction TB
+      subgraph say_hello2 [say-hello]
+        D(Ciao, Jim)
+      end
+      subgraph say_bye2 [say-bye]
+        E(Farewell, Jim)
+      end
+      say_hello2 --> say_bye2
+    end
+    A --> COMBO3
+    subgraph COMBO3 [Combo #3]
+      subgraph say_hello3 [say-hello]
+        F(Hey, Michael)
+      end
+      subgraph say_bye3 [say-bye]
+        G(So long, Michael)
+      end
+      say_hello3 --> say_bye3
+    end
+    A --> COMBO4
+    subgraph COMBO4 [Combo #4]
+      subgraph say_hello4 [say-hello]
+        H(Hi, Dwight)
+      end
+      subgraph say_bye4 [say-bye]
+        I(See you later, Dwight)
+      end
+      say_hello4 --> say_bye4;
+    end
+    
+    COMBO1 --> J{{bye-all}}
+    COMBO2 --> J{{bye-all}}
+    COMBO3 --> J{{bye-all}}
+    COMBO4 --> J{{bye-all}}
+```
+
+### Outputs
+
+Note the extra parameter also shows up in the `'say-hello'` step despite not being explicitly used.  Maestro currently propagates parameter combinations, not just used parameters.
+
+![Labeled Hello Bye Parameterized Workspace with Funnel](../assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_funnel_workspace.svg)
+
+!!! warning
+
+    This unique labeling of directories cannot be extended indefinitely.  Operating systems do have fixed path lengths that must be respected.  To accomodate this, Maestro offers a hashing option at run-time to enable arbitrarily large numbers of parameters in each combination: `maestro run study.yaml --hashws ...`
