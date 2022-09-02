@@ -285,8 +285,29 @@ def create_dictionary(list_keyvalues, token=":"):
 
     return _dict
 
+def splitall(path):
+    """
+    https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html
+    """
+    allparts = []
+    while 1:
+        parts = os.path.split(path)
+        if parts[0] == path:  # sentinel for absolute paths
+            allparts.insert(0, parts[0])
+            break
+        elif parts[1] == path:  # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
 
 def next_path(path_pattern):
+    return next_index_and_path(path_pattern)[1]
+
+
+def next_index_and_path(path_pattern):
     """
     Finds the next free path in an sequentially named list of files
 
@@ -312,27 +333,7 @@ def next_path(path_pattern):
         c = (a + b) // 2  # interval midpoint
         a, b = (c, b) if os.path.exists(path_pattern % c) else (a, c)
 
-    return path_pattern % b
-
-
-def splitall(path):
-    """
-    https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html
-    """
-    allparts = []
-    while 1:
-        parts = os.path.split(path)
-        if parts[0] == path:  # sentinel for absolute paths
-            allparts.insert(0, parts[0])
-            break
-        elif parts[1] == path:  # sentinel for relative paths
-            allparts.insert(0, parts[1])
-            break
-        else:
-            path = parts[0]
-            allparts.insert(0, parts[1])
-    return allparts
-
+    return b, path_pattern % b
 
 def recursive_render(tpl, values):
     """
@@ -652,9 +653,38 @@ class Linker:
             self.split_directory(dir, split_string))
         LOGGER.info("DEBUG:", left_dirs, "--", index_dir, "--", right_dirs)
         os.makedirs(left_dirs, exist_ok=True)
+        return self.next_path_w_lock(os.path.join(left_dirs, index_dir), split_string)
 
-    def next_path_w_lock(self, template):
+    def next_path_w_lock(self, path_with_index, index_name):
         pass
+        success = False
+        timeout = time.time() + self.mkdir_timeout
+        lock_file = path_with_index.replace(index_name, "lock")
+        template = path_with_index.replace(index_name, self.index_format)
+        lock = FileLock(
+            lock_file,
+            timeout=2*self.mkdir_timeout)
+        with lock:
+            while not success and time.time() < timeout:
+                try:
+                    index, index_directory_string = next_index_and_path(template)
+                    os.makedirs(index_directory_string)
+                    success = True
+                except OSError as e:
+                    if e.args[1] == 'File exists':
+                        time.sleep(random.uniform(
+                            0.05*self.mkdir_timeout,
+                            0.10*self.mkdir_timeout))
+                    elif e.args[1] == 'Permission denied':
+                        raise(ValueError(
+                            "Could not create a unique directory "
+                            "because of a "
+                            "permissions error.\n\n"
+                            f"Attempted path: {index_directory_string}"
+                            ))
+                    else:
+                        raise(ValueError(e))
+        return self.index_format % index
 
     # def read_or_make_index_directory(self, replacements):
     #     """ helper function """
@@ -722,15 +752,30 @@ class Linker:
                 self.study_index = self.new_index(
                     link_path, "{{study_index}}")
                 replacements = self.build_replacements(record)
-            if type(self.combo_index[long_combo]) == int:
-                self.combo_index[long_combo] = self.new_index(
+            if type(self.combo_index["long_combo"]) == int:
+                self.combo_index["long_combo"] = self.new_index(
                     link_path, "{{combo_index}}")    
-                                
-            #     left_dirs, index_dir, right_dirs = (
-            #         self.split_directory(link_path, "{{study_index}}"))
-            # print("dl:", left_dirs, index_dir, right_dirs)
-            # os.makedirs(left_dirs)
-            assert False                
+            link_path = recursive_render(self.link_template, replacements)
+            try:
+                # make full path; then make link
+                os.makedirs(link_path)
+                os.rmdir(link_path)
+                os.symlink(record.workspace.value, link_path)
+            except OSError as e:
+                if e.args[1] == 'File exists':
+                    raise(ValueError(
+                        "Could not create a unique directory.\n\n" +
+                        "Attempted path: " + link_path + "\n" +
+                        "Template string: " + self.link_template))
+                elif e.args[1] == 'Permission denied':
+                    raise(ValueError(
+                        "Could not create a unique directory because of a " +
+                        "permissions error.\n\n" +
+                        "Attempted path: " + path + "\n" +
+                        "Template string: " + self.link_template
+                        ))
+                else:
+                    raise(ValueError)
 
         else:
             # make link directories
