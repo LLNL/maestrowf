@@ -1,6 +1,6 @@
 # working on adding indices to link_directory
 
-# maestro run -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml 
+# maestro run -fg -y tests/specification/test_specs/link_integration_fast.yml 
 
             if type(self.study_index) == int:
                 self.study_index = self.new_index(
