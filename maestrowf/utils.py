@@ -30,8 +30,6 @@
 """A collection of more general utility functions."""
 
 from collections import OrderedDict
-from decimal import MIN_EMIN
-import re
 import random
 import coloredlogs
 from filelock import SoftFileLock as FileLock
@@ -287,6 +285,7 @@ def create_dictionary(list_keyvalues, token=":"):
 
 def splitall(path):
     """
+    Split path into a list of component directories.
     https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html
     """
     allparts = []
@@ -304,12 +303,24 @@ def splitall(path):
     return allparts
 
 def next_path(path_pattern):
+    """
+    Finds the next free path in an sequentially named list of files
+
+    e.g. path_pattern = 'file-%s.txt':
+
+    file-1.txt
+    file-2.txt
+    file-3.txt
+
+    Runs in log(n) time where n is the number of existing files in sequence
+    https://stackoverflow.com/questions/17984809/how-do-i-create-a-incrementing-filename-in-python
+    """
     return next_index_and_path(path_pattern)[1]
 
 
 def next_index_and_path(path_pattern):
     """
-    Finds the next free path in an sequentially named list of files
+    Finds the next index number free path in an sequentially named list of files
 
     e.g. path_pattern = 'file-%s.txt':
 
@@ -337,6 +348,8 @@ def next_index_and_path(path_pattern):
 
 def recursive_render(tpl, values):
     """
+    Repeat rendering of jinja template until there are no changes.
+
     https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
     """
     prev = tpl
@@ -346,9 +359,6 @@ def recursive_render(tpl, values):
             prev = curr
         else:
             return curr
-
-
-
 
 class Linker:
     """Utility class to make links."""
@@ -385,9 +395,16 @@ class Linker:
             self.validate_link_template(link_template)
 
     def validate_link_template(self, link_template):
-        """ Validate link template: date+time or index; all var or combo or index"""
+        """ 
+        Validate link template.
+        The template must have enough information to generate a 
+        unique path for each study and each combo in the study.
+        """
+        # @TODO: generalize to work if there are no combos.
         error = False
         error_text = ""
+        study_index_index = link_template.find('{{study_index}}')
+
         study_index_index = link_template.find('{{study_index}}')
         output_name_index = link_template.find('{{output_name}}')
         study_time_index = link_template.find('{{study_time}}')
@@ -439,7 +456,7 @@ class Linker:
                     "    is to the right of the leftmost 'combo' substrings\n"
                     "    ({{combo}}, {{combo_index}}, or all global variables\n"
                     f"     ({var_list})).\n"
-                        )  
+                    )  
         if link_template.count('{{study_index}}') > 1:
             error = True
             error_text += (
@@ -474,57 +491,10 @@ class Linker:
             return formatted_string
     
 
-    def split_indexed_directory(self, template_string):
-        """
-        Returns a tuple of a indexed_directory prefix, suffix & template
-
-        Example `link_directory_template`: {{output_path_root}}/links/{{date}}/
-            run-{{study_index}}/{{combo}}/{{step}}
-
-        Example `indexed_directory_prefix`: studies/links/2020_07_30
-        Example `indexed_directory_suffix`: bar.1.foo.1/run-codepy-baseline/
-        Example `indexed_directory_template`: run-{{study_index}}
-
-        :param link_directory_template: one line jinja directory path template
-        :param defs: a dictionary containing replacement definitions for
-            ``link_directory_template``
-
-        :returns: a tuple containing the indexed_directory prefix, suffix
-            & template
-        """
-        # @TODO: test cases: index in front, middle, end, no index, two indexes
-        # @TODO: other error checking on template_string?
-        dir_list = splitall(template_string)
-        indexed_directory_prefix = []
-        indexed_directory_template = ""
-        indexed_directory_suffix = []
-        while dir_list and not re.match(r".*{{study_index}}.*", dir_list[0]):
-            indexed_directory_prefix.append(dir_list.pop(0))
-        if dir_list:
-            indexed_directory_template = dir_list.pop(0)
-        if dir_list:
-            while dir_list and not re.match(r".*{{study_index}}.*", dir_list[0]):
-                indexed_directory_suffix.append(dir_list.pop(0))
-            if dir_list:
-                raise(ValueError(
-                    "at most one '{{study_index}}' can be in "
-                    "link path template string"))
-        return(
-            indexed_directory_prefix, indexed_directory_suffix,
-            indexed_directory_template)
-
     def build_replacements(self, record):
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
-        if type(self.study_index) == int:
-            replacements["study_index"] = "{{study_index}}"
-        else:
-            replacements["study_index"] = self.study_index
-        if type(self.combo_index) == int:
-            replacements["combo_index"] = "{{combo_index}}"
-        else:
-            replacements["combo_index"] = self.combo_index
         output_name = self.output_name
         study_time = output_name.split("-")[-1]
         replacements['study_time'] = study_time
@@ -536,12 +506,16 @@ class Linker:
         replacements['output_name'] = self.output_name
         replacements['output_path'] = self.output_path
         replacements['date'] = self._study_datetime.strftime('%Y-%m-%d')
-        (replacements['indexed_directory_prefix'],
-            replacements['indexed_directory_suffix'],
-            replacements['indexed_directory_template']) = (
-         self.split_indexed_directory(self.link_template))
+        if type(self.study_index) == int:
+            replacements["study_index"] = "{{study_index}}"
+        else:
+            replacements["study_index"] = self.study_index
         if record.step.combo != None and record._params:
             long_combo = os.path.basename(record.workspace.value)
+            if type(self.combo_index[long_combo]) == int:
+                replacements["combo_index"] = "{{combo_index}}"
+            else:
+                replacements["combo_index"] = self.combo_index[long_combo]
             combo = long_combo
             replacements['long_combo'] = long_combo
             step = record.name.replace("_" + combo,"")
@@ -559,12 +533,7 @@ class Linker:
         else:
             replacements['step'] = record.name
             replacements['combo'] = "all_records"
-        replacements['indexed_directory_prefix'] = [
-            recursive_render(template_string, replacements)
-            for template_string in replacements['indexed_directory_prefix']]
-        replacements['indexed_directory_suffix'] = [
-            recursive_render(template_string, replacements)
-            for template_string in replacements['indexed_directory_suffix']]
+            replacements['long_combo'] = "all_records"
         if record.step.combo != None and record._params:
             for param, name in zip(
                 record.step.combo._params.items(),
@@ -573,59 +542,14 @@ class Linker:
                 value = param[1]
                 if key not in replacements:
                     replacements[key] = value
-        print("step_name", record.step.name)
-        pprint.pprint(replacements)
         return replacements
 
-    def read_or_make_index_directory(self, replacements):
-        """ helper function """
-        maestro_index_file_path = (
-            os.path.join(
-                self.output_path,
-                self.output_name,
-                self.maestro_index_file))
-        if os.path.exists(maestro_index_file_path):
-            with open(maestro_index_file_path, "r") as f:
-                index_directory_string = f.readlines()[0].strip(" \n")
-        else:
-            index_directory_template_string = (
-                replacements['indexed_directory_template'].replace(
-                    '{{study_index}}', self.index_format))
-            success = False
-            timeout = time.time() + self.mkdir_timeout
-            lock = FileLock(
-                maestro_index_file_path + ".lock",
-                timeout=2*self.mkdir_timeout)
-            with lock:
-                while not success and time.time() < timeout:
-                    try:
-                        index_directory_string = next_path(os.path.join(
-                            replacements['directory_prefix_path'],
-                            index_directory_template_string
-                            ))
-                        os.makedirs(index_directory_string)
-                        with open(maestro_index_file_path, "w") as f:
-                            f.write(index_directory_string + "\n")
-                        success = True
-
-                    except OSError as e:
-                        if e.args[1] == 'File exists':
-                            time.sleep(random.uniform(
-                                0.05*self.mkdir_timeout,
-                                0.10*self.mkdir_timeout))
-                        elif e.args[1] == 'Permission denied':
-                            raise(ValueError(
-                                "Could not create a unique directory " +
-                                "because of a " +
-                                "permissions error.\n\n" +
-                                "Attempted path: " + index_directory_string +
-                                "\nTemplate string: " + self.link_template
-                                ))
-                        else:
-                            raise(ValueError(e))
-        return index_directory_string
-
-    def split_directory(self, dir, split_string):
+    @staticmethod
+    def split_directory(dir, split_string):
+        """
+        Split directory into three pieces
+        The central piece will contain the 'split_string'
+        """
         if dir.find(split_string) == -1:
             return (dir, "", "")
         dir_list = splitall(dir)
@@ -646,16 +570,27 @@ class Linker:
             index_dir, 
             os.path.join(*right_dirs))
 
-    def new_index(self, dir, split_string):
-        if dir.find(split_string) == -1:
+    def new_index(self, dir, index_name):
+        """
+        Generate a new index.
+        `index_name` is {{study-index}} or {{combo-index}}
+        """
+        if dir.find(index_name) == -1:
             return self.index_format % 0
         left_dirs, index_dir, right_dirs = (
-            self.split_directory(dir, split_string))
-        LOGGER.info("DEBUG:", left_dirs, "--", index_dir, "--", right_dirs)
+            self.split_directory(dir, index_name))
+        if "{" in left_dirs:
+            raise ValueError(
+                "ERROR: the following path should not have any jinja "
+                f"variables: {left_dirs}")
         os.makedirs(left_dirs, exist_ok=True)
-        return self.next_path_w_lock(os.path.join(left_dirs, index_dir), split_string)
+        return self.next_path_w_lock(os.path.join(left_dirs, index_dir), index_name)
 
     def next_path_w_lock(self, path_with_index, index_name):
+        """
+        Thread safe version of next_path. 
+        Returns formatted index string.
+        """
         pass
         success = False
         timeout = time.time() + self.mkdir_timeout
@@ -686,55 +621,6 @@ class Linker:
                         raise(ValueError(e))
         return self.index_format % index
 
-    # def read_or_make_index_directory(self, replacements):
-    #     """ helper function """
-    #     maestro_index_file_path = (
-    #         os.path.join(
-    #             self.output_path,
-    #             self.output_name,
-    #             self.maestro_index_file))
-    #     if os.path.exists(maestro_index_file_path):
-    #         with open(maestro_index_file_path, "r") as f:
-    #             index_directory_string = f.readlines()[0].strip(" \n")
-    #     else:
-    #         index_directory_template_string = (
-    #             replacements['indexed_directory_template'].replace(
-    #                 '{{study_index}}', self.index_format))
-    #         success = False
-    #         timeout = time.time() + self.mkdir_timeout
-    #         lock = FileLock(
-    #             maestro_index_file_path + ".lock",
-    #             timeout=2*self.mkdir_timeout)
-    #         with lock:
-    #             while not success and time.time() < timeout:
-    #                 try:
-    #                     index_directory_string = next_path(os.path.join(
-    #                         replacements['directory_prefix_path'],
-    #                         index_directory_template_string
-    #                         ))
-    #                     os.makedirs(index_directory_string)
-    #                     with open(maestro_index_file_path, "w") as f:
-    #                         f.write(index_directory_string + "\n")
-    #                     success = True
-
-    #                 except OSError as e:
-    #                     if e.args[1] == 'File exists':
-    #                         time.sleep(random.uniform(
-    #                             0.05*self.mkdir_timeout,
-    #                             0.10*self.mkdir_timeout))
-    #                     elif e.args[1] == 'Permission denied':
-    #                         raise(ValueError(
-    #                             "Could not create a unique directory " +
-    #                             "because of a " +
-    #                             "permissions error.\n\n" +
-    #                             "Attempted path: " + index_directory_string +
-    #                             "\nTemplate string: " + self.link_template
-    #                             ))
-    #                     else:
-    #                         raise(ValueError(e))
-    #     return index_directory_string        
-
-
     def link(self, record):
         """Create link for StepRecord"""
         # @TODO: test cases: index in front, middle, end, no index, two indexes
@@ -742,84 +628,37 @@ class Linker:
         if not self.make_links_flag:
             return
         replacements = self.build_replacements(record)
-        link_new = True
-        if link_new:
+        link_path = recursive_render(self.link_template, replacements)
+        if type(self.study_index) == int:
+            new_index = self.new_index(link_path, "{{study_index}}")
+            self.study_index = new_index
+            replacements = self.build_replacements(record)
             link_path = recursive_render(self.link_template, replacements)
-            print("t:", self.link_template)
-            print("p:", link_path)
-            print("r:", record.workspace.value)
-            if type(self.study_index) == int:
-                self.study_index = self.new_index(
-                    link_path, "{{study_index}}")
-                replacements = self.build_replacements(record)
-            if type(self.combo_index["long_combo"]) == int:
-                self.combo_index["long_combo"] = self.new_index(
-                    link_path, "{{combo_index}}")    
-            link_path = recursive_render(self.link_template, replacements)
-            try:
-                # make full path; then make link
-                os.makedirs(link_path)
-                os.rmdir(link_path)
-                os.symlink(record.workspace.value, link_path)
-            except OSError as e:
-                if e.args[1] == 'File exists':
-                    raise(ValueError(
-                        "Could not create a unique directory.\n\n" +
-                        "Attempted path: " + link_path + "\n" +
-                        "Template string: " + self.link_template))
-                elif e.args[1] == 'Permission denied':
-                    raise(ValueError(
-                        "Could not create a unique directory because of a " +
-                        "permissions error.\n\n" +
-                        "Attempted path: " + path + "\n" +
-                        "Template string: " + self.link_template
-                        ))
-                else:
-                    raise(ValueError)
-
-        else:
-            # make link directories
-            if len(replacements['indexed_directory_prefix']) == 0:
+        if type(self.combo_index[replacements['long_combo']]) == int:
+            new_index = self.new_index(link_path, "{{combo_index}}")           
+            self.combo_index[replacements['long_combo']] = new_index    
+            replacements = self.build_replacements(record)
+        link_path = recursive_render(self.link_template, replacements)
+        try:
+            # make full path; then make link
+            os.makedirs(link_path)
+            os.rmdir(link_path)
+            os.symlink(record.workspace.value, link_path)
+        except OSError as e:
+            if e.args[1] == 'File exists':
                 raise(ValueError(
-                    "link_directory (" + self.link_directory + ")" +
-                    "and link_template (" + self.link_template + ")" +
-                    "do not result in a valid path for links."))
-
-            # len(replacements['indexed_directory_prefix']) must be 1
-            # because of error check in split_indexed_directory
-            replacements['directory_prefix_path'] = (
-                os.path.join(
-                    *replacements['indexed_directory_prefix']))
-            if replacements['indexed_directory_template']:
-                index_directory_string = (
-                    self.read_or_make_index_directory(replacements))
-                path = os.path.join(
-                    index_directory_string,
-                    *replacements['indexed_directory_suffix'])
+                    "Could not create a unique directory.\n\n" +
+                    "Attempted path: " + link_path + "\n" +
+                    "Template string: " + self.link_template))
+            elif e.args[1] == 'Permission denied':
+                raise(ValueError(
+                    "Could not create a unique directory because of a " +
+                    "permissions error.\n\n" +
+                    "Attempted path: " + path + "\n" +
+                    "Template string: " + self.link_template
+                    ))
             else:
-                path = replacements['directory_prefix_path']
-            if os.path.exists(path):
-                path = next_path(path + '-' + self.index_format)
-            try:
-                # make full path; then make link
-                os.makedirs(path)
-                os.rmdir(path)
-                os.symlink(record.workspace.value, path)
-            except OSError as e:
-                if e.args[1] == 'File exists':
-                    raise(ValueError(
-                        "Could not create a unique directory.\n\n" +
-                        "Attempted path: " + path + "\n" +
-                        "Template string: " + self.link_template))
-                elif e.args[1] == 'Permission denied':
-                    raise(ValueError(
-                        "Could not create a unique directory because of a " +
-                        "permissions error.\n\n" +
-                        "Attempted path: " + path + "\n" +
-                        "Template string: " + self.link_template
-                        ))
-                else:
-                    raise(ValueError)
+                raise(ValueError)
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""

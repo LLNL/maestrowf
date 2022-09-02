@@ -1,5 +1,7 @@
 # working on adding indices to link_directory
 
+# combo index working; run_index no longer working
+
 # maestro run -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml 
 
             if type(self.study_index) == int:

@@ -171,49 +171,6 @@ class TestLinkUtilUnits(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-    def test_split_indexed_directory(self):
-        """
-        tests split_indexed_directory method
-        """
-        template_string = (
-            "{{output_path_root}}/links/{{date}}/"
-            "run-{{study_index}}/{{combo}}/{{step}}")
-        split_list = self.linker.split_indexed_directory(template_string)
-        self.assertEqual(
-            split_list[0],
-            ["{{output_path_root}}", "links", "{{date}}"])
-        self.assertEqual(
-            split_list[1],
-            ["{{combo}}", "{{step}}"])
-        self.assertEqual(
-            split_list[2],
-            "run-{{study_index}}")
-
-        template_string = (
-            "run-{{study_index}}/{{combo}}/{{step}}")
-        split_list = self.linker.split_indexed_directory(template_string)
-        self.assertEqual(split_list[0], [])
-
-        template_string = (
-            "{{output_path_root}}/links/{{date}}/"
-            "run-{{study_index}}")
-        split_list = self.linker.split_indexed_directory(template_string)
-        self.assertEqual(split_list[1], [])
-
-        template_string = (
-            "{{output_path_root}}/links/{{date}}/")
-        split_list = self.linker.split_indexed_directory(template_string)
-        self.assertEqual(split_list[1], [])
-        self.assertEqual(split_list[2], "")
-
-        template_string = (
-            "{{output_path_root}}/run-{{study_index}}/{{date}}/"
-            "run-{{study_index}}/{{combo}}/{{step}}")
-        with pytest.raises(ValueError) as excinfo:
-            self.linker.split_indexed_directory(template_string)
-        assert ("at most one '{{study_index}}' can be in link"
-                in str(excinfo.value))
-
     def test_build_replacements(self):
         """
         tests split_indexed_directory method
