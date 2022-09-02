@@ -1,0 +1,108 @@
+[2022-09-01 17:10:43: INFO] INFO Logging Level -- Enabled
+[2022-09-01 17:10:43: WARNING] WARNING Logging Level -- Enabled
+[2022-09-01 17:10:43: CRITICAL] CRITICAL Logging Level -- Enabled
+[2022-09-01 17:10:43: INFO] Loading specification -- path = tests/specification/test_specs/link_integration_fast.yml
+[2022-09-01 17:10:43: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/logs
+[2022-09-01 17:10:43: INFO] Adding step 'test-directory-hashing' to study 'link_integration_test'...
+[2022-09-01 17:10:43: INFO] 
+------------------------------------------
+Submission attempts =       1
+Submission restart limit =  1
+Submission throttle limit = 0
+Use temporary directory =   False
+Hash workspaces =           False
+Dry run enabled =           False
+Make links enabled =        False
+Output path =               /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043
+------------------------------------------
+[2022-09-01 17:10:43: INFO] Running Maestro Conductor in the foreground.
+[2022-09-01 17:10:43: INFO] 
+------------------------------------------
+Submission attempts =       1
+Submission throttle limit = 0
+Use temporary directory =   False
+Tmp Dir = 
+------------------------------------------
+[2022-09-01 17:10:43: INFO] 
+==================================================
+name: link_integration_test
+description: A link integration test, modified from run_lulesh
+==================================================
+
+[2022-09-01 17:10:43: INFO] 
+==================================================
+Constructing parameter study 'link_integration_test'
+==================================================
+
+[2022-09-01 17:10:43: INFO] 
+==================================================
+Processing step '_source'
+==================================================
+
+[2022-09-01 17:10:43: INFO] Encountered '_source'. Adding and continuing.
+[2022-09-01 17:10:43: INFO] 
+==================================================
+Processing step 'test-directory-hashing'
+==================================================
+
+[2022-09-01 17:10:43: INFO] 
+==================================================
+Expanding step 'test-directory-hashing'
+==================================================
+-------- Used Parameters --------
+{'VAR1', 'VAR3', 'VAR2', 'VAR4'}
+---------------------------------
+[2022-09-01 17:10:43: INFO] 
+**********************************
+Combo [VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152]
+**********************************
+[2022-09-01 17:10:43: INFO] Searching for workspaces...
+cmd = echo 0.3874309076 - 0.7520078045 - 0.718718159 - 0.5491000152 > out.txt
+[2022-09-01 17:10:43: INFO] New cmd = echo 0.3874309076 - 0.7520078045 - 0.718718159 - 0.5491000152 > out.txt
+[2022-09-01 17:10:43: INFO] 
+**********************************
+Combo [VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696]
+**********************************
+[2022-09-01 17:10:43: INFO] Searching for workspaces...
+cmd = echo 0.3585516934 - 0.1707261687 - 0.4406243939 - 0.3920015696 > out.txt
+[2022-09-01 17:10:43: INFO] New cmd = echo 0.3585516934 - 0.1707261687 - 0.4406243939 - 0.3920015696 > out.txt
+[2022-09-01 17:10:43: INFO] 
+**********************************
+Combo [VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838]
+**********************************
+[2022-09-01 17:10:43: INFO] Searching for workspaces...
+cmd = echo 0.8368954934 - 0.7296721416 - 0.8958327389 - 0.1895291838 > out.txt
+[2022-09-01 17:10:43: INFO] New cmd = echo 0.8368954934 - 0.7296721416 - 0.8958327389 - 0.1895291838 > out.txt
+[2022-09-01 17:10:43: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/meta
+[2022-09-01 17:10:43: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/meta/study
+[2022-09-01 17:10:43: INFO] Checking DAG status at 2022-09-01 17:10:43.254092
+[2022-09-01 17:10:43: INFO] No jobs found.
+[2022-09-01 17:10:43: INFO] Launching all ready steps...
+[2022-09-01 17:10:43: INFO] Calling execute for StepRecord 'test-directory-hashing_VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152'
+[2022-09-01 17:10:43: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152
+[2022-09-01 17:10:43: INFO] Generating script for test-directory-hashing_VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152 into /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152
+[2022-09-01 17:10:43: INFO] Script: /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152/test-directory-hashing_VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152.sh
+Restart: None
+Scheduled?: False
+[2022-09-01 17:10:43: INFO] Attempting submission of 'test-directory-hashing_VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152' (attempt 1 of 1)...
+[2022-09-01 17:10:43: INFO] Execution returned status OK.
+[2022-09-01 17:10:44: INFO] Local step test-directory-hashing_VAR1.0.3874309076.VAR2.0.7520078045.VAR3.0.718718159.VAR4.0.5491000152 executed with status OK. Complete.
+[2022-09-01 17:10:44: INFO] Calling execute for StepRecord 'test-directory-hashing_VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696'
+[2022-09-01 17:10:44: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696
+[2022-09-01 17:10:44: INFO] Generating script for test-directory-hashing_VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696 into /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696
+[2022-09-01 17:10:44: INFO] Script: /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696/test-directory-hashing_VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696.sh
+Restart: None
+Scheduled?: False
+[2022-09-01 17:10:44: INFO] Attempting submission of 'test-directory-hashing_VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696' (attempt 1 of 1)...
+[2022-09-01 17:10:44: INFO] Execution returned status OK.
+[2022-09-01 17:10:46: INFO] Local step test-directory-hashing_VAR1.0.3585516934.VAR2.0.1707261687.VAR3.0.4406243939.VAR4.0.3920015696 executed with status OK. Complete.
+[2022-09-01 17:10:46: INFO] Calling execute for StepRecord 'test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838'
+[2022-09-01 17:10:46: INFO] Directory does not exist. Creating directories to /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838
+[2022-09-01 17:10:46: INFO] Generating script for test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838 into /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838
+[2022-09-01 17:10:46: INFO] Script: /Users/crkrenn/Dropbox/code/maestrowf_crk/output/link_integration_test_20220901-171043/test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838/test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838.sh
+Restart: None
+Scheduled?: False
+[2022-09-01 17:10:46: INFO] Attempting submission of 'test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838' (attempt 1 of 1)...
+[2022-09-01 17:10:46: INFO] Execution returned status OK.
+[2022-09-01 17:10:47: INFO] Local step test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838 executed with status OK. Complete.
+[2022-09-01 17:10:47: INFO] 'link_integration_test' is complete. Returning.
