@@ -1,4 +1,17 @@
-# working on adding indices to link_directory
+# need to find step name some other way. 
+# options: store hash? reproduce long combo
+
+# no hash:
+ 'combo': 'VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19',
+ 'long_combo': 'VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838',
+ 'nickname': None,
+ 'step': 'test-directory-hashing',
+# hash
+ 'combo': 'c74742ecea5a2b58e67350b5a1e0a234',
+ 'long_combo': 'c74742ecea5a2b58e67350b5a1e0a234',
+ 'nickname': 'c74742ecea5a2b58e67350b5a1e0a234',
+ 'step': 'test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838',
+
 
 # combo index working; run_index no longer working
 

@@ -387,10 +387,10 @@ class Linker:
         self.study_index = 0
         self.combo_index = defaultdict(int)
         self._study_datetime = datetime.datetime.now()
-        if hashws:
-            LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
-            self.make_links_flag = False
-            return
+        # if hashws:
+        #     LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
+        #     self.make_links_flag = False
+        #     return
         if make_links_flag:
             self.validate_link_template(link_template)
 
@@ -518,6 +518,7 @@ class Linker:
                 replacements["combo_index"] = self.combo_index[long_combo]
             combo = long_combo
             replacements['long_combo'] = long_combo
+            replacements['nickname'] = record.step.nickname
             step = record.name.replace("_" + combo,"")
             for param, name in zip(
                 record.step.combo._params.values(),
@@ -534,6 +535,7 @@ class Linker:
             replacements['step'] = record.name
             replacements['combo'] = "all_records"
             replacements['long_combo'] = "all_records"
+            replacements['nickname'] = None
         if record.step.combo != None and record._params:
             for param, name in zip(
                 record.step.combo._params.items(),
@@ -639,11 +641,15 @@ class Linker:
             self.combo_index[replacements['long_combo']] = new_index    
             replacements = self.build_replacements(record)
         link_path = recursive_render(self.link_template, replacements)
+        LOGGER.info(f"DEBUG: \n{pprint.pformat(replacements)}")
         try:
             # make full path; then make link
             os.makedirs(link_path)
             os.rmdir(link_path)
-            os.symlink(record.workspace.value, link_path)
+            link_target = record.workspace.value
+            if replacements['nickname']:
+                link_target.replace(replacements['long_combo'], replacements['nickname'])
+            os.symlink(link_target, link_path)
         except OSError as e:
             if e.args[1] == 'File exists':
                 raise(ValueError(
