@@ -43,9 +43,10 @@ from maestrowf.conductor import Conductor
 from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
+from maestrowf.datastructures.core.linker import Linker
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
-    start_process, Linker
+    start_process
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)

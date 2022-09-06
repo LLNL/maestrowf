@@ -13,8 +13,9 @@ import tempfile
 import unittest
 
 from maestrowf.utils import (
-    splitall, recursive_render, next_path, Linker)
+    splitall, recursive_render, next_path)
 from maestrowf.datastructures.core.study import StudyStep
+from maestrowf.datastructures.core.linker import Linker
 
 class TestLinkUtilsUnits(unittest.TestCase):
     """Unit tests for Linker helper functions"""
