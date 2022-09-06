@@ -64,6 +64,14 @@ class TestLinkIntegration(unittest.TestCase):
         "link_integration_test-0001/combo-0001-VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19/test-directory-hashing":
             "test-directory-hashing/VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838",
     }
+    LINKS_0001_test_hashed_combo_index = {
+        "link_integration_test-0001/combo-0001-VAR1.0.36.VAR2.0.17.VAR3.0.44.VAR4.0.39/test-directory-hashing":
+            "test-directory-hashing/6df755a183b9e4329be759a718a54f80",
+        "link_integration_test-0001/combo-0001-VAR1.0.39.VAR2.0.75.VAR3.0.72.VAR4.0.55/test-directory-hashing":
+            "test-directory-hashing/7eb63184e109da27e172188be6e32598",
+        "link_integration_test-0001/combo-0001-VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19/test-directory-hashing":
+            "test-directory-hashing/c74742ecea5a2b58e67350b5a1e0a234",
+    }
     LINKS_0001_test_all_links = {
         "run-0001/ITER.10.SIZE.10/echo": 
             "echo/ITER.10.SIZE.10",
@@ -90,7 +98,32 @@ class TestLinkIntegration(unittest.TestCase):
         "run-0001/all_records/start": 
             "start",
     }
-
+    LINKS_0001_test_all_hashed_links = {
+        "run-0001/ITER.10.SIZE.10/echo": 
+            "echo/d0d800ff9711b3dc32cb29136142d7f8", 
+        "run-0001/ITER.20.SIZE.10/echo": 
+            "echo/67570ad31cf4fb34283f26ae4571e372", 
+        "run-0001/ITER.30.SIZE.10/echo": 
+            "echo/b847acec2511954db96eceb1685ee475", 
+        "run-0001/SIZE.10/post-process-echo-size": 
+            "post-process-echo-size/a42cf0810d88778d90a2facf493c0916", 
+        "run-0001/TRIAL.1/post-process-echo-trials": 
+            "post-process-echo-trials/d8fc97f2f216f2ffa61981529d1f62c3", 
+        "run-0001/TRIAL.2/post-process-echo-trials": 
+            "post-process-echo-trials/550f8a61527a7538dcac92e8fed94d6d", 
+        "run-0001/TRIAL.3/post-process-echo-trials": 
+            "post-process-echo-trials/3018c327f3bd46d1d263d74efc319abf", 
+        "run-0001/VAR1.0.36.VAR2.0.17.VAR3.0.44.VAR4.0.39/test-directory-hashing": 
+            "test-directory-hashing/6df755a183b9e4329be759a718a54f80", 
+        "run-0001/VAR1.0.39.VAR2.0.75.VAR3.0.72.VAR4.0.55/test-directory-hashing": 
+            "test-directory-hashing/7eb63184e109da27e172188be6e32598", 
+        "run-0001/VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19/test-directory-hashing": 
+            "test-directory-hashing/c74742ecea5a2b58e67350b5a1e0a234", 
+        "run-0001/all_records/post-process-echo": 
+            "post-process-echo", 
+        "run-0001/all_records/start": 
+            "start", 
+    }
     def compare_tree_to_reference(self, tree, reference):
         tree_lines = tree.split("\n")
         links = []
@@ -104,19 +137,22 @@ class TestLinkIntegration(unittest.TestCase):
         for i in range(len(target_list)):
             target_list[i] = [target_list[i][0].split("/"), target_list[i][1].split("/")]
         for a, b in zip(links, target_list):
-            assert a[0][-len(b[0]):] == b[0]
-            assert a[1][-len(b[1]):] == b[1]
+            a0, a1 = a[0][-len(b[0]):], a[1][-len(b[1]):]
+            print(a0, "==", b[0])
+            print(a1, "==", b[1])
+            assert a0 == b[0]
+            assert a1 == b[1]
 
     def test_study_index(self):
         """
-        test simple links
+        test simple study links
         """
         os.chdir(self.tmp_dir)
         integration_spec_path = self.spec_path("link_integration_fast.yml")
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
+               "{{output_path}}/../links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 
@@ -130,7 +166,7 @@ class TestLinkIntegration(unittest.TestCase):
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--dir-float-format", '{:.3f}', '{:.3e}',
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
+               "{{output_path}}/../links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
 
         subprocess.run(maestro_cmd)
@@ -140,24 +176,52 @@ class TestLinkIntegration(unittest.TestCase):
 
     def test_combo_index(self):
         """
-        test simple links
+        test simple combo links
         """
         os.chdir(self.tmp_dir)
         integration_spec_path = self.spec_path("link_integration_fast.yml")
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               ("{{output_path}}/links/{{date}}/{{study_name}}-{{study_index}}/"
+               ("{{output_path}}/../links/{{date}}/{{study_name}}-{{study_index}}/"
                 "combo-{{combo_index}}-{{combo}}/{{step}}"),
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 
         subprocess.run(maestro_cmd)
-        print(subprocess.run(["tree", "-f", "-i", self.tmp_dir, "output", "links"], 
+        print("tmp_dir")
+        print(subprocess.run(["tree", "-f", "-i", self.tmp_dir], 
             capture_output=True).stdout.decode())
         cmd_output = subprocess.run(tree_cmd, capture_output=True)
         tree_result = cmd_output.stdout.decode()
+        print(f"tree_result:\n{tree_result}")
         self.compare_tree_to_reference(tree_result, self.LINKS_0001_test_combo_index)
+
+    def test_hashed_combo_index(self):
+        """
+        test simple hashed combo links
+        """
+        os.chdir(self.tmp_dir)
+        integration_spec_path = self.spec_path("link_integration_fast.yml")
+
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links", "--hashws",
+               "--link-template", 
+               ("{{output_path}}/../links/{{date}}/{{study_name}}-{{study_index}}/"
+                "combo-{{combo_index}}-{{combo}}/{{step}}"),
+               integration_spec_path]
+        tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
+
+        subprocess.run(maestro_cmd)
+        # print(subprocess.run(["tree", "-f", "-i", self.tmp_dir, "output", "links"], 
+        #     capture_output=True).stdout.decode())
+        print("tmp_dir")
+        print(subprocess.run(["tree", "-f", "-i", self.tmp_dir], 
+            capture_output=True).stdout.decode())
+        cmd_output = subprocess.run(tree_cmd, capture_output=True)
+        tree_result = cmd_output.stdout.decode()
+        print(f"tree_result:\n{tree_result}")
+        self.compare_tree_to_reference(tree_result, self.LINKS_0001_test_hashed_combo_index)
+
 
     def test_all_links(self):
         """
@@ -168,7 +232,7 @@ class TestLinkIntegration(unittest.TestCase):
 
         maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links",
                "--link-template", 
-               "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
+               "{{output_path}}/../links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
                integration_spec_path]
         tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
 
@@ -176,3 +240,23 @@ class TestLinkIntegration(unittest.TestCase):
         cmd_output = subprocess.run(tree_cmd, capture_output=True)
         tree_result = cmd_output.stdout.decode()
         self.compare_tree_to_reference(tree_result, self.LINKS_0001_test_all_links)
+
+    def test_all_hashed_links(self):
+        """
+        test all links
+        """
+        os.chdir(self.tmp_dir)
+        integration_spec_path = self.spec_path("link_integration.yml")
+
+        maestro_cmd = ["maestro", "run", "-fg", "-y", "-s", "0", "--make-links", "--hashws",
+               "--link-template", 
+               "{{output_path}}/../links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}",
+               integration_spec_path]
+        tree_cmd = ["tree", "-f", "-i", os.path.join(self.tmp_dir, "output", "links")]
+
+        subprocess.run(maestro_cmd)
+        cmd_output = subprocess.run(tree_cmd, capture_output=True)
+        tree_result = cmd_output.stdout.decode()
+        print("tree_result\n", tree_result)
+        self.compare_tree_to_reference(tree_result, self.LINKS_0001_test_all_hashed_links)
+

@@ -202,6 +202,8 @@ def run_study(args):
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
     out_name = ""
+    date_string = time.strftime("%Y%m%d")
+    time_string = time.strftime("%H%M%S")
     if args.out:
         # If out is specified in the args, ignore OUTPUT_PATH.
         output_path = os.path.abspath(args.out)
@@ -234,7 +236,7 @@ def run_study(args):
 
         out_name = "{}_{}".format(
             spec.name.replace(" ", "_"),
-            time.strftime("%Y%m%d-%H%M%S")
+            time.strftime(f"{date_string}-{time_string}")
         )
         output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
@@ -303,7 +305,10 @@ def run_study(args):
         link_template=args.link_template,
         hashws=args.hashws,
         output_name=out_name,
-        output_path=out_dir,
+        output_path=output_path,
+        spec_name=spec.name.replace(" ", "_"),
+        date_string=date_string,
+        time_string=time_string,
         dir_float_format=args.dir_float_format,
         pgen=args.pgen,
         globals=spec.globals,
@@ -449,7 +454,7 @@ def setup_argparser():
         "--link-template",
         type=str,
         default=(
-            "{{output_path}}/links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}"),
+            "{{output_path}}/../links/{{date}}/run-{{study_index}}/{{combo}}/{{step}}"),
         help="Jinja template for links to run directories.\n"
         "NOTE: template must include {{combo}} and {{step}}.\n"
         "[Default: %(default)s]\n \n"

@@ -1,5 +1,18 @@
-# need to find step name some other way. 
-# options: store hash? reproduce long combo
+# fix bug... links are made one directory down. 
+
+# make Linker more robust by saving time, date, name in study instances
+        study_time = output_name.split("-")[-1]
+        replacements['study_time'] = study_time
+        study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
+        replacements['study_date'] = study_date
+        study_name = output_name.replace(f"_{study_date}-{study_time}","")
+
+
+move Linker to maestrowf/datastructures/core/linker.py
+
+make setter for step_exp.workspace_no_hash = workspace_no_hash (in study.py)
+update Linker code to use workspace_no_hash
+
 
 # no hash:
  'combo': 'VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19',

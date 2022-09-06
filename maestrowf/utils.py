@@ -369,6 +369,7 @@ class Linker:
     def __init__(
             self, make_links_flag=False, hashws=False,
             link_template=None, output_name=None, output_path=None,
+            spec_name=None,date_string=None,time_string=None,
             dir_float_format=['{:.2f}','{:.2e}'], pgen=None, globals={}):
         """
         Initialize a new Linker class instance.
@@ -381,6 +382,9 @@ class Linker:
         self.link_template = link_template
         self.output_name = output_name
         self.output_path = output_path
+        self.spec_name=spec_name
+        self.date_string=date_string
+        self.time_string=time_string
         self.dir_float_format = dir_float_format
         self.pgen = pgen
         self.globals = globals
@@ -495,13 +499,13 @@ class Linker:
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
-        output_name = self.output_name
-        study_time = output_name.split("-")[-1]
-        replacements['study_time'] = study_time
-        study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
-        replacements['study_date'] = study_date
-        study_name = output_name.replace(f"_{study_date}-{study_time}","")
-        replacements['study_name'] = study_name
+        # output_name = self.output_name
+        # study_time = output_name.split("-")[-1]
+        replacements['study_time'] = self.time_string
+        # study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
+        replacements['study_date'] = self.date_string
+        # study_name = output_name.replace(f"_{study_date}-{study_time}","")
+        replacements['study_name'] = self.spec_name
         replacements['link_template'] = self.link_template
         replacements['output_name'] = self.output_name
         replacements['output_path'] = self.output_path
@@ -510,8 +514,10 @@ class Linker:
             replacements["study_index"] = "{{study_index}}"
         else:
             replacements["study_index"] = self.study_index
+        LOGGER.info(f"DEBUG step: {str(record.step)}")
         if record.step.combo != None and record._params:
-            long_combo = os.path.basename(record.workspace.value)
+            # long_combo = os.path.basename(record.workspace.value)
+            long_combo = record.step._param_string
             if type(self.combo_index[long_combo]) == int:
                 replacements["combo_index"] = "{{combo_index}}"
             else:

@@ -68,6 +68,7 @@ class StudyStep:
     def __init__(self):
         """Object that represents a single workflow step."""
         self._name = ""
+        self._param_string = ""
         self.description = ""
         self.nickname = ""
         self.combo = None
@@ -663,20 +664,21 @@ class Study(DAG, PickleInterface):
                                 str(combo))
                     # Compute this step's combination name and workspace.
                     nickname = None
-                    combo_str = combo.get_param_string(self.used_params[step])
+                    param_str = combo.get_param_string(self.used_params[step])
                     # We must encode explicitly to utf-8
-                    # combo_str = combo_str.encode("utf-8")
+                    # param_str = param_str.encode("utf-8")
                     if self._hash_ws:
-                        nickname = md5(combo_str.encode("utf-8")).hexdigest()
+                        nickname = md5(param_str.encode("utf-8")).hexdigest()
                         workspace = make_safe_path(
                                         self._out_path,
                                         *[step, nickname])
                     else:
                         workspace = \
-                            make_safe_path(self._out_path, *[step, combo_str])
+                            make_safe_path(self._out_path, *[step, param_str])
                         LOGGER.debug("Workspace: %s", workspace)
-                    combo_str = "{}_{}".format(step, combo_str)
+                    combo_str = "{}_{}".format(step, param_str)
                     self.workspaces[combo_str] = workspace
+                    LOGGER.debug("Workspace: %s", workspace)
 
                     # Check if the step combination has been processed.
                     if combo_str in self.step_combos:
@@ -686,6 +688,7 @@ class Study(DAG, PickleInterface):
 
                     modified, step_exp = node.apply_parameters(combo)
                     step_exp.name = combo_str
+                    step_exp._param_string = param_str
                     step_exp.nickname = nickname
 
                     # Substitute workspaces into the combination.
