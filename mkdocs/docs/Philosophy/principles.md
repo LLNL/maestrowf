@@ -26,3 +26,98 @@ Studies should be run in a consistent fashion. The removal of variation in the p
 #### Self-documenting
 
 Documentation is critical in studies. The Maestro YAML Specification is an artifact documenting a complete workflow.
+
+## Reproducible Science
+----
+
+<!-- Mermaid doesn't appear to be the tool for this diagram:
+It completely ignores LR/TB if you link between nodes instead of subgraphs.... -->
+``` mermaid
+flowchart LR
+    subgraph exp_proc [Experimental Process]
+      direction TB
+      subgraph Process [ ]
+        direction LR
+        A(Scientist #1)-->B(Experimental Process)
+      end
+      Process-->Peers
+      subgraph Peers
+          direction TB
+          C(Scientist #2)
+          D(Scientist #3)
+      end
+    end
+    B-->E
+    B-->G
+    B-->I
+    subgraph Lab
+      direction TB
+        subgraph Exp1
+          direction LR
+          E(Parameter 1) --> F(Experiment 1)
+        end
+        subgraph Exp2
+          direction LR
+          G(Parameter 2) --> H(Experiment 2)
+        end
+        subgraph Exp3
+          direction LR
+          I(Parameter 3) --> J(Experiment 3)
+        end
+    end
+    subgraph Data
+      direction TB
+      F-->K(Dataset 1)
+      H-->L(Dataset 2)
+      J-->M(Dataset 3)
+    end
+    K-->N(Analytics)
+    L-->N
+    M-->N
+```
+
+Maestro aims to replicate the physical sciences' experimental processes in the computational domain
+
+``` mermaid
+flowchart LR
+    subgraph comp _proc [Computational Process]
+      direction TB
+      subgraph Process [ ]
+        direction LR
+        A(User #1)-->B(Computational Process)
+      end
+      Process-->Peers
+      subgraph Peers
+          direction TB
+          C(User #2)
+          D(User #3)
+      end
+    end
+    B-->E
+    B-->G
+    B-->I
+    subgraph HPC
+      direction TB
+        subgraph Exp1 [ ]
+          direction LR
+          E(Parameter 1) --> F(Process 1)
+        end
+        subgraph Exp2 [ ]
+          direction LR
+          G(Parameter 2) --> H(Process 2)
+        end
+        subgraph Exp3 [ ]
+          direction LR
+          I(Parameter 3) --> J(Process 3)
+        end
+    end
+    subgraph Data
+      direction TB
+      F-->K(Dataset 1)
+      H-->L(Dataset 2)
+      J-->M(Dataset 3)
+    end
+    K-->N(Analytics)
+    L-->N
+    M-->N
+```
