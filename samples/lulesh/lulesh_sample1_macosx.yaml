@@ -47,13 +47,6 @@ study:
             $(LULESH)/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(outfile)
           depends: [make-lulesh]
 
-    - name: test-directory-hashing
-      description: Test directory hashing.
-      run:
-          cmd:
-            echo $(VAR1) - $(VAR2) - $(VAR3) - $(VAR4) > out.txt
-          depends: []
-
     - name: post-process-lulesh
       description: Post process all LULESH results.
       run:
@@ -93,16 +86,3 @@ global.parameters:
     ITERATIONS:
         values  : [10, 20, 30, 10, 20, 30, 10, 20, 30]
         label   : ITER.%%
-    VAR1:
-        values  : [ 0.3874309076, 0.3585516934, 0.8368954934, 0.3597349116, 0.5010202705, 0.4419715749, 0.3837019747, 0.8251750674, 0.1956225349 ]
-        label   : VAR1.%%
-    VAR2:
-        values  : [ 0.7520078045, 0.1707261687, 0.7296721416, 0.9457194760, 0.2706341815, 0.4635123514, 0.9558881173, 0.9563149111, 0.3519489632 ]
-        label   : VAR2.%%
-    VAR3:
-        values  : [ 0.7187181590, 0.4406243939, 0.8958327389, 0.5439030734, 0.2866535570, 0.4036018283, 0.0712886048, 0.8181983474, 0.2134559003 ]
-        label   : VAR3.%%
-    VAR4:
-        values  : [ 0.5491000152, 0.3920015696, 0.1895291838, 0.2584696455, 0.5731830405, 0.8745953379, 0.6259727671, 0.5499554186, 0.0106668970 ]
-        label   : VAR4.%%       
- 
