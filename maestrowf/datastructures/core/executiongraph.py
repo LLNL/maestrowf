@@ -49,7 +49,6 @@ class _StepRecord:
         tmp_dir: A provided temp directory to write scripts to instead of step
         workspace.
         """
-        LOGGER.info(f"DEBUG: kwargs {kwargs}")
         self.workspace = Variable("WORKSPACE", workspace)
         step.run["cmd"] = self.workspace.substitute(step.run["cmd"])
         step.run["restart"] = self.workspace.substitute(step.run["restart"])
