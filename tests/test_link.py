@@ -42,7 +42,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
         """
         tests validation of study templates
         """
-        # Validate link template: date+time or index; 
+        # Validate link template: date+time or index;
         linker = Linker()
         linker.validate_link_template("{{study_index}}")
         linker.validate_link_template("{{output_name}}")
@@ -73,19 +73,19 @@ class TestLinkUtilsUnits(unittest.TestCase):
         """
         tests validation of study+combo templates
         """
-        # Validate link template: date+time or index; 
+        # Validate link template: date+time or index;
         linker = Linker(pgen=(lambda x:x))
-        linker.validate_link_template("{{study_index}}/{{combo_index}}")
-        linker.validate_link_template("{{study_index}}/{{combo}}")
+        linker.validate_link_template("{{study_index}}/{{combo_index}}/{{step}}")
+        linker.validate_link_template("{{study_index}}/{{combo}}/{{step}}")
         linker = Linker(
             globals={
                 'VAR1': {'label': 'VAR1.%%',
                     'values': [0.3874309076, 0.3585516934, 0.8368954934]},
                 'VAR2': {'label': 'VAR2.%%',
                         'values': [0.7520078045, 0.1707261687, 0.7296721416]}})
-        linker.validate_link_template("{{study_index}}/{{combo_index}}")
-        linker.validate_link_template("{{study_index}}/{{combo}}")
-        linker.validate_link_template("{{study_index}}/{{VAR1}}-{{VAR2}}")
+        linker.validate_link_template("{{study_index}}/{{combo_index}}/{{step}}")
+        linker.validate_link_template("{{study_index}}/{{combo}}/{{step}}")
+        linker.validate_link_template("{{study_index}}/{{VAR1}}-{{VAR2}}/{{step}}")
 
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{study_date}}")
@@ -114,7 +114,7 @@ class TestLinkUtilsUnits(unittest.TestCase):
         self.assertFalse(
             "does not include required 'combo' substrings"
             in str(context.exception))
-            
+
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{VAR1}}")
         self.assertTrue(

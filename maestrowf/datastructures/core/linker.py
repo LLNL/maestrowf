@@ -48,7 +48,6 @@ class Linker:
     """Utility class to make links."""
     index_format = '%04d'
     mkdir_timeout = 5  # seconds
-    # maestro_index_file = 'maestro_index_file'
 
     def __init__(
             self, make_links_flag=False, hashws=False,
@@ -88,8 +87,6 @@ class Linker:
         error = False
         error_text = ""
         study_index_index = link_template.find('{{study_index}}')
-
-        study_index_index = link_template.find('{{study_index}}')
         output_name_index = link_template.find('{{output_name}}')
         study_time_index = link_template.find('{{study_time}}')
         study_date_index = link_template.find('{{study_date}}')
@@ -102,9 +99,15 @@ class Linker:
             if error:
                 error_text += (
                     f"Template error: '{link_template}'\n"
-                    f"    does not include required 'study' substrings \n"
+                    f"    does not include required 'study' variables \n"
                     "    {{study_time}} and {{study_date}} or {{date}},\n"
                     "    or {{study_index}}, or {{output_name}}.\n")
+        step_index = link_template.find('{{step}}')
+        if step_index == -1:
+            error = True
+            error_text += (
+                f"Template error: '{link_template}'\n"
+                "    does not include required {{step}} variable.\n")
         if self.pgen is not None or self.globals != {}:
             max_study_index = max(study_index_index, output_name_index,
                                   study_time_index, study_date_index,
@@ -130,31 +133,41 @@ class Linker:
                 error = True
                 error_text += (
                     f"Template error: '{link_template}'\n"
-                    f"    does not include required 'combo' substrings \n"
+                    f"    does not include required 'combo' variables \n"
                     f"    {{combo_index}}, or {{combo}},\n"
                     f"    or all global variables ({var_list})\n")
             if min_combo_index < max_study_index:
                 error = True
                 error_text += (
                     f"Template error: in '{link_template}'\n"
-                    + "    This code requires all combo substrings to be to the right\n"  # noqa: E501
-                    "    of all study stubstrings.\n"
-                    "    The position of the rightmost 'study' substrings \n"
+                    + "    This code requires all combo variables to be to the right\n"  # noqa: E501
+                    "    of all study variables.\n"
+                    "    The position of the rightmost 'study' variables \n"
                     "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"  # noqa: E501
-                    "    is to the right of the leftmost 'combo' substrings\n"
+                    "    is to the right of the leftmost 'combo' variables\n"
                     "    ({{combo}}, {{combo_index}}, or all global variables\n"  # noqa: E501
                     f"     ({var_list})).\n"
                     )
+            if link_template.count('{{combo_index}}') > 1:
+                error = True
+                error_text += (
+                    f"Template error: in '{link_template}'\n"
+                    "    '{{combo_index}}' can not be repeated.")
+        if step_index < max_study_index:
+            error = True
+            error_text += (
+                f"Template error: in '{link_template}'\n"
+                "    This code requires the {{step}} variable to be to the right\n"  # noqa: E501
+                "    of all study stubstrings.\n"
+                "    The position of the rightmost 'study' variables \n"
+                "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"  # noqa: E501
+                "    is to the right of the {{step}} variable.\n")
+            error = True
         if link_template.count('{{study_index}}') > 1:
             error = True
             error_text += (
                 f"Template error: in '{link_template}'\n"
                 "    '{{study_index}}' can not be repeated.")
-        if link_template.count('{{combo_index}}') > 1:
-            error = True
-            error_text += (
-                f"Template error: in '{link_template}'\n"
-                "    '{{combo_index}}' can not be repeated.")
         if error:
             print(error_text)
             raise ValueError(error_text)
