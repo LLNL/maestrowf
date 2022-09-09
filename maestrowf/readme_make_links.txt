@@ -1,49 +1,17 @@
-# fix bug... links are made one directory down. 
+# lint flake8 pylint
 
-# make Linker more robust by saving time, date, name in study instances
-        study_time = output_name.split("-")[-1]
-        replacements['study_time'] = study_time
-        study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
-        replacements['study_date'] = study_date
-        study_name = output_name.replace(f"_{study_date}-{study_time}","")
+# validate {step} in linker.py template
 
-
-move Linker to maestrowf/datastructures/core/linker.py
-
-make setter for step_exp.workspace_no_hash = workspace_no_hash (in study.py)
-update Linker code to use workspace_no_hash
-
-
-# no hash:
- 'combo': 'VAR1.0.84.VAR2.0.73.VAR3.0.90.VAR4.0.19',
- 'long_combo': 'VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838',
- 'nickname': None,
- 'step': 'test-directory-hashing',
-# hash
- 'combo': 'c74742ecea5a2b58e67350b5a1e0a234',
- 'long_combo': 'c74742ecea5a2b58e67350b5a1e0a234',
- 'nickname': 'c74742ecea5a2b58e67350b5a1e0a234',
- 'step': 'test-directory-hashing_VAR1.0.8368954934.VAR2.0.7296721416.VAR3.0.8958327389.VAR4.0.1895291838',
-
-
-# combo index working; run_index no longer working
-
-# maestro run -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml 
-
-            if type(self.study_index) == int:
-                self.study_index = self.new_index(
-                    link_path, "{{study_index}}")
-                replacements = self.build_replacements(record)
-            if type(self.combo_index[long_combo]) == int:
-                self.combo_index[long_combo] = self.new_index(
-                    link_path, "{{combo_index}}")   
-
-# add more options  
-
-# store indices in object
+# remove .replace from linker.py (done except for step)
 
 # Write yaml index_directory index path
 # labels.yaml
+
+# maestro run -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml
+
+# add more options
+
+
 # requirements of template:
 # unique path for each study/combo/step
 # optional: {{date}}
@@ -76,7 +44,7 @@ NOTE: template must include {{combo}} and {{step}}.
 * {{study_name}}
 * {{output_path}} - Parent directory for this maestro study
 * {{date}} - Human-readable date (e.g. '2020_07_28')
-* {{long_combo}} - Maestro label for a set of parameters, 
+* {{long_combo}} - Maestro label for a set of parameters,
 * {{combo}} - Maestro label for a set of parameters, with reals rounded
                 (e.g. 'X1.5.X2.5.X3.20')
                 [maximum length: 255 characters]

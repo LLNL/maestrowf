@@ -279,6 +279,7 @@ def create_dictionary(list_keyvalues, token=":"):
 
     return _dict
 
+
 def splitall(path):
     """
     Split path into a list of component directories.
@@ -298,6 +299,7 @@ def splitall(path):
             allparts.insert(0, parts[1])
     return allparts
 
+
 def next_path(path_pattern):
     """
     Finds the next free path in an sequentially named list of files
@@ -316,7 +318,7 @@ def next_path(path_pattern):
 
 def next_index_and_path(path_pattern):
     """
-    Finds the next index number free path in an sequentially named list of files
+    Finds the next index number and path in sequentially named list of files
 
     e.g. path_pattern = 'file-%s.txt':
 
@@ -342,6 +344,7 @@ def next_index_and_path(path_pattern):
 
     return b, path_pattern % b
 
+
 def recursive_render(tpl, values):
     """
     Repeat rendering of jinja template until there are no changes.
@@ -355,6 +358,7 @@ def recursive_render(tpl, values):
             prev = curr
         else:
             return curr
+
 
 class LoggerUtility:
     """Utility class for setting up logging consistently."""

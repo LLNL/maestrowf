@@ -43,17 +43,18 @@ from maestrowf.utils import splitall, next_index_and_path, recursive_render
 
 LOGGER = logging.getLogger(__name__)
 
+
 class Linker:
     """Utility class to make links."""
     index_format = '%04d'
     mkdir_timeout = 5  # seconds
-    maestro_index_file = 'maestro_index_file'
+    # maestro_index_file = 'maestro_index_file'
 
     def __init__(
             self, make_links_flag=False, hashws=False,
             link_template=None, output_name=None, output_path=None,
-            spec_name=None,date_string=None,time_string=None,
-            dir_float_format=['{:.2f}','{:.2e}'], pgen=None, globals={}):
+            spec_name=None, date_string=None, time_string=None,
+            dir_float_format=['{:.2f}', '{:.2e}'], pgen=None, globals={}):
         """
         Initialize a new Linker class instance.
 
@@ -65,26 +66,22 @@ class Linker:
         self.link_template = link_template
         self.output_name = output_name
         self.output_path = output_path
-        self.spec_name=spec_name
-        self.date_string=date_string
-        self.time_string=time_string
+        self.spec_name = spec_name
+        self.date_string = date_string
+        self.time_string = time_string
         self.dir_float_format = dir_float_format
         self.pgen = pgen
         self.globals = globals
         self.study_index = 0
         self.combo_index = defaultdict(int)
         self._study_datetime = datetime.datetime.now()
-        # if hashws:
-        #     LOGGER.warning("'--make-links' option is not supported with '--hashws' option (hash workspace).")
-        #     self.make_links_flag = False
-        #     return
         if make_links_flag:
             self.validate_link_template(link_template)
 
     def validate_link_template(self, link_template):
-        """ 
+        """
         Validate link template.
-        The template must have enough information to generate a 
+        The template must have enough information to generate a
         unique path for each study and each combo in the study.
         """
         # @TODO: generalize to work if there are no combos.
@@ -104,13 +101,14 @@ class Linker:
                 error = True
             if error:
                 error_text += (
-                   f"Template error: '{link_template}'\n"
-                    "    does not include required 'study' substrings \n"                    
+                    f"Template error: '{link_template}'\n"
+                    f"    does not include required 'study' substrings \n"
                     "    {{study_time}} and {{study_date}} or {{date}},\n"
                     "    or {{study_index}}, or {{output_name}}.\n")
-        if self.pgen != None or self.globals != {}:
+        if self.pgen is not None or self.globals != {}:
             max_study_index = max(study_index_index, output_name_index,
-                study_time_index, study_date_index, date_index)
+                                  study_time_index, study_date_index,
+                                  date_index)
             combo_index_index = link_template.find('{{combo_index}}')
             combo_index = link_template.find('{{combo}}')
             min_key_index = float("inf")
@@ -119,31 +117,34 @@ class Linker:
                 key_index = link_template.find('{{' + key + '}}')
                 if key_index < min_key_index:
                     min_key_index = key_index
-            min_combo_list = ([var for var in [combo_index, combo_index_index, min_key_index]
-                                   if var > -1])
+            min_combo_list = (
+                [var for var in [combo_index, combo_index_index, min_key_index]
+                 if var > -1])
             if min_combo_list:
                 min_combo_index = min(min_combo_list)
             else:
                 min_combo_index = -1
-            if combo_index_index == -1 and combo_index == -1 and min_key_index == -1:
+            if (combo_index_index == -1
+                    and combo_index == -1
+                    and min_key_index == -1):
                 error = True
                 error_text += (
                     f"Template error: '{link_template}'\n"
-                    f"    does not include required 'combo' substrings \n"                    
-                        "    {{combo_index}}, or {{combo}},\n"
+                    f"    does not include required 'combo' substrings \n"
+                    f"    {{combo_index}}, or {{combo}},\n"
                     f"    or all global variables ({var_list})\n")
             if min_combo_index < max_study_index:
                 error = True
                 error_text += (
                     f"Template error: in '{link_template}'\n"
-                    "    This code requires all combo substrings to be to the right\n"
+                    + "    This code requires all combo substrings to be to the right\n"  # noqa: E501
                     "    of all study stubstrings.\n"
                     "    The position of the rightmost 'study' substrings \n"
-                    "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"
+                    "    ({{study_index}}, {{study_time}}, {{study_date}}, or {{date}})\n"  # noqa: E501
                     "    is to the right of the leftmost 'combo' substrings\n"
-                    "    ({{combo}}, {{combo_index}}, or all global variables\n"
+                    "    ({{combo}}, {{combo_index}}, or all global variables\n"  # noqa: E501
                     f"     ({var_list})).\n"
-                    )  
+                    )
         if link_template.count('{{study_index}}') > 1:
             error = True
             error_text += (
@@ -160,23 +161,22 @@ class Linker:
 
     @staticmethod
     def format_float(num, format_list):
-            """
-            Return num as string using format_list.
-            
-            format_list, for example (['{:.2f}','{:.2e}']),
-            contains "".format() style format strings for 
-            numbers with small exponents and for numbers with
-            large exponents.
-            """
-            if type(num) != float:
-                return str(num)
-            float_string = "{}".format(num)
-            if float_string.find("e") > -1:
-                formatted_string = format_list[1].format(num)
-            else:
-                formatted_string = format_list[0].format(num)
-            return formatted_string
-    
+        """
+        Return num as string using format_list.
+
+        format_list, for example (['{:.2f}','{:.2e}']),
+        contains "".format() style format strings for
+        numbers with small exponents and for numbers with
+        large exponents.
+        """
+        if type(num) != float:
+            return str(num)
+        float_string = "{}".format(num)
+        if float_string.find("e") > -1:
+            formatted_string = format_list[1].format(num)
+        else:
+            formatted_string = format_list[0].format(num)
+        return formatted_string
 
     def build_replacements(self, record):
         """ build replacements dictionary from StepRecord"""
@@ -198,7 +198,7 @@ class Linker:
         else:
             replacements["study_index"] = self.study_index
         LOGGER.info(f"DEBUG step: {str(record.step)}")
-        if record.step.combo != None and record._params:
+        if record.step.combo is not None and record._params:
             # long_combo = os.path.basename(record.workspace.value)
             long_combo = record.step._param_string
             if type(self.combo_index[long_combo]) == int:
@@ -208,16 +208,19 @@ class Linker:
             combo = long_combo
             replacements['long_combo'] = long_combo
             replacements['nickname'] = record.step.nickname
-            step = record.name.replace("_" + combo,"")
+            step = record.name.replace("_" + combo, "")
             for param, name in zip(
                 record.step.combo._params.values(),
-                record.step.combo._labels.values()):
-                combo = combo.replace(
-                    name, 
-                    name.replace(
-                        str(param), 
-                        self.format_float(param, self.dir_float_format))
-                )
+                record.step.combo._labels.values()):  # noqa: E125
+                    combo = combo.replace(  # noqa: E117
+                        name,
+                        name.replace(
+                            str(param),
+                            self.format_float(param, self.dir_float_format))
+                    )
+            LOGGER.info(f"DEBUG step: {step}")
+            LOGGER.info(f"DEBUG record.name: {record.name}")
+
             replacements['step'] = step
             replacements['combo'] = combo
         else:
@@ -225,14 +228,14 @@ class Linker:
             replacements['combo'] = "all_records"
             replacements['long_combo'] = "all_records"
             replacements['nickname'] = None
-        if record.step.combo != None and record._params:
-            for param, name in zip(
-                record.step.combo._params.items(),
-                record.step.combo._names.items()):
-                key = name[1]
-                value = param[1]
-                if key not in replacements:
-                    replacements[key] = value
+        # if record.step.combo is not None and record._params:
+        #     for param, name in zip(
+        #         record.step.combo._params.items(),
+        #         record.step.combo._names.items()):
+        #         key = name[1]
+        #         value = param[1]
+        #         if key not in replacements:
+        #             replacements[key] = value
         return replacements
 
     @staticmethod
@@ -257,8 +260,8 @@ class Linker:
                     index_dir = dir
                     found = True
         return (
-            os.path.join(*left_dirs), 
-            index_dir, 
+            os.path.join(*left_dirs),
+            index_dir,
             os.path.join(*right_dirs))
 
     def new_index(self, dir, index_name):
@@ -275,11 +278,12 @@ class Linker:
                 "ERROR: the following path should not have any jinja "
                 f"variables: {left_dirs}")
         os.makedirs(left_dirs, exist_ok=True)
-        return self.next_path_w_lock(os.path.join(left_dirs, index_dir), index_name)
+        return self.next_path_w_lock(
+            os.path.join(left_dirs, index_dir), index_name)
 
     def next_path_w_lock(self, path_with_index, index_name):
         """
-        Thread safe version of next_path. 
+        Thread safe version of next_path.
         Returns formatted index string.
         """
         pass
@@ -293,7 +297,8 @@ class Linker:
         with lock:
             while not success and time.time() < timeout:
                 try:
-                    index, index_directory_string = next_index_and_path(template)
+                    index, index_directory_string = (
+                        next_index_and_path(template))
                     os.makedirs(index_directory_string)
                     success = True
                 except OSError as e:
@@ -326,8 +331,8 @@ class Linker:
             replacements = self.build_replacements(record)
             link_path = recursive_render(self.link_template, replacements)
         if type(self.combo_index[replacements['long_combo']]) == int:
-            new_index = self.new_index(link_path, "{{combo_index}}")           
-            self.combo_index[replacements['long_combo']] = new_index    
+            new_index = self.new_index(link_path, "{{combo_index}}")
+            self.combo_index[replacements['long_combo']] = new_index
             replacements = self.build_replacements(record)
         link_path = recursive_render(self.link_template, replacements)
         LOGGER.info(f"DEBUG: \n{pprint.pformat(replacements)}")
@@ -337,7 +342,9 @@ class Linker:
             os.rmdir(link_path)
             link_target = record.workspace.value
             if replacements['nickname']:
-                link_target.replace(replacements['long_combo'], replacements['nickname'])
+                link_target.replace(
+                    replacements['long_combo'],
+                    replacements['nickname'])
             os.symlink(link_target, link_path)
         except OSError as e:
             if e.args[1] == 'File exists':
