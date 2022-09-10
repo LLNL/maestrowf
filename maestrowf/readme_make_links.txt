@@ -6,6 +6,8 @@
 # spell check
 # lint flake8 pylint
 
+# add test for maestro user key/value conflicts with maestro template keyvalue
+
 # maestro run -s 1 -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml
 
 NOTE: template must include {{combo}} and {{step}}.

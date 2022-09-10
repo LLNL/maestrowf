@@ -241,14 +241,19 @@ class Linker:
             replacements['combo'] = "all_records"
             replacements['long_combo'] = "all_records"
             replacements['nickname'] = None
-        # if record.step.combo is not None and record._params:
-        #     for param, name in zip(
-        #         record.step.combo._params.items(),
-        #         record.step.combo._names.items()):
-        #         key = name[1]
-        #         value = param[1]
-        #         if key not in replacements:
-        #             replacements[key] = value
+        if record.step.combo is not None and record._params:
+            for param, name in zip(
+                record.step.combo._params.items(),
+                record.step.combo._names.items()):
+                key = name[1]
+                value = param[1]
+                if key not in replacements:
+                    replacements[key] = value
+                else:
+                    LOGGER.warning(
+                        f"user key/value: {key}/{value} conflicts with "
+                        f"maestro link template key/value: "
+                        f"{key}/{replacements[key]}.")
         return replacements
 
     @staticmethod
