@@ -1,12 +1,3 @@
-# finish debugging {{step}} validation
-
-================================================= short test summary info =================================================
-FAILED tests/test_link.py::TestLinkUtilsUnits::test_validate_combo_template - AssertionError: False is not true
-FAILED tests/test_link.py::TestLinkUtilsUnits::test_validate_study_template - UnboundLocalError: local variable 'max_stu...
-======================================= 2 failed, 31 passed, 5 deselected in 4.05s ========================================
-(maestrowf-F8Kxbm4v-py3.8) (base) crkrenn@admins-MacBook-Pro-2 maestrowf_crk %
-
-# validate {step} in linker.py template
 # remove .replace from linker.py (done except for step)
 # Write yaml index_directory index path
 # labels.yaml
