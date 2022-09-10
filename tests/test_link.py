@@ -44,29 +44,29 @@ class TestLinkUtilsUnits(unittest.TestCase):
         """
         # Validate link template: date+time or index;
         linker = Linker()
-        linker.validate_link_template("{{study_index}}")
-        linker.validate_link_template("{{output_name}}")
-        linker.validate_link_template("{{study_date}}{{study_time}}")
-        linker.validate_link_template("{{date}}{{study_time}}")
+        linker.validate_link_template("{{study_index}}/{{step}}")
+        linker.validate_link_template("{{output_name}}/{{step}}")
+        linker.validate_link_template("{{study_date}}{{study_time}}/{{step}}")
+        linker.validate_link_template("{{date}}{{study_time}}/{{step}}")
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("foo")
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{study_date}}")
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{date}}")
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{study_time}}")
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
 
     def test_validate_combo_template(self):
@@ -91,34 +91,34 @@ class TestLinkUtilsUnits(unittest.TestCase):
             linker.validate_link_template("{{study_date}}")
         print(context.exception)
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         self.assertTrue(
-            "does not include required 'combo' substrings"
+            "does not include required 'combo' variables"
             in str(context.exception))
 
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{study_index}}")
         self.assertFalse(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         self.assertTrue(
-            "does not include required 'combo' substrings"
+            "does not include required 'combo' variables"
             in str(context.exception))
 
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{combo_index}}")
         self.assertTrue(
-            "does not include required 'study' substrings"
+            "does not include required 'study' variables"
             in str(context.exception))
         self.assertFalse(
-            "does not include required 'combo' substrings"
+            "does not include required 'combo' variables"
             in str(context.exception))
 
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{VAR1}}")
         self.assertTrue(
-            "does not include required 'combo' substrings"
+            "does not include required 'combo' variables"
             in str(context.exception))
 
         with self.assertRaises(ValueError) as context:
@@ -131,6 +131,18 @@ class TestLinkUtilsUnits(unittest.TestCase):
             linker.validate_link_template("{{study_index}}{{study_index}}")
         self.assertTrue(
             "'{{study_index}}' can not be repeated"
+            in str(context.exception))
+
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{study_index}}")
+        self.assertTrue(
+            "does not include required {{step}} variable"
+            in str(context.exception))
+
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{step}}/{{study_index}}")
+        self.assertTrue(
+            "This code requires the {{step}} variable to be to the right"
             in str(context.exception))
 
     def test_recursive_render(self):
