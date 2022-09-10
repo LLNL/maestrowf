@@ -6,7 +6,7 @@
 # spell check
 # lint flake8 pylint
 
-# maestro run -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml
+# maestro run -s 1 -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml
 
 NOTE: template must include {{combo}} and {{step}}.
 [Default: {{link_directory}}/{{date}}/run-{{INDEX}}/{{combo}}/{{step}}

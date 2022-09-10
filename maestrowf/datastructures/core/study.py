@@ -68,6 +68,7 @@ class StudyStep:
     def __init__(self):
         """Object that represents a single workflow step."""
         self._name = ""
+        self._step_name = ""
         self._param_string = ""
         self.description = ""
         self.nickname = ""
@@ -96,6 +97,7 @@ class StudyStep:
         # Create a new StudyStep and populate it with substituted values.
         tmp = StudyStep()
         tmp.__dict__ = apply_function(self.__dict__, combo.apply)
+        tmp._step_name = self.__dict__["_name"]
         tmp.combo = combo
         # Return if the new step is modified and the step itself.
 
