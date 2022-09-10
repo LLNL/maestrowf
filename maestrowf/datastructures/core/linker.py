@@ -102,6 +102,9 @@ class Linker:
                     f"    does not include required 'study' variables \n"
                     "    {{study_time}} and {{study_date}} or {{date}},\n"
                     "    or {{study_index}}, or {{output_name}}.\n")
+        max_study_index = max(study_index_index, output_name_index,
+                                study_time_index, study_date_index,
+                                date_index)
         step_index = link_template.find('{{step}}')
         if step_index == -1:
             error = True
@@ -109,9 +112,6 @@ class Linker:
                 f"Template error: '{link_template}'\n"
                 "    does not include required {{step}} variable.\n")
         if self.pgen is not None or self.globals != {}:
-            max_study_index = max(study_index_index, output_name_index,
-                                  study_time_index, study_date_index,
-                                  date_index)
             combo_index_index = link_template.find('{{combo_index}}')
             combo_index = link_template.find('{{combo}}')
             min_key_index = float("inf")
