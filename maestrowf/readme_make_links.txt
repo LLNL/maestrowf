@@ -6,7 +6,10 @@
 # spell check
 # lint flake8 pylint
 
+# using {{data}} as maestro input and in template should cause error
+
 # add test for maestro user key/value conflicts with maestro template keyvalue
+# add test for maestro user key/value substitutes properly
 
 # maestro run -s 1 -fg -y --make-links tests/specification/test_specs/link_integration_fast.yml
 

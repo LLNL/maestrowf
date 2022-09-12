@@ -195,12 +195,8 @@ class Linker:
         """ build replacements dictionary from StepRecord"""
         # {{study-name}} {{step-name}} {{study-index}} {{combo-index}}
         replacements = {}
-        # output_name = self.output_name
-        # study_time = output_name.split("-")[-1]
         replacements['study_time'] = self.time_string
-        # study_date = output_name.split("_")[-1].replace(f"-{study_time}","")
         replacements['study_date'] = self.date_string
-        # study_name = output_name.replace(f"_{study_date}-{study_time}","")
         replacements['study_name'] = self.spec_name
         replacements['link_template'] = self.link_template
         replacements['output_name'] = self.output_name
@@ -210,7 +206,7 @@ class Linker:
             replacements["study_index"] = "{{study_index}}"
         else:
             replacements["study_index"] = self.study_index
-        LOGGER.info(f"DEBUG step: {str(record.step)}")
+        replacements['step'] = record.step.step_name
         if record.step.combo is not None and record._params:
             # long_combo = os.path.basename(record.workspace.value)
             long_combo = record.step._param_string
@@ -221,7 +217,7 @@ class Linker:
             combo = long_combo
             replacements['long_combo'] = long_combo
             replacements['nickname'] = record.step.nickname
-            step = record.name.replace("_" + combo, "")
+
             for param, name in zip(
                 record.step.combo._params.values(),
                 record.step.combo._labels.values()):  # noqa: E125
@@ -231,29 +227,36 @@ class Linker:
                             str(param),
                             self.format_float(param, self.dir_float_format))
                     )
-            LOGGER.info(f"DEBUG step: {step}")
-            LOGGER.info(f"DEBUG record.name: {record.name}")
+            # LOGGER.info(f"DEBUG step: {step}")
+            # LOGGER.info(f"DEBUG record.name: {record.name}")
 
-            replacements['step'] = step
+            # replacements['step'] = step
             replacements['combo'] = combo
         else:
-            replacements['step'] = record.name
+            # replacements['step'] = record.name
             replacements['combo'] = "all_records"
             replacements['long_combo'] = "all_records"
             replacements['nickname'] = None
         if record.step.combo is not None and record._params:
+            print(f"debug combo: {combo}")
             for param, name in zip(
                 record.step.combo._params.items(),
                 record.step.combo._names.items()):
+                print("param/name debug:", param, name)
                 key = name[1]
                 value = param[1]
-                if key not in replacements:
-                    replacements[key] = value
-                else:
-                    LOGGER.warning(
-                        f"user key/value: {key}/{value} conflicts with "
-                        f"maestro link template key/value: "
-                        f"{key}/{replacements[key]}.")
+                if (key in replacements
+                    and self.link_template.find("{{" + key + "}}") > -1):
+                        error_text = (
+                            f"user key/value: {key}/{value} conflicts with "
+                            f"maestro link template key/value: "
+                            f"{key}/{replacements[key]}.")
+                        LOGGER.error(error_text)
+                        raise ValueError(error_text)
+                replacements[key] = (
+                    self.format_float(value, self.dir_float_format))
+        # print(replacements['step'], "==?", replacements['step2'])
+        # assert replacements['step'] == replacements['step2']
         return replacements
 
     @staticmethod

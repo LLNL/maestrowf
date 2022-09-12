@@ -132,6 +132,17 @@ class StudyStep:
         """
         return self._name
 
+    @property
+    def step_name(self):
+        """
+        Get the name to assign to a task for this step.
+
+        :returns: A utf-8 formatted string of the task name.
+        """
+        if self._step_name:
+            return self._step_name
+        return self.name
+
     def __eq__(self, other):
         """
         Equality operator for the StudyStep class.
