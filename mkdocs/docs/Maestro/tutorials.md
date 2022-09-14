@@ -454,8 +454,143 @@ flowchart TD;
 
 Note the extra parameter also shows up in the `'say-hello'` step despite not being explicitly used.  Maestro currently propagates parameter combinations, not just used parameters.
 
-![Labeled Hello Bye Parameterized Workspace with Funnel](../assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_funnel_workspace.svg)
+![Labeled Hello Bye Parameterized Workspace with Funnel](../assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_funnel_workspace.svg){: style="width:80ch"}
 
 !!! warning
 
     This unique labeling of directories cannot be extended indefinitely.  Operating systems do have fixed path lengths that must be respected.  To accomodate this, Maestro offers a hashing option at run-time to enable arbitrarily large numbers of parameters in each combination: `maestro run study.yaml --hashws ...`
+
+## Overriding Parameter Block with Python
+
+<!-- Add link to pgen section of how-to-guides -->
+Additional flexibility is sometimes needed when specifying study parameters, and Maestro provides a python
+interface for this via the Parameter Generator, or `pgen`.  This is a user supplied function of a specific
+signature that populates a `ParameterGenerator` object.  Invoking these custom generators is a simple extra argument to the `run` command:
+
+``` console
+maestro run study.yaml --pgen my_custom_generator.py
+```
+
+This will override any parameters that are defined in the study.yaml, enabling the specification to remain
+runnable on it's own.  Below shows what the `my_custom_generator.py` file looks like using this functionality to recreate the same parameter combinations used in the previous examples:
+
+``` python
+from maestrowf.datastructures.core import ParameterGenerator
+
+def get_custom_generator(env, **kwargs):
+    p_gen = ParameterGenerator()
+    
+    params = {
+        "NAME": {
+            "values": ['Pam', 'Jim', 'Michael', 'Dwight'],
+            "label": "NAME.%%"
+        },
+        "GREETING": {
+            "values": ['Hello', 'Ciao', 'Hey', 'Hi'],
+            "label": "GREETING.%%"
+        },
+        "FAREWELL": {
+            "values": ['Goodbye', 'Farewell', 'So long', 'See you later'],
+            "label": "FAREWELL.%%"
+        },
+    }
+
+    for key, value in params.items():
+        p_gen.add_parameter(key, value["values"], value["label"])
+
+    return p_gen
+```
+
+!!! note
+
+    This can use any python package that is installed in the virtual environment that you are running maestro in.  See [How-to Guides](#how-to-guides) for further examples
+
+## Running a study on HPC Clusters
+
+There is one last block in the study specification that hasn't been used yet, and that is the `batch` block.
+Adding this block enables Maestro to schedule steps to run on remote nodes on HPC clusters by interfacing
+with schedulers such as SLURM and Flux.  A few new keys also become available in the steps' `run` blocks which
+enable specification of the steps resource requirements such as the number of nodes and processors to reserve
+and the wall time (duration) to request them for.
+
+``` yaml linenums="1" hl_lines="5-9 24-26 34-36 44-46"
+description:
+    name: hello_bye_parameterized_funnel
+    description: A study that says hello and bye to multiple people, and a final good bye to all.
+
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pdebug
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/hello_bye_parameterized_funnel
+    labels:
+        HELLO_FORMAT: $(GREETING)_$(NAME).txt
+        BYE_FORMAT: $(FAREWELL)_$(NAME).txt
+
+study:
+    - name: say-hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            echo "$(GREETING), $(NAME)!" > $(HELLO_FORMAT)
+          nodes: 1
+          procs: 1
+          walltime: "00:00:30"
+
+    - name: say-bye
+      description: Say bye to someone!
+      run:
+          cmd: |
+            echo "$(FAREWELL), $(NAME)!" > $(BYE_FORMAT)
+          depends: [say-hello]
+          nodes: 1
+          procs: 1
+          walltime: "00:00:30"
+
+    - name: bye-all
+      description: Say bye to everyone!
+      run:
+          cmd: |
+            echo "Good-bye, World!" > good_bye_all.txt
+          depends: [say-bye_*]
+          nodes: 1
+          procs: 1
+          walltime: "00:00:30"
+
+global.parameters:
+    NAME:
+        values: [Pam, Jim, Michael, Dwight]
+        label: NAME.%%
+    GREETING:
+        values: [Hello, Ciao, Hey, Hi]
+        label: GREETING.%%
+    FAREWELL:
+        values: [Goodbye, Farewell, So long, See you later]
+        label: FAREWELL.%%
+```
+
+With the small additions above, each step will be submitted as batch jobs to the HPC cluster, enabling them to run in parallel.  Additionally, this interface has facilities for abstracting the invocations for mpi-parallel
+processes within the steps.  Adding one of Maestro's special tokens, `$(LAUNCHER)`, to the steps as shown below will run the `echo` lines using the scheduler/cluster mpi wrapper.
+
+``` yaml
+    - name: say-hello
+      description: Say hello to someone!
+      run:
+          cmd: |
+            $(LAUNCHER) echo "$(GREETING), $(NAME)!" > $(HELLO_FORMAT)
+          nodes: 1
+          procs: 1
+          walltime: "00:00:30"
+```
+
+When Maestro generates the batch script for this step it will utilize the information in the `batch` block and the resource specification keys such as `procs` and `nodes` to generate the system appropriate execution line for one of the parameter combinations.  In this example, we get the SLURM wrapper to run the `echo` command using a single mpi task on a single node.
+
+``` shell
+srun -n1 -N1 echo "Hello, Pam!" > Hello_Pam.txt
+```
+
+<!-- Add demo of status output and noting job id's in that output when running on clusters? -->
