@@ -1,4 +1,8 @@
-# remove .replace from linker.py (done except for step)
+# validate that all variables in template are valid
+
+# validate that no variables in template conflict between
+# maestro variables and TEMPLATE_VAR_LIST
+
 # Write yaml index_directory index path
 # labels.yaml
 # update default template in maestro.py

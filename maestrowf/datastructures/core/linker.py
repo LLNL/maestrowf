@@ -48,6 +48,16 @@ class Linker:
     """Utility class to make links."""
     index_format = '%04d'
     mkdir_timeout = 5  # seconds
+    TEMPLATE_ALLOWED_TOKENS = [
+        '{{study_index}}',
+        '{{output_name}}',
+        '{{study_time}}',
+        '{{study_date}}',
+        '{{date}}',
+        '{{step}}',
+        '{{combo_index}}',
+        '{{combo}}'
+        ]
 
     def __init__(
             self, make_links_flag=False, hashws=False,
@@ -77,6 +87,23 @@ class Linker:
         if make_links_flag:
             self.validate_link_template(link_template)
 
+    @staticmethod
+    def extract_jinja_tokens(string):
+        result = []
+        word = []
+        bracket_count = 0
+        for char in string:
+            if char == "}":
+                if bracket_count == 2:
+                    result.append("".join(word))
+                    word = []
+                bracket_count -= 1
+            if bracket_count == 2:
+                word.append(char)
+            if char == "{":
+                bracket_count += 1
+        return result
+
     def validate_link_template(self, link_template):
         """
         Validate link template.
@@ -86,6 +113,23 @@ class Linker:
         # @TODO: generalize to work if there are no combos.
         error = False
         error_text = ""
+        link_template_tokens = self.extract_jinja_tokens(link_template)
+        maestro_var_tokens = ["{{" + var + "}}" for var in self.globals.keys()]
+        all_allowed_tokens = maestro_var_tokens.copy()
+        all_allowed_tokens.extend(self.TEMPLATE_ALLOWED_TOKENS)
+        for token in link_template_tokens:
+            if "{{" + token + "}}" not in all_allowed_tokens:
+                LOGGER.warning(
+                    f"template token ({token}) is not in list of allowed tokens "
+                    f"({allowed_tokens})")
+            if ("{{" + token + "}}" in self.TEMPLATE_ALLOWED_TOKENS
+                and "{{" + token + "}}" in maestro_var_tokens):
+                error = True
+                error_text += (
+                    f"Template error: '{link_template}'\n"
+                    f"   ({token}) can not be resolved.\n"
+                    f"   Variable tokens: ({maestro_var_tokens}).\n"
+                    f"   Template tokens: ({self.TEMPLATE_ALLOWED_TOKENS})\n.")
         study_index_index = link_template.find('{{study_index}}')
         output_name_index = link_template.find('{{output_name}}')
         study_time_index = link_template.find('{{study_time}}')

@@ -145,26 +145,24 @@ class TestLinkUtilsUnits(unittest.TestCase):
             "This code requires the {{step}} variable to be to the right"
             in str(context.exception))
 
-    # def test_validate_variable_conflict(self):
-    #     """
-    #     tests validation of study+combo templates
-    #     """
-    #     # Validate link template: date+time or index;
-    #     linker = Linker(
-    #         globals={
-    #             'date': {'label': 'date.%%',
-    #                 'values': [0.3874309076, 0.3585516934, 0.8368954934]},
-    #             'VAR2': {'label': 'VAR2.%%',
-    #                     'values': [0.7520078045, 0.1707261687, 0.7296721416]}})
-    #     linker.validate_link_template("{{study_index}}/{{combo_index}}/{{step}}")
-    #     linker.validate_link_template("{{study_index}}/{{combo}}/{{step}}")
-
-    #     with self.assertRaises(ValueError) as context:
-    #         linker.validate_link_template("{{study_index}}/{{date}}-{{VAR2}}/{{step}}")
-    #     self.assertTrue(
-    #         "This code requires the {{step}} variable to be to the right"
-    #         in str(context.exception))
-
+    def test_validate_variable_conflict(self):
+        """
+        tests validation of template and variable conflicts
+        """
+        # Validate link template: date+time or index;
+        linker = Linker(
+            globals={
+                'date': {'label': 'date.%%',
+                    'values': [0.3874309076, 0.3585516934, 0.8368954934]},
+                'VAR2': {'label': 'VAR2.%%',
+                        'values': [0.7520078045, 0.1707261687, 0.7296721416]}})
+        linker.validate_link_template("{{study_index}}/{{combo_index}}/{{step}}")
+        linker.validate_link_template("{{study_index}}/{{combo}}/{{step}}")
+        with self.assertRaises(ValueError) as context:
+            linker.validate_link_template("{{study_index}}/{{date}}-{{VAR2}}/{{step}}")
+        self.assertTrue(
+            "can not be resolved"
+            in str(context.exception))
 
     def test_recursive_render(self):
         self.assertEqual(
