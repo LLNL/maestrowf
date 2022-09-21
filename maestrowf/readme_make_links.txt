@@ -1,3 +1,5 @@
+# add suffix to var_real abbrev if needed.
+
 # validate that all variables in template are valid
 
 # Write yaml index_directory index path
