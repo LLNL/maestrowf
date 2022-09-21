@@ -58,6 +58,18 @@ class Linker:
         '{{combo_index}}',
         '{{combo}}'
         ]
+    HELP_TEXT = (
+        "Jinja template for links to run directories.\n"
+        "NOTE: template must include {{combo}} and {{step}}.\n"
+        "[Default: %(default)s]\n \n"
+        "Currently supported Jinja variables:\n"
+        "{{output_path}} - Parent directory for this maestro study\n"
+        "{{date}} - Human-readable date (e.g. '2020_07_28')\n"
+        "{{combo}} - Maestro label for a set of parameters\n"
+        "               (e.g. 'X1.5.X2.5.X3.20')\n"
+        "               [maximum length: 255 characters]\n"
+        "{{step}} - Maestro label for a given step (e.g. 'run')\n"
+        "{{study_index}} - Unique number for each maestro execution (e.g. '0001')")  # noqa501
 
     def __init__(
             self, make_links_flag=False, hashws=False,
@@ -121,7 +133,7 @@ class Linker:
             if "{{" + token + "}}" not in all_allowed_tokens:
                 LOGGER.warning(
                     f"template token ({token}) is not in list of allowed tokens "
-                    f"({allowed_tokens})")
+                    f"({all_allowed_tokens})")
             if ("{{" + token + "}}" in self.TEMPLATE_ALLOWED_TOKENS
                 and "{{" + token + "}}" in maestro_var_tokens):
                 error = True

@@ -11,6 +11,7 @@ import pytest
 import shutil
 import tempfile
 import unittest
+import logging
 
 from maestrowf.utils import (
     splitall, recursive_render, next_path)
@@ -26,6 +27,10 @@ class TestLinkUtilsUnits(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
+
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
 
     def test_splitall(self):
         """
@@ -158,6 +163,11 @@ class TestLinkUtilsUnits(unittest.TestCase):
                         'values': [0.7520078045, 0.1707261687, 0.7296721416]}})
         linker.validate_link_template("{{study_index}}/{{combo_index}}/{{step}}")
         linker.validate_link_template("{{study_index}}/{{combo}}/{{step}}")
+        with self._caplog.at_level(logging.WARNING):
+            linker.validate_link_template("{{study_index}}/{{combo}}/{{foo}}/{{step}}")
+        self.assertTrue(
+            'is not in list of allowed tokens'
+            in self._caplog.text)
         with self.assertRaises(ValueError) as context:
             linker.validate_link_template("{{study_index}}/{{date}}-{{VAR2}}/{{step}}")
         self.assertTrue(
