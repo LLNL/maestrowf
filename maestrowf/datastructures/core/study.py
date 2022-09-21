@@ -68,8 +68,11 @@ class StudyStep:
     def __init__(self):
         """Object that represents a single workflow step."""
         self._name = ""
+        self._step_name = ""
+        self._param_string = ""
         self.description = ""
         self.nickname = ""
+        self.combo = None
         self.run = {
                         "cmd":              "",
                         "depends":          "",
@@ -94,6 +97,8 @@ class StudyStep:
         # Create a new StudyStep and populate it with substituted values.
         tmp = StudyStep()
         tmp.__dict__ = apply_function(self.__dict__, combo.apply)
+        tmp._step_name = self.__dict__["_name"]
+        tmp.combo = combo
         # Return if the new step is modified and the step itself.
 
         return self.__ne__(tmp), tmp
@@ -126,6 +131,17 @@ class StudyStep:
         :returns: A string of the true name of a StudyStep instance.
         """
         return self._name
+
+    @property
+    def step_name(self):
+        """
+        Get the name to assign to a task for this step.
+
+        :returns: A utf-8 formatted string of the task name.
+        """
+        if self._step_name:
+            return self._step_name
+        return self.name
 
     def __eq__(self, other):
         """
@@ -421,7 +437,7 @@ class Study(DAG, PickleInterface):
 
     def configure_study(self, submission_attempts=1, restart_limit=1,
                         throttle=0, use_tmp=False, hash_ws=False,
-                        dry_run=False):
+                        dry_run=False, linker=None):
         """
         Perform initial configuration of a study. \
 
@@ -438,6 +454,7 @@ class Study(DAG, PickleInterface):
         ExecutionGraph dumps its information into a temporary directory. \
         :param dry_run: Boolean value that toggles dry run to just generate \
         study workspaces and scripts without execution or status checking. \
+        :param linker: Linker object.
         :returns: True if the Study is successfully setup, False otherwise. \
         """
 
@@ -447,6 +464,10 @@ class Study(DAG, PickleInterface):
         self._use_tmp = use_tmp
         self._hash_ws = hash_ws
         self._dry_run = dry_run
+        self.linker = linker
+        make_links_flag = False
+        if linker:
+            make_links_flag = linker.make_links_flag
 
         LOGGER.info(
             "\n------------------------------------------\n"
@@ -456,10 +477,11 @@ class Study(DAG, PickleInterface):
             "Use temporary directory =   %s\n"
             "Hash workspaces =           %s\n"
             "Dry run enabled =           %s\n"
+            "Make links enabled =        %s\n"
             "Output path =               %s\n"
             "------------------------------------------",
             submission_attempts, restart_limit, throttle,
-            use_tmp, hash_ws, dry_run, self._out_path
+            use_tmp, hash_ws, dry_run, make_links_flag, self._out_path
         )
 
         self.is_configured = True
@@ -655,20 +677,21 @@ class Study(DAG, PickleInterface):
                                 str(combo))
                     # Compute this step's combination name and workspace.
                     nickname = None
-                    combo_str = combo.get_param_string(self.used_params[step])
+                    param_str = combo.get_param_string(self.used_params[step])
                     # We must encode explicitly to utf-8
-                    # combo_str = combo_str.encode("utf-8")
+                    # param_str = param_str.encode("utf-8")
                     if self._hash_ws:
-                        nickname = md5(combo_str.encode("utf-8")).hexdigest()
+                        nickname = md5(param_str.encode("utf-8")).hexdigest()
                         workspace = make_safe_path(
                                         self._out_path,
                                         *[step, nickname])
                     else:
                         workspace = \
-                            make_safe_path(self._out_path, *[step, combo_str])
+                            make_safe_path(self._out_path, *[step, param_str])
                         LOGGER.debug("Workspace: %s", workspace)
-                    combo_str = "{}_{}".format(step, combo_str)
+                    combo_str = "{}_{}".format(step, param_str)
                     self.workspaces[combo_str] = workspace
+                    LOGGER.debug("Workspace: %s", workspace)
 
                     # Check if the step combination has been processed.
                     if combo_str in self.step_combos:
@@ -678,6 +701,7 @@ class Study(DAG, PickleInterface):
 
                     modified, step_exp = node.apply_parameters(combo)
                     step_exp.name = combo_str
+                    step_exp._param_string = param_str
                     step_exp.nickname = nickname
 
                     # Substitute workspaces into the combination.
@@ -806,6 +830,7 @@ class Study(DAG, PickleInterface):
                 r_cmd = r_cmd.replace(workspace_var, ws)
             node.run["cmd"] = cmd
             node.run["restart"] = r_cmd
+            node.study_label = step
 
             # Add the step
             dag.add_step(step, node, ws, rlimit)
@@ -874,6 +899,7 @@ class Study(DAG, PickleInterface):
             use_tmp=self._use_tmp, dry_run=self._dry_run)
         dag.add_description(**self.description)
         dag.log_description()
+        dag.linker = self.linker
 
         # Because we're working within a Study class whose steps have already
         # been verified to not contain a cycle, we can override the check for

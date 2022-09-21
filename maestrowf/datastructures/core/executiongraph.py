@@ -338,6 +338,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # Member variables for execution.
         self._adapter = None
         self._description = OrderedDict()
+        self.linker = None
 
         # Generate tempdir (if specfied)
         if use_tmp:
@@ -573,6 +574,8 @@ class ExecutionGraph(DAG, PickleInterface):
             # Generate the script for execution on the fly.
             record.setup_workspace()    # Generate the workspace.
             record.generate_script(adapter, self._tmp_dir)
+            if self.linker:
+                self.linker.link(record)
 
         if self.dry_run:
             record.mark_end(State.DRYRUN)

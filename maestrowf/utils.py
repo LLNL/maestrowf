@@ -31,6 +31,7 @@
 
 from collections import OrderedDict
 import coloredlogs
+from jinja2 import Template
 import logging
 import os
 import string
@@ -277,6 +278,86 @@ def create_dictionary(list_keyvalues, token=":"):
             raise ValueError(msg)
 
     return _dict
+
+
+def splitall(path):
+    """
+    Split path into a list of component directories.
+    https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s16.html
+    """
+    allparts = []
+    while 1:
+        parts = os.path.split(path)
+        if parts[0] == path:  # sentinel for absolute paths
+            allparts.insert(0, parts[0])
+            break
+        elif parts[1] == path:  # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
+
+
+def next_path(path_pattern):
+    """
+    Finds the next free path in an sequentially named list of files
+
+    e.g. path_pattern = 'file-%s.txt':
+
+    file-1.txt
+    file-2.txt
+    file-3.txt
+
+    Runs in log(n) time where n is the number of existing files in sequence
+    https://stackoverflow.com/questions/17984809/how-do-i-create-a-incrementing-filename-in-python
+    """
+    return next_index_and_path(path_pattern)[1]
+
+
+def next_index_and_path(path_pattern):
+    """
+    Finds the next index number and path in sequentially named list of files
+
+    e.g. path_pattern = 'file-%s.txt':
+
+    file-1.txt
+    file-2.txt
+    file-3.txt
+
+    Runs in log(n) time where n is the number of existing files in sequence
+    https://stackoverflow.com/questions/17984809/how-do-i-create-a-incrementing-filename-in-python
+    """
+    i = 1
+
+    # First do an exponential search
+    while os.path.exists(path_pattern % i):
+        i = i * 2
+
+    # Result lies somewhere in the interval (i/2..i]
+    # We call this interval (a..b] and narrow it down until a + 1 = b
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2  # interval midpoint
+        a, b = (c, b) if os.path.exists(path_pattern % c) else (a, c)
+
+    return b, path_pattern % b
+
+
+def recursive_render(tpl, values):
+    """
+    Repeat rendering of jinja template until there are no changes.
+
+    https://stackoverflow.com/questions/8862731/jinja-nested-rendering-on-variable-content
+    """
+    prev = tpl
+    while True:
+        curr = Template(prev).render(values)
+        if curr != prev:
+            prev = curr
+        else:
+            return curr
 
 
 class LoggerUtility:

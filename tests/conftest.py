@@ -1,6 +1,11 @@
 import pytest
 import os
+import tempfile
 
+@pytest.fixture
+def temp_dir():
+    # return lambda: "/tmp/rdisk"
+    return tempfile.mkdtemp
 
 @pytest.fixture
 def spec_path():

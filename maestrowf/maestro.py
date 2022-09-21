@@ -43,10 +43,10 @@ from maestrowf.conductor import Conductor
 from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
 from maestrowf.datastructures.environment import Variable
+from maestrowf.datastructures.core.linker import Linker
 from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
-
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -202,6 +202,9 @@ def run_study(args):
 
     # Set up the output directory.
     out_dir = environment.remove("OUTPUT_PATH")
+    out_name = ""
+    date_string = time.strftime("%Y%m%d")
+    time_string = time.strftime("%H%M%S")
     if args.out:
         # If out is specified in the args, ignore OUTPUT_PATH.
         output_path = os.path.abspath(args.out)
@@ -234,7 +237,7 @@ def run_study(args):
 
         out_name = "{}_{}".format(
             spec.name.replace(" ", "_"),
-            time.strftime("%Y%m%d-%H%M%S")
+            time.strftime(f"{date_string}-{time_string}")
         )
         output_path = make_safe_path(out_dir, *[out_name])
     environment.add(Variable("OUTPUT_PATH", output_path))
@@ -298,11 +301,24 @@ def run_study(args):
         raise ArgumentError(_msg)
 
     # Set up the study workspace and configure it for execution.
+    linker = Linker(
+        make_links_flag=args.make_links,
+        link_template=args.link_template,
+        hashws=args.hashws,
+        output_name=out_name,
+        output_path=output_path,
+        spec_name=spec.name.replace(" ", "_"),
+        date_string=date_string,
+        time_string=time_string,
+        dir_float_format=args.dir_float_format,
+        pgen=args.pgen,
+        globals=spec.globals,
+        )
     study.setup_workspace()
     study.configure_study(
         throttle=args.throttle, submission_attempts=args.attempts,
         restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
+        dry_run=args.dry, linker=linker)
     study.setup_environment()
 
     if args.dry:
@@ -384,8 +400,12 @@ def setup_argparser():
     cancel.set_defaults(func=cancel_study)
 
     # subparser for a run subcommand
-    run = subparsers.add_parser('run',
-                                help="Launch a study based on a specification")
+    # need manual line breaks to allow formatted template documentation.
+    run = subparsers.add_parser(
+        'run',
+        help="Launch a study based on a specification",
+        formatter_class=RawTextHelpFormatter)
+
     run.add_argument("-a", "--attempts", type=int, default=1,
                      help="Maximum number of submission attempts before a "
                      "step is marked as failed. [Default: %(default)d]")
@@ -394,23 +414,24 @@ def setup_argparser():
                      "specify a restart command (0 denotes no limit). "
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
-                     help="Maximum number of inflight jobs allowed to execute "
-                     "simultaneously (0 denotes not throttling). "
+                     help="Maximum number of inflight jobs allowed to "
+                     "execute simultaneously (0 denotes not throttling). "
                      "[Default: %(default)d]")
     run.add_argument("-s", "--sleeptime", type=int, default=60,
                      help="Amount of time (in seconds) for the manager to "
                      "wait between job status checks. [Default: %(default)d]")
     run.add_argument("--dry", action="store_true", default=False,
-                     help="Generate the directory structure and scripts for a "
-                     "study but do not launch it. [Default: %(default)s]")
+                     help="Generate the directory structure and scripts for "
+                     "a study but do not launch it. [Default: %(default)s]")
     run.add_argument("-p", "--pgen", type=str,
                      help="Path to a Python code file containing a function "
-                     "that returns a custom filled ParameterGenerator "
+                     "that returns a custom filled ParameterGenerator \n"
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
-                     help="A string that represents a single argument to pass "
-                     "a custom parameter generation function. Reuse '--parg' "
-                     "to pass multiple arguments. [Use with '--pgen']")
+                     help="A string that represents a single argument to  "
+                     "pass a custom parameter generation function.\n "
+                     "Reuse '--parg' to pass multiple arguments. "
+                     "[Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "
                      "OUTPUT_PATH in the specified specification]")
@@ -418,9 +439,27 @@ def setup_argparser():
                      help="Runs the backend conductor in the foreground "
                      "instead of using nohup. [Default: %(default)s]")
     run.add_argument("--hashws", action="store_true", default=False,
-                     help="Enable hashing of subdirectories in parameterized "
-                     "studies (NOTE: breaks commands that use parameter labels"
-                     " to search directories). [Default: %(default)s]")
+                     help="Enable hashing of subdirectories in \n"
+                     "parameterized studies (NOTE: breaks commands that use "
+                     "parameter labels to search directories). \n"
+                     " [Default: %(default)s]")
+    run.add_argument("--dir-float-format", nargs=2,
+                     metavar=(
+                        '(small-exponent-format)',
+                        '(large-exponent-format)'),
+                     default=['{:.2f}', '{:.2e}'],
+                     help=("Format for float parameters when used in "
+                           "directory names [Default: %(default)s]."))
+    run.add_argument("--make-links", action="store_true", default=False,
+                     help="Automatically make customizable, human-readable "
+                     "links to run directories. [Default: %(default)s]")
+    run.add_argument(
+        "--link-template",
+        type=str,
+        default=(
+            "{{output_path}}/../links/{{date}}/"
+            "run-{{study_index}}/{{combo}}/{{step}}"),
+        help=Linker.HELP_TEXT)
 
     prompt_opts = run.add_mutually_exclusive_group()
     prompt_opts.add_argument(
@@ -433,12 +472,12 @@ def setup_argparser():
     # The only required positional argument for 'run' is a specification path.
     run.add_argument(
         "specification", type=str,
-        help="The path to a Study YAML specification that will be loaded and "
-        "executed.")
+        help="The path to a Study YAML specification that will be loaded "
+        "and executed.")
     run.add_argument(
         "--usetmp", action="store_true", default=False,
-        help="Make use of a temporary directory for dumping scripts and other "
-        "Maestro related files.")
+        help="Make use of a temporary directory for dumping scripts and "
+        "other Maestro related files.")
     run.set_defaults(func=run_study)
 
     # subparser for a status subcommand

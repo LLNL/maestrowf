@@ -1,0 +1,89 @@
+description:
+    name: link_integration_test
+    description: A link integration test, modified from run_lulesh
+
+env:
+    variables:
+        OUTPUT_PATH: ./output
+
+    labels:
+        outfile: $(SIZE.label).$(ITERATIONS.label).log
+
+batch:
+    shell: /bin/bash
+
+study:
+
+    - name: start
+      description: Step with no variables.
+      run:
+          cmd: |
+            echo start > out.txt
+          depends: []
+
+    - name: echo
+      description: Echo inputs.
+      run:
+          cmd: |
+            echo size $(SIZE) iter $(ITERATIONS) > $(outfile)
+          depends: [start]
+
+    - name: test-directory-hashing
+      description: Test directory hashing.
+      run:
+          cmd:
+            echo $(VAR1) - $(VAR2) - $(VAR3) - $(VAR4) > out.txt
+          depends: []
+
+    - name: post-process-echo
+      description: Post process all results.
+      run:
+          cmd: |
+            echo "Unparameterized step with Parameter Independent dependencies." >> out.log
+            echo $(echo.workspace) >> out.log
+            ls $(echo.workspace) >> out.log
+          depends: [echo_*]
+
+    - name: post-process-echo-trials
+      description: Post process all results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "TRIAL = $(TRIAL)" >> out.log
+            echo $(echo.workspace) >> out.log
+            ls $(echo.workspace) >> out.log
+          depends: [echo_*]
+
+    - name: post-process-echo-size
+      description: Post process all results.
+      run:
+          cmd: |
+            echo "Parameterized step that has Parameter Independent dependencies" >> out.log
+            echo "SIZE = $(SIZE)" >> out.log
+            echo $(echo.workspace) >> out.log
+            ls $(echo.workspace) | grep $(SIZE.label) >> out.log
+          depends: [echo_*]
+
+global.parameters:
+    TRIAL:
+        values  : [1, 2, 3 ]
+        label   : TRIAL.%%
+    SIZE:
+        values  : [10, 10, 10 ]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [10, 20, 30 ]
+        label   : ITER.%%
+    VAR1:
+        values  : [ 0.3874309076, 0.3585516934, 0.8368954934 ]
+        label   : VAR1.%%
+    VAR2:
+        values  : [ 0.7520078045, 0.1707261687, 0.7296721416 ]
+        label   : VAR2.%%
+    VAR3:
+        values  : [ 0.7187181590, 0.4406243939, 0.8958327389 ]
+        label   : VAR3.%%
+    VAR4:
+        values  : [ 0.5491000152, 0.3920015696, 0.1895291838 ]
+        label   : VAR4.%%       
+ 

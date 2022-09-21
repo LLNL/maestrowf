@@ -42,6 +42,7 @@ pyyaml = ">=4.2b1"
 rich = "*"
 six = "*"
 tabulate = "*"
+jinja2 = "*"
 
 [tool.poetry.dev-dependencies]
 fabric = "*"
