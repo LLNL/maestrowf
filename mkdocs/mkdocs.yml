@@ -67,6 +67,7 @@ nav:
         - Specification:
             - Specification 1.0: 'Maestro/specification.md'
             - Scheduling Studies: 'Maestro/scheduling.md'
+        - Specifying Study Parameters: 'Maestro/parameter_specification.md'
               
 extra:
   social:
