@@ -1,0 +1,99 @@
+description:
+    name: lulesh_sample1_lsf
+    description: A sample LULESH study that downloads, builds, and runs mpi and openmp weak scaling modes on LSF
+
+env:
+    variables:
+        OUTPUT_PATH: ./sample_output/lulesh
+
+    labels:
+        outfile: $(SIZE.label).$(ITERATIONS.label).$(CPUS_PER_TASK.label).$(TASKS.label).log
+
+    dependencies:
+      git:
+        - name: LULESH
+          path: $(OUTPUT_PATH)
+          url: https://github.com/LLNL/LULESH.git
+
+batch:        # NOTE: UPDATE THESE FOR YOUR SYSTEM
+    type        : lsf
+    host        : lassen
+    bank        : wbronze
+    queue       : pdebug
+
+study:
+    - name: make-lulesh
+      description: Build the MPI+OpenMP enabled version of LULESH.
+      run:
+          cmd: |
+            # LLNL specific initialization of lmod setup on the allocation
+            source /etc/profile.d/z00_lmod.sh
+
+            # NOTE: ensure a compatible mpi install is available for specified compiler
+            module load gcc/8.3.1
+
+            module load cmake/3.14.5
+            
+            cd $(LULESH)
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=On -D -DWITH_OMP=On -DMPI_CXX_COMPILER=`which mpicxx` ..
+            make
+          depends: []
+          nodes: 1
+          procs: 1
+          rs per node: 1
+          tasks per rs: 1
+          cpus per rs: 40
+          walltime: "10"
+
+
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            # LLNL specific initialization of lmod setup on the allocation
+            source /etc/profile.d/z00_lmod.sh
+            
+            # Ensure consistent mpi is active (LC systems reload mpi with compiler changes)
+            module load gcc/8.3
+            
+            # Echo parallel resources for easier id in post
+            echo "NODES: $(NODES)"
+            echo "TASKS: $(TASKS)"
+            echo "CPUS_PER_TASK: $(CPUS_PER_TASK)"
+
+            # OPENMP settings
+            export OMP_NUM_THREADS=$(CPUS_PER_TASK)
+            echo "OPENMP THREADS: $OMP_NUM_THREADS"
+            
+            $(LAUNCHER) $(LULESH)/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p >& $(outfile)
+          depends: [make-lulesh]
+          nodes: $(NODES)
+          procs: $(TASKS)
+          rs per node: $(TASKS)
+          cpus per rs: $(CPUS_PER_TASK)
+          exclusive   : True
+          walltime: "00:10"
+
+
+global.parameters:
+    SIZE:
+        values  : [100, 100, 200]
+        label   : SIZE.%%
+        
+    ITERATIONS:
+        values  : [100, 100, 100]
+        label   : ITER.%%
+        
+    TASKS:
+        values  : [1, 8, 1]
+        label   : TASKS.%%
+        
+    CPUS_PER_TASK:
+        values  : [1, 1, 8]
+        label   : CPT.%%
+        
+    NODES:
+        values  : [1, 1, 1]
+        label   : NODES.%%
