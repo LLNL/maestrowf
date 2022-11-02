@@ -19,15 +19,141 @@ This page will break down the keys available in each section and what they provi
 ## Tokens: Maestro's Minimal Workflow DSL
 ----
 
-Maestro takes a minimalist approach to it's workflow language features that are available in the study specification.  All of this is contained in the token replacement hooks available in the [`study`](#workflow) and [`env`](#environment) blocks.  These tokens are referenced using the `$(TOKEN_NAME)` syntax, with the `$( )` encapsulating this minimal dsl.  First, a few special tokens that are always available:
+Maestro takes a minimalist approach to it's workflow language features that are available in the study specification.  All of this is contained in the token replacement hooks available in the [`study`](#workflow) and [`env`](#environment) blocks.  These tokens are referenced using the `$(TOKEN_NAME)` syntax, with the `$( )` encapsulating this minimal dsl.
+
+!!! note
+
+    These tokens are currently limited to simple data types owing to the initial design being aimed at injecting values onto command lines.  This means array and dict types are supported in the current version of this DSL.
+
+### Default Tokens
+---
+
+There are a few special tokens that are always available:
 
  **Name** |  **Description**  |  **Notes**  |
   :- |      :-           |     :-      |
-`$(SPECROOT)`              | This defines the pase path of the study specification | This provides a portable relative path to use with associated dependencies and supporting scripts/tools |
+`$(SPECROOT)`              | This defines the base path of the study specification | This provides a portable relative path to use with associated dependencies and supporting scripts/tools |
  `$(OUTPUT_PATH)`           | This is the path to the current study instance | OUTPUT_PATH can be specified in the env block's `variables` group providing a way to group the timestamped instance directories instead of polluting the $(SPECROOT) path |
  `$(LAUNCHER)`              | Abstracts HPC scheduler specific job launching wrappers such as srun (SLURM) | Primary mechanism for making study steps system agnostic and portable |
  `$(WORKSPACE)`             | Can be used in a step to reference the current step path | |
 | <span style="white-space:nowrap;">`$(<step_name>.workspace)`</span> | Can be used in a step to reference path to other previous step workspaces | `<step-name>` is the `name` key in each study step |
+
+The following example shows use of the first two to help with study inputs and outputs.  This uses `$(SPECROOT)` to access a supporting tool that lives alongside the study specification and then writes all instances of this study (timestamped directories) into a `SAMPLE_STUDY_OUTPUTS` directory to prevent pollution of the directory the study is invoked from.
+
+``` yaml
+env:
+    variables:
+        SUPPORTING_TOOL1: my_helper_tool.py
+    labels:
+        SUPPORTING_TOOL1_PATH: $(SPECROOT)/SUPPORTING_TOOL1
+        
+study:
+    - name: sample-step-1
+      description: sample study step
+      run:
+          cmd: |
+            cp $(SUPPORTING_TOOL1_PATH) .
+            
+            # Run the tool
+            python $(SUPPORTING_TOOL1) -o sample_output.yaml
+
+```
+
+<!-- Add workspace diagram (enable mock output structures from yaml from filesystem tree drawing tool -->
+### Environment Tokens
+---
+
+In the `env` block every key in the `variables` and `labels` blocks can be referenced as a token.  Additionally, the dependencies entries can be referenced via tokens, with the tokens being the `name` keys in each one.
+
+``` yaml
+env:
+    variables:
+        VAR1: value1
+        VAR2: value2
+        MODEL1: my_model.input
+      
+    labels:
+        PATH1: /dev/$(VAR2)
+        
+    dependencies:
+        path:
+            - name: CODE
+              path: /path/to/simulation/code
+ 
+        git:
+            - name: MODEL_REPO
+              path: $(OUTPUT_PATH)
+              url: https://git-url.llnl.gov/models.git
+              tag: 2.9.15
+      
+study:
+    - name: step1
+      description: just a sample step
+      run:
+          cmd: |
+            echo "The value of 'VAR1' is $(VAR1)"
+            echo "And this is the value of 'PATH1': $(PATH1)"
+            
+            cp $(MODEL_REPO)/$(MODEL1) .
+            
+            $(LAUNCHER) $(CODE) -in $(MODEL1)
+            
+          procs: 1
+          nodes: 1
+          walltime: "00:01:00"
+```
+
+### Parameter Tokens
+---
+
+Parameters follow the convention in the `env`'s `variables` and `labels` blocks where the token name is the key in the `global.parameters` block (or the `pgen` equivalent).  The big different with substitution of parameter tokens is that only single values are replaced.  The expansion process will create one step per value in these tokens, and so using them in your steps/labels is akin to working with a single instance.  Additionally parameters have a string formatted representation in the `label` key which can be accessed similar to step workspaces: `(PARAM1.label)`.  In the below example this is combined with the `OUTPUTNAME` label to include the parameter label in the steps generated output files in place of a more generic single name for all instances of the step.  Three files will be output by the model in this case: `MODEL_OUTPUT_PARAM1.1.out`, `MODEL_OUTPUT_PARAM1.2.out`, and `MODEL_OUTPUT_PARAM1.3.out`.
+
+``` yaml
+env:
+    variables:
+        VAR1: value1
+        VAR2: value2
+        MODEL1: my_model.input
+      
+    labels:
+        PATH1: /dev/$(VAR2)
+        OUTPUTNAME: MODEL_OUTPUT_$(PARAM1.label).out
+
+    dependencies:
+        path:
+            - name: CODE
+              path: /path/to/simulation/code
+ 
+        git:
+            - name: MODEL_REPO
+              path: $(OUTPUT_PATH)
+              url: https://git-url.llnl.gov/models.git
+              tag: 2.9.15
+      
+study:
+    - name: step1
+      description: just a sample step
+      run:
+          cmd: |
+            echo "The value of 'VAR1' is $(VAR1)"
+            echo "And this is the value of 'PATH1': $(PATH1)"
+            
+            cp $(MODEL_REPO)/$(MODEL1) .
+            
+            $(LAUNCHER) $(CODE) -in $(MODEL1) -out $(OUTPUTNAME)
+            
+          procs: 1
+          nodes: 1
+          walltime: "00:01:00"
+          
+global.parameters:
+    PARAM1:
+        values: [1, 2, 3]
+        label: PARAM1.%%
+```
+
+
+<!-- Use workspace rendering tool to demo this examples outputs? -->
 
 <br/>
 
