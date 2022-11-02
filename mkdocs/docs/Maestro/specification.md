@@ -12,8 +12,22 @@ components:
 [`study`](#workflow)              | Yes            | Tasks that the study is composed of and are executed in a defined order |
 [`global.parameters`](#parameters)| No             | Parameters that are user varied and applied to the workflow |
 
-This page will break down the keys available in each section and what they provide.
+This page will break down the keys available in each section and what they provide.  But first, a look at the DSL embedded in the specification that appears in multiple sections.
 
+<br/>
+
+## Tokens: Maestro's Minimal Workflow DSL
+----
+
+Maestro takes a minimalist approach to it's workflow language features that are available in the study specification.  All of this is contained in the token replacement hooks available in the [`study`](#workflow) and [`env`](#environment) blocks.  These tokens are referenced using the `$(TOKEN_NAME)` syntax, with the `$( )` encapsulating this minimal dsl.  First, a few special tokens that are always available:
+
+ **Name** |  **Description**  |  **Notes**  |
+  :- |      :-           |     :-      |
+`$(SPECROOT)`              | This defines the pase path of the study specification | This provides a portable relative path to use with associated dependencies and supporting scripts/tools |
+ `$(OUTPUT_PATH)`           | This is the path to the current study instance | OUTPUT_PATH can be specified in the env block's `variables` group providing a way to group the timestamped instance directories instead of polluting the $(SPECROOT) path |
+ `$(LAUNCHER)`              | Abstracts HPC scheduler specific job launching wrappers such as srun (SLURM) | Primary mechanism for making study steps system agnostic and portable |
+ `$(WORKSPACE)`             | Can be used in a step to reference the current step path | |
+| <span style="white-space:nowrap;">`$(<step_name>.workspace)`</span> | Can be used in a step to reference path to other previous step workspaces | `<step-name>` is the `name` key in each study step |
 
 <br/>
 
@@ -251,11 +265,11 @@ Additionally there are more fine grained resource/scheduler control enabled by t
     The remaining keys have been gradually appended and thus are not uniform across schedulers.
     Version 2.0 of the study specification will be refactoring these into a uniform/portable set.
     Full documentation/explanation of the resource keys can be seen in the scheduler specific
-    sections: <!-- ADD LINKS -->
+    sections: [Local](../scheduling/#local), [SLURM](../scheduling/#slurm), [Flux](../scheduling/#flux), [LSF](../scheduling/#lsf)
 
 
 The following keys are all optional and get into scheduler specific features.  See the respective sections
-before using them:
+before using them: 
 
 |  **Key**         | **Type**     | **Description**                                               |
 |    :-            |   :-:        |       :-                                                      |
@@ -313,7 +327,7 @@ global.parameters:
 For more programmatic creation of these parameter combinations, see the section on the `pgen` functionality <!-- ADD LINK -->.  This alternate mode acts like an override of the `global.parameters` block and is injected at run time rather
 than being baked into the study specification.
 
-# Full Example
+## Full Example
 ----
 
 Finally, we can pull all of this together into a complete example.  This and other versions of the lulesh study
