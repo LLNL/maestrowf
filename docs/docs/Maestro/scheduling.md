@@ -30,7 +30,8 @@ The information in this block is used to populate the step specific batch script
 header comment blocks (e.g. '#SBATCH --partition' for slurm).  Additional keys such as step specific
 resource requirements (number of nodes, cpus/tasks, gpus, ...) get added here when processing
 individual steps; see subsequent sections for scheduler specific details.  Note that job steps will
-run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.
+run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.  The keys attached to the study steps also get used to construct the parallel launcer (e.g. `srun` for [SLURM](#SLURM)).  The following subsections describe the options in the currently supported scheduler types.
+
 
 ## LOCAL
 ----
@@ -40,20 +41,35 @@ Stub
 ## SLURM
 ----
 
-Stub
+The SLURM scheduler uses the [`srun`]( <!-- insert link --> ) command to launch and allocate resources to tasks.  Maestro currently supports the following subset of srun arguments:
 
-## FLUX
+|  **SLURM (srun)**  |  **Maestro**  |  **Description**  |  **Default**  |
+|        :-          |      :-       |        :-         |      :-       |
+|  `-n`              |     `procs`   |  Number of MPI tasks to allocate for the launched application  |  `1`  |
+|  `-N`              |     `nodes`   |  Number of nodes to allocate for the launched application |  `1`  |
+|  `-c`              |   `cores per task` |  Number of physical CPU cores per task |  `1`  |
+
+
+## Flux
 ----
 
-Stub
+The Flux scheduler uses the command [`flux mini run`]() to launch and allocate resources to tasks.  Maestro provides keys for a subset of arguments to this command along with hooks for passing a comma separated list of additional arguments
+
+|  **Flux**  |  **Maestro**  |  **Description**  |  **Default**  |
+|    :-      |      :-       |        :-         |      :-       |
+| `-n`       |    `procs`    |  Number of MPI tasks to allocate for the launched application |  `1`  |
+| `-N`       |    `nodes`    |  Number of nodes to allocate for the launched application |  `1`  |
+| `-c`       |   `cores per task` |  Number of physical CPU cores per task  |  `1`  |
+| `-g`       |  `gpus`       | Number of gpus to allocate per task |  `0`  |
+| `-o`       |           |  Comma separated list of additional args  | `None` |
 
 ## LSF: a Tale of Two Launchers
 ----
 
 The LSF scheduler has multiple options for the parallel launcher commands:
 
-* `lsrun <https://www.ibm.com/docs/en/spectrum-lsf/10.1.0?topic=jobs-run-interactive-tasks>`_
-* `jsrun <https://www.ibm.com/docs/en/spectrum-lsf/10.1.0?topic=SSWRJV_10.1.0/jsm/jsrun.html>`_
+* [`lsrun`](https://www.ibm.com/docs/en/spectrum-lsf/10.1.0?topic=jobs-run-interactive-tasks)
+* [`jsrun`](https://www.ibm.com/docs/en/spectrum-lsf/10.1.0?topic=SSWRJV_10.1.0/jsm/jsrun.html)
 
 Maestro currently supports only the jsrun version, which differs from slurm
 via a more flexible specification of resources available for each task.  In

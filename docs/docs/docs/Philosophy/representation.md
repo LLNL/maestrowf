@@ -38,18 +38,27 @@ because edges can be traversed in only one direction. This limitation is useful 
 it enforces forward movement in processes. Let's revisit the bread recipe above,
 except this time looking at it from the perspective of a graph.
 
+``` mermaid
+graph TD
+    A(Mix flour + water)-->B(Mix in Yeast)
+    B-->C(Fold dough)
+    C-->D(Proof dough)
+```
+
 ???+ example "A Bread Recipe Graph"
 
     We previously established that the bread recipe steps are a linearization, or a
     linear chain of steps. We must complete the steps in sequential order in order
     to make bread. Here's how that looks as a graph:
 
-    <div class="mermaid" align="center">
-    graph TD;
+    <!-- <div class="mermaid" align="center"> -->
+    ``` mermaid
+    graph TD
         A(Mix flour + water)-->B(Mix in Yeast);
         B-->C(Fold dough);
         C-->D(Proof dough);
-    </div>
+    ```
+    <!-- </div> -->
 
     If we want to extend the graph to include the baking of the bread, this means
     we must complete all the previous steps and then bake our prepared loaf. That
@@ -71,6 +80,13 @@ example, in the recipe graph above, you can not attempt to bake a loaf of bread
 before mixing the flour and the water because there are no edges pointing in that
 direction.
 
+``` mermaid
+graph TD
+    A(Mix flour + water)-->B(Mix in Yeast);
+    B-->C(Fold dough);
+    C-->D(Proof dough);
+```
+    
 ## How does a Bread Recipe Help You?
 
 So you might be wondering, how does a bread recipe help me? I develop software,

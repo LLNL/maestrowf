@@ -44,12 +44,12 @@ except this time looking at it from the perspective of a graph.
     linear chain of steps. We must complete the steps in sequential order in order
     to make bread. Here's how that looks as a graph:
 
-    <div class="mermaid" align="center">
+    ``` mermaid
     graph TD;
         A(Mix flour + water)-->B(Mix in Yeast);
         B-->C(Fold dough);
         C-->D(Proof dough);
-    </div>
+    ```
 
     If we want to extend the graph to include the baking of the bread, this means
     we must complete all the previous steps and then bake our prepared loaf. That
