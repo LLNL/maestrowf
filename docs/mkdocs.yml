@@ -34,7 +34,7 @@ plugins:
         scripts:
           - docs/gen_api_docs.py
     - literate-nav:
-        nav_file: APISUMMARY.md
+        nav_file: SUMMARY.md
     # - mermaid2:
     #     arguments:
     #       securityLevel: 'loose'

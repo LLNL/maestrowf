@@ -29,8 +29,7 @@ for path in sorted(src_path.rglob("*.py")):
             continue
     elif parts[-1] == "__main__":
         continue
-    elif "APISUMMARY" in parts[-1]:
-        continue
+
     parts = ['maestrowf'] + parts
     with mkdocs_gen_files.open(full_doc_path, "w") as fd:  # 
         identifier = ".".join(parts)  # 
@@ -43,7 +42,7 @@ for path in sorted(src_path.rglob("*.py")):
     # mkdocs_gen_files.set_edit_path()
 
 
-with mkdocs_gen_files.open("Maestro/api_reference/APISUMMARY.md", "w") as nav_file:
+with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
     nav_file.writelines(nav.build_literate_nav())
     for line in nav.build_literate_nav():
         print("NAV LINE: {}".format(line))
