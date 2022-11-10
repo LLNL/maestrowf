@@ -28,10 +28,12 @@ markdown_extensions:
 plugins:
     - search
     - mkdocstrings
-        # handler: python-legacy
+        # handler: python
     - gen-files:
         scripts:
           - docs/gen_api_docs.py
+    - literate-nav:
+        nav_file: APISUMMARY.md
     # - mermaid2:
     #     arguments:
     #       securityLevel: 'loose'
@@ -74,7 +76,11 @@ nav:
             - Specification 1.0: 'Maestro/specification.md'
             - Scheduling Studies: 'Maestro/scheduling.md'
         - Specifying Study Parameters: 'Maestro/parameter_specification.md'
-        - Reference Guide: 'Maestro/reference.md'
+        - Reference Guide:
+            - Design Reference: 'Maestro/reference.md'
+            - API Reference: Maestro/api_reference/
+
+            # - API Reference: 'reference/'
               
 extra:
   social:
