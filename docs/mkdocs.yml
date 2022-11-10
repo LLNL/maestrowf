@@ -1,4 +1,5 @@
 site_name: Maestro Design Docs
+use_directory_urls: false
 markdown_extensions:
   - admonition
   - attr_list
