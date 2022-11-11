@@ -6,6 +6,7 @@ Recipe from mkdocstrings docs.
 
 from pathlib import Path
 import os
+import sys
 import mkdocs_gen_files
 
 nav = mkdocs_gen_files.Nav()
@@ -16,6 +17,21 @@ nav = mkdocs_gen_files.Nav()
 # src_path = Path(Path("maestrowf").absolute().parent.parent, "maestrowf")
 src_path = Path('.') / '..' / 'maestrowf'
 print(f"LOOKING IN : {src_path}")
+# Resolve whether in docs dir or project root (local vs readthedocs config)
+print(Path('.').resolve())
+proj_toml = Path('.') / 'pyproject.toml'
+mkdocs_yml = Path('.') / 'mkdocs.yml'
+
+print(f"{proj_toml} exists: {proj_toml.exists()}")
+print(f"{mkdocs_yml} exists: {mkdocs_yml.exists()}")
+if proj_toml.exists():
+    src_path = Path('.') / 'maestrowf'
+elif mkdocs_yml.exists():
+    src_path = Path('.') / '..' / 'maestrowf'
+else:
+    mkdocs_gen_files.log.warning('Skipping API docs because "maestrowf" directory is missing.')
+    sys.exit()
+
 for path in sorted(src_path.rglob("*.py")):
 
                    # Path("maestrowf").parent.rglob("*.py")):
