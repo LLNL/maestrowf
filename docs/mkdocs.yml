@@ -28,13 +28,19 @@ markdown_extensions:
 
 plugins:
     - search
-    - mkdocstrings
-        # handler: python
+    - mkdocstrings:
+        handlers:
+          python:
+            paths: [..]
+            options:
+              docstring_style: sphinx
+
     - gen-files:
         scripts:
           - docs/gen_api_docs.py
     - literate-nav:
         nav_file: SUMMARY.md
+    # - section-index
     # - mermaid2:
     #     arguments:
     #       securityLevel: 'loose'
@@ -55,8 +61,10 @@ theme:
     - header.autohide
     - navigation.tabs.sticky
     - navigation.tabs
-    - navigation.expand
-    - toc.integrate
+    # - navigation.expand
+    - navigation.instant
+    - navigation.indexes
+    # - toc.integrate
   palette:
     scheme: slate
     primary: black
@@ -77,9 +85,10 @@ nav:
             - Specification 1.0: 'Maestro/specification.md'
             - Scheduling Studies: 'Maestro/scheduling.md'
         - Specifying Study Parameters: 'Maestro/parameter_specification.md'
-        - Reference Guide:
-            - Design Reference: 'Maestro/reference.md'
-            - API Reference: Maestro/api_reference/
+    - Reference Guide:
+        - Maestro Reference: Maestro/reference_guide/index.md
+        - Design Reference: Maestro/reference_guide/design_reference/
+        - API Reference: Maestro/reference_guide/api_reference/
 
             # - API Reference: 'reference/'
               
