@@ -5,20 +5,14 @@ Recipe from mkdocstrings docs.
 """
 
 from pathlib import Path
-import os
 import sys
 import mkdocs_gen_files
 
 nav = mkdocs_gen_files.Nav()
 
-    
-# print("LOOKING IN : {}".format(Path(Path("maestrowf").absolute().parent.parent, "maestrowf")))
-# print("LOOKING IN : {}".format(Path(Path("maestrowf").absolute().parent.parent, "maestrowf")))
-# src_path = Path(Path("maestrowf").absolute().parent.parent, "maestrowf")
 src_path = Path('.') / '..' / 'maestrowf'
-print(f"LOOKING IN : {src_path}")
+
 # Resolve whether in docs dir or project root (local vs readthedocs config)
-print(Path('.').resolve())
 proj_toml = Path('.') / 'pyproject.toml'
 mkdocs_yml = Path('.') / 'mkdocs.yml'
 
@@ -34,22 +28,17 @@ else:
 
 for path in sorted(src_path.rglob("*.py")):
 
-                   # Path("maestrowf").parent.rglob("*.py")):
-    print("Searching {}".format(path))
-
-    module_path = path.relative_to(src_path).with_suffix("")  # 
-    doc_path = path.relative_to(src_path).with_suffix(".md")  # 
-    full_doc_path = Path("Maestro/reference_guide/api_reference", doc_path)  # 
+    module_path = path.relative_to(src_path).with_suffix("")
+    doc_path = path.relative_to(src_path).with_suffix(".md")
+    full_doc_path = Path("Maestro/reference_guide/api_reference", doc_path)
 
     parts = list(module_path.parts)
-    print(f"DEBUG: old parts: {parts}")    
-    # print
+
     # Ensure __init__.py's get added/parsed properly and write contents to
     # the current module's index.md
-    parts = ['maestrowf'] + parts    
-    if parts[-1] == "__init__":  # 
+    parts = ['maestrowf'] + parts  # add package prefix back on
+    if parts[-1] == "__init__":  # special handling for top level module files
         parts = parts[:-1]
-        print("INIT PARTS: {}, in {}".format(parts, list(module_path.parts)))
         doc_path = doc_path.with_name("index.md")
         full_doc_path = full_doc_path.with_name("index.md")
         if not parts:
@@ -57,30 +46,18 @@ for path in sorted(src_path.rglob("*.py")):
     elif parts[-1] == "__main__":
         continue
 
-    # Add the package prefix back on 
-
-    print(f"DEBUG: new parts: {parts}")
     with mkdocs_gen_files.open(full_doc_path, "w") as fd:  #
-        identifier = ".".join(parts)  # 
+        identifier = ".".join(parts)
+        # Set custom title for index pages to match nav entries
+        if doc_path.name == "index.md":
+            print(f"# {parts[-1].capitalize()}", file=fd)
+            print("---", file=fd)
+
+        # add the mkdoc strings hook
         print("::: " + identifier, file=fd)
-        print(f"DEBUG: writing identifier: ::: {identifier} to {full_doc_path}")
-        if parts[-1] == 'utils':
-            print("DEBUG: identifier: ::: " + identifier)
 
-    print("ADDING AUTODOC: {} {}".format(full_doc_path, path))
     mkdocs_gen_files.set_edit_path(full_doc_path, path)  #
-    # mkdocs_gen_files.set_edit_path()
 
-
-# Add a top level index to the api_reference section so it's actually a page
-print("CWD: {}".format(os.getcwd()))
-# with mkdocs_gen_files.open("Maestro/reference_guide/api_reference/index.md", "w") as api_index_file:
-#     print(f"# Top-level namespace\n\n", file=api_index_file)
-    
+# NOTE: SUMMARY.md has to be the name of the nav file
 with mkdocs_gen_files.open("Maestro/reference_guide/SUMMARY.md", "w") as nav_file:
-    print(list(nav.build_literate_nav()))
-    for item in nav.build_literate_nav():
-        print("NAV LINE: {}".format(item))
     nav_file.writelines(nav.build_literate_nav())
-    # for line in nav.build_literate_nav():
-    #     print("NAV LINE: {}".format(line))
