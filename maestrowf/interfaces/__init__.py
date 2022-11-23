@@ -66,6 +66,10 @@ def iter_adapters():
 
 
 class ScriptAdapterFactory(object):
+    """
+    Factory for constructing specific script adapter objects.  Uses
+    iter_adapters to find all concrete implementations of ScriptAdapter.
+    """
     factories = {
        adapter.key: adapter for adapter in iter_adapters()
     }
