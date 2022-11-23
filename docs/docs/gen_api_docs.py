@@ -42,20 +42,28 @@ for path in sorted(src_path.rglob("*.py")):
     full_doc_path = Path("Maestro/reference_guide/api_reference", doc_path)  # 
 
     parts = list(module_path.parts)
-    # print 
+    print(f"DEBUG: old parts: {parts}")    
+    # print
+    # Ensure __init__.py's get added/parsed properly and write contents to
+    # the current module's index.md
+    parts = ['maestrowf'] + parts    
     if parts[-1] == "__init__":  # 
         parts = parts[:-1]
         print("INIT PARTS: {}, in {}".format(parts, list(module_path.parts)))
+        doc_path = doc_path.with_name("index.md")
+        full_doc_path = full_doc_path.with_name("index.md")
         if not parts:
             continue
     elif parts[-1] == "__main__":
         continue
 
     # Add the package prefix back on 
-    parts = ['maestrowf'] + parts
-    with mkdocs_gen_files.open(full_doc_path, "w") as fd:  # 
+
+    print(f"DEBUG: new parts: {parts}")
+    with mkdocs_gen_files.open(full_doc_path, "w") as fd:  #
         identifier = ".".join(parts)  # 
         print("::: " + identifier, file=fd)
+        print(f"DEBUG: writing identifier: ::: {identifier} to {full_doc_path}")
         if parts[-1] == 'utils':
             print("DEBUG: identifier: ::: " + identifier)
 
