@@ -66,9 +66,17 @@ theme:
     - navigation.indexes
     # - toc.integrate
   palette:
-    scheme: slate
-    primary: black
-    accent: blue
+    - scheme: slate
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+     
   custom_dir: docs/overrides
 nav:
     - 'index2.md'  
@@ -85,6 +93,7 @@ nav:
             - Specification 1.0: 'Maestro/specification.md'
             - Scheduling Studies: 'Maestro/scheduling.md'
         - Specifying Study Parameters: 'Maestro/parameter_specification.md'
+        - How-to guides: 'Maestro/how_to_guides.md'
     - Reference Guide:
         - Maestro Reference: Maestro/reference_guide/index.md
         - Design Reference: Maestro/reference_guide/design_reference/
