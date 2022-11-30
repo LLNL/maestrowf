@@ -21,7 +21,11 @@ Scaling up the numbers of parameter combinations in studies can run into a few r
 There are a few other solutions to this problem depending on the specific study, including use of the `throttle` argument to the run command to limit the number of jobs to submit to the scheduler queue, or if jobs are quick running and/or small, use the [flux](scheduling.md#flux) adapter to pack many jobs into an allocation.  However, this still leaves open the issue of swamping the file system.
 
 
-An alternative that can be used to address both concerns by inserting gaps in the execution to facilitate cleanup is to scan large parameter sets in batches across multiple studies.  As a simple model problem we will use [`pgen`](parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.  This can also use other data sources than csv, including networked sources such as a database with minimal changes.
+An alternative that can be used to address both concerns by inserting gaps in the execution to facilitate cleanup is to scan large parameter sets in batches across multiple studies.  As a simple model problem we will use [`pgen`](parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.  
+
+!!! note
+
+    This can also use other data sources than csv, including networked sources such as a database with minimal changes.
 
 
 ### Generating the parameter set
