@@ -462,27 +462,27 @@ specification and other problems can be found in the samples directory in the re
 === "Local"
 
     ``` yaml title="lulesh_sample1_unix.yaml"
-    --8<-- "../samples/lulesh/lulesh_sample1_unix.yaml"
+    --8<-- "samples/lulesh/lulesh_sample1_unix.yaml"
     
     ```
     
 === "Slurm"
 
     ``` yaml title="lulesh_sample1_unix_slurm.yaml"
-    --8<-- "../samples/lulesh/lulesh_sample1_unix_slurm.yaml"
+    --8<-- "samples/lulesh/lulesh_sample1_unix_slurm.yaml"
     
     ```
     
 === "LSF"
 
     ``` yaml title="lulesh_sample1_unix_lsf.yaml"
-    --8<-- "../samples/lulesh/lulesh_sample1_unix_lsf.yaml"
+    --8<-- "samples/lulesh/lulesh_sample1_unix_lsf.yaml"
     
     ```
     
 === "Flux"
 
     ``` yaml title="lulesh_sample1_unix_flux.yaml"
-    --8<-- "../samples/lulesh/lulesh_sample1_unix_flux.yaml"
+    --8<-- "samples/lulesh/lulesh_sample1_unix_flux.yaml"
     
     ```

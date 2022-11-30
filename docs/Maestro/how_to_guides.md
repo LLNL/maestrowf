@@ -67,7 +67,7 @@ to make them distinct in the study specification as shown inside the brackets (`
 === "csv_generator.py"
 
     ``` python
-    --8<-- "../samples/how_to_guide/batched_parameters/csv_generator.py"
+    --8<-- "samples/how_to_guide/batched_parameters/csv_generator.py"
     ```
 
 ### Study specification
@@ -79,7 +79,7 @@ values.
 <!-- Expand to templated version -> csv generator also populates this template to ensure param names match up? -->
 
 ``` yaml
---8<-- "../samples/how_to_guide/batched_parameters/batched_parameters_demo.yaml"
+--8<-- "samples/how_to_guide/batched_parameters/batched_parameters_demo.yaml"
 
 ```
 
@@ -100,7 +100,7 @@ All of the control of which parameters get run in a given study go through [`pge
 
 
 ``` python
---8<-- "../samples/how_to_guide/batched_parameters/batched_demo_pgen.py"
+--8<-- "samples/how_to_guide/batched_parameters/batched_demo_pgen.py"
 ```
 
 Running an instance with the first 3 rows of parameter combos from the csv is as simple as:

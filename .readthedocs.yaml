@@ -11,7 +11,7 @@ build:
       - poetry install
 
 mkdocs:
-  configuration: docs/mkdocs.yml
+  # configuration: docs/mkdocs.yml
   # Temporarily allow warnings
   fail_on_warning: false
 

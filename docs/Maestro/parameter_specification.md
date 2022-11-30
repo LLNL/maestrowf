@@ -237,7 +237,7 @@ For this simple example above, this may not offer compelling advantages over wri
   Using Python's [itertools](https://docs.python.org/3/library/itertools.html?highlight=itertools) package from the standard library to perform a Cartesian Product of parameters in the lulesh example specification.
 
 ``` python linenums="1", title="lulesh_itertools_pgen"
---8<-- "../samples/parameterization/lulesh_itertools_pgen.py"
+--8<-- "samples/parameterization/lulesh_itertools_pgen.py"
 ```
 
 This results in the following set of parameters, matching the lulesh sample workflow:
@@ -479,7 +479,7 @@ There are no requirements to cram all of the logic into the :py:func:`get_custom
   Using [numpy](https://numpy.org/) to calculate a sampling of a function at the Chebyshev nodes.
 
 ``` python linenums="1", title="np_cheb_pgen_pargs.py"
---8<-- "../samples/parameterization/np_cheb_pgen_pargs.py"
+--8<-- "samples/parameterization/np_cheb_pgen_pargs.py"
 ```
 
 Running this parameter generator with the following pargs
@@ -501,5 +501,5 @@ Referencing Values from a Specification's Env Block
 In addition to command line arguments via :ref:`pargs <pargs_section>`, the variables defined in the ``env`` block in the workflow specification file can be accessed inside the :py:class:`~maestrowf.datastructures.core.ParameterGenerator` objects, which is passed in to :py:func:`get_custom_generator` as the first argument.  The lulesh sample specification can be extended to store the default values for the :ref:`pgen <pgen_section>`, enhancing the reproducability of the generator.  The following example makes use of an optional ``seed`` parameter which can be added to the ``env`` block or set via :ref:`pargs <pargs_section>` to make a repeatable study specification, while omitting it can enable fully randomized workflows upon every instantiation.  The variables are accessed via the :py:class:`~maestrowf.datastructures.core.StudyEnvironment`'s :py:func:`~maestrowf.datastructures.core.StudyEnvironment.find()` function, which will return ``None`` if the variable is not defined in the study specification.
 
 ``` python linenums="1", title="lulesh_montecarlo_args.py", hl_lines="16 21 22 23 24 25"
---8<-- "../samples/parameterization/lulesh_montecarlo_args.py"
+--8<-- "samples/parameterization/lulesh_montecarlo_args.py"
 ```
