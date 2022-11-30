@@ -83,7 +83,7 @@ env:
         git:
             - name: MODEL_REPO
               path: $(OUTPUT_PATH)
-              url: https://git-url.llnl.gov/models.git
+              url: https://your.git.host/models.git
               tag: 2.9.15
       
 study:
