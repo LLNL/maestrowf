@@ -2,8 +2,13 @@ import logging
 from math import ceil
 import os
 
-from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
-    StepPriority, SubmissionCode
+from maestrowf.abstracts.enums import (
+    CancelCode,
+    JobStatusCode,
+    State,
+    StepPriority,
+    SubmissionCode,
+)
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
 LOGGER = logging.getLogger(__name__)
@@ -20,11 +25,11 @@ class FluxInterface_0260(FluxInterface):
 
     flux_handle = None
     _urgencies = {
-        StepPriority.HELD:     0,
-        StepPriority.MINIMAL:  1,
-        StepPriority.LOW:      9,
-        StepPriority.MEDIUM:   16,
-        StepPriority.HIGH:     24,
+        StepPriority.HELD: 0,
+        StepPriority.MINIMAL: 1,
+        StepPriority.LOW: 9,
+        StepPriority.MEDIUM: 16,
+        StepPriority.HIGH: 24,
         StepPriority.EXPEDITE: 31,
     }
 
@@ -43,8 +48,17 @@ class FluxInterface_0260(FluxInterface):
 
     @classmethod
     def submit(
-        cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=True, urgency=StepPriority.MEDIUM
+        cls,
+        nodes,
+        procs,
+        cores_per_task,
+        path,
+        cwd,
+        walltime,
+        ngpus=0,
+        job_name=None,
+        force_broker=True,
+        urgency=StepPriority.MEDIUM,
     ):
         try:
             cls.connect_to_flux()
@@ -59,20 +73,32 @@ class FluxInterface_0260(FluxInterface):
             if force_broker:
                 LOGGER.debug(
                     "Launch under Flux sub-broker. [force_broker=%s, "
-                    "nodes=%d]", force_broker, nodes
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
                 )
                 ngpus_per_slot = int(ceil(ngpus / nodes))
                 jobspec = flux.job.JobspecV1.from_nest_command(
-                    [path], num_nodes=nodes, cores_per_slot=cores_per_task,
-                    num_slots=procs, gpus_per_slot=ngpus_per_slot)
+                    [path],
+                    num_nodes=nodes,
+                    cores_per_slot=cores_per_task,
+                    num_slots=procs,
+                    gpus_per_slot=ngpus_per_slot,
+                )
             else:
                 LOGGER.debug(
                     "Launch under root Flux broker. [force_broker=%s, "
-                    "nodes=%d]", force_broker, nodes
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
                 )
                 jobspec = flux.job.JobspecV1.from_command(
-                    [path], num_tasks=procs, num_nodes=nodes,
-                    cores_per_task=cores_per_task, gpus_per_task=ngpus)
+                    [path],
+                    num_tasks=procs,
+                    num_nodes=nodes,
+                    cores_per_task=cores_per_task,
+                    gpus_per_task=ngpus,
+                )
 
             LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
             if job_name:
@@ -88,23 +114,23 @@ class FluxInterface_0260(FluxInterface):
 
             # Submit our job spec.
             jobid = flux.job.submit(
-                cls.flux_handle, jobspec, waitable=True,
-                urgency=urgency
+                cls.flux_handle, jobspec, waitable=True, urgency=urgency
             )
             submit_status = SubmissionCode.OK
             retcode = 0
 
-            LOGGER.info("Submission returned status OK. -- "
-                        "Assigned identifier (%s)", jobid)
+            LOGGER.info(
+                "Submission returned status OK. -- "
+                "Assigned identifier (%s)",
+                jobid,
+            )
         except ConnectionResetError as exception:
-            LOGGER.error(
-                "Submission failed -- Message (%s).", exception)
+            LOGGER.error("Submission failed -- Message (%s).", exception)
             jobid = -1
             retcode = -2
             submit_status = SubmissionCode.ERROR
         except Exception as exception:
-            LOGGER.error(
-                "Submission failed -- Message (%s).", exception)
+            LOGGER.error("Submission failed -- Message (%s).", exception)
             jobid = -1
             retcode = -1
             submit_status = SubmissionCode.ERROR
@@ -148,8 +174,7 @@ class FluxInterface_0260(FluxInterface):
         # all systems.
         cls.connect_to_flux()
 
-        LOGGER.debug(
-            "Handle address -- %s", hex(id(cls.flux_handle)))
+        LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
 
         jobs_rpc = flux.job.list.JobList(cls.flux_handle, ids=joblist)
 
@@ -181,11 +206,10 @@ class FluxInterface_0260(FluxInterface):
         # all systems.
         cls.connect_to_flux()
 
-        LOGGER.debug(
-            "Handle address -- %s", hex(id(cls.flux_handle)))
+        LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
         LOGGER.debug(
             "Attempting to cancel jobs.\nJoblist:\n%s",
-            "\n".join(str(j) for j in joblist)
+            "\n".join(str(j) for j in joblist),
         )
 
         cancel_code = CancelCode.OK
@@ -203,17 +227,22 @@ class FluxInterface_0260(FluxInterface):
 
     @staticmethod
     def state(state):
-        if state == "CD":
+        if state == "D":
+            return State.PENDING
+        elif state == "S":
+            return State.QUEUED
+        elif state == "R":
+            return State.RUNNING
+        elif state == "C":
+            return State.FINISHING
+        elif state == "CD":
             return State.FINISHED
         elif state == "F":
             return State.FAILED
-        elif state == "R":
-            return State.RUNNING
-        elif state == "PD":
-            return State.PENDING
-        elif state == "C":
+        elif state == "CA":
             return State.CANCELLED
         elif state == "TO":
             return State.TIMEDOUT
         else:
+            LOGGER.error(f"Unhandled state: {state}")
             return State.UNKNOWN
