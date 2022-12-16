@@ -11,12 +11,12 @@ Scaling up the numbers of parameter combinations in studies can run into a few r
     
 * **HPC scheduler overloading**
 
-    Some HPC schedulers can run into scaling issues with large studies as most of the [script/scheduler adapters](scheduling.md) treat each instance of a step (one parameter combination applied to a step) as discrete batch jobs.  Thus naively launching studies with thousands or more parameter combinations can quickly swamp the scheduler.
+    Some HPC schedulers can run into scaling issues with large studies as most of the [script/scheduler adapters](../scheduling.md) treat each instance of a step (one parameter combination applied to a step) as discrete batch jobs.  Thus naively launching studies with thousands or more parameter combinations can quickly swamp the scheduler.
     
-    There are a few solutions to this problem depending on the specific study, including use of the `throttle` argument to the run command to limit the number of jobs to submit to the scheduler queue, or if jobs are quick running and/or small, use the [flux](scheduling.md#flux) adapter to pack many jobs into an allocation.  However, this still leaves open the issue of swamping the file system.
+    There are a few solutions to this problem depending on the specific study, including use of the `throttle` argument to the run command to limit the number of jobs to submit to the scheduler queue, or if jobs are quick running and/or small, use the [flux](../scheduling.md#flux) adapter to pack many jobs into an allocation.  However, this still leaves open the issue of swamping the file system.
 
 
-An alternative that can be used to address both concerns is to insert gaps in the execution by processing large numbers of parameter sets in batches across multiple studies.  This batched execution allows cleanup of each batch's outputs before the next begins, freeing up precious file system space and avoiding deadlocks when that space/quota is reached.  As a simple model problem we will use [`pgen`](parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.  
+An alternative that can be used to address both concerns is to insert gaps in the execution by processing large numbers of parameter sets in batches across multiple studies.  This batched execution allows cleanup of each batch's outputs before the next begins, freeing up precious file system space and avoiding deadlocks when that space/quota is reached.  As a simple model problem we will use [`pgen`](../parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.  
 
 !!! note
 
@@ -81,7 +81,7 @@ values.
 ## Running a subset of parameters
 ---
 
-All of the control of which parameters get run in a given study go through [`pgen` via it's `pagrgs`](parameter_specification.md#pgen-arguments-pargs).  The `batched_demo_pgen.py` custom generator has 5 available pargs that control the csv parsing and parameter outputs:
+All of the control of which parameters get run in a given study go through [`pgen` via it's `pagrgs`](../parameter_specification.md#pgen-arguments-pargs).  The `batched_demo_pgen.py` custom generator has 5 available pargs that control the csv parsing and parameter outputs:
 
 * `CSV`: name/path of csv file to read parameters from
 
