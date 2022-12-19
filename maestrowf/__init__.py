@@ -53,6 +53,7 @@ import tabulate
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
+
     class NullHandler(logging.Handler):
         """Null logging handler for Python 3+."""
 
@@ -60,11 +61,11 @@ except ImportError:
             """Override so that logging outputs nothing."""
             pass
 
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(NullHandler())
 
-__version_info__ = ("1", "1", "9dev1")
-__version__ = '.'.join(__version_info__)
+__version__ = "0.0.0"
 
 
 @six.add_metaclass(ABCMeta)
@@ -72,7 +73,7 @@ class BaseStatusRenderer:
     def __init__(self, *args, **kwargs):
         self._status_data = {}
         self._filters = {}
-        self._study_title = ''
+        self._study_title = ""
         self._theme_dict = {}
 
     @abstractmethod
@@ -97,7 +98,7 @@ class BaseStatusRenderer:
 class LegacyStatusRenderer(BaseStatusRenderer):
     """Legacy tabulate based flat table layout"""
 
-    layout_type = "legacy"      # Defines name in factory/cli
+    layout_type = "legacy"  # Defines name in factory/cli
 
     def __init__(self, *args, **kwargs):
         super(LegacyStatusRenderer, self).__init__(*args, **kwargs)
@@ -117,9 +118,11 @@ class LegacyStatusRenderer(BaseStatusRenderer):
         # Ensure status data is of type dict and isn't empty
         if isinstance(status_data, dict) and status_data:
             # Exclude the parameter column
-            self._status_data = {key: value
-                                 for key, value in status_data.items()
-                                 if key != "Params"}
+            self._status_data = {
+                key: value
+                for key, value in status_data.items()
+                if key != "Params"
+            }
         else:
             raise ValueError("Status data required to layout a table")
 
@@ -150,7 +153,7 @@ class LegacyStatusRenderer(BaseStatusRenderer):
 class FlatStatusRenderer(BaseStatusRenderer):
     """Flat, simple table layout"""
 
-    layout_type = "flat"        # Defines name in factory/cli
+    layout_type = "flat"  # Defines name in factory/cli
 
     def __init__(self, *args, **kwargs):
         super(FlatStatusRenderer, self).__init__(*args, **kwargs)
@@ -166,7 +169,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
             "col_style_1": "",
             "col_style_2": "blue",
             "bgcolor": "grey7",
-            "color": ""
+            "color": "",
         }
 
     def layout(self, status_data, study_title=None, filter_dict=None):
@@ -198,7 +201,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
         cols = list(self._status_data.keys())
 
         # Some temporary simple filters to exclude params col in this layout
-        col_filters = ['Params']
+        col_filters = ["Params"]
 
         cols = [col for col in cols if col not in col_filters]
 
@@ -209,26 +212,25 @@ class FlatStatusRenderer(BaseStatusRenderer):
                 col_style = col
             else:
                 if nominal_col_num % 2 == 0:
-                    col_style = 'col_style_1'
+                    col_style = "col_style_1"
                 else:
-                    col_style = 'col_style_2'
+                    col_style = "col_style_2"
 
-            self._status_table.add_column(col,
-                                          style=col_style,
-                                          overflow="fold")
+            self._status_table.add_column(
+                col, style=col_style, overflow="fold"
+            )
 
         num_rows = len(self._status_data[cols[0]])
 
         # Alternate dim rows to differentiate them better
         for row in range(num_rows):
             if row % 2 == 0:
-                row_style = 'dim'
+                row_style = "dim"
             else:
-                row_style = 'none'
+                row_style = "none"
 
             self._status_table.add_row(
-                *['{}'.format(self._status_data[key][row])
-                  for key in cols],
+                *["{}".format(self._status_data[key][row]) for key in cols],
                 style=row_style
             )
 
@@ -256,9 +258,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
 
         status_theme = Theme(self._theme_dict)
 
-        _printer = Console(theme=status_theme,
-                           file=StringIO(),
-                           width=width)
+        _printer = Console(theme=status_theme, file=StringIO(), width=width)
         _printer.print(self._status_table)
 
         return _printer.file.getvalue()
@@ -267,7 +267,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
 class NarrowStatusRenderer(BaseStatusRenderer):
     """Narrow terminal layout with parameter info"""
 
-    layout_type = "narrow"      # Defines name in factory/cli
+    layout_type = "narrow"  # Defines name in factory/cli
 
     def __init__(self, *args, **kwargs):
         super(NarrowStatusRenderer, self).__init__(*args, **kwargs)
@@ -279,7 +279,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
             "Workspace": "blue",
             "row_style": "",
             "row_style_dim": "dim",
-            "background": "grey7"
+            "background": "grey7",
         }
 
     def layout(self, status_data, study_title=None, filter_dict=None):
@@ -321,35 +321,39 @@ class NarrowStatusRenderer(BaseStatusRenderer):
         self._status_table.add_column("Step", overflow="fold")
 
         # Note, filter on columns here
-        cols = [key for key in self._status_data.keys()
-                if (key != 'Step Name' and key != 'Workspace')]
+        cols = [
+            key
+            for key in self._status_data.keys()
+            if (key != "Step Name" and key != "Workspace")
+        ]
 
         num_rows = len(self._status_data[cols[0]])
 
         # Split data into three tables: deails, scheduler, params (optional)
-        detail_rows = ['State', 'Job ID', 'Run Time', 'Elapsed Time']
-        sched_rows = ['Submit Time',
-                      'Start Time',
-                      'End Time',
-                      'Number Restarts']
+        detail_rows = ["State", "Job ID", "Run Time", "Elapsed Time"]
+        sched_rows = [
+            "Submit Time",
+            "Start Time",
+            "End Time",
+            "Number Restarts",
+        ]
 
         # Setup one table to contain each steps' info
         for row in range(num_rows):
-            step_table = Table(
-                box=box.SIMPLE_HEAVY,
-                show_header=False
-            )
+            step_table = Table(box=box.SIMPLE_HEAVY, show_header=False)
             # Dummy columns
             step_table.add_column("key")
-            step_table.add_column("val", overflow='fold')
+            step_table.add_column("val", overflow="fold")
 
             # Top level contains step name and workspace name, full table width
-            step_table.add_row("STEP:",
-                               self._status_data['Step Name'][row],
-                               style='Step Name')
-            step_table.add_row("WORKSPACE:",
-                               self._status_data['Workspace'][row],
-                               style='Workspace')
+            step_table.add_row(
+                "STEP:", self._status_data["Step Name"][row], style="Step Name"
+            )
+            step_table.add_row(
+                "WORKSPACE:",
+                self._status_data["Workspace"][row],
+                style="Workspace",
+            )
 
             step_table.add_row("", "")  # just a little whitespace
 
@@ -357,59 +361,69 @@ class NarrowStatusRenderer(BaseStatusRenderer):
             step_details = Table.grid(padding=1)
             step_details.add_column("details")
 
-            step_info = Table(title="Step Details",
-                              show_header=False,
-                              show_lines=True,
-                              box=box.HORIZONTALS)
+            step_info = Table(
+                title="Step Details",
+                show_header=False,
+                show_lines=True,
+                box=box.HORIZONTALS,
+            )
 
             step_info.add_column("key")
             step_info.add_column("val")
             for nom_row_cnt, detail_row in enumerate(detail_rows):
-                if detail_row == 'State':
-                    row_style = 'State'
+                if detail_row == "State":
+                    row_style = "State"
                 else:
                     if nom_row_cnt % 2 == 0:
-                        row_style = 'row_style'
+                        row_style = "row_style"
                     else:
-                        row_style = 'row_style'
+                        row_style = "row_style"
 
-                step_info.add_row(detail_row,
-                                  self._status_data[detail_row][row],
-                                  style=row_style)
+                step_info.add_row(
+                    detail_row,
+                    self._status_data[detail_row][row],
+                    style=row_style,
+                )
 
             step_details.add_column("scheduler")
-            step_sched = Table(title="Scheduler Details",
-                               show_header=False,
-                               show_lines=True,
-                               box=box.HORIZONTALS)
+            step_sched = Table(
+                title="Scheduler Details",
+                show_header=False,
+                show_lines=True,
+                box=box.HORIZONTALS,
+            )
             step_sched.add_column("key")
             step_sched.add_column("val")
             for nom_row_cnt, sched_row in enumerate(sched_rows):
-                step_sched.add_row(sched_row,
-                                   self._status_data[sched_row][row],
-                                   style='row_style')  # key in status theme
+                step_sched.add_row(
+                    sched_row,
+                    self._status_data[sched_row][row],
+                    style="row_style",
+                )  # key in status theme
 
             # Info and scheduler sub tables are in the same column/row
             step_details.add_row(step_info, step_sched)
 
-            step_table.add_row('', step_details)
+            step_table.add_row("", step_details)
 
             # Add optional parameter table, if step has parameters
-            if 'Params' not in self._status_data.keys():
+            if "Params" not in self._status_data.keys():
                 param_list = []
             else:
-                param_list = self._status_data['Params'][row].split(';')
+                param_list = self._status_data["Params"][row].split(";")
 
             if len(param_list) > 0 and param_list[0]:
                 if len(param_list) % 2 != 0:
                     param_list.append("")
 
-                num_param_rows = int(len(param_list)/2)
+                num_param_rows = int(len(param_list) / 2)
 
-                step_params = Table(title="Step Parameters",
-                                    show_header=False,
-                                    show_lines=True,
-                                    box=box.HORIZONTALS)
+                step_params = Table(
+                    title="Step Parameters",
+                    show_header=False,
+                    show_lines=True,
+                    box=box.HORIZONTALS,
+                )
 
                 # Note col names don't actually matter, just setting styles
                 step_params.add_column("name", style="")
@@ -420,18 +434,17 @@ class NarrowStatusRenderer(BaseStatusRenderer):
                 param_idx = 0
                 for param_row in range(num_param_rows):
                     this_row = []
-                    for param_str in param_list[param_idx:param_idx+2]:
+                    for param_str in param_list[param_idx : param_idx + 2]:
                         if param_str:
-                            this_row.extend(param_str.split(':'))
+                            this_row.extend(param_str.split(":"))
                         else:
                             this_row.extend(["", ""])
 
                     param_idx += 2
 
-                    step_params.add_row(*this_row,
-                                        style=row_style)
+                    step_params.add_row(*this_row, style=row_style)
 
-                step_table.add_row('', step_params)
+                step_table.add_row("", step_params)
 
             self._status_table.add_row(step_table, end_section=True)
 
@@ -459,9 +472,7 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
         status_theme = Theme(self._theme_dict)
 
-        _printer = Console(theme=status_theme,
-                           file=StringIO(),
-                           width=width)
+        _printer = Console(theme=status_theme, file=StringIO(), width=width)
         _printer.print(self._status_table)
 
         return _printer.file.getvalue()
@@ -474,20 +485,26 @@ def iter_status_renderers():
         list of (name, class) pairs for all concrete implementations of
         BaseStatusRenderer's in the current module
     """
+
     def member_is_renderer(member):
         """Helper to test if member is a renderer subclass"""
-        return (inspect.isclass(member) and member.__module__ == __name__
-                and issubclass(member, BaseStatusRenderer)
-                and not inspect.isabstract(member))
+        return (
+            inspect.isclass(member)
+            and member.__module__ == __name__
+            and issubclass(member, BaseStatusRenderer)
+            and not inspect.isabstract(member)
+        )
 
-    for member in inspect.getmembers(sys.modules[__name__],
-                                     member_is_renderer):
+    for member in inspect.getmembers(
+        sys.modules[__name__], member_is_renderer
+    ):
         yield member
 
 
 # Register status layout types
 class StatusRendererFactory:
     """Factory for setting up alternate console status rendering formats"""
+
     def __init__(self):
         self._layouts = {}
 

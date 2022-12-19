@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.9"
+version = "0.0.0"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [
@@ -10,11 +10,11 @@ classifiers = [
     "Intended Audience :: Developers", "Intended Audience :: Education",
     "Intended Audience :: Science/Research", "Topic :: Scientific/Engineering",
     "Topic :: System :: Distributed Computing",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.5",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 homepage = "https://github.com/llnl/maestrowf"
 documentation = "https://maestrowf.readthedocs.io/"
@@ -31,6 +31,10 @@ readme = "README.md"
 packages = [
     { include = 'maestrowf'}
 ]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
 
 [tool.poetry.dependencies]
 python = ">=3.6,<4.0"
@@ -63,10 +67,39 @@ tox-pyenv = "*"
 "maestro" = "maestrowf.maestro:main"
 "conductor" = "maestrowf.conductor:main"
 
-
 [build-system]
-requires = ["poetry-core>=1.0.8"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/LLNL/maestrowf/issues"
