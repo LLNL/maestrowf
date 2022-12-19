@@ -34,7 +34,6 @@ packages = [
 
 [tool.poetry-dynamic-versioning]
 enable = true
-vcs = "git"
 
 [tool.poetry.dependencies]
 python = ">=3.6,<4.0"
@@ -70,6 +69,10 @@ tox-pyenv = "*"
 [build-system]
 requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
 build-backend = "poetry_dynamic_versioning.backend"
+
+
+
+
 
 
 
