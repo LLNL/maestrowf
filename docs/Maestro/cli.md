@@ -3,11 +3,11 @@
 
 Installing Maestro will add two entry points/console scripts that are used for running, creating, and interacting with studies:
 
-* `maestro`
+* [`maestro`](#maestro)
     
     This is the primary user interface for creating, launching, and monitoring studies.
     
-* `conductor`
+* [`conductor`](#conductor)
 
     This is the background process that Maestro launches which does the actual orchestration and running of the studies and lives until the study execution is complete.
     
