@@ -43,6 +43,7 @@ plugins:
           - docs/gen_api_docs.py
     - literate-nav:
         nav_file: SUMMARY.md
+    - glightbox
     # - section-index
     # - mermaid2:
     #     arguments:
@@ -93,6 +94,7 @@ nav:
         - Overview: 'Maestro/index.md'
         - Installation: 'Maestro/install.md'
         - Tutorials: 'Maestro/tutorials.md'
+        - Monitoring Studies: 'Maestro/monitoring.md'
         - Command Line Interface: 'Maestro/cli.md'
         - Specification:
             - Specification 1.0: 'Maestro/specification.md'

@@ -53,6 +53,7 @@ mkdocstrings = "*"
 mkdocstrings-python = "*"
 mkdocs-gen-files = "*"
 mkdocs-literate-nav = "*"       # Make sub groups here for docs, formatting, etc?
+mkdocs-glightbox = "*"
 pymdown-extensions = "*"
 sphinx_rtd_theme = "*"
 sphinx = "*"
