@@ -32,6 +32,97 @@ resource requirements (number of nodes, cpus/tasks, gpus, ...) get added here wh
 individual steps; see subsequent sections for scheduler specific details.  Note that job steps will
 run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.  The keys attached to the study steps also get used to construct the parallel launcer (e.g. `srun` for [SLURM](#SLURM)).  The following subsections describe the options in the currently supported scheduler types.
 
+## LAUNCHER Token
+---
+
+The `LAUNCHER` token is a special token that has two forms for use in place of explicit scheduler specific commands in your study steps such as `srun ...` and `flux mini run ...`.
+
+### Legacy style
+
+`$(LAUNCHER)`
+
+The original style simply reads in the step keys such as `nodes` and `procs` (see scheduler specific sections for full list of options).  Maestro then combines the step and [`batch`](specification#batch-block) block configuration when writing the step scripts to generate the appropriate parallel launcher invocation for the system, e.g.
+
+=== "Maestro Step"
+
+    ``` yaml title="Sample legacy style Launcher step"
+    - name: run-two-apps
+      description: Run two parallel apps
+      run:
+          cmd: |
+            $(LAUNCHER) par_app_1
+            $(LAUNCHER) par_app_2
+          nodes: 2
+          procs: 72
+          exclusive   : True
+          walltime: "00:10:00"
+    ```
+
+=== "Slurm script"
+
+    ``` yaml title="Slurm script from legacy style Launcher"
+    #!/bin/bash
+    
+    #SBATCH --nodes=2
+    #SBATCH --partition=pbatch
+    #SBATCH --account=baasic
+    #SBATCH --time=00:10:00
+    #SBATCH --job-name=run-two-apps
+    #SBATCH --output=run-two-apps.out
+    #SBATCH --error=run-two-apps.err
+    #SBATCH --comment "Run two parallel apps"
+    #SBATCH --exclusive
+    
+    srun -N 2 -n 72 par_app_1
+    srun -N 2 -n 72 par_app_2
+    ```
+
+### New style
+
+`$(LAUNCHER)[<n>n, <p>p]`
+
+This updated variant allows more granular control of the launcher token to allocate resources differently on a per executable/command basis inside of a step.
+
+- `<n>`: command specific number of nodes.  Must be less than or equal to steps' `nodes` setting.
+- `<p>`: command specific number of tasks/procs.  Must be less than or equal to steps' `procs` setting.
+
+!!! note
+
+    You do not need both 'n' and 'p' with this syntax.  You can also allocate soley based on tasks (p) or nodes (n).
+
+=== "Maestro Step"
+
+    ``` yaml title="Sample new style Launcher step"
+    - name: run-two-apps
+      description: Run two parallel apps using different resource configs
+      run:
+          cmd: |
+            $(LAUNCHER)[1n, 36p] par_app_1
+            $(LAUNCHER)[2n, 36p] par_app_2
+          nodes: 2
+          procs: 72
+          exclusive   : True
+          walltime: "00:10:00"
+    ```
+
+=== "Slurm script"
+
+    ``` yaml title="Slurm script from new style Launcher"
+    #!/bin/bash
+    
+    #SBATCH --nodes=2
+    #SBATCH --partition=pbatch
+    #SBATCH --account=baasic
+    #SBATCH --time=00:10:00
+    #SBATCH --job-name=run-two-apps
+    #SBATCH --output=run-two-apps.out
+    #SBATCH --error=run-two-apps.err
+    #SBATCH --comment "Run two parallel apps using different resource configs"
+    #SBATCH --exclusive
+    
+    srun -N 1 -n 36 par_app_1
+    srun -N 2 -n 36 par_app_2
+    ```
 
 ## LOCAL
 ----
@@ -43,11 +134,14 @@ Stub
 
 The SLURM scheduler uses the [`srun`]( <!-- insert link --> ) command to launch and allocate resources to tasks.  Maestro currently supports the following subset of srun arguments:
 
-|  **SLURM (srun)**  |  **Maestro**  |  **Description**  |  **Default**  |
-|        :-          |      :-       |        :-         |      :-       |
-|  `-n`              |     `procs`   |  Number of MPI tasks to allocate for the launched application  |  `1`  |
-|  `-N`              |     `nodes`   |  Number of nodes to allocate for the launched application |  `1`  |
-|  `-c`              |   `cores per task` |  Number of physical CPU cores per task |  `1`  |
+|  **SLURM (srun)**  |  **Maestro**  | **Block** |  **Description**  |  **Default**  |
+|        :-          |      :-       |   :-      |   :-              |      :-       |
+|  `-n`              |     `procs`   |  step, batch | Number of MPI tasks to allocate for the launched application  |  `1`  |
+|  `-N`              |     `nodes`   |  step, batch | Number of nodes to allocate for the launched application |  `1`  |
+|  `-c`              |   `cores per task` |  step | Number of physical CPU cores per task |  `1`  |
+|  `-t`, `--time`    |  `walltime` | step | Limit on total run time of the job | N/A: Machine/system dependent |
+|  `--exclusive`     |  `exclusive` | step | Grant job allocation excluive use of resources.  Useful for running on processor scheduled machines <!-- link to recipe -->.  NOTE: this behavior depends on system config | `False` |
+| 
 
 
 ## Flux
