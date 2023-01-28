@@ -468,7 +468,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
             if to_be_scheduled:
                 script.write(self.get_header(step))
             else:
-                script.write(self._exec)
+                script.write("#!{}".format(self._exec))
 
             cmd = "\n\n{}\n".format(cmd)
             script.write(cmd)
@@ -481,7 +481,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
                 if to_be_scheduled:
                     script.write(self.get_header(step))
                 else:
-                    script.write(self._exec)
+                    script.write("#!{}".format(self._exec))
 
                 cmd = "\n\n{}\n".format(restart)
                 script.write(cmd)
