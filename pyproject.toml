@@ -61,6 +61,10 @@ tox-pyenv = "*"
 "maestro" = "maestrowf.maestro:main"
 "conductor" = "maestrowf.conductor:main"
 
+
+[tool.poetry.group.dev.dependencies]
+sphinx = "^5.0.0"
+
 [build-system]
 requires = ["poetry-core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
