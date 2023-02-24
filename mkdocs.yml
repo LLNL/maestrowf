@@ -1,4 +1,4 @@
-site_name: Maestro Design Docs
+site_name: Maestro Workflow Conductor
 use_directory_urls: false
 markdown_extensions:
   - admonition
@@ -84,8 +84,8 @@ theme:
      
   custom_dir: docs/overrides
 nav:
-    - 'index2.md'  
-    - Home: 'index.md'
+    # - 'index2.md'  
+    - Maestro: 'index.md'
     - Philosophy:
         - Background: "Philosophy/index.md"
         - How are Workflows Represented?: "Philosophy/representation.md"

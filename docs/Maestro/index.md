@@ -69,17 +69,3 @@ Doing so will generate many hello_planet.txt files in an isolated workspace next
 ![Hello Planet Workspace](../assets/images/examples/hello_planet/hello_planet_workspace.svg)
 
 Continue on to the tutorials and how-to-guides to continue layering on all of the available features including multi-step workflows, scheduling studies on HPC clusters, custom parameter generation facilities.  For a complete overview of the yaml specification see [Specification](specification.md)
-
-## Contributors
-
-Many thanks go to MaestroWF's [contributors](https://github.com/LLNL/maestrowf/graphs/contributors).
-
-If you have any questions or to submit feature requests please [open a ticket](https://github.com/llnl/maestrowf/issues).
-
-----------------
-
-## Release
-MaestroWF is released under an MIT license.  For more details see the
-NOTICE and LICENSE files.
-
-``LLNL-CODE-734340``
