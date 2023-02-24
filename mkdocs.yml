@@ -117,4 +117,4 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/LLNL/maestrowf
       name: Maestro on GitHub
-copyright: Copyright &copy; 2021 | Francesco Di Natale
+copyright: Copyright &copy; 2021-2023 | Francesco Di Natale, Jeremy White
