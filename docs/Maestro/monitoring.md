@@ -1,10 +1,21 @@
+## Getting a Live Study to Inspect
+---
 
-<!-- insert blurb about using lulesh example and it's invocation here with link to tutorial section if they haven't run a study before -->
+First you'll need a running/completed study to monitor.  Either grab one from the [Tutorials](tutorials.md) or one of the variants of the [Lulesh](specification.md#full-example) examples that we'll be showing below.  Additionaly, see the tutorials if needed for a refresher on how to run a study.
+
+!!! note
+  
+    The `samples` directory in the project repo contains these examples as well
+
 
 ## Monitoring a Running Study
 ---
 
-Once the conductor is spun up, you will be returned to the command line prompt. There should now be a ``./tests/lulesh`` directory within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the documentation about :doc:`Study Workspaces <./maestro_core>`.
+Once the conductor is spun up, you will be returned to the command line prompt. There should now be a ``./tests/lulesh`` directory within the root of the repository. This directory represents the executing study's workspace, or where Maestro will place this study's data, logs, and state. For a more in-depth description of the contents of a workspace see the 'outputs' sections in the examples in the [Tutorials](tutorials.md) and the more exhaustive documentation on [Study Workspaces](study_workspaces.md)
+
+!!! bug
+
+    Study workspaces section not written yet
 
 In order to check the status of a running study, use the ``maestro status`` subcommand. The only required parameter to the status command is the path to the running study's workspace. In this case, to find the status of the running study (from the root of the repository) is:
 
