@@ -91,7 +91,7 @@ Would you like to launch the study? [yn] y
 Study launched successfully.
 ```
 
-Maestro will prompt you to actually launch the study before submitting, letting you confirm some of the settings first.  These options will be covered later in these tutorials and the how-to sections <!-- NOTE: LINK TO HOW-TO-GUIDES -->.
+Maestro will prompt you to actually launch the study before submitting, letting you confirm some of the settings first.  These options will be covered later in these tutorials, the [how-to sections](how_to_guides/index.md), and the [cli reference](cli.md).
 
 ### Checking the status
 
@@ -198,7 +198,7 @@ The outputs for this new study now have an extra step, as well as some more isol
 
 ## Parameterized Hello World
 
-This example introduces a new block: `global.parameters`.  With this we can further change the workflow topology by layering on parameters to the `Hello Bye World` example which Maestro will expand into multiple chains of 'Hello' -> 'Bye' steps.  Two parameters are added, each with multiple values: `NAME` and `GREETING`.  These are added in a dictionary style with keys being the parameter names and their values being dictionaries themselves with a `values` key that is a list of values to map the study steps/graph onto, and a label which is a `<string>.%%` format, where the `.%%` is replaced with parameter values.  These labels are used for constructing unique step names and workspaces as will be shown below.
+This example introduces a new block: `global.parameters` (see [Specifying Study Parameters](parameter_specification.md) for more details).  With this we can further change the workflow topology by layering on parameters to the `Hello Bye World` example which Maestro will expand into multiple chains of 'Hello' -> 'Bye' steps.  Two parameters are added: `NAME` and `GREETING`, each with multiple values.  These are added in a dictionary style with keys being the parameter names and their values being dictionaries themselves with a `values` key that is a list of values to map the study steps/graph onto, and a label which is a `<string>.%%` format, where the `.%%` is replaced with parameter values.  These labels are used for constructing unique step names and workspaces as will be shown below.
 
 ``` yaml
 global.parameters:

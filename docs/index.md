@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 ![Maestro Logo](./assets/logo_full.png)
 
 ----
@@ -6,9 +11,26 @@
 
 ----
 
-Bring rigor, reproducability, and shareability to your computational science following the model set by the experimental disciplines.  Specify computational processes in a generalized way such that they can be documented, shared, executed, and easily reproduced.
+
+Bring rigor, reproducibility, and shareability to your computational science following the model set by the experimental disciplines.  Specify computational processes in a generalized way such that they can be documented, shared, executed, and easily reproduced.
+
+## Why Maestro?
+
+Maestro gives an easy path to automating and orchestrating your workflows, building upon your existing shell and batch (HPC scheduled scripts/tasks) script tasks to layer on parameterization, task dependencies, and output isolation.
 
 ## Getting Started is Quick and Easy
+
+-   Install: build a virtual environment and install maestro into it (python 3.6 or greater)
+    
+    ``` console
+    python -m virtualenv maestroenv
+    
+    source maestroenv/bin/activate
+    
+    pip install maestrowf
+    ```
+    
+    And you now have the `maestro` command available in your shell
 
 -   Create a `YAML` file named `study.yaml` and paste the following content into the file
     <!-- NOTE: add the ! after the annotations in later version of material theme to strip comments -->
@@ -134,7 +156,7 @@ Bring rigor, reproducability, and shareability to your computational science fol
         ![Labeled Hello Bye Parameterized Workspace with Funnel](./assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_funnel_workspace.svg){: style="width:80ch"}
 
 
-## Why Maestro?
+## Maestro's Goals and Motivations
 ----
 
 The primary goal of Maestro is to provide a lightweight tool for encouraging modularized workflow composition, a mental framework for thinking about these concepts, and a tool that users can flexibly utilize for a wide variety of use cases (science, software testing/deployment, and etc.). Maestro's vision aims to make steady progression towards making reproducible workflows user-friendly and easy to manage. We maintain a few high level principles:
@@ -148,15 +170,18 @@ The primary goal of Maestro is to provide a lightweight tool for encouraging mod
 We firmly believe that a user-friendly tool and environment that promotes provenance and best practices, while minimizing the effort needed for users to achieve progress, will greatly improve the quality of computational science.
 
 
-## Checkout how to use all of Maestro's features
+## Next Steps
 
-Explore the complete set of features Maestro can bring to your computational workflows in the [User Guide](#Maestro/index):
+Explore the complete set of features Maestro can bring to your computational workflows and how to use them in the [User Guide](#Maestro/index):
 
 - [tutorials](#Maestro/tutorials)
 - [how-to guides](#Maestro/how_to_guides)
 - full yaml input [specification](#Maestro/specification)
 - and more
 
+Or, read up on more of the philosophies behind Maestro's design: [Philosopy](#Philosophy/index).
+
+Additionally, check out some of the contributed tools and recipes in the [Maestro Sheetmusic](https://github.com/LLNL/maestro_sheetmusic) repo.  Contributions welcome if you create any generally useful tools in your workflow adventures with Maestro and want to share!
 
 ## Contributors
 

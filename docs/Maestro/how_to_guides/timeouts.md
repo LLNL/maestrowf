@@ -43,12 +43,16 @@ study:
           walltime: "00:10:00"
 ```
 
-Additional control of this process is found on the command line <!-- INSERT LINK TO CLI REFERENCE --> with the `rlimit` argument to the `run` command telling Maestro how many times to submit restarts when it recieves the timeout signal from the scheduler before giving up.
+Additional control of this process is found on the command line with the `rlimit` argument to the [`run`](../cli.md#run) command telling Maestro how many times to submit restarts when it recieves the timeout signal from the scheduler before giving up.
 
 ``` console title="Run timeout_demo study and attempt 3 retries upon timeout"
 maestro run timeout_demo.yaml --rlimit 3
 ```
 
+!!! note
+
+    The `rlimit` setting is currently only available on the command line and is applied globally to all steps in the study.
+    
 Another detail of enabling this feature is there will be an additional batch/shell script generated in the workspace with the 'restart' part in it as shown below in the dry-run outputs of the example specification.  When Maestro resubmits a job due to the timeout signal being recieved it uses the script with the 'restart' part in it.
 
 ![Timeout Demo Workspace](../../assets/images/examples/how_to_guides/timeouts/timeout_demo_workspace.svg)

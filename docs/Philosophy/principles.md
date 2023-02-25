@@ -40,7 +40,7 @@ flowchart LR
         direction LR
         A(Scientist #1)-->B(Experimental Process)
       end
-      Process-->Peers
+      Process--Share-->Peers
       subgraph Peers
           direction TB
           C(Scientist #2)
@@ -52,17 +52,17 @@ flowchart LR
     B-->I
     subgraph Lab
       direction TB
-        subgraph Exp1
+        subgraph Exp1 [Experiment 1]
           direction LR
-          E(Parameter 1) --> F(Experiment 1)
+          E(Parameter 1) --> F(Process)
         end
-        subgraph Exp2
+        subgraph Exp2 [Experiment 2]
           direction LR
-          G(Parameter 2) --> H(Experiment 2)
+          G(Parameter 2) --> H(Process)
         end
-        subgraph Exp3
+        subgraph Exp3 [Experiment 3]
           direction LR
-          I(Parameter 3) --> J(Experiment 3)
+          I(Parameter 3) --> J(Process)
         end
     end
     subgraph Data
@@ -86,7 +86,7 @@ flowchart LR
         direction LR
         A(User #1)-->B(Computational Process)
       end
-      Process-->Peers
+      Process--Share-->Peers
       subgraph Peers
           direction TB
           C(User #2)
@@ -98,17 +98,17 @@ flowchart LR
     B-->I
     subgraph HPC
       direction TB
-        subgraph Exp1 [ ]
+        subgraph Exp1 [Computational Experiment 1]
           direction LR
-          E(Parameter 1) --> F(Process 1)
+          E(Parameter 1) --> F(Process)
         end
-        subgraph Exp2 [ ]
+        subgraph Exp2 [Computational Experiment 2]
           direction LR
-          G(Parameter 2) --> H(Process 2)
+          G(Parameter 2) --> H(Process)
         end
-        subgraph Exp3 [ ]
+        subgraph Exp3 [Computational Experiment 3]
           direction LR
-          I(Parameter 3) --> J(Process 3)
+          I(Parameter 3) --> J(Process)
         end
     end
     subgraph Data

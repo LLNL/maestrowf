@@ -64,8 +64,8 @@ And, running the study is still as simple as:
     maestro run study.yaml
 ```
 
-Doing so will generate many hello_planet.txt files in an isolated workspace next to this hello_planet.yaml workflow specification:
+Doing so will generate many `hello_planet.txt` files in an isolated workspace next to this `hello_planet.yaml` workflow specification:
 
 ![Hello Planet Workspace](../assets/images/examples/hello_planet/hello_planet_workspace.svg)
 
-Continue on to the tutorials and how-to-guides to continue layering on all of the available features including multi-step workflows, scheduling studies on HPC clusters, custom parameter generation facilities.  For a complete overview of the yaml specification see [Specification](specification.md)
+Continue on to the [tutorials](#tutorials) and [how-to-guides](#how_to_guides) to continue layering on all of the available features including multi-step workflows, scheduling studies on HPC clusters, custom parameter generation facilities.  For a complete overview of the yaml specification see [Specification](specification.md).  See [Specifying Study Parameters](#parameter_specification.md) for a thorough discussion of how to tell Maestro what parameter sets to apply to your study.

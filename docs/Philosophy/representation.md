@@ -56,13 +56,13 @@ except this time looking at it from the perspective of a graph.
     simply is represented as a new edge from `Proof dough` to a new node called
     `Bake loaf` and would look as follows:
 
-    <div class="mermaid" align="center">
+    ``` mermaid
     graph TD;
         A(Mix flour + water)-->B(Mix in Yeast);
         B-->C(Fold dough);
         C-->D(Proof dough);
         D-->E(Bake loaf);
-    </div>
+    ```
 
 Now, you'll notice that the edges in the example above have arrows; these arrows
 represent the direction that these edges must be traversed. This property means

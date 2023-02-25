@@ -106,7 +106,7 @@ study:
 ### Parameter Tokens
 ---
 
-Parameters follow the convention in the `env`'s `variables` and `labels` blocks where the token name is the key in the `global.parameters` block (or the `pgen` equivalent).  The big different with substitution of parameter tokens is that only single values are replaced.  The expansion process will create one step per value in these tokens, and so using them in your steps/labels is akin to working with a single instance.  Additionally parameters have a string formatted representation in the `label` key which can be accessed similar to step workspaces: `(PARAM1.label)`.  In the below example this is combined with the `OUTPUTNAME` label to include the parameter label in the steps generated output files in place of a more generic single name for all instances of the step.  Three files will be output by the model in this case: `MODEL_OUTPUT_PARAM1.1.out`, `MODEL_OUTPUT_PARAM1.2.out`, and `MODEL_OUTPUT_PARAM1.3.out`.
+Parameters follow the convention in the `env`'s `variables` and `labels` blocks where the token name is the key in the `global.parameters` block (or the `pgen` equivalent).  The big difference with substitution of parameter tokens is that only single values are replaced.  The expansion process will create one step per value in these tokens, and so using them in your steps/labels is akin to working with a single instance.  Additionally parameters have a string formatted representation in the `label` key which can be accessed similar to step workspaces: `(PARAM1.label)`.  In the below example this is combined with the `OUTPUTNAME` label to include the parameter label in the steps generated output files in place of a more generic single name for all instances of the step.  Three files will be output by the model in this case: `MODEL_OUTPUT_PARAM1.1.out`, `MODEL_OUTPUT_PARAM1.2.out`, and `MODEL_OUTPUT_PARAM1.3.out`.
 
 ``` yaml
 env:
@@ -116,8 +116,8 @@ env:
         MODEL1: my_model.input
       
     labels:
-        PATH1: /dev/$(VAR2)
-        OUTPUTNAME: MODEL_OUTPUT_$(PARAM1.label).out
+        PATH1: /dev/$(VAR2)  # (1)
+        OUTPUTNAME: MODEL_OUTPUT_$(PARAM1.label).out #(2)
 
     dependencies:
         path:
@@ -152,6 +152,8 @@ global.parameters:
         label: PARAM1.%%
 ```
 
+1. Build a label by substituting in the value of the `$(VAR2)` variable
+2. Build a label by substituting in the label string of the `$(PARAM1)` parameter: happens at study/parameter expansion time
 
 <!-- Use workspace rendering tool to demo this examples outputs? -->
 
@@ -241,9 +243,21 @@ Labels are similar to variables, representing static, one-time substitutions int
 ``` yaml
 env:
   labels:
-    outfile: $(SIZE.label).$(ITERATIONS.label).log
+    outfile: $(SIZE.label).$(ITERATIONS.label).log # (1)
+    
+...
+
+global.parameters:
+    SIZE:
+        values: [10, 20, 30]
+        label: SIZE.%%
+    ITERATIONS:
+        values: [100, 200, 300]
+        label: ITERATIONS.%%
 
 ```
+
+1. Dynamic label construction based on parameter values.  Each step/parameter combo will also have a corresponding label
 
 <!-- NOTE: come up with some better examples of labels/variables? -->
 
@@ -332,7 +346,16 @@ The `batch` block is an optional block that enables specification of HPC schedul
         host        : quartz
         bank        : baasic
         queue       : pbatch
-        flux_uri    : <!-- WHAT DOES THIS LOOK LIKE? -->
+        flux_uri    : ƒ8RmSm8mYW3 # sample flux job id based uri; uri can take other forms too
+    ```
+
+=== "LSF"
+    ``` yaml
+    batch:
+        type        : lsf
+        host        : lassen
+        bank        : baasic
+        queue       : pdebug
     ```
 
 <!-- NOTE: flux lulesh sample is missing the supposedly required uri key -->

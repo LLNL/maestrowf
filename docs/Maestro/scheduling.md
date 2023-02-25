@@ -127,12 +127,13 @@ This updated variant allows more granular control of the launcher token to alloc
 ## LOCAL
 ----
 
-Stub
+The LOCAL scheduler gets run by conductor directly where it was launched.  All tasks are currently  run sequentially.  There are no batch block arguments for it, and running a study specification that doesn't contain a batch block will default to this scheduler.
+
 
 ## SLURM
 ----
 
-The SLURM scheduler uses the [`srun`]( <!-- insert link --> ) command to launch and allocate resources to tasks.  Maestro currently supports the following subset of srun arguments:
+The SLURM scheduler uses the [`srun`](https://slurm.schedmd.com/srun.html) command to launch and allocate resources to tasks.  Maestro currently supports the following subset of srun arguments:
 
 |  **SLURM (srun)**  |  **Maestro**  | **Block** |  **Description**  |  **Default**  |
 |        :-          |      :-       |   :-      |   :-              |      :-       |
@@ -147,7 +148,7 @@ The SLURM scheduler uses the [`srun`]( <!-- insert link --> ) command to launch 
 ## Flux
 ----
 
-The Flux scheduler uses the command [`flux mini run`]() to launch and allocate resources to tasks.  Maestro provides keys for a subset of arguments to this command along with hooks for passing a comma separated list of additional arguments
+The Flux scheduler uses the command [`flux mini run`](https://flux-framework.readthedocs.io/projects/flux-core/en/latest/man1/flux-mini.html) to launch and allocate resources to tasks.  Maestro provides keys for a subset of arguments to this command along with hooks for passing a comma separated list of additional arguments
 
 |  **Flux**  |  **Maestro**  |  **Description**  |  **Default**  |
 |    :-      |      :-       |        :-         |      :-       |
@@ -157,6 +158,10 @@ The Flux scheduler uses the command [`flux mini run`]() to launch and allocate r
 | `-g`       |  `gpus`       | Number of gpus to allocate per task |  `0`  |
 | `-o`       |           |  Comma separated list of additional args  | `None` |
 
+!!! danger
+
+   Flux examples are still under construction
+   
 ## LSF: a Tale of Two Launchers
 ----
 
