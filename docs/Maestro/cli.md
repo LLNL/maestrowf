@@ -28,7 +28,7 @@ maestro [OPTIONS] COMMAND [ARGS]...
 | ---- | ---- | ----------- | ------- |
 | `-h`, `--help` | boolean | Show this help message and exit. | `False` |
 | `-l`, `--logpath` | filename | Alternate path to store program logging. | <study_name\>.log |
-| `-d`, `--debug_lvl` | choice (`1` &#x7C; `2` &#x7C; `3` &#x7C; `4` &#x7C; `5`) | Level of logging messages to be output.  Smaller choice produces more output. <table>  <thead>  <th>Choice</th>  <th>Max Debug Level</th>  </tr>  </thead>  <tbody>  <tr>  <td>5</td>  <td>Critical</td>  </tr>  <tr>  <td>4</td>  <td>Error</td>  </tr>  <tr>  <td>3</td>  <td>Warning</td>  </tr>  <tr>  <td>2</td>  <td>Info (Default)</td>  </tr> <tr> <td>1</td> <td>Debug</td>  </tbody>  </table>               | 2 |
+| `-d`, `--debug_lvl` | choice (`1` &#x7C; `2` &#x7C; `3` &#x7C; `4` &#x7C; `5`) | Level of logging messages to be output.  Smaller choice produces more output. <table>  <thead>  <th>Choice</th>  <th>Max Debug Level</th>  </thead>  <tbody>  <tr>  <td>5</td>  <td>Critical</td>  </tr>  <tr>  <td>4</td>  <td>Error</td>  </tr>  <tr>  <td>3</td>  <td>Warning</td>  </tr>  <tr>  <td>2</td>  <td>Info (Default)</td>  </tr> <tr> <td>1</td> <td>Debug</td>  </tbody>  </table>               | 2 (Info) |
 | `-c`, `--logstdout` | boolean | Log to stdout in addition to a file.  **NOTE:** This only controls immediate output from `maestro` during the setup phase.  Once `conductor` is launched and the study is running this log info goes to file only if not running in the foreground | `True` | <!-- insert link to the foreground/background option -->
 | `-v`, `--version` | boolean | Show program's version number and exit. | `False` |
 
@@ -101,7 +101,7 @@ maestro status [OPTIONS] DIRECTORY [DIRECTORY ...]
 | Name | Type | Description | Default |
 | ---- | ---- | ----------- | ------- |
 | `-h`, `--help` | boolean | Show this help message and exit. | `False` |
-| `--layout` | choice (`flat` &#x7C; `legacy` &#x7C; `narrow`) | Alternate status table layouts. | `flat` |
+| `--layout` | choice (`flat` &#x7C; `legacy` &#x7C; `narrow`) | Alternate status table layouts. See [Status Layouts](monitoring.md#status-layouts) for description of these options| `flat` |
 
 
 ## **conductor**
@@ -121,7 +121,7 @@ conductor [OPTIONS] DIRECTORY
 | `-h`, `--help` | boolean | Show this help message and exit. | `False` |
 | `-s`, `--status` | path |  Check the status of the ExecutionGraph located as specified by the 'directory' argument. | None |
 | `-l`, `--logpath` | filename | Alternate path to store program logging. | <study_name\>.log |
-| `-d`, `--debug_lvl` | choice (`1` &#x7C; `2` &#x7C; `3` &#x7C; `4` &#x7C; `5`) | Level of logging messages to be output.  Smaller choice produces more output. <table>  <thead>  <th>Choice</th>  <th>Max Debug Level</th>  </tr>  </thead>  <tbody>  <tr>  <td>5</td>  <td>Critical</td>  </tr>  <tr>  <td>4</td>  <td>Error</td>  </tr>  <tr>  <td>3</td>  <td>Warning</td>  </tr>  <tr>  <td>2</td>  <td>Info (Default)</td>  </tr> <tr> <td>1</td> <td>Debug</td>  </tbody>  </table>               | 2 |
+| `-d`, `--debug_lvl` | choice (`1` &#x7C; `2` &#x7C; `3` &#x7C; `4` &#x7C; `5`) | Level of logging messages to be output.  Smaller choice produces more output. <table>  <thead>  <th>Choice</th>  <th>Max Debug Level</th> </thead>  <tbody>  <tr>  <td>5</td>  <td>Critical</td>  </tr>  <tr>  <td>4</td>  <td>Error</td>  </tr>  <tr>  <td>3</td>  <td>Warning</td>  </tr>  <tr>  <td>2</td>  <td>Info (Default)</td>  </tr> <tr> <td>1</td> <td>Debug</td>  </tbody>  </table>               | 2 (Info) |
 | `-c`, `--logstdout` | boolean | Log to stdout in addition to a file.  **NOTE:** This only controls immediate output from `maestro` during the setup phase.  Once `conductor` is launched and the study is running this log info goes to file only if not running in the foreground | `True` | <!-- insert link to the foreground/background option -->
 | `-s`, `--sleeptime` | integer | Amount of time (in seconds) for the manager to wait between job status checks. | 60 |
 
