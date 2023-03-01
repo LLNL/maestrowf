@@ -30,39 +30,30 @@ Documentation is critical in studies. The Maestro YAML Specification is an artif
 ## Reproducible Science
 ----
 
-<!-- Mermaid doesn't appear to be the tool for this diagram:
-It completely ignores LR/TB if you link between nodes instead of subgraphs.... -->
 ``` mermaid
-flowchart LR
-    subgraph exp_proc [Experimental Process]
-      direction TB
+flowchart TB
+    subgraph Initial [ ]
+      direction LR
       subgraph Process [ ]
         direction LR
         A(Scientist #1)-->B(Experimental Process)
       end
-      Process--Share-->Peers
-      subgraph Peers
-          direction TB
-          C(Scientist #2)
-          D(Scientist #3)
-      end
-    end
     B-->E
     B-->G
     B-->I
-    subgraph Lab
+    subgraph Laboratory
       direction TB
         subgraph Exp1 [Experiment 1]
           direction LR
-          E(Parameter 1) --> F(Process)
+          E(Parameter Set 1) --> F(Process)
         end
         subgraph Exp2 [Experiment 2]
           direction LR
-          G(Parameter 2) --> H(Process)
+          G(Parameter Set 2) --> H(Process)
         end
         subgraph Exp3 [Experiment 3]
           direction LR
-          I(Parameter 3) --> J(Process)
+          I(Parameter Set 3) --> J(Process)
         end
     end
     subgraph Data
@@ -74,25 +65,25 @@ flowchart LR
     K-->N(Analytics)
     L-->N
     M-->N
+    end
+      Initial--Share Process-->Peers
+      subgraph Peers
+          direction TB
+          C(Scientist #2)
+          D(Scientist #3)
+      end
 ```
 
 Maestro aims to replicate the physical sciences' experimental processes in the computational domain
 
 ``` mermaid
-flowchart LR
-    subgraph comp _proc [Computational Process]
-      direction TB
+flowchart TB
+    subgraph Initial [ ]
+      direction LR
       subgraph Process [ ]
         direction LR
         A(User #1)-->B(Computational Process)
       end
-      Process--Share-->Peers
-      subgraph Peers
-          direction TB
-          C(User #2)
-          D(User #3)
-      end
-    end
     B-->E
     B-->G
     B-->I
@@ -100,15 +91,15 @@ flowchart LR
       direction TB
         subgraph Exp1 [Computational Experiment 1]
           direction LR
-          E(Parameter 1) --> F(Process)
+          E(Parameter Set 1) --> F(Process)
         end
         subgraph Exp2 [Computational Experiment 2]
           direction LR
-          G(Parameter 2) --> H(Process)
+          G(Parameter Set 2) --> H(Process)
         end
         subgraph Exp3 [Computational Experiment 3]
           direction LR
-          I(Parameter 3) --> J(Process)
+          I(Parameter Set 3) --> J(Process)
         end
     end
     subgraph Data
@@ -120,4 +111,13 @@ flowchart LR
     K-->N(Analytics)
     L-->N
     M-->N
+    end
+      Initial--Share Process-->Peers
+      subgraph Peers
+          direction TB
+          C(User #2)
+          D(User #3)
+      end
 ```
+
+The fundamental unit of work in Maestro is the yaml based [study specification](Maestro/specification.md).  This specification not only gets used in executing/performing experiments using a set process: it also facilitates the sharing of that process to other users and allowing them to repeat/reproduce those experiments.
