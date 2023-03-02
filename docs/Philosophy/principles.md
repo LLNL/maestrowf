@@ -30,6 +30,7 @@ Documentation is critical in studies. The Maestro YAML Specification is an artif
 ## Reproducible Science
 ----
 
+
 ``` mermaid
 flowchart TB
     subgraph Initial [ ]
@@ -120,4 +121,4 @@ flowchart TB
       end
 ```
 
-The fundamental unit of work in Maestro is the yaml based [study specification](Maestro/specification.md).  This specification not only gets used in executing/performing experiments using a set process: it also facilitates the sharing of that process to other users and allowing them to repeat/reproduce those experiments.
+The fundamental unit of work in Maestro is the yaml based [study specification](Maestro/specification.md).  This specification not only gets used in executing/performing and documenting experiments using a set process: it also facilitates the sharing of that process to other users, enabling them to repeat/reproduce those experiments.

@@ -16,7 +16,7 @@ Bring rigor, reproducibility, and shareability to your computational science fol
 
 ## Why Maestro?
 
-Maestro gives an easy path to automating and orchestrating your workflows, building upon your existing shell and batch (HPC scheduled scripts/tasks) script tasks to layer on parameterization, task dependencies, and output isolation.
+Maestro gives an easy path to automating and orchestrating your workflows, building upon your existing shell and batch (HPC scheduled scripts/tasks) script tasks to layer on parameterization, task dependencies, and output isolation.  Additionally, Maestro's workflow specification layer enables documenting those scripts and their interdependencies if chaining them together, and makes them more repeatable and shareable for enhanced collaboration with your peers.
 
 ## Getting Started is Quick and Easy
 
