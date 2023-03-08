@@ -124,13 +124,23 @@ class FluxInterface_0260(FluxInterface):
                 "Assigned identifier (%s)",
                 jobid,
             )
+
+            # NOTE: cannot pickle JobID instances, so must store jobid's as
+            # strings and reconstruct for use later. Also ensure we get the
+            # Base58 form instead of integer for better user facing logging
+            jobid = str(jobid.f58)
+
         except ConnectionResetError as exception:
-            LOGGER.error("Submission failed -- Message (%s).", exception)
+            LOGGER.error("Submission failed -- Message (%s).",
+                         exception,
+                         exc_info=True)
             jobid = -1
             retcode = -2
             submit_status = SubmissionCode.ERROR
         except Exception as exception:
-            LOGGER.error("Submission failed -- Message (%s).", exception)
+            LOGGER.error("Submission failed -- Message (%s).",
+                         exception,
+                         exc_info=True)
             jobid = -1
             retcode = -1
             submit_status = SubmissionCode.ERROR
@@ -174,13 +184,19 @@ class FluxInterface_0260(FluxInterface):
         # all systems.
         cls.connect_to_flux()
 
-        LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
+        LOGGER.debug("Flux handle address -- %s", hex(id(cls.flux_handle)))
 
-        jobs_rpc = flux.job.list.JobList(cls.flux_handle, ids=joblist)
+        # Reconstruct JobID instances from the str form of the Base58 id:
+        # NOTE: cannot pickle JobID instances, so must store as strings and
+        # reconstruct for use
+        jobs_rpc = flux.job.list.JobList(
+            cls.flux_handle,
+            ids=[flux.job.JobID(jid) for jid in joblist])
 
         statuses = {}
         for jobinfo in jobs_rpc.jobs():
-            statuses[jobinfo.id] = cls.state(jobinfo.status_abbrev)
+            LOGGER.debug(f"Checking status of job with id {str(jobinfo.id.f58)}")
+            statuses[str(jobinfo.id.f58)] = cls.state(jobinfo.status_abbrev)
 
         chk_status = JobStatusCode.OK
         #  Print all errors accumulated in JobList RPC:
