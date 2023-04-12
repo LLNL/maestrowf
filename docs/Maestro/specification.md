@@ -76,7 +76,7 @@ env:
         PATH1: /dev/$(VAR2)
         
     dependencies:
-        path:
+        paths:
             - name: CODE
               path: /path/to/simulation/code
  
@@ -120,7 +120,7 @@ env:
         OUTPUTNAME: MODEL_OUTPUT_$(PARAM1.label).out #(2)
 
     dependencies:
-        path:
+        paths:
             - name: CODE
               path: /path/to/simulation/code
  
@@ -268,7 +268,7 @@ can also be used in the definition of these dependencies, as shown in the exampl
 
 There are currently two types of dependencies:
 
-* `path`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.  If a path's existence cannot be verified, then Maestro will throw an exception and halt the study launching process.
+* `paths`: verifies the existence of the specified path before execution.  This is a list of (`-` prefixed) dictionaries of paths to acquire.  If a path's existence cannot be verified, then Maestro will throw an exception and halt the study launching process.
 
     | **Key** |   **Required?**  | **Type**  |  **Description**                                                           |
     |  :-     |        :-:       |   :-:     |      :-                                                                    |

@@ -121,4 +121,4 @@ flowchart TB
       end
 ```
 
-The fundamental unit of work in Maestro is the yaml based [study specification](Maestro/specification.md).  This specification not only gets used in executing/performing and documenting experiments using a set process: it also facilitates the sharing of that process to other users, enabling them to repeat/reproduce those experiments.
+The fundamental unit of work in Maestro is the yaml based [study specification](../Maestro/specification.md).  This specification not only gets used in executing/performing and documenting experiments using a set process: it also facilitates the sharing of that process to other users, enabling them to repeat/reproduce those experiments.

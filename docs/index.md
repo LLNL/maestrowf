@@ -172,14 +172,15 @@ We firmly believe that a user-friendly tool and environment that promotes proven
 
 ## Next Steps
 
-Explore the complete set of features Maestro can bring to your computational workflows and how to use them in the [User Guide](#Maestro/index):
+Explore the complete set of features Maestro can bring to your computational workflows and how to use them in the [User Guide](Maestro/index.md):
 
-- [tutorials](#Maestro/tutorials)
-- [how-to guides](#Maestro/how_to_guides)
-- full yaml input [specification](#Maestro/specification)
+- Start from scratch with [tutorials](Maestro/tutorials.md)
+- [Port an existing HPC (SLURM, LSF, etc) batch script](Maestro/tutorials.md#porting-hpc-batch-scripts-to-maestro)
+- [How-to guides](Maestro/how_to_guides/index.md)
+- Full yaml input [specification](Maestro/specification.md)
 - and more
 
-Or, read up on more of the philosophies behind Maestro's design: [Philosopy](#Philosophy/index).
+Or, read up on more of the philosophies behind Maestro's design: [Philosopy](Philosophy/index.md).
 
 Additionally, check out some of the contributed tools and recipes in the [Maestro Sheetmusic](https://github.com/LLNL/maestro_sheetmusic) repo.  Contributions welcome if you create any generally useful tools in your workflow adventures with Maestro and want to share!
 
