@@ -594,3 +594,154 @@ srun -n1 -N1 echo "Hello, Pam!" > Hello_Pam.txt
 ```
 
 <!-- Add demo of status output and noting job id's in that output when running on clusters? -->
+
+## Porting HPC Batch Scripts to Maestro
+
+If you've been using HPC resources for some time already, you likely have a bunch of scheduler specific batch script based workflows already.  Converting those into Maestro workflow specifications and adding parameterization to them is pretty straight forward.  Lets look at how to do this using the Lulesh example in Maestros' built in examples:
+
+``` bash title="lulesh slurm batch script"
+!/bin/bash
+
+#SBATCH -N 1
+#SBATCH -p pbatch
+#SBATCH -t 00:10:00
+#SBATCH -A baasic
+
+srun -n 16 path/to/lulesh/repo/build/lulesh2.0 -s 100 -i 100 -p > lulesh_size100_iter100.log
+```
+
+A first pass of porting this batch script to a Maestro spec would look like:
+
+``` yaml title="initial port of lulesh slurm batch script to Maestro spec"
+description:
+    name: lulesh_study
+    description: A study that runs lulesh once on SLURM.
+    
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+    
+env:
+    variables:
+        OUTPUT_PATH: ./LULESH_STUDY
+        
+study:
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s 100 -i 100 -p > lulesh_size100_iter100.log
+          nodes: 1
+          procs: 16
+          exclusive   : True
+          walltime: "00:10:00"
+```
+
+The only major difference so far is in using the `$(LAUNCHER)` token instead of the explicit `srun` in the script definition in the Maestro spec.  Now that it's in Maestro we can start layering on the extra bells and whistles that led you to look into Maestro in the first place, starting with parameters.  We can trivially run a parameter study of lulesh with varying input parameters now.  Below we add 9 parameter combinations to our study:
+
+``` yaml title="adding parameters to the lulesh spec"
+description:
+    name: lulesh_study
+    description: A study that runs a parameter study using LULESH on SLURM.
+    
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+
+env:
+    variables:
+        OUTPUT_PATH: ./LULESH_STUDY
+
+    labels:
+        lulesh_log: $(SIZE.label).$(ITERATIONS.label).log
+        
+study:
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
+          nodes: 1
+          procs: 16
+          exclusive   : True
+          walltime: "00:10:00"
+          
+global.parameters:
+    SIZE:
+        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
+        label   : ITER.%%
+```
+
+Note that the initial Maestro spec set an explicit name for the lulesh log file which tagged the size and iteration count in a hardwired manner.  In this parameterized form we can also let Maestro dyanmically name this log output using [`labels`](specification.md#labels-labels) in the [`env` block](specification.md#environment-env).  The `lulesh_log` label injects the parameter labels into the log file name at study staging time so each log file is uniquely named according to its parameter set: SIZE.100.ITER.100.log, SIZE.100.ITER.200.log, etc.
+
+Finally, we can add some dependent steps to do some processing for each simulation and a reporting step for collecting the metrics from each parameter set for a summary report.
+
+``` yaml title="add dependent steps to the parameterized lulesh spec"
+description:
+    name: lulesh_study
+    description: A study that runs a parameter study using LULESH on SLURM.
+    
+batch:
+    type        : slurm
+    host        : quartz
+    bank        : baasic
+    queue       : pbatch
+
+env:
+    variables:
+        OUTPUT_PATH: ./LULESH_STUDY
+        LULESH_SIM_POST: $(SPECROOT)/lulesh_sim_post.py
+        LULESH_STUDY_REPORT: $(SPECROOT)/lulesh_study_summary.py
+
+    labels:
+        lulesh_log: $(SIZE.label).$(ITERATIONS.label).log
+        lulesh_sim_metrics: $(SIZE.label).$(ITERATIONS.label).metrics
+        
+study:
+    - name: run-lulesh
+      description: Run LULESH.
+      run:
+          cmd: |
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
+          nodes: 1
+          procs: 16
+          exclusive   : True
+          walltime: "00:10:00"
+          
+    - name: lulesh-post
+      description: Post processing of the LULESH outputs for a single simulation
+      run:
+          cmd: |
+            $(LAUNCHER) python3 $(LULESH_SIM_POST) --lulesh-log $(run-lulesh.workspace)/$(lulesh_log) --out $(lulesh_sim_metrics)
+          nodes: 1
+          procs: 1
+          walltime: "00:10:00"
+          depends: [run-lulesh]
+          
+    - name: study-report
+      description: Summary statics from all LULESH simulations in this study
+      run:
+          cmd: |
+            $(LAUNCHER) python3 $(LULESH_STUDY_REPORT) --metrics $(lulesh-post)/*/*.metrics --report lulesh_summary.report
+          nodes: 1
+          procs: 1
+          walltime: "00:10:00"
+          depends: [lulesh-post_*]
+          
+global.parameters:
+    SIZE:
+        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
+        label   : SIZE.%%
+    ITERATIONS:
+        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
+        label   : ITER.%%
+```
+
+We now have per parameter set post processing steps that extract data from each individual simulation, using the `$(run-lulesh.workspace)` token to reach back into the individual simulation step workspaces to get the generated logs to process.  This `lulesh-post` step uses the `depends: [run-lulesh]` key to indicate that this step will not run until the `run-lulesh` step with the same parameter set has finish.  The `study-report` uses a similar mechanism, but with a tweak to the `depends` key such that it requires all parameter combinations of the `lulesh-post` steps to finish before running using the syntax `depends: [lulesh-post_*]`.  As potential next steps check out the [full lulesh sample specifications](Maestro/specification.md#full-example) and the [environment block](Maestro/specification.md#environment-env) to explore using dependencies instead of variables to manage both lulesh's executable and the supporting post-processing scripts.
