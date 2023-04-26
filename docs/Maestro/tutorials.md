@@ -14,7 +14,13 @@ description:
     description: A simple 'Hello World' study.
 ```
 
-Now that we have the documentation and purpose of the study embedded into it it's time to add something for it to actually do.  This is done via the `study` block, which contains a list of study steps.  We'll use the `-` `YAML` syntax here as each step is a multiline dictionary of sub keys.  As with the study level `description`, each step is required to have a `name` and a `description`.  `name` is a unique identifier here and can be used in references as shown in subsequent examples.  Finally there is the `run` block, which contains at a minimum a `cmd` key which contains the actual shell commands to run.  Currently these are bash only.  We use the `|` `YAML` syntax to denote the following will be multiple lines but all are stored in the `cmd` key:
+Now that we have the documentation and purpose of the study embedded into it it's time to add something for it to actually do.  This is done via the `study` block, which contains a list of study steps.  We'll use the `-` `YAML` syntax here as each step is a `YAML` node containing a mapping (key value pairs/dictionary).  As with the study level `description`, each step is required to have a `name` and a `description`.  `name` is a unique identifier here and can be used in references as shown in subsequent examples.  
+
+!!! warning
+
+    Step names get used in the workspaces created on the file system, so be mindful of that when naming steps.
+
+Finally there is the `run` block, which contains at a minimum a `cmd` key which contains the actual shell commands to run.  Currently these are bash only.  We use the `|` `YAML` syntax to denote the following will be multiple lines but all are stored in the `cmd` key:
 
 ``` yaml
 description:
@@ -28,6 +34,14 @@ study:
           cmd: |
             echo "Hello, World!" > hello_world.txt
 ```
+
+!!! success
+
+    We now have a complete, runnable Maestro Spec!
+
+### Concepts
+
+Here we take a very brief aside on a few key concepts to keep in mind when using Maestro.  A fundamental concept in Maestro is that the steps (say-hello above) are a discrete unit of work.  Similarly the study encapsulates all the units of work and their execution order dependencies in the given workflow.  As we will see in following variants, these units of work we are describing in the steps are actually templates, decoupling any parameter values you may want to inject from the description of the work being done, enabling a more clear view of the intent of the processes.
 
 ### The `run` command
 
@@ -112,7 +126,7 @@ Now let's take a look at what actually got written to that date-timestamped outp
 !!! note
 
     The output above was generated with the help of the excellent [Rich Library](https://github.com/Textualize/rich), which is also used for rendering the study status.  See the INSERT LINK script if you wish to reproduce the view for your own study workspaces
-    
+
 Inside that date-timestamped workspace that contains this instance of the executed study is more than you might expect to get generated for a study who's only output is the "hello_world.txt" that is generated in the actual study step.  Most of this is metadata Maestro needs for generating and running the study (`meta` folder), log files which you can use to debug your studies (see `maestro -h` for debug/log options), the pickle file Maestro creates for managing study data while running, and then finally the workspaces for each of the steps in the study.  In this case we have a single directory with `name` from the specification, combined with error and standard outputs from the executed shell script, the generated output file `hello_world.txt` and the shell script itself `hello_world.sh`.  This last file is one of the more important pieces as it is the shell script as Maestro ran it.  This enables both debugging and verifying pre run (using `--dry` argument to the `run` command), as well as rerunning.  This shell script is runnable as is without Maestro, enabling more rapid debugging and testing of it.  
 
 ### Environment (`env`) block
@@ -597,7 +611,7 @@ srun -n1 -N1 echo "Hello, Pam!" > Hello_Pam.txt
 
 ## Porting HPC Batch Scripts to Maestro
 
-If you've been using HPC resources for some time already, you likely have a bunch of scheduler specific batch script based workflows already.  Converting those into Maestro workflow specifications and adding parameterization to them is pretty straight forward.  Lets look at how to do this using the Lulesh example in Maestros' built in examples:
+If you've been using HPC resources for some time already, you likely have a bunch of scheduler specific batch script based workflows already.  Converting those into Maestro workflow specifications and adding parameterization to them is pretty straight forward.  Lets look at how to do this using the Lulesh example in Maestros' [built in examples](https://github.com/LLNL/maestrowf/tree/develop/samples):
 
 ``` bash title="lulesh slurm batch script"
 !/bin/bash
@@ -634,14 +648,15 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s 100 -i 100 -p > lulesh_size100_iter100.log
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 \
+            -s 100 -i 100 -p > lulesh_size100_iter100.log
           nodes: 1
           procs: 16
           exclusive   : True
           walltime: "00:10:00"
 ```
 
-The only major difference so far is in using the `$(LAUNCHER)` token instead of the explicit `srun` in the script definition in the Maestro spec.  Visually, the workflow topology is a simple two node graph as shown below:
+The only major difference so far is in using the `$(LAUNCHER)` token instead of the explicit `srun` in the script definition in the Maestro spec.  The batch/scheduler system information is converted to keys in the step (`nodes`, `procs`, `walltime`) and the batch block.  This leaves the step implementation decoupled from scheduler specifics, making it more portable (change the `batch: type:` key to another system) and more focused on the intent of the process (running lulesh) than the details of how it's running (srun ...).  Visually, the workflow topology for such a study is a simple two node graph as shown below:
 
 ``` mermaid
 flowchart TD;
@@ -649,10 +664,14 @@ flowchart TD;
     B(run-lulesh);
 ```
 
+!!! note
+
+    We are using the `\` line continuation operator here for improved readability in the docs.  It is not necessary to use this in your steps for long lines, though it can help readability even in your ide/text editor
+
 ### Adding all the bells and whistles
 #### Parameterization
 
-Now that it's in Maestro we can start layering on the extra bells and whistles that led you to look into Maestro in the first place, starting with parameters.  We can trivially run a parameter study of lulesh with varying input parameters now.  Below we add 4 parameter combinations to our study by making a few simple changes using [Maestro's token based DSL](specification.md#tokens-maestros-minimal-workflow-dsl):
+Now that it's in Maestro we can start layering on the extra bells and whistles that highlight the advantages of using Maestro even for simple one step workflows.  We can trivially run a parameter study of lulesh with varying input parameters now.  Below we add 4 parameter combinations to our study by making a few simple changes using [Maestro's token based DSL](specification.md#tokens-maestros-minimal-workflow-dsl):
 
 ``` yaml title="adding parameters to the lulesh spec"
 description:
@@ -677,7 +696,8 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 \
+            -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
           nodes: 1
           procs: 16
           exclusive   : True
@@ -692,6 +712,10 @@ global.parameters:
         label   : ITER.%%
 ```
 
+!!! tip
+
+    A key concept here is that the step definitions function more as a template of the work you want Maestro to do rather than a concrete instance of the work.  The parameter usage shown here presents a view more focused on the intent of your process, leaving the expansion into each concrete experiment (specific values/parameter combinations shown below) up to Maestro
+    
 The parameter sets that run-lulesh is run against are:
 
 |              | Combo #1 | Combo #2 | Combo #3 | Combo #4 |
@@ -733,7 +757,7 @@ Note that the initial Maestro spec set an explicit name for the lulesh log file 
 
 #### Expanding the topology of the workflow
 
-Finally, we can add some dependent steps to do some processing for each simulation and a reporting step for collecting the metrics from each parameter set for a summary report.
+Now that we've ported our bash/batch script workflow to Maestro, le's explore how easy it is to build on our workflow with Maestro by adding additional steps that depend upon eachother.  We will add some dependent steps to do some processing for each simulation (one per parameter combination) and a reporting step for collecting the metrics from each parameter set for a summary report.
 
 ``` yaml title="add dependent steps to the parameterized lulesh spec"
 description:
@@ -761,7 +785,8 @@ study:
       description: Run LULESH.
       run:
           cmd: |
-            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
+            $(LAUNCHER) path/to/lulesh/repo/build/lulesh2.0 \
+            -s $(SIZE) -i $(ITERATIONS) -p > $(lulesh_log)
           nodes: 1
           procs: 16
           exclusive   : True
@@ -771,7 +796,9 @@ study:
       description: Post processing of the LULESH outputs for a single simulation
       run:
           cmd: |
-            $(LAUNCHER) python3 $(LULESH_SIM_POST) --lulesh-log $(run-lulesh.workspace)/$(lulesh_log) --out $(lulesh_sim_metrics)
+            $(LAUNCHER) python3 $(LULESH_SIM_POST) \
+            --lulesh-log $(run-lulesh.workspace)/$(lulesh_log) \
+            --out $(lulesh_sim_metrics)
           nodes: 1
           procs: 1
           walltime: "00:10:00"
@@ -781,7 +808,9 @@ study:
       description: Summary statics from all LULESH simulations in this study
       run:
           cmd: |
-            $(LAUNCHER) python3 $(LULESH_STUDY_REPORT) --metrics $(lulesh-post)/*/*.metrics --report lulesh_summary.report
+            $(LAUNCHER) python3 $(LULESH_STUDY_REPORT) \
+            --metrics $(lulesh-post)/*/*.metrics \
+            --report lulesh_summary.report
           nodes: 1
           procs: 1
           walltime: "00:10:00"
@@ -846,6 +875,8 @@ flowchart TD;
     COMBO4 --> J(study-report);
 ```
 
+Maestro handles the execution of these steps in the order we've defined in this graph, i.e. each lulesh-post step waits for it's corresponding run-lulesh step to finish before running, and the study-report step waits for all instances of lulesh-post to finish before running.
+
 ### Next steps
 
-As potential next steps check out the [full lulesh sample specifications](Maestro/specification.md#full-example) and the [environment block](Maestro/specification.md#environment-env) to explore using dependencies instead of variables to manage both lulesh's executable and the supporting post-processing scripts.
+As potential next steps check out the [full lulesh sample specifications](Maestro/specification.md#full-example) and the [environment block](Maestro/specification.md#environment-env) to explore using dependencies instead of variables to manage both lulesh's executable and the supporting post-processing scripts.  If you need more complicated parameter generation techniques/facilities, check out the [`pgen`](parameter_specification.md#parameter-generator-pgen).  If managing restarts for long running jobs that timeout is a concern in your workflow, checkout the optional [`restart`](specification.md#run) key available in steps and the [`rlimit`](cli.md#run) option to the run command. Additionally check out the collection of example specifications in the repository's [samples directory](https://github.com/LLNL/maestrowf/tree/develop/samples) and [How-to guides](how_to_guides/index.md) for additional examples/workflow solutions.

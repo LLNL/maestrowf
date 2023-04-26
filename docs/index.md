@@ -178,6 +178,7 @@ Explore the complete set of features Maestro can bring to your computational wor
 - [Port an existing HPC (SLURM, LSF, etc) batch script](Maestro/tutorials.md#porting-hpc-batch-scripts-to-maestro)
 - [How-to guides](Maestro/how_to_guides/index.md)
 - Full yaml input [specification](Maestro/specification.md)
+- Colleciton of example specifications in the repo's [samples directory](https://github.com/LLNL/maestrowf/tree/develop/samples)
 - and more
 
 Or, read up on more of the philosophies behind Maestro's design: [Philosopy](Philosophy/index.md).
