@@ -610,6 +610,8 @@ If you've been using HPC resources for some time already, you likely have a bunc
 srun -n 16 path/to/lulesh/repo/build/lulesh2.0 -s 100 -i 100 -p > lulesh_size100_iter100.log
 ```
 
+### Basic Conversion of Batch Script to Maestro Specification
+
 A first pass of porting this batch script to a Maestro spec would look like:
 
 ``` yaml title="initial port of lulesh slurm batch script to Maestro spec"
@@ -639,7 +641,18 @@ study:
           walltime: "00:10:00"
 ```
 
-The only major difference so far is in using the `$(LAUNCHER)` token instead of the explicit `srun` in the script definition in the Maestro spec.  Now that it's in Maestro we can start layering on the extra bells and whistles that led you to look into Maestro in the first place, starting with parameters.  We can trivially run a parameter study of lulesh with varying input parameters now.  Below we add 9 parameter combinations to our study:
+The only major difference so far is in using the `$(LAUNCHER)` token instead of the explicit `srun` in the script definition in the Maestro spec.  Visually, the workflow topology is a simple two node graph as shown below:
+
+``` mermaid
+flowchart TD;
+    A(study root) --> B;
+    B(run-lulesh);
+```
+
+### Adding all the bells and whistles
+#### Parameterization
+
+Now that it's in Maestro we can start layering on the extra bells and whistles that led you to look into Maestro in the first place, starting with parameters.  We can trivially run a parameter study of lulesh with varying input parameters now.  Below we add 4 parameter combinations to our study by making a few simple changes using [Maestro's token based DSL](specification.md#tokens-maestros-minimal-workflow-dsl):
 
 ``` yaml title="adding parameters to the lulesh spec"
 description:
@@ -672,14 +685,53 @@ study:
           
 global.parameters:
     SIZE:
-        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
+        values  : [100, 100, 200, 200]
         label   : SIZE.%%
     ITERATIONS:
-        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
+        values  : [100, 200, 100, 200]
         label   : ITER.%%
 ```
 
+The parameter sets that run-lulesh is run against are:
+
+|              | Combo #1 | Combo #2 | Combo #3 | Combo #4 |
+| :-           | :-:      | :-:      | :-:      | :-:      |
+| `SIZE`       | 100      | 100      | 200      | 200      |
+| `ITERATIONS` | 100      | 200      | 100      | 200      |
+
+And the resulting workflow topology now looks like:
+
+``` mermaid
+flowchart TD;
+    A(study root) --> COMBO1;
+    subgraph COMBO1 [Combo #1]
+      subgraph run_lulesh1 [run-lulesh]
+        B(ITERATIONS: 100, SIZE: 100) ;
+      end
+    end
+    A --> COMBO2 ;
+    subgraph COMBO2 [Combo #2]
+      subgraph run_lulesh2 [run-lulesh]
+        C(ITERATIONS: 200, SIZE: 100) ;
+      end
+    end
+    A --> COMBO3 ;
+    subgraph COMBO3 [Combo #3]
+      subgraph run_lulesh3 [run-lulesh]
+        D(ITERATIONS: 100, SIZE: 200) ;
+      end
+    end
+    A --> COMBO4 ;
+    subgraph COMBO4 [Combo #4]
+      subgraph run_lulesh4 [run-lulesh]
+        E(ITERATIONS: 200, SIZE: 200) ;
+      end
+    end
+```
+
 Note that the initial Maestro spec set an explicit name for the lulesh log file which tagged the size and iteration count in a hardwired manner.  In this parameterized form we can also let Maestro dyanmically name this log output using [`labels`](specification.md#labels-labels) in the [`env` block](specification.md#environment-env).  The `lulesh_log` label injects the parameter labels into the log file name at study staging time so each log file is uniquely named according to its parameter set: SIZE.100.ITER.100.log, SIZE.100.ITER.200.log, etc.
+
+#### Expanding the topology of the workflow
 
 Finally, we can add some dependent steps to do some processing for each simulation and a reporting step for collecting the metrics from each parameter set for a summary report.
 
@@ -737,11 +789,63 @@ study:
           
 global.parameters:
     SIZE:
-        values  : [100, 100, 100, 200, 200, 200, 300, 300, 300]
+        values  : [100, 100, 200, 200]
         label   : SIZE.%%
     ITERATIONS:
-        values  : [100, 200, 300, 100, 200, 300, 100, 200, 300]
+        values  : [100, 200, 100, 200]
         label   : ITER.%%
 ```
 
-We now have per parameter set post processing steps that extract data from each individual simulation, using the `$(run-lulesh.workspace)` token to reach back into the individual simulation step workspaces to get the generated logs to process.  This `lulesh-post` step uses the `depends: [run-lulesh]` key to indicate that this step will not run until the `run-lulesh` step with the same parameter set has finish.  The `study-report` uses a similar mechanism, but with a tweak to the `depends` key such that it requires all parameter combinations of the `lulesh-post` steps to finish before running using the syntax `depends: [lulesh-post_*]`.  As potential next steps check out the [full lulesh sample specifications](Maestro/specification.md#full-example) and the [environment block](Maestro/specification.md#environment-env) to explore using dependencies instead of variables to manage both lulesh's executable and the supporting post-processing scripts.
+We now have per parameter set post processing steps that extract data from each individual simulation, using the `$(run-lulesh.workspace)` token to reach back into the individual simulation step workspaces to get the generated logs to process.  This `lulesh-post` step uses the `depends: [run-lulesh]` key to indicate that this step will not run until the `run-lulesh` step with the same parameter set has finish.  The `study-report` uses a similar mechanism, but with a tweak to the `depends` key such that it requires all parameter combinations of the `lulesh-post` steps to finish before running using the syntax `depends: [lulesh-post_*]`.  Those simple additions to the spec result in the new workflow topology:
+
+``` mermaid
+flowchart TD;
+    A(study root) --> COMBO1;
+    subgraph COMBO1 [Combo #1]
+      subgraph run_lulesh1 [run-lulesh]
+        B(ITERATIONS: 100, SIZE: 100) ;
+      end
+      subgraph lulesh-post1 [lulesh-post]
+        F(ITERATIONS: 100, SIZE: 100) ;
+      end
+      run_lulesh1 --> lulesh-post1;
+    end
+    A --> COMBO2 ;
+    subgraph COMBO2 [Combo #2]
+      subgraph run_lulesh2 [run-lulesh]
+        C(ITERATIONS: 200, SIZE: 100) ;
+      end
+      subgraph lulesh-post2 [lulesh-post]
+        G(ITERATIONS: 200, SIZE: 100) ;
+      end
+      run_lulesh2 --> lulesh-post2;
+    end
+    A --> COMBO3 ;
+    subgraph COMBO3 [Combo #3]
+      subgraph run_lulesh3 [run-lulesh]
+        D(ITERATIONS: 100, SIZE: 200) ;
+      end
+      subgraph lulesh-post3 [lulesh-post]
+        H(ITERATIONS: 100, SIZE: 200) ;
+      end
+      run_lulesh3 --> lulesh-post3;
+    end
+    A --> COMBO4 ;
+    subgraph COMBO4 [Combo #4]
+      subgraph run_lulesh4 [run-lulesh]
+        E(ITERATIONS: 200, SIZE: 200) ;
+      end
+      subgraph lulesh-post4 [lulesh-post]
+        I(ITERATIONS: 200, SIZE: 200) ;
+      end
+      run_lulesh4 --> lulesh-post4;
+    end
+    COMBO1 --> J(study-report);
+    COMBO2 --> J(study-report);
+    COMBO3 --> J(study-report);
+    COMBO4 --> J(study-report);
+```
+
+### Next steps
+
+As potential next steps check out the [full lulesh sample specifications](Maestro/specification.md#full-example) and the [environment block](Maestro/specification.md#environment-env) to explore using dependencies instead of variables to manage both lulesh's executable and the supporting post-processing scripts.
