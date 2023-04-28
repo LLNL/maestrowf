@@ -1,4 +1,0 @@
-Maestro Core Concepts
-======================
-
-Stub

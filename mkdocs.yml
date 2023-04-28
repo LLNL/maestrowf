@@ -1,0 +1,120 @@
+site_name: Maestro Workflow Conductor
+use_directory_urls: false
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - md_in_html
+  - pymdownx.snippets:
+      base_path: ['.']
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.superfences:
+      # make exceptions to highlighting of code:
+      # custom_fences:
+      #   - name: mermaid
+      #     class: mermaid
+      #     format: !!python/name:pymdownx.superfences.fence_div_format #mermaid2.fence_mermaid
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format #mermaid.fence_mermaid 
+        # - name: mermaid_center
+        #   class: mermaid
+        #   format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+    - search
+    - mkdocstrings:
+        handlers:
+          python:
+            paths: [..]
+            options:
+              docstring_style: sphinx
+
+    - gen-files:
+        scripts:
+          - docs/gen_api_docs.py
+    - literate-nav:
+        nav_file: SUMMARY.md
+    - glightbox
+    # - section-index
+    # - mermaid2:
+    #     arguments:
+    #       securityLevel: 'loose'
+    #       theme: 'default'
+            # darkMode: True
+          # theme: |
+          #   ^(JSON.parse(__md_get("__palette").index == 1)) ? 'dark' : 'light'
+extra_javascript:
+    - https://unpkg.com/mermaid/dist/mermaid.min.js
+
+extra_css:
+  - custom.css
+  
+theme:
+  name: material
+  logo: assets/logo2.png
+  features:
+    - header.autohide
+    - navigation.tabs.sticky
+    - navigation.tabs
+    # - navigation.expand
+    - navigation.instant
+    - navigation.indexes
+    # - toc.integrate
+    - content.code.annotate
+  palette:
+    - scheme: slate
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+     
+  custom_dir: docs/overrides
+nav:
+    # - 'index2.md'  
+    - Maestro: 'index.md'
+    - Philosophy:
+        - Background: "Philosophy/index.md"
+        - How are Workflows Represented?: "Philosophy/representation.md"
+        - Principles: "Philosophy/principles.md"
+    - User Guide:
+        - Overview: 'Maestro/index.md'
+        - Installation: 'Maestro/install.md'
+        - Tutorials: 'Maestro/tutorials.md'
+        - Monitoring Studies: 'Maestro/monitoring.md'
+        - Command Line Interface: 'Maestro/cli.md'
+        - Specification:
+            - Specification 1.0: 'Maestro/specification.md'
+            - Scheduling Studies: 'Maestro/scheduling.md'
+        - Specifying Study Parameters: 'Maestro/parameter_specification.md'
+        - How-to Guides:
+            - 'Maestro/how_to_guides/index.md'
+            - 'Maestro/how_to_guides/timeouts.md'
+            - 'Maestro/how_to_guides/controlling_step_states.md'
+            - 'Maestro/how_to_guides/parameter_batches.md'
+    - Reference Guide:
+        - Maestro Reference: Maestro/reference_guide/index.md
+        - Design Reference: Maestro/reference_guide/design_reference/
+        - API Reference: Maestro/reference_guide/api_reference/
+
+            # - API Reference: 'reference/'
+              
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/LLNL/maestrowf
+      name: Maestro on GitHub
+copyright: Copyright &copy; 2017 | Francesco Di Natale; Copyright &copy; 2023 | Francesco Di Natale, Jeremy White
