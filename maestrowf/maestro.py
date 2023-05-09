@@ -38,7 +38,7 @@ import sys
 # import tabulate
 import time
 
-from maestrowf import status_renderer_factory
+from maestrowf import __version__, status_renderer_factory
 from maestrowf.conductor import Conductor
 from maestrowf.specification import YAMLSpecification
 from maestrowf.datastructures.core import Study
@@ -47,7 +47,6 @@ from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
 
-from importlib_metadata import version  # Replace upon deprecation of python 3.7
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -471,7 +470,7 @@ def setup_argparser():
         "-c", "--logstdout", action="store_true", default=True,
         help="Log to stdout in addition to a file. [Default: %(default)s]")
     parser.add_argument(
-        "-v", "--version", action="version", version='%(prog)s ' + version(__package__))
+        "-v", "--version", action="version", version='%(prog)s ' + __version__)
 
     return parser
 
