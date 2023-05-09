@@ -41,7 +41,11 @@ from io import StringIO
 import logging
 import sys
 
-from importlib_metadata import version  # Replace upon deprecation of python 3.7
+try:
+    from importlib.metadata import version
+except ImportError as imp_err:
+    # Remove this try/except upon deprecation of python 3.7
+    from importlib_metadata import version
 
 from rich import box
 from rich.console import Console
