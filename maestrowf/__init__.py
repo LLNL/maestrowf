@@ -41,6 +41,12 @@ from io import StringIO
 import logging
 import sys
 
+try:
+    from importlib.metadata import version
+except ImportError as imp_err:
+    # Remove this try/except upon deprecation of python 3.7
+    from importlib_metadata import version
+
 from rich import box
 from rich.console import Console
 from rich.table import Table
@@ -63,8 +69,7 @@ except ImportError:
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(NullHandler())
 
-__version_info__ = ("1", "1", "9dev1")
-__version__ = '.'.join(__version_info__)
+__version__ = version(__package__)
 
 
 @six.add_metaclass(ABCMeta)
