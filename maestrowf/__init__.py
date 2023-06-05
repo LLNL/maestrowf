@@ -80,6 +80,9 @@ class BaseStatusRenderer:
         self._study_title = ''
         self._theme_dict = {}
 
+        self.disable_theme = kwargs.pop("disable_theme", False)
+        self.disable_pager = kwargs.pop("disable_pager", False)
+
     @abstractmethod
     def layout(self, status_data, study_title=None, data_filters=None):
         """Setup concrete status layout
@@ -94,9 +97,28 @@ class BaseStatusRenderer:
         """
         pass
 
-    @abstractmethod
     def render(self, theme=None):
-        pass
+        """Do the actual printing"""
+        # Apply any theme customization
+        if theme:
+            for key, value in theme.items():
+                self._theme_dict[key] = value
+
+        # If we're disabling the theme, we need to set all themes in the theme dict to none
+        if self.disable_theme:
+            for key in self._theme_dict.keys():
+                self._theme_dict[key] = 'none'
+
+        # Get the rich Console
+        status_theme = Theme(self._theme_dict)
+        _printer = Console(theme=status_theme)
+
+        # Display the status table
+        if self.disable_pager:
+            _printer.print(self._status_table)
+        else:
+            with _printer.pager(styles=(not self.disable_theme)):
+                _printer.print(self._status_table)
 
 
 class LegacyStatusRenderer(BaseStatusRenderer):
@@ -236,20 +258,6 @@ class FlatStatusRenderer(BaseStatusRenderer):
                   for key in cols],
                 style=row_style
             )
-
-    def render(self, theme=None):
-        """Do the actual printing"""
-
-        # Apply any theme customization
-        if theme:
-            for key, value in theme.items():
-                self._theme_dict[key] = value
-
-        status_theme = Theme(self._theme_dict)
-
-        _printer = Console(theme=status_theme)
-
-        _printer.print(self._status_table)
 
     def render_to_str(self, theme=None, width=200):
         """Capture output to string"""
@@ -440,20 +448,6 @@ class NarrowStatusRenderer(BaseStatusRenderer):
 
             self._status_table.add_row(step_table, end_section=True)
 
-    def render(self, theme=None):
-        """Do the actual printing"""
-
-        # Apply any theme customization
-        if theme:
-            for key, value in theme.items():
-                self._theme_dict[key] = value
-
-        status_theme = Theme(self._theme_dict)
-
-        _printer = Console(theme=status_theme)
-
-        _printer.print(self._status_table)
-
     def render_to_str(self, theme=None, width=120):
         """Capture output to string"""
 
@@ -510,11 +504,15 @@ class StatusRendererFactory:
         """
         self._layouts[layout] = renderer
 
-    def get_renderer(self, layout):
+    def get_renderer(self, layout, disable_theme, disable_pager):
         """Get handle for specific layout renderer to instantiate
 
         Args:
             layout (str): Name of layout renderer
+            disable_theme (bool): True if the user wants to disable themes when displaying status.
+                                  False otherwise.
+            disable_pager (bool): True if the user wants to disable the pager when displaying status.
+                                  False otherwise.
 
         Returns:
             BaseStatusRenderer: The concrete status renderer class
@@ -525,7 +523,7 @@ class StatusRendererFactory:
         if not renderer:
             raise ValueError(layout)
 
-        return renderer()
+        return renderer(disable_theme=disable_theme, disable_pager=disable_pager)
 
     def get_layouts(self):
         """Get list of registered layouts
