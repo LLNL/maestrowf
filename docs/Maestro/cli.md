@@ -102,6 +102,8 @@ maestro status [OPTIONS] DIRECTORY [DIRECTORY ...]
 | ---- | ---- | ----------- | ------- |
 | `-h`, `--help` | boolean | Show this help message and exit. | `False` |
 | `--layout` | choice (`flat` &#x7C; `legacy` &#x7C; `narrow`) | Alternate status table layouts. See [Status Layouts](monitoring.md#status-layouts) for description of these options| `flat` |
+| `--disable-theme` | boolean | Turn off styling for the status layout. See [Status Theme](monitoring.md#status-theme) for more information on this option. | `False` |
+| `--disable-pager` | boolean | Turn off the pager for the status display. See [Status Pager](monitoring.md#status-pager) for more information on this option. | `False` |
 
 
 ## **conductor**
