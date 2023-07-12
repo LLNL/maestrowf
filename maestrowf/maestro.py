@@ -276,88 +276,92 @@ def run_study(args):
     study = Study(spec.name, spec.description, studyenv=environment,
                   parameters=parameters, steps=steps, out_path=output_path)
 
-    # Check if the submission attempts is greater than 0:
-    if args.attempts < 1:
-        _msg = "Submission attempts must be greater than 0. " \
-               "'{}' provided.".format(args.attempts)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
+    maestro_dag = study.stage()
 
-    # Check if the throttle is zero or greater:
-    if args.throttle < 0:
-        _msg = "Submission throttle must be a value of zero or greater. " \
-               "'{}' provided.".format(args.throttle)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
+    print(maestro_dag.adjacency_table)
 
-    # Check if the restart limit is zero or greater:
-    if args.rlimit < 0:
-        _msg = "Restart limit must be a value of zero or greater. " \
-               "'{}' provided.".format(args.rlimit)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
+    # # Check if the submission attempts is greater than 0:
+    # if args.attempts < 1:
+    #     _msg = "Submission attempts must be greater than 0. " \
+    #            "'{}' provided.".format(args.attempts)
+    #     LOGGER.error(_msg)
+    #     raise ArgumentError(_msg)
 
-    # Set up the study workspace and configure it for execution.
-    study.setup_workspace()
-    study.configure_study(
-        throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
-    study.setup_environment()
+    # # Check if the throttle is zero or greater:
+    # if args.throttle < 0:
+    #     _msg = "Submission throttle must be a value of zero or greater. " \
+    #            "'{}' provided.".format(args.throttle)
+    #     LOGGER.error(_msg)
+    #     raise ArgumentError(_msg)
 
-    if args.dry:
-        # If performing a dry run, drive sleep time down to generate scripts.
-        sleeptime = 1
-    else:
-        # else, use args to decide sleeptime
-        sleeptime = args.sleeptime
+    # # Check if the restart limit is zero or greater:
+    # if args.rlimit < 0:
+    #     _msg = "Restart limit must be a value of zero or greater. " \
+    #            "'{}' provided.".format(args.rlimit)
+    #     LOGGER.error(_msg)
+    #     raise ArgumentError(_msg)
 
-    batch = {"type": "local"}
-    if spec.batch:
-        batch = spec.batch
-        if "type" not in batch:
-            batch["type"] = "local"
-    # Copy the spec to the output directory
-    shutil.copy(args.specification, study.output_path)
+    # # Set up the study workspace and configure it for execution.
+    # study.setup_workspace()
+    # study.configure_study(
+    #     throttle=args.throttle, submission_attempts=args.attempts,
+    #     restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
+    #     dry_run=args.dry)
+    # study.setup_environment()
 
-    # Use the Conductor's classmethod to store the study.
-    Conductor.store_study(study)
-    Conductor.store_batch(study.output_path, batch)
+    # if args.dry:
+    #     # If performing a dry run, drive sleep time down to generate scripts.
+    #     sleeptime = 1
+    # else:
+    #     # else, use args to decide sleeptime
+    #     sleeptime = args.sleeptime
 
-    # If we are automatically launching, just set the input as yes.
-    if args.autoyes or args.dry:
-        uinput = "y"
-    elif args.autono:
-        uinput = "n"
-    else:
-        uinput = six.moves.input("Would you like to launch the study? [yn] ")
+    # batch = {"type": "local"}
+    # if spec.batch:
+    #     batch = spec.batch
+    #     if "type" not in batch:
+    #         batch["type"] = "local"
+    # # Copy the spec to the output directory
+    # shutil.copy(args.specification, study.output_path)
 
-    if uinput.lower() in ACCEPTED_INPUT:
-        if args.fg:
-            # Launch in the foreground.
-            LOGGER.info("Running Maestro Conductor in the foreground.")
-            conductor = Conductor(study)
-            conductor.initialize(batch, sleeptime)
-            completion_status = conductor.monitor_study()
-            conductor.cleanup()
-            return completion_status.value
-        else:
-            # Launch manager with nohup
-            log_path = make_safe_path(
-                study.output_path,
-                *["{}.txt".format(study.name)])
+    # # Use the Conductor's classmethod to store the study.
+    # Conductor.store_study(study)
+    # Conductor.store_batch(study.output_path, batch)
 
-            cmd = ["nohup", "conductor",
-                   "-t", str(sleeptime),
-                   "-d", str(args.debug_lvl),
-                   study.output_path,
-                   ">", log_path, "2>&1"]
-            LOGGER.debug(" ".join(cmd))
-            start_process(" ".join(cmd))
+    # # If we are automatically launching, just set the input as yes.
+    # if args.autoyes or args.dry:
+    #     uinput = "y"
+    # elif args.autono:
+    #     uinput = "n"
+    # else:
+    #     uinput = six.moves.input("Would you like to launch the study? [yn] ")
 
-            print("Study launched successfully.")
-    else:
-        print("Study launch aborted.")
+    # if uinput.lower() in ACCEPTED_INPUT:
+    #     if args.fg:
+    #         # Launch in the foreground.
+    #         LOGGER.info("Running Maestro Conductor in the foreground.")
+    #         conductor = Conductor(study)
+    #         conductor.initialize(batch, sleeptime)
+    #         completion_status = conductor.monitor_study()
+    #         conductor.cleanup()
+    #         return completion_status.value
+    #     else:
+    #         # Launch manager with nohup
+    #         log_path = make_safe_path(
+    #             study.output_path,
+    #             *["{}.txt".format(study.name)])
+
+    #         cmd = ["nohup", "conductor",
+    #                "-t", str(sleeptime),
+    #                "-d", str(args.debug_lvl),
+    #                study.output_path,
+    #                ">", log_path, "2>&1"]
+    #         LOGGER.debug(" ".join(cmd))
+    #         start_process(" ".join(cmd))
+
+    #         print("Study launched successfully.")
+    # else:
+    #     print("Study launch aborted.")
 
     return 0
 
