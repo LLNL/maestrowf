@@ -9,6 +9,7 @@ components:
 [`description`](#description)     | Yes            | General information about a study and its high-level purpose |
 [`batch`](#batch)                 | No             | Settings for submission to batch systems |
 [`env`](#environment)             | No             | Fixed constants and other values that are globally set and referenced |
+[`execution`](#execution)         | No             | Controls for step execution order |
 [`study`](#workflow)              | Yes            | Tasks that the study is composed of and are executed in a defined order |
 [`global.parameters`](#parameters)| No             | Parameters that are user varied and applied to the workflow |
 
@@ -362,6 +363,15 @@ The `batch` block is an optional block that enables specification of HPC schedul
 
 
 <br/>
+
+## Execution: `execution`
+----
+
+The `execution` block is an optional block that enables control of the study execution.  The current version allows selection between depth first and breadth first order of execution of the study steps.  Breadth first order is the default mode.
+
+|  **Key**      |  **Required**  | **Type** | **Description** |
+|    :-         |      :-:       |    :-:   |       :-        |
+|  `step_order` |      No        |   str    | Type of scheduler managing execution.  One of: {`depth-first`, `breadth-first`}. Default: `depth-first`. |
 
 ## Study: `study`
 ----
