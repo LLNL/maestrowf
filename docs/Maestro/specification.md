@@ -371,7 +371,12 @@ The `execution` block is an optional block that enables control of the study exe
 
 |  **Key**      |  **Required**  | **Type** | **Description** |
 |    :-         |      :-:       |    :-:   |       :-        |
-|  `step_order` |      No        |   str    | Type of scheduler managing execution.  One of: {`depth-first`, `breadth-first`}. Default: `depth-first`. |
+|  `step_order` |      No        |   str    | Type of scheduler managing execution.  One of: {`depth-first`, `breadth-first`}. Default: `breadth-first`. |
+
+``` yaml
+execution:
+    step_order: depth-first
+```
 
 ## Study: `study`
 ----
