@@ -127,6 +127,35 @@ class DAG(Graph):
         logging.debug("Removing edge (%s, %s).", src, dest)
         self.adjacency_table[src].remove(dest)
 
+    def __iter__(self):
+        """
+        Iterator over the graph
+        """
+        # pprint(self.values.keys())
+        v_stack = ['_source']   # remove hard coding of this?
+        v_visited = {key: False for key in self.values.keys()}
+
+        while v_stack:
+            vertex_key = v_stack.pop()
+            if v_visited[vertex_key]:
+                continue
+
+            yield vertex_key, self.values[vertex_key]
+            v_visited[vertex_key] = True
+            for child_name in self.adjacency_table[vertex_key]:
+                v_stack.append(child_name)
+
+        # # for key, value in self.values.items():
+            
+        #     yield key, value
+        # return self.values.keys()
+        
+            
+
+    # def _dfs_iter(self, src):
+        
+    #     for node in self.adjacency_table[src]:
+            
     def dfs_subtree(self, src, par=None):
         """
         Create a subtree of the DAG starting at src in DFS order.

@@ -1,6 +1,7 @@
 import pytest
 from jsonschema import ValidationError
 from pytest import raises
+from rich.pretty import pprint
 
 from maestrowf.specification import YAMLSpecification
 
@@ -143,3 +144,13 @@ def test_get_study_environment(spec_path):
     study_env = spec.get_study_environment()
 
     assert study_env
+
+
+def test_get_study_execution_block(spec_path):
+    spec = YAMLSpecification.load_specification(
+        spec_path("prioritized_lulesh_sample1_unix.yml")
+    )
+
+    exec_block = spec.get_execution()
+
+    assert exec_block.step_order == 'depth-first'

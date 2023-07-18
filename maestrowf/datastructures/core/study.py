@@ -34,11 +34,13 @@ import logging
 import os
 import pickle
 import re
+from rich.pretty import pprint
 from types import MethodType
 import yaml
 
 from maestrowf.abstracts import PickleInterface
 from maestrowf.datastructures.dag import DAG
+from maestrowf.datastructures.execution import ExecutionBlock
 from maestrowf.utils import apply_function, create_parentdir, make_safe_path
 from .executiongraph import ExecutionGraph
 
@@ -83,6 +85,7 @@ class StudyStep:
                         "walltime":         "",
                         "reservation":      ""
                     }
+        self._weight = 0
 
     def apply_parameters(self, combo):
         """
@@ -127,6 +130,48 @@ class StudyStep:
         """
         return self._name
 
+    @property
+    def weight(self):
+        """
+        Get the weight for this step.
+
+        :returns: int.
+        """
+        return self._weight
+
+    @weight.setter
+    def weight(self, new_weight):
+        """
+        Set the weight of the step.
+
+        :param new_weight: integer representing the weight of this step.
+        """
+        self._weight = new_weight
+
+    def __lt__(self, other):
+        """
+        Less than operator for the StudyStep class.
+
+        :param other: Object to compare self to.
+        :returns: True if weight is less than other's weight
+        """
+        if self.weight < other.weight:
+            return True
+
+        return False
+
+    def __gt__(self, other):
+        """
+        Less than operator for the StudyStep class.
+
+        :param other: Object to compare self to.
+        :returns: True if weight is less than other's weight
+        """
+        if self.weight > other.weight:
+            return True
+
+        return False
+
     def __eq__(self, other):
         """
         Equality operator for the StudyStep class.
@@ -151,6 +196,23 @@ class StudyStep:
         : returns: True if other is not equal to self, False otherwise.
         """
         return not self.__eq__(other)
+
+    def __repr__(self):
+        """
+        Unique representation for printing
+        """
+        return f"Step(name={self._name}, nickname={self.nickname}, weight={self._weight}, ...)"
+
+    def __rich_repr__(self):
+        """
+        Add nicer representation for printing with rich
+        """
+        yield self.name
+        yield "name", self._name
+        yield "nickname", self.nickname
+        # yield "description", self.description
+        # yield "run", self.run
+        yield "weight", self._weight
 
 
 class Study(DAG, PickleInterface):
@@ -193,8 +255,8 @@ class Study(DAG, PickleInterface):
       using the same environment.
     """
 
-    def __init__(self, name, description,
-                 studyenv=None, parameters=None, steps=None, out_path="./"):
+    def __init__(self, name, description, studyenv=None,
+                 parameters=None, steps=None, out_path="./"):
         """
         Study object used to represent the full workflow of a study.
 
@@ -254,6 +316,15 @@ class Study(DAG, PickleInterface):
             for step in steps:
                 # Deep copy because it prevents modifications after the fact.
                 self.add_step(step)
+
+        # Update the step weights before parameter expansion for controlling execution priority
+        for weight, (parent, step_name, step) in enumerate(self.walk_study()):
+            pprint(step)
+            pprint("Updating weight")
+            if isinstance(step, StudyStep):
+                step.weight = weight
+
+            pprint(step)
 
     @property
     def output_path(self):

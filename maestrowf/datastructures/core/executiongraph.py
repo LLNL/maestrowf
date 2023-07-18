@@ -1,10 +1,13 @@
 """Module for the execution of DAG workflows."""
 from collections import deque, OrderedDict
 from datetime import datetime
+from functools import partial
 import getpass
 import logging
 import os
+from queue import PriorityQueue
 import random
+from rich.pretty import pprint
 import shutil
 import tempfile
 from time import sleep
@@ -15,6 +18,7 @@ from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode, StudyStatus
 from maestrowf.datastructures.dag import DAG
 from maestrowf.datastructures.environment import Variable
+from maestrowf.datastructures.execution import ExecutionBlock
 from maestrowf.interfaces import ScriptAdapterFactory
 from maestrowf.utils import create_parentdir, get_duration, \
     round_datetime_seconds
@@ -306,6 +310,10 @@ class _StepRecord:
         """
         return self._num_restarts
 
+    def __rich__repr__(self):
+        """Pretty printed view of this step"""
+        yield self.step
+
 
 class ExecutionGraph(DAG, PickleInterface):
     """
@@ -338,6 +346,7 @@ class ExecutionGraph(DAG, PickleInterface):
         # Member variables for execution.
         self._adapter = None
         self._description = OrderedDict()
+        self._step_prioritizer = None
 
         # Generate tempdir (if specfied)
         if use_tmp:
@@ -350,7 +359,7 @@ class ExecutionGraph(DAG, PickleInterface):
         self.in_progress = set()
         self.failed_steps = set()
         self.cancelled_steps = set()
-        self.ready_steps = deque()
+        self.ready_steps = PriorityQueue()
         self.is_canceled = False
 
         self._status_order = 'bfs'  # Set status order type
@@ -456,6 +465,9 @@ class ExecutionGraph(DAG, PickleInterface):
             raise TypeError(msg)
 
         self._adapter = adapter
+
+    def set_prioritizer(self, exec_block):
+        self.step_prioritizer = ExecutionBlock(exec_block).get_prioritization_factory()
 
     def add_description(self, name, description, **kwargs):
         """
@@ -815,7 +827,7 @@ class ExecutionGraph(DAG, PickleInterface):
                                    "resubmit step '%s'.", name)
                     # We can just let the logic below handle submission with
                     # everything else.
-                    self.ready_steps.append(name)
+                    self.ready_steps.put(self.step_prioritizer.compute_priority(name, self.values[name]))
 
                 elif status == State.FAILED:
                     LOGGER.warning(
@@ -890,18 +902,20 @@ class ExecutionGraph(DAG, PickleInterface):
 
                 # If the gating dependencies set is empty, we can execute.
                 if not self._dependencies[key]:
-                    if key not in self.ready_steps:
-                        LOGGER.debug("All dependencies completed. Staging.")
-                        self.ready_steps.append(key)
+                    if not any(key == item[-1] for item in self.ready_steps.queue):
+                        # if key not in self.ready_steps.queue:
+                        LOGGER.debug("All dependencies completed. Staging %S.", key)
+                        self.ready_steps.put(self.step_prioritizer.compute_priority(key, self.values[key].step))
+                        # self.ready_steps.append((key, self.values[key].step.weight))
                     else:
-                        LOGGER.debug("Already staged. Passing.")
+                        LOGGER.debug("%s already staged. Passing.", key)
                         continue
 
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
         if self._submission_throttle == 0:
             LOGGER.info("Launching all ready steps...")
-            _available = len(self.ready_steps)
+            _available = -1 #len(self.ready_steps)
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
@@ -912,12 +926,32 @@ class ExecutionGraph(DAG, PickleInterface):
             # Now, we need to take the min of the length of the queue and the
             # computed number of slots. We could have free slots, but have less
             # in the queue.
-            _available = min(_available, len(self.ready_steps))
+            # _available = min(_available, len(self.ready_steps))  # Kind of inconsistent if it's affected by queue size sometimes
             LOGGER.info("Found %d available slots...", _available)
 
-        for i in range(0, _available):
+        # Sort the ready steps by weight (higher weights execute first)
+        pprint("STEP ORDER")
+        # que_steps = []
+        # while not self.ready_steps.empty():
+        #     que_steps.append(self.ready_steps.get())
+        #     # pprint(f"{que_steps[-1]}")
+
+        # for item in que_steps:
+        #     pprint(item)
+
+        
+        # for step_order, step in enumerate(self.ready_steps):
+        #     pprint(f"{step_order}: {step[0]}")
+        new_steps_running = 0
+        LOGGER.debug("Available slots: %d, Ready steps is empty %s",
+                     _available, self.ready_steps.empty() == True)
+        while not self.ready_steps.empty() and (new_steps_running < _available or _available < 0):
+        # for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.values[self.ready_steps.popleft()]
+            step = self.ready_steps.get()
+            pprint("Getting step")
+            pprint(step)
+            _record = self.values[step[-1]]
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
@@ -926,8 +960,9 @@ class ExecutionGraph(DAG, PickleInterface):
                 self.cancelled_steps.add(_record.name)
                 continue
 
-            LOGGER.debug("Launching job %d -- %s", i, _record.name)
+            LOGGER.debug("Launching job %d -- %s", new_steps_running, _record.name)
             self._execute_record(_record, adapter)
+            new_steps_running += 1
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()

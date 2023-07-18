@@ -10,6 +10,15 @@
       "description"
     ]
   },
+  "EXECUTION": {
+    "type": "object",
+    "properties": {
+      "step_order": {
+         "type": "string",
+         "enum": ["depth-first", "breadth-first"]
+      }
+    }
+  },    
   "PARAM": {
     "type": "object",
     "properties": {

@@ -1,0 +1,91 @@
+from typing import Dict
+priority_expressions = {}
+
+
+def step_weight_priority_bf(study_step):
+    return study_step.weight
+
+
+def step_weight_priority_df(study_step):
+    return -1*study_step.weight
+
+
+class PrioritizedStepFactory:
+    """
+    Factory for composing tuples for manipulating step execution priority
+
+    The record contains all information used to generate associated scripts,
+    and settings for execution of the record. The StepRecord is a utility
+    class to the ExecutionGraph and maintains all information for any given
+    step in the DAG.
+    """
+    def __init__(self):
+        """"""
+        # step_priority_parts = []
+        self.priority_expr_names = []    # Use this for controlling expr application ordering
+        self.priority_expr_funcs = {}
+
+    def register_priority_expr(self, name, func, override=False):
+        if name in priority_expressions and not override:
+            return
+
+        if name not in priority_expressions:
+            self.priority_expr_names.append(name)
+
+        self.priority_expr_funcs[name] = func
+
+    def compute_priority(self, name, study_step):
+        """
+        Compute priority tuple for given study step
+
+        :param name: Name key of the step; key into the graph data struct
+        :param study_step: StudyStep object containing resource keys for the expressions
+        :returns: tuple of priority values, name for each registered expression
+
+        note: Make the return type a data class that disables comparison on the name?
+        """
+        priority = []
+        for priority_expr in self.priority_expr_names:
+            priority.append(self.priority_expr_funcs[priority_expr](study_step))
+
+        return (*priority, name)
+
+
+class ExecutionBlock():
+    """
+    Container for the Specifications Execution Block.  Handles sanitizing
+    all the execution parameters and priority expressions and compiling expressions
+    for building layered priority orders.
+    """
+    step_prioritization_factory = None
+    
+    def __init__(self, execution_dict=None):
+        """
+        
+        """
+        self.exec_dict = {'step_order': 'breadth-first'}
+
+        if execution_dict and isinstance(execution_dict, Dict):
+            self.exec_dict.update(execution_dict)
+
+        self.step_order = self.exec_dict['step_order']
+
+        self.step_prioritization_factory = PrioritizedStepFactory()
+
+        # NOTE: This is simple for now, but more composable expressions will be parsed/built
+        # here in the future
+        
+        # Set expression for step order, which is always on
+        if self.step_order == 'breadth-first':
+            self.step_prioritization_factory.register_priority_expr(
+                'step_order',
+                step_weight_priority_bf
+            )
+        else:
+            self.step_prioritization_factory.register_priority_expr(
+                'step_order',
+                step_weight_priority_df
+            )
+
+    def get_prioritization_factory(self):
+        return self.step_prioritization_factory

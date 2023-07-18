@@ -113,6 +113,8 @@ def samples_spec_path():
 
     return load_spec
 
+from maestrowf.specification.yamlspecification import YAMLSpecification
+
 
 @pytest.fixture
 def spec_path():
@@ -123,8 +125,26 @@ def spec_path():
         dirpath = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(dirpath, "specification", "test_specs", file_name)
 
+    return load_spec_path
+
+
+@pytest.fixture
+def spec(spec_path):
+    def load_spec(file_name):
+        spec = YAMLSpecification.load_specification(spec_path(file_name))
+        return spec
     return load_spec
 
+@pytest.fixture
+def study_steps(spec):
+    def load_study_steps(spec_file_name):
+        study_spec = spec(spec_file_name)
+
+        steps = study_spec.get_study_steps()
+
+        return steps
+
+    return load_study_steps
 
 @pytest.fixture
 def status_csv_path():
