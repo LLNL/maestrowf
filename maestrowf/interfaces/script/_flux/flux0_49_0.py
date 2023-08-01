@@ -19,9 +19,9 @@ except ImportError:
     LOGGER.info("Failed to import Flux. Continuing.")
 
 
-class FluxInterface_0260(FluxInterface):
+class FluxInterface_0490(FluxInterface):
     # This utility class is for Flux 0.26.0
-    key = "0.26.0"
+    key = "0.49.0"
 
     flux_handle = None
     _urgencies = {
@@ -117,7 +117,7 @@ class FluxInterface_0260(FluxInterface):
 
             # Submit our job spec.
             jobid = flux.job.submit(
-                cls.flux_handle, jobspec, waitable=True, urgency=urgency
+                cls.flux_handle, jobspec, waitable=False, urgency=urgency
             )
             submit_status = SubmissionCode.OK
             retcode = 0
@@ -152,7 +152,7 @@ class FluxInterface_0260(FluxInterface):
 
     @classmethod
     def parallelize(cls, procs, nodes=None, **kwargs):
-        args = ["flux", "mini", "run", "-n", str(procs)]
+        args = ["flux", "run", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
         ntasks = nodes if nodes else 1
@@ -161,7 +161,17 @@ class FluxInterface_0260(FluxInterface):
 
         if "cores per task" in kwargs:
             args.append("-c")
-            args.append(str(kwargs["cores per task"]))
+            # Error checking -> more comprehensive handling in base schedulerscriptadapter?
+            if not kwargs["cores per task"]:
+                cores_per_task = 1
+            else:
+                cores_per_task = kwargs["cores per task"]
+
+            # args.append(str(kwargs["cores per task"]))
+            args.append(str(cores_per_task))
+
+            LOGGER.info("Adding 'cores per task' %s to flux args",
+                        str(kwargs["cores per task"]))
 
         ngpus = kwargs.get("gpus", 0)
         if ngpus:
@@ -246,9 +256,9 @@ class FluxInterface_0260(FluxInterface):
 
     @staticmethod
     def state(state):
-        if state == "D":
+        if state == "D":        # Note this is actually short for DEPEND and is part of flux' pending virtual state
             return State.PENDING
-        elif state == "S":
+        elif state == "S":      # Note this is short for SCHED and is also part of flux's pending virtual state
             return State.QUEUED
         elif state == "R":
             return State.RUNNING

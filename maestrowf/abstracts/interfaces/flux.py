@@ -47,6 +47,12 @@ class FluxInterface(ABC):
                 pass
 
     @classmethod
+    def get_flux_version(cls):
+        cls.connect_to_flux()
+        from distutils.version import StrictVersion
+        return StrictVersion(cls.flux_handle.attr_get("version"))
+
+    @classmethod
     @abstractmethod
     def get_flux_urgency(cls, urgency) -> int:
         """
