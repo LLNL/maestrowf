@@ -105,6 +105,7 @@ nav:
             - 'Maestro/how_to_guides/timeouts.md'
             - 'Maestro/how_to_guides/controlling_step_states.md'
             - 'Maestro/how_to_guides/parameter_batches.md'
+            - 'Maestro/how_to_guides/running_with_flux.md'
     - Reference Guide:
         - Maestro Reference: Maestro/reference_guide/index.md
         - Design Reference: Maestro/reference_guide/design_reference/

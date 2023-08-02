@@ -21,7 +21,7 @@ steps:
 | `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
 | `gpus`        |      No        |   str    | Optional reservation of gpu resources for jobs |
 | `procs`       |      No        |   int    | Optional number of tasks in batch allocations: note this is also a per step key |
-| `flux_uri`    |      Yes*      |   str    | Uri of flux instance to schedule jobs to. * only required with `type`=`flux` |
+| `flux_uri`    |      Yes*      |   str    | Uri of flux instance to schedule jobs to. * only required with `type`=`flux`. NOTE: it is recommended to rely on env vars instead as uri's are very ephemeral things.|
 | `version`     |      No        |   str    | Optional version of flux scheduler; for accomodating api changes |
 | `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
 
@@ -148,7 +148,7 @@ The SLURM scheduler uses the [`srun`](https://slurm.schedmd.com/srun.html) comma
 ## Flux
 ----
 
-The Flux scheduler uses the command [`flux mini run`](https://flux-framework.readthedocs.io/projects/flux-core/en/latest/man1/flux-mini.html) to launch and allocate resources to tasks.  Maestro provides keys for a subset of arguments to this command along with hooks for passing a comma separated list of additional arguments
+The Flux scheduler uses the command [`flux run`](https://flux-framework.readthedocs.io/projects/flux-core/en/latest/man1/flux-run.html) to launch and allocate resources to tasks.  For adapter versions < 0.49.0 this will actually be the  [`flux mini run`](https://flux-framework.readthedocs.io/projects/flux-core/en/latest/man1/flux-mini.html) command which was recently deprecated.  Maestro provides keys for a subset of arguments to this command along with hooks for passing a comma separated list of additional arguments
 
 |  **Flux**  |  **Maestro**  |  **Description**  |  **Default**  |
 |    :-      |      :-       |        :-         |      :-       |
@@ -158,9 +158,20 @@ The Flux scheduler uses the command [`flux mini run`](https://flux-framework.rea
 | `-g`       |  `gpus`       | Number of gpus to allocate per task |  `0`  |
 | `-o`       |           |  Comma separated list of additional args  | `None` |
 
+Flux adapter also supports some keys that control batch job behavior instead of getting passed to the `flux mini run` or `flux run` commands:
+
+| **Maestro** | **Description** | **Default** |
+| :-          | :-              | :-          |
+| `nested`    | Flag to control whether to run the step inside a nested flux instance.  This is usually the desired option. | True |
+| `waitable`  | Whether to mark a job as 'waitable'; this is restricted to owners of an instance, and thus cannot be used if scheduling to a system instance (i.e. not to a broker with a specific uri).  Note: this option is only of interest if using the script adapters directly to build a custom tool. New flag as of 0.49.0 adapter. | False |
+
+See the [flux framework](https://flux-framework.readthedocs.io/en/latest/index.html) for more information on flux.  Additionally, checkout the [flux-how-to-guides](how_to_guides/running_with_flux.md) for the options available for using flux with Maestro.
+
 !!! danger
 
-   Flux examples are still under construction
+   The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
+   
+
    
 ## LSF: a Tale of Two Launchers
 ----
