@@ -59,6 +59,7 @@ class FluxInterface_0490(FluxInterface):
         job_name=None,
         force_broker=True,
         urgency=StepPriority.MEDIUM,
+        waitable=False
     ):
         try:
             # TODO: add better error handling/throwing in the class func
@@ -117,7 +118,7 @@ class FluxInterface_0490(FluxInterface):
 
             # Submit our job spec.
             jobid = flux.job.submit(
-                cls.flux_handle, jobspec, waitable=False, urgency=urgency
+                cls.flux_handle, jobspec, waitable=waitable, urgency=urgency
             )
             submit_status = SubmissionCode.OK
             retcode = 0

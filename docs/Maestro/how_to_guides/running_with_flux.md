@@ -79,6 +79,21 @@ This option may be of interest if you are running on a system where Flux is not 
 
 As mentioned at the above, the Flux adapter is different from the SLURM and LSF adapters in that it also enables usage as an allocation packing option where you may be running a Flux instance inside of SLURM/LSF.  The adapter in Maestro can use an optional 'uri' to specify a particular Flux instance to schedule to, or in its absence assume it's talking to a system level broker where Maestro submits standalone batch jobs just as with SLURM and LSF.
 
+### Adapter version
+
+The Flux adapter has an optional version switching mechanism to accomodate the variety of installs and more rapid behavior changes for this pre 1.0 scheduler.  The default behavior is to try using the latest adapter version.  This can be overridden using the [`version`](../specification.md#batch-batch) key in the batch block, choosing from one of the available options using the selection mechanism added in Maestro v1.1.9dev1:
+
+| Adapter Version | Flux Version |
+| :-              | :-           |
+| 0.17.0          | >= 0.17.0    |
+| 0.18.0          | >= 0.18.0    |
+| 0.26.0          | >= 0.26.0    |
+| 0.49.0          | >= 0.49.0    |
+
+!!! note
+
+    Maestro's adapter versions are not pinned to exact Flux versions.  The adapter version lags behind the Flux core version until breaking changes are introduced by Flux core.
+
 ### Standalone batch jobs
 
 In the absence of either populating the 'flux_uri' key in the batch block or the presence of the `FLUX_URI` environment variable, Maestro assumes you are scheduling to a system level instance, i.e. a machine managed natively by Flux.  This will behave the same as the SLURM and LSF adapters.
@@ -86,7 +101,7 @@ In the absence of either populating the 'flux_uri' key in the batch block or the
     
 ### Allocation packing mode
 
-When the `FLUX_URI` environment variable is set, Maestro will submit jobs to that specific Flux broker, which can either be a nested instance inside a batch job on a Flux managed machine (uri ~ Flux jobid), or a Flux broker that was started by the user inside of a SLURM or LSF allocation.  THere are two ways to get this going
+When the `FLUX_URI` environment variable is set, Maestro will submit jobs to that specific Flux broker, which can either be a nested instance inside a batch job on a Flux managed machine (uri ~ Flux jobid), or a Flux broker that was started by the user inside of a SLURM or LSF allocation.  There are two ways to get this going
     
 #### Launch Maestro inside the batch job/Flux broker
     
@@ -105,13 +120,15 @@ On HPC clusters this often means running Maestro on the login node, but can be a
     
     === "LSF"
     
-        Resolving the uri can be done without using the helper script `flux_address.sh` shown above
+        Resolving the uri can be done using the system native job id of the batch jobs where the flux broker was launched
         
         ```console
         $ flux uri --remote lsf:<lsf jobid>
         ssh://<job hostname>/var/tmp/flux-<hash>/local-0
         ```
         
+        The full recipe of updating the `FLUX_URI` environment variable and running a study in that broker:
+
         ```console
         $ export FLUX_URI=`flux uri --remote lsf:<lsf_jobid>`
         
@@ -120,12 +137,14 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         
     === "SLURM"
     
-        Similarly for slurm:
+        Resolving the uri can be done using the system native job id of the batch jobs where the flux broker was launched
         
         ```console
         $ flux uri --remote slurm:<slurm jobid>
         ssh://<job hostname>/var/tmp/flux-<hash>/local-0
         ```
+        
+        The full recipe of updating the `FLUX_URI` environment variable and running a study in that broker:
         
         ```console
         $ export FLUX_URI=`flux uri --remote slurm:<slurm_jobid>`
