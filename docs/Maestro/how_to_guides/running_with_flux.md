@@ -30,6 +30,12 @@ $ pip install "flux-python==0.50.0"
 ```
   
 The full list of available versions can be found on [pypi](https://pypi.org/project/flux-python/#history), one per Flux version.  Note that for some versions you may need to use one of the release candidates (rc<num>).
+
+### Spack environment
+
+!!! success "Recommended Option"
+
+This option may be of interest if you are running on a system where Flux is not the native scheduler and/or is not publicly installed.  Check out the [spack tutorials](https://spack-tutorial.readthedocs.io/en/latest/tutorial_environments.html) for building an environment to install Flux and python, and then you can install Maestro into that environment.
     
 ### Manual linking to existing/system Flux install
 
@@ -67,12 +73,6 @@ $ pip install cffi pyyaml
     
 Then you can install Maestro and start scheduling jobs to a Flux instance 
 
-### Spack environment
-
-!!! success "Recommended Option"
-
-This option may be of interest if you are running on a system where Flux is not the native scheduler and/or is not publicly installed.  Check out the [spack tutorials](https://spack-tutorial.readthedocs.io/en/latest/tutorial_environments.html) for building an environment to install Flux and python, and then you can install Maestro into that environment.
-    
 
 ## Running with Flux
 ---
@@ -202,3 +202,133 @@ On HPC clusters this often means running Maestro on the login node, but can be a
     ```console
     $ flux proxy `flux uri --remote slurm:<slurm_jobid>` flux top
     ```
+    
+
+## Example Specs
+---
+
+Check out a few example specifications to get started running with flux ranging from simple flux managed serial commands to mpi enabled applications.
+
+=== "Hello, Bye World"
+    
+    Simple serial applications managed by flux to run parameter combinations in parallel
+
+    ``` yaml title="hello_bye_parameterized_flux.yaml"
+    --8<-- "samples/hello_world/hello_bye_parameterized_flux.yaml"
+    ```
+
+    Workflow topology:
+
+    ``` mermaid
+        flowchart TD;
+            A(study root) --> COMBO1;
+            subgraph COMBO1 [Combo #1]
+              subgraph say_hello1 [say-hello]
+                B(Hello, Pam)
+              end
+              subgraph say_bye1 [say-bye]
+                C(Bye, World!)
+              end
+              say_hello1 --> say_bye1
+            end
+            A --> COMBO2
+            subgraph COMBO2 [Combo #2]
+              direction TB
+              subgraph say_hello2 [say-hello]
+                D(Ciao, Jim)
+              end
+              subgraph say_bye2 [say-bye]
+                E(Bye, World!)
+              end
+              say_hello2 --> say_bye2
+            end
+            A --> COMBO3
+            subgraph COMBO3 [Combo #3]
+              subgraph say_hello3 [say-hello]
+                F(Hey, Michael)
+              end
+              subgraph say_bye3 [say-bye]
+                G(Bye, World!)
+              end
+              say_hello3 --> say_bye3
+            end
+            A --> COMBO4
+            subgraph COMBO4 [Combo #4]
+              subgraph say_hello4 [say-hello]
+                H(Hi, Dwight)
+              end
+              subgraph say_bye4 [say-bye]
+                I(Bye, World!)
+              end
+              say_hello4 --> say_bye4;
+            end
+        ```
+    
+=== "Lulesh"
+
+    Compilation and running of mpi parallel application, which also runs the parameter combinations in parallel
+    
+    ``` yaml title="lulesh_sample1_unix_flux.yaml"
+    --8<-- "samples/lulesh/lulesh_sample1_unix_flux.yaml"
+    ```
+
+    Workflow topology:
+    
+    ``` mermaid
+    flowchart TD;
+        A(study root) --> B(make-lulesh);
+        B-->COMBO1;
+        subgraph COMBO1 [Combo #1]
+          subgraph run_lulesh1 [run-lulesh]
+            C(SIZE=100\nITERATIONS=10)
+          end
+        end
+        B --> COMBO2
+        subgraph COMBO2 [Combo #2]
+          subgraph run_lulesh2 [run-lulesh]
+            D(SIZE=100\nITERATIONS=20)
+          end
+        end
+        B --> COMBO3
+        subgraph COMBO3 [Combo #3]
+          subgraph run_lulesh3 [run-lulesh]
+            D(SIZE=100\nITERATIONS=30)
+          end
+        end
+        B --> COMBO4
+        subgraph COMBO4 [Combo #4]
+          subgraph run_lulesh4 [run-lulesh]
+            D(SIZE=200\nITERATIONS=10)
+          end
+        end
+        B --> COMBO5
+        subgraph COMBO5 [Combo #5]
+          subgraph run_lulesh5 [run-lulesh]
+            D(SIZE=200\nITERATIONS=20)
+          end
+        end
+        B --> COMBO6
+        subgraph COMBO6 [Combo #6]
+          subgraph run_lulesh6 [run-lulesh]
+            D(SIZE=200\nITERATIONS=30)
+          end
+        end
+        B --> COMBO7
+        subgraph COMBO7 [Combo #7]
+          subgraph run_lulesh7 [run-lulesh]
+            D(SIZE=300\nITERATIONS=10)
+          end
+        end
+        B --> COMBO8
+        subgraph COMBO8 [Combo #8]
+          subgraph run_lulesh8 [run-lulesh]
+            D(SIZE=300\nITERATIONS=20)
+          end
+        end
+        B --> COMBO9
+        subgraph COMBO9 [Combo #9]
+          subgraph run_lulesh9 [run-lulesh]
+            D(SIZE=300\nITERATIONS=30)
+          end
+        end
+        ```
