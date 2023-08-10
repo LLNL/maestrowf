@@ -292,43 +292,43 @@ Check out a few example specifications to get started running with flux ranging 
         B --> COMBO3
         subgraph COMBO3 [Combo #3]
           subgraph run_lulesh3 [run-lulesh]
-            D(SIZE=100\nITERATIONS=30)
+            E(SIZE=100\nITERATIONS=30)
           end
         end
         B --> COMBO4
         subgraph COMBO4 [Combo #4]
           subgraph run_lulesh4 [run-lulesh]
-            D(SIZE=200\nITERATIONS=10)
+            F(SIZE=200\nITERATIONS=10)
           end
         end
         B --> COMBO5
         subgraph COMBO5 [Combo #5]
           subgraph run_lulesh5 [run-lulesh]
-            D(SIZE=200\nITERATIONS=20)
+            G(SIZE=200\nITERATIONS=20)
           end
         end
         B --> COMBO6
         subgraph COMBO6 [Combo #6]
           subgraph run_lulesh6 [run-lulesh]
-            D(SIZE=200\nITERATIONS=30)
+            H(SIZE=200\nITERATIONS=30)
           end
         end
         B --> COMBO7
         subgraph COMBO7 [Combo #7]
           subgraph run_lulesh7 [run-lulesh]
-            D(SIZE=300\nITERATIONS=10)
+            I(SIZE=300\nITERATIONS=10)
           end
         end
         B --> COMBO8
         subgraph COMBO8 [Combo #8]
           subgraph run_lulesh8 [run-lulesh]
-            D(SIZE=300\nITERATIONS=20)
+            J(SIZE=300\nITERATIONS=20)
           end
         end
         B --> COMBO9
         subgraph COMBO9 [Combo #9]
           subgraph run_lulesh9 [run-lulesh]
-            D(SIZE=300\nITERATIONS=30)
+            K(SIZE=300\nITERATIONS=30)
           end
         end
     ```
