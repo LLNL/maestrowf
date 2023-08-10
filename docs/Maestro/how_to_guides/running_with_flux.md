@@ -220,49 +220,49 @@ Check out a few example specifications to get started running with flux ranging 
     Workflow topology:
 
     ``` mermaid
-        flowchart TD;
-            A(study root) --> COMBO1;
-            subgraph COMBO1 [Combo #1]
-              subgraph say_hello1 [say-hello]
-                B(Hello, Pam)
-              end
-              subgraph say_bye1 [say-bye]
-                C(Bye, World!)
-              end
-              say_hello1 --> say_bye1
-            end
-            A --> COMBO2
-            subgraph COMBO2 [Combo #2]
-              direction TB
-              subgraph say_hello2 [say-hello]
-                D(Ciao, Jim)
-              end
-              subgraph say_bye2 [say-bye]
-                E(Bye, World!)
-              end
-              say_hello2 --> say_bye2
-            end
-            A --> COMBO3
-            subgraph COMBO3 [Combo #3]
-              subgraph say_hello3 [say-hello]
-                F(Hey, Michael)
-              end
-              subgraph say_bye3 [say-bye]
-                G(Bye, World!)
-              end
-              say_hello3 --> say_bye3
-            end
-            A --> COMBO4
-            subgraph COMBO4 [Combo #4]
-              subgraph say_hello4 [say-hello]
-                H(Hi, Dwight)
-              end
-              subgraph say_bye4 [say-bye]
-                I(Bye, World!)
-              end
-              say_hello4 --> say_bye4;
-            end
-        ```
+    flowchart TD;
+        A(study root) --> COMBO1;
+        subgraph COMBO1 [Combo #1]
+          subgraph say_hello1 [say-hello]
+            B(Hello, Pam)
+          end
+          subgraph say_bye1 [say-bye]
+            C(Bye, World!)
+          end
+          say_hello1 --> say_bye1
+        end
+        A --> COMBO2
+        subgraph COMBO2 [Combo #2]
+          direction TB
+          subgraph say_hello2 [say-hello]
+            D(Ciao, Jim)
+          end
+          subgraph say_bye2 [say-bye]
+            E(Bye, World!)
+          end
+          say_hello2 --> say_bye2
+        end
+        A --> COMBO3
+        subgraph COMBO3 [Combo #3]
+          subgraph say_hello3 [say-hello]
+            F(Hey, Michael)
+          end
+          subgraph say_bye3 [say-bye]
+            G(Bye, World!)
+          end
+          say_hello3 --> say_bye3
+        end
+        A --> COMBO4
+        subgraph COMBO4 [Combo #4]
+          subgraph say_hello4 [say-hello]
+            H(Hi, Dwight)
+          end
+          subgraph say_bye4 [say-bye]
+            I(Bye, World!)
+          end
+          say_hello4 --> say_bye4;
+        end
+    ```
     
 === "Lulesh"
 
@@ -331,4 +331,4 @@ Check out a few example specifications to get started running with flux ranging 
             D(SIZE=300\nITERATIONS=30)
           end
         end
-        ```
+    ```
