@@ -163,7 +163,6 @@ Flux adapter also supports some keys that control batch job behavior instead of 
 | **Maestro** | **Description** | **Default** |
 | :-          | :-              | :-          |
 | `nested`    | Flag to control whether to run the step inside a nested flux instance.  This is usually the desired option. | True |
-| `waitable`  | Whether to mark a job as 'waitable'; this is restricted to owners of an instance, and thus cannot be used if scheduling to a system instance (i.e. not to a broker with a specific uri).  Note: this option is only of interest if using the script adapters directly to build a custom tool. New flag as of 0.49.0 adapter. | False |
 
 See the [flux framework](https://flux-framework.readthedocs.io/en/latest/index.html) for more information on flux.  Additionally, checkout the [flux-how-to-guides](how_to_guides/running_with_flux.md) for the options available for using flux with Maestro.  Also check out a [full example spec run with flux](specification.md#full-example).
 
