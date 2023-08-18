@@ -110,6 +110,9 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         _version = kwargs.pop("version", FluxFactory.latest)
         self.add_batch_parameter("version", _version)
         self._interface = FluxFactory.get_interface(_version)
+        # Note, should we also log parsed 'base version' used when comparing
+        # the adaptor/broker versions along with the raw string we get back
+        # from flux.
         self._broker_version = self._interface.get_flux_version()
 
     @property
