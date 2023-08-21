@@ -1,21 +1,41 @@
-import os
-import pytest
 from collections import defaultdict
+import os
+
+import pytest
+
 
 SCHEDULERS = set(('sched_lsf', 'sched_slurm', 'sched_flux'))
 SCHED_CHECKS = defaultdict(lambda: False)
 
+
 def check_lsf():
+    """
+    Checks if there is an lsf instance to schedule to. NOT IMPLEMENTED YET.
+    """
     return False
+
 
 SCHED_CHECKS['sched_lsf'] = check_lsf
 
+
 def check_slurm():
+    """
+    Checks if there is a slurm instance to schedule to. NOT IMPLEMENTED YET.
+    """
     return False
+
 
 SCHED_CHECKS['sched_slurm'] = check_slurm
 
+
 def check_flux():
+    """
+    Checks if there is a flux scheduler to schedule to.
+
+    Returns
+    -------
+    True if flux bindings installed and active broker found, False if not
+    """
     try:
         import flux
 
@@ -31,14 +51,20 @@ def check_flux():
 
     return True
 
+
 SCHED_CHECKS['sched_flux'] = check_flux
 
 
 def check_for_scheduler(sched_name):
+    """
+    Thin wrapper for dispatching scheduler presence testing for marking
+    tests to be skipped
+    """
     return SCHED_CHECKS[sched_name]()
 
 
 def pytest_runtest_setup(item):
+    """Helper for applying automated test marking"""
     # Scheduler dependent checks
     for marker in item.iter_markers():
         if not marker.name.startswith('sched_'):
@@ -53,6 +79,10 @@ def pytest_runtest_setup(item):
 
 @pytest.fixture
 def samples_spec_path():
+    """
+    Fixture for providing maestro specifications from the samples
+    directories
+    """
     def load_spec(file_name):
         samples_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -69,6 +99,9 @@ def samples_spec_path():
 
 @pytest.fixture
 def spec_path():
+    """
+    Fixture for providing maestro specifications from test data directories
+    """
     def load_spec(file_name):
         dirpath = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(dirpath, "specification", "test_specs", file_name)
@@ -78,6 +111,7 @@ def spec_path():
 
 @pytest.fixture
 def status_csv_path():
+    """Fixture for providing status files from test data directories"""
     def load_status_csv(file_name):
         dirpath = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(dirpath, "status", "test_status_data", file_name)
