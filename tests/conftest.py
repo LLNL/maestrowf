@@ -54,7 +54,10 @@ def pytest_runtest_setup(item):
 @pytest.fixture
 def samples_spec_path():
     def load_spec(file_name):
-        samples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        samples_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'samples'
+        )
 
         for dirpath, dirnames, filenames in os.walk(samples_dir):
             for fname in filenames:

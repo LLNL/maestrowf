@@ -1,5 +1,6 @@
 import os
 import pytest
+from shutil import rmtree
 from subprocess import run
 import tempfile
 from rich.pretty import pprint
@@ -20,11 +21,11 @@ def test_hello_world_flux(samples_spec_path, spec_name, tmp_dir, flux_adaptor_ve
     # TEMP dir run tests always trigger failure when running on flux machine?
     # tmp_outdir = tempfile.mkdtemp()
 
-    tmp_outdir = os.path.join(os.getcwd(), tmp_dir)
+    tmp_outdir = os.path.abspath(os.path.join(os.getcwd(), tmp_dir))
 
     # Clean up detritus from failed tests
     if os.path.exists(tmp_outdir):
-        os.rmdir(tmp_outdir)
+        rmtree(tmp_outdir, ignore_errors=True)  # recursively delete workspace
 
     spec = YAMLSpecification.load_specification(spec_path)
     study_name = spec.name
@@ -40,7 +41,6 @@ def test_hello_world_flux(samples_spec_path, spec_name, tmp_dir, flux_adaptor_ve
                        capture_output=True,
                        encoding="utf-8")
 
-    
     with open(os.path.join(tmp_dir, 'logs', study_name + '_fg.log'), 'w') as testlog:
         testlog.write(spec_results.stdout)
         testlog.write(spec_results.stderr)
@@ -54,4 +54,6 @@ def test_hello_world_flux(samples_spec_path, spec_name, tmp_dir, flux_adaptor_ve
     assert spec_results.returncode == 0
 
     # Cleanup if successful
-    os.rmdir(tmp_outdir)
+    if os.path.exists(tmp_outdir):
+        # os.rmdir(tmp_outdir)
+        rmtree(tmp_outdir, ignore_errors=True)  # recursively delete workspace
