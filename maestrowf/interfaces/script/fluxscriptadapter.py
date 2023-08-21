@@ -249,10 +249,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+        # Unpack waitable flag and pass it along if there: only pass it along if
+        # it's in the step maybe, leaving each adapter to retain their defaults?
+        waitable = step.run.get("waitable", False)
         jobid, retcode, submit_status = \
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
-                job_name=step.name, force_broker=force_broker, urgency=urgency
+                job_name=step.name, force_broker=force_broker, urgency=urgency,
+                waitable=waitable
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)
