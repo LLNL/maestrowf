@@ -9,7 +9,7 @@ These guides are intended to be used as recipes for solving common problems with
 [Controlling Step States](controlling_step_states.md) | Overview of how Maestro deal with return codes in step scripts and how to control them |
 [Long Running Jobs](timeouts.md) | Look at options for working with long running jobs that may need to be restarted multiple times to finish |
 [Working with Large Parameter Sets](parameter_batches.md) | Goes over concerns of large parameter studies and looks at using [pgen](../parameter_specification.md#parameter-generator-pgen) as a potential solution |
-
+[Running with Flux](running_with_flux.md) | Contains recipes for getting started with flux and various options available when using the flux scheduler on it's own and within other schedulers |
 
 # Additional Recipes and Utilities
 ___
