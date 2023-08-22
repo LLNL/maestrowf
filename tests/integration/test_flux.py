@@ -58,7 +58,7 @@ def test_hello_world_flux(samples_spec_path,
     completed_successfully = False
     for line in spec_results.stderr.split('\n'):
         if success_str in line:
-            completed_successfully = False
+            completed_successfully = True
 
     assert completed_successfully
     assert spec_results.returncode == 0
