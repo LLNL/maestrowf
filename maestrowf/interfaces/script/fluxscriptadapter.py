@@ -68,13 +68,20 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
 
-        uri = kwargs.pop("uri", os.environ.get("FLUX_URI", None))
-        if not uri:
-            raise ValueError(
-                "Flux URI must be specified in batch or stored in the "
-                "environment under 'FLUX_URI'")
+        
+        uri = kwargs.pop("uri", None)
+        if not uri:             # Check if flux uri env var is set, log if so
+            uri = os.environ.get("FLUX_URI", None)
+            if uri:
+                LOGGER.info(f"Found FLUX_URI in environment, scheduling jobs to broker uri {uri}")
+            LOGGER.info(f"No FLUX_URI; scheduling standalone batch job to root instance")
+        else:
+            LOGGER.info(f"Using FLUX_URI found in study specification: {uri}")
+        # if not uri:
+        #     raise ValueError(
+        #         "Flux URI must be specified in batch or stored in the "
+        #         "environment under 'FLUX_URI'")
 
-        self.add_batch_parameter("flux_uri", uri)
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
@@ -84,8 +91,8 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self._header = {
             "nodes": "#INFO (nodes) {nodes}",
             "walltime": "#INFO (walltime) {walltime}",
-            "flux_uri": "#INFO (flux_uri) {flux_uri}",
-            "version": "#INFO (flux version) {version}",
+            "version": "#INFO (flux adapter version) {version}",
+            "flux_version": "#INFO (flux version) {flux_version}",
         }
 
         self._cmd_flags = {
@@ -94,10 +101,19 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         }
         self._extension = "flux.sh"
         self.h = None
+
+        if uri:
+            self.add_batch_parameter("flux_uri", uri)
+            self._header['flux_uri'] = "#INFO (flux_uri) {flux_uri}"
+
         # Store the interface we're using
         _version = kwargs.pop("version", FluxFactory.latest)
         self.add_batch_parameter("version", _version)
         self._interface = FluxFactory.get_interface(_version)
+        # Note, should we also log parsed 'base version' used when comparing
+        # the adaptor/broker versions along with the raw string we get back
+        # from flux.
+        self._broker_version = self._interface.get_flux_version()
 
     @property
     def extension(self):
@@ -144,6 +160,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             batch_header["nodes"] = run.pop("nodes")
         batch_header["job-name"] = step.name.replace(" ", "_")
         batch_header["comment"] = step.description.replace("\n", " ")
+        batch_header["flux_version"] = self._broker_version
 
         modified_header = ["#!{}".format(self._exec)]
         for key, value in self._header.items():
@@ -180,8 +197,21 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         :returns: The return status of the submission command and job
                   identiifer.
         """
-        nodes = step.run.get("nodes")
+        nodes = step.run.get("nodes", 1)
         processors = step.run.get("procs", 0)
+
+        if not isinstance(nodes, int):
+            if not nodes:
+                nodes = 1
+            else:
+                nodes = int(nodes)
+
+        if not isinstance(processors, int):
+            if not processors:
+                processors = 1
+            else:
+                processors = int(processors)
+                
         force_broker = step.run.get("nested", False)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
@@ -190,8 +220,13 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # Compute cores per task
         cores_per_task = step.run.get("cores per task", None)
+        if isinstance(cores_per_task, str):
+            try:
+                cores_per_task = int(cores_per_task)
+            except:
+                cores_per_task = 1
         if not cores_per_task:
-            cores_per_task = ceil(processors / nodes)
+            cores_per_task = 1 # max((1, ceil(processors / nodes)))
             LOGGER.warn(
                 "'cores per task' set to a non-value. Populating with a "
                 "sensible default. (cores per task = %d", cores_per_task)
@@ -214,10 +249,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+        # Unpack waitable flag and pass it along if there: only pass it along if
+        # it's in the step maybe, leaving each adapter to retain their defaults?
+        waitable = step.run.get("waitable", False)
         jobid, retcode, submit_status = \
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
-                job_name=step.name, force_broker=force_broker, urgency=urgency
+                job_name=step.name, force_broker=force_broker, urgency=urgency,
+                waitable=waitable
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)

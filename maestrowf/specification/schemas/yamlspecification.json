@@ -96,6 +96,7 @@
               {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
             ]},
           "nested": {"type": "boolean"},
+          "waitable": {"type": "boolean"},  
           "priority": {
             "anyOf": [
               {
