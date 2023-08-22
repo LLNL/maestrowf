@@ -154,7 +154,7 @@ The resulting output of this command is shown below. Notice how the color scheme
 
 ## Status Pager
 
-For many Maestro studies, there can be a significant amount of information to display when the status command is run. To help keep terminals from being overloaded with output, Maestro uses paging functionality. This opens a [pager](https://en.wikipedia.org/wiki/Terminal_pager) that allows you to view the output of the status command until you wish to close it:
+For many Maestro studies, there can be a significant amount of information to display when the status command is run. To help keep terminals from being overloaded with output, Maestro uses paging functionality. This opens a [pager](https://en.wikipedia.org/wiki/Terminal_pager) that allows you to view the output of the status command until you wish to close it. The pager that Maestro uses is usually tied to the [less command](https://man7.org/linux/man-pages/man1/less.1.html), which allows some extra options to search, navigate, and more. Below is an example of what the status command looks like inside a pager:
 
 <figure markdown>
   ![Lulesh Status Inside Pager](../assets/images/examples/study_monitoring/status_inside_pager.png)
