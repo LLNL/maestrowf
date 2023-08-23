@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.10dev3"
+version = "1.1.10dev4"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [
@@ -40,6 +40,7 @@ dill = "*"
 filelock = "*"
 importlib_metadata = {version = "*", python = "<3.8"}
 jsonschema = ">=3.2.0"
+packaging = ">=22.0"
 pyyaml = ">=4.2b1"
 rich = "*"
 six = "*"
