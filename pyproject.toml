@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.10dev2"
+version = "1.1.10dev3"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [

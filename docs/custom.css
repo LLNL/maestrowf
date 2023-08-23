@@ -2,3 +2,8 @@
     align: center;
     text-align: center;
 }
+
+.caution {
+    color: yellow;
+    font-weight: bold;
+}

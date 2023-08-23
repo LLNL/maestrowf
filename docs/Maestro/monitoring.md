@@ -30,6 +30,26 @@ The resulting output will look something like below:
   <figcaption>Flat layout view of status of an in progress study</figcaption>
 </figure>
 
+!!! note
+
+    If the output of your study looks something like this:
+
+    <figure markdown>
+      ![Maestro Status Theme Error](../assets/images/examples/study_monitoring/status_theme_error.png)
+      <figcaption>Example of a theme error with the status output</figcaption>
+    </figure>
+
+    Then there are a couple things you can try to fix this problem:
+
+    1. Set the MANPAGER or PAGER environment variable to be "less -r" (e.g. export MANPAGER="less -r") and run again
+
+    2. If the error isn't fixed after 1. above, then:
+
+        a. You can disable the theme with the ``--disable-theme`` option (see [Status Theme](#status-theme) below).
+
+        b. If you'd rather not disable the theme, the error usually stems from using the pager functionality, so you can try disabling that with the ``--disable-pager`` option (see [Status Pager](#status-pager) below). <text class=caution>Caution:</text> you may end up outputting a lot of information to the terminal all at once when using this option.
+
+To return to your terminal window, press `q` (see [Status Pager](#status-pager) below for more information).
 
 The general statuses that are usually encountered are:
 
@@ -75,7 +95,7 @@ $ maestro status ./tests/lulesh --layout narrow
 A snippet of the narrow layout for the above study is shown below.  These layouts are computed by status command, so you can alternate between them in the same study without issue:
 
 <figure markdown>
-  ![Flat Layout Lulesh Cancelled](../assets/images/examples/study_monitoring/narrow_layout_lulesh_cancelled.png)
+  ![Narrow Layout Lulesh Cancelled](../assets/images/examples/study_monitoring/narrow_layout_lulesh_cancelled.png)
   <figcaption>Narrow layout view of status of a cancelled study</figcaption>
 </figure>
 
@@ -114,3 +134,53 @@ Finally, the original status layout is still available via the `legacy` option. 
     post-process-lulesh-size_SIZE.20    SIZE.20              CANCELLED  --:--:--        --:--:--        --                          --                          2018-08-07 17:25:06.810216                  0
     run-lulesh_ITER.30.SIZE.30          ITER.30.SIZE.30      FINISHED   0:00:00.915474  0:00:00.915682  2018-08-07 17:24:05.818191  2018-08-07 17:24:05.817983  2018-08-07 17:24:06.733665                  0
 ```
+
+## Status Theme
+
+Maestro's status monitor comes with a built-in theme to incorporate colors when displaying statuses in order to make the resulting output easier to read (see the images above).
+
+If you have trouble getting the colors in the theme to display properly or you want to disable the theme entirely, you can use the ``--disable-theme`` option as shown below:
+
+``` console
+$ maestro status ./tests/lulesh --disable-theme
+```
+
+The resulting output of this command is shown below. Notice how the color scheme is now gone:
+
+<figure markdown>
+  ![Status With Disable Theme](../assets/images/examples/study_monitoring/status_with_disable_theme.png)
+  <figcaption>View of the status table with the theme disabled</figcaption>
+</figure>
+
+## Status Pager
+
+For many Maestro studies, there can be a significant amount of information to display when the status command is run. To help keep terminals from being overloaded with output, Maestro uses paging functionality. This opens a [pager](https://en.wikipedia.org/wiki/Terminal_pager) that allows you to view the output of the status command until you wish to close it. The pager that Maestro uses is usually tied to the [less command](https://man7.org/linux/man-pages/man1/less.1.html), which allows some extra options to search, navigate, and more. Below is an example of what the status command looks like inside a pager:
+
+<figure markdown>
+  ![Lulesh Status Inside Pager](../assets/images/examples/study_monitoring/status_inside_pager.png)
+  <figcaption>View of the status of a study inside the pager</figcaption>
+</figure>
+
+You can close the pager window by pressing `q`. Once closed, the output from the status command will disappear entirely until you re-run the command and a new pager window is opened:
+
+<figure markdown>
+  ![Terminal Once Pager is Closed](../assets/images/examples/study_monitoring/status_outside_pager.png)
+  <figcaption>The display when you close the pager</figcaption>
+</figure>
+
+!!! warning
+
+    Disabling the pager could result in a lot of information being output directly to the terminal, which may result in performance issues or output errors.
+
+If you wish to disable the pager, you may do so with the ``--disable-pager`` option as shown below:
+
+``` console
+$ maestro status ./tests/lulesh --disable-pager
+```
+
+This will output the results of running the status command directly to the stdout of the terminal rather than opening a pager window:
+
+<figure markdown>
+  ![Status With Disable Pager Functionality](../assets/images/examples/study_monitoring/status_with_disable_pager.png)
+  <figcaption>View of the status table with the pager disabled</figcaption>
+</figure>
