@@ -50,7 +50,7 @@ class FluxInterface(ABC):
             if not versions_parsed:
                 return
 
-            if adaptor_version > broker_version:
+            if adaptor_version.base_version > broker_version.base_version:
                 LOGGER.error(
                     "Maestro adapter version (%s) is too new for the Flux "
                     "broker version (%s). Functionality not present in "
@@ -58,7 +58,7 @@ class FluxInterface(ABC):
                     "cause errors. Please switch to an older adapter.",
                     adaptor_version, broker_version
                 )
-            elif adaptor_version < broker_version:
+            elif adaptor_version.base_version < broker_version.base_version:
                 LOGGER.debug(
                     "Maestro adaptor version (%s) is older than the Flux "
                     "broker version (%s). This is usually OK, but if a "
@@ -66,6 +66,9 @@ class FluxInterface(ABC):
                     "upgrading to maximize performance and compatibility.",
                     adaptor_version, broker_version
                 )
+            # TODO: add custom version object to more properly handle dev
+            #       and prerelease versions for both semver and pep440 version
+            #       schemes.  Then add log message reflecting it if detected
 
     @classmethod
     def get_flux_version(cls):
