@@ -841,6 +841,7 @@ class ExecutionGraph(DAG, PickleInterface):
                     LOGGER.info("Step '%s' was cancelled.", name)
                     self.in_progress.remove(name)
                     record.mark_end(State.CANCELLED)
+                    cleanup_steps.update(self.bfs_subtree(name)[0])
 
             # Let's handle all the failed steps in one go.
             for node in cleanup_steps:
