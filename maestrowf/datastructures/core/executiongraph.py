@@ -872,9 +872,9 @@ class ExecutionGraph(DAG, PickleInterface):
                     "Unfulfilled dependencies: %s",
                     self._dependencies[key])
 
-                s_completed = filter(
+                s_completed = list(filter(
                     lambda x: x in self.completed_steps,
-                    self._dependencies[key])
+                    self._dependencies[key]))
                 self._dependencies[key] = \
                     self._dependencies[key] - set(s_completed)
                 LOGGER.debug(
