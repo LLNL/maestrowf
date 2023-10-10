@@ -250,12 +250,12 @@ class FluxInterface_0490(FluxInterface):
 
         cancel_code = CancelCode.OK
         cancel_rcode = 0
-        for job in jobs_rpc:
+        for job in jobs_rpc.jobs():
             try:
-                LOGGER.debug("Cancelling Job %s...", job)
-                flux.job.cancel(cls.flux_handle, int(job))
+                LOGGER.debug("Cancelling Job %s...", str(job.id.f58))
+                flux.job.cancel(cls.flux_handle, int(job.id))
             except Exception as exception:
-                LOGGER.error(str(exception))
+                LOGGER.error("Job %s: %s", str(job.id.f58), str(exception))
                 cancel_code = CancelCode.ERROR
                 cancel_rcode = 1
 

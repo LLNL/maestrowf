@@ -688,7 +688,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def _check_study_completion(self):
         # We cancelled, return True marking study as complete.
-        if self.is_canceled:
+        if self.is_canceled and not self.in_progress:
             LOGGER.info("Cancelled -- completing study.")
             return StudyStatus.CANCELLED
 
@@ -753,7 +753,7 @@ class ExecutionGraph(DAG, PickleInterface):
             # For the status of each currently in progress job, check its
             # state.
             cleanup_steps = set()  # Steps that are in progress showing failed.
-
+            cancel_steps = set()   # Steps that have dependencies to mark cancelled
             for name, status in job_status.items():
                 LOGGER.debug("Checking job '%s' with status %s.", name, status)
                 record = self.values[name]
@@ -841,11 +841,17 @@ class ExecutionGraph(DAG, PickleInterface):
                     LOGGER.info("Step '%s' was cancelled.", name)
                     self.in_progress.remove(name)
                     record.mark_end(State.CANCELLED)
+                    cancel_steps.update(self.bfs_subtree(name)[0])
 
             # Let's handle all the failed steps in one go.
             for node in cleanup_steps:
                 self.failed_steps.add(node)
                 self.values[node].mark_end(State.FAILED)
+
+            # Handle dependent steps that need cancelling
+            for node in cancel_steps:
+                self.cancelled_steps.add(node)
+                self.values[node].mark_end(State.CANCELLED)
 
         # Now that we've checked the statuses of existing jobs we need to make
         # sure dependencies haven't been met.
