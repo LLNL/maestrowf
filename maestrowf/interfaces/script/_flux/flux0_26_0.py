@@ -232,9 +232,15 @@ class FluxInterface_0260(FluxInterface):
             "\n".join(str(j) for j in joblist),
         )
 
+        # NOTE: cannot pickle JobID instances, so must store as strings and
+        # reconstruct for use
+        jobs_rpc = flux.job.list.JobList(
+            cls.flux_handle,
+            ids=[flux.job.JobID(jid) for jid in joblist])
+
         cancel_code = CancelCode.OK
         cancel_rcode = 0
-        for job in joblist:
+        for job in jobs_rpc:
             try:
                 LOGGER.debug("Cancelling Job %s...", job)
                 flux.job.cancel(cls.flux_handle, int(job))
