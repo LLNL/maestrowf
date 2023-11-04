@@ -32,8 +32,8 @@ Abstract classes for handling interfacing with various services.
 """
 
 from maestrowf.abstracts.interfaces.schedulerscriptadapter import \
-    SchedulerScriptAdapter
+    SchedulerScriptAdapter, ParallelizeCmd
 from maestrowf.abstracts.interfaces.scriptadapter import ScriptAdapter
 
 
-__all__ = ("SchedulerScriptAdapter", "ScriptAdapter")
+__all__ = ("SchedulerScriptAdapter", "ScriptAdapter", "ParallelizeCmd")
