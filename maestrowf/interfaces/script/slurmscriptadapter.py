@@ -257,30 +257,24 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
+        # -f = custom format options to guard against user customizations
 
+        squeue_fmt = "%.18i %.8j %.8u %.2t"
         # The squeue command output is split with the following indices
         # used for specific information:
         # 0 - Job Identifier
-        # 1 - Queue
-        # 2 - Job name
+        # 1 - Job name
         # 3 - User
         # 4 - State [Passed to _state]
-        # 5 - Current Execution Time
-        # 6 - Assigned Node Count
-        # 7 - Hostname and assigned node identifier list
 
-        cmd = "squeue -u $USER -t all"
+        cmd = f"squeue -u $USER -t all --format='{squeue_fmt}'"
 
         # Indices of needed columns in squeue output
         data_row_offset = 1     # Just header, no header/row separator
-        state_index = 4
+        state_index = 3
         jobid_index = 0
 
-        # status = {}
-        # for jobid in joblist:
-        #     LOGGER.debug("Looking for jobid %s", jobid)
-        #     status[jobid] = None
-
+        LOGGER.debug("Using squeue cmd: %s", cmd)
         p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
@@ -348,7 +342,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         .. note:: While more robust than squeue, testing reveals this
                   cmd is not always available to users
         """
-        cmd = "sacct -u $USER --jobs={}"
+        cmd = "sacct -u $USER --jobs={jids} --format={cols}"
         # Note: can add similar columns as squeue defaults to if needed
         # sacct -u $USER --jobs=jobid1,jobid2,jobid3 \
         #    --format=jobid,partition,jobname,user,state,time,nnodes,\
@@ -357,30 +351,26 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # not specifying this requires manual specification of time frames
         # and could be error prone when resuming studies some time later
 
+        sacct_fmt = ["jobid", "jobname", "state", "exitcode"]
         # columns exposed in sacct
         # 1 - JobID (includes entries for job steps too: jobid.step)
-        # 2 - JobName (includes job step names
-        # 3 - Partition
-        # 4 - Account
-        # 5 - AllocCPUs
-        # 6 - State
-        # 7 - ExitCode
+        # 2 - JobName (includes job step names)
+        # 3 - State
+        # 4 - ExitCode
 
         # First two rows define columns and then header separators '----'
         data_row_offset = 2
-        state_index = 5
+        state_index = 2
         jobid_index = 0
 
-        cmd = cmd.format(','.join(joblist))
+        cmd = cmd.format(jids=','.join(joblist), cols=','.join(sacct_fmt))
+        LOGGER.debug("Using sacct cmd: %s", cmd)
         p = start_process(cmd)
         output, err = p.communicate()
         retcode = p.wait()
 
-        for jobid in joblist:
-            LOGGER.debug("Looking for jobid %s with sacct", jobid)
-            status[jobid] = None
-
         if retcode == 0:
+            LOGGER.debug("sacct output:\n%s", output)
             for job in output.split("\n")[data_row_offset:]:
                 LOGGER.debug("Job Entry: %s", job)
                 job_split = re.split(r"\s+", job)
@@ -435,7 +425,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         status = {}
         for jobid in joblist:
-            LOGGER.debug("Looking for jobid %s", jobid)
+            # NOTE: make a more standardized log message for this
+            LOGGER.debug("Looking for jobid %s with squeue", jobid)
             status[jobid] = None
 
         job_status_codes = []
@@ -447,7 +438,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         if any([jstatus is None for _, jstatus in status.items()]):
             missing_jobids = [jobid for jobid, jstatus in status.items()
                               if jstatus is None]
-
+            LOGGER.debug("Looking for jobids '%s' with sacct",
+                         ', '.join([str(jid) for jid in missing_jobids]))
             job_status_code, status = self._check_jobs_sacct(missing_jobids,
                                                              status)
 
@@ -457,6 +449,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         if any([jstatus is None for _, jstatus in status.items()]):
             missing_jobids = [jobid for jobid, jstatus in status.items()
                               if jstatus is None]
+            # NOTE: are there cases of losing and then regaining?
             LOGGER.debug("Temporarily lost track of Job Entries: %s",
                          ', '.join([str(jobid) for jobid in missing_jobids]))
 
@@ -538,6 +531,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         elif slurm_state == "CA" or slurm_state == "CANCELLED":
             return State.CANCELLED
         else:
+            LOGGER.debug("Found unhandled state code '%s' from slurm", slurm_state)
             return State.UNKNOWN
 
     def _write_script(self, ws_path, step):
