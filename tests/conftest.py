@@ -1,8 +1,10 @@
 from collections import defaultdict
 import os
+from subprocess import check_output
 
 import pytest
 
+from maestrowf.utils import parse_version
 
 SCHEDULERS = set(('sched_lsf', 'sched_slurm', 'sched_flux'))
 SCHED_CHECKS = defaultdict(lambda: False)
@@ -22,6 +24,14 @@ def check_slurm():
     """
     Checks if there is a slurm instance to schedule to. NOT IMPLEMENTED YET.
     """
+    slurm_ver_output_lines = check_output(['sinfo','-V'], encoding='utf8')
+
+    slurm_ver_parts = slurm_ver_output_lines.split('\n')[0].split()
+    version = parse_version(slurm_ver_parts[1])
+
+    if slurm_ver_parts[0].lower() == 'slurm' and version:
+        return True
+
     return False
 
 
