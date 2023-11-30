@@ -140,22 +140,30 @@ def test_slurm_check(slurm_test_jobs, caplog):
         queue='dummy_queue',
         nodes=''
     )
+    failed_jobstatus_codes = [JobStatusCode.ERROR]
+    failed_states = [State.FAILED, State.HWFAILURE]
+
+    status_dict = {jobid: None for jobid in jobids}
+    job_status_squeue = slurm_adapter._check_jobs_squeue(jobids, status_dict)
+
+    TESTLOGGER.warn("Testing squeue job status code: %s", job_status_squeue[0])
+    assert job_status_squeue[0] in JobStatusCode
+    assert job_status_squeue[0] not in failed_jobstatus_codes
+
+    TESTLOGGER.warn("Testing squeue statuses: %s", job_status_squeue[1])
+    assert job_status_squeue[1]
+    for jobid, jobstate in job_status_squeue[1].items():
+        assert jobstate not in failed_states and jobstate in State
 
     # NOTE: sacct output is often blank with shorter sleep times. Maybe smarter
     #       handling with auto retries if sacct empty but squeue is fine?
     time.sleep(5)
     status_dict = {jobid: None for jobid in jobids}
     job_status_sacct = slurm_adapter._check_jobs_sacct(jobids, status_dict)
-    status_dict = {jobid: None for jobid in jobids}
-    job_status_squeue = slurm_adapter._check_jobs_squeue(jobids, status_dict)
 
-
-    failed_states = [State.FAILED, State.HWFAILURE]
-
-    TESTLOGGER.warn("Testing squeue statuses: %s", job_status_squeue[1])
-    assert job_status_squeue[1]
-    for jobid, jobstate in job_status_squeue[1].items():
-        assert jobstate not in failed_states and jobstate in State
+    TESTLOGGER.warn("Testing sacct job status code: %s", job_status_sacct[0])
+    assert job_status_sacct[0] in JobStatusCode
+    assert job_status_sacct[0] not in failed_jobstatus_codes
 
     TESTLOGGER.warn("Testing sacct statuses: %s", job_status_sacct[1])
     assert job_status_sacct[1]  # Make sure it's not empty
