@@ -37,6 +37,7 @@ plugin methodology.
 import logging
 import os
 import re
+from subprocess import CalledProcessError, check_output
 import time
 
 from maestrowf.abstracts.enums import State, JobStatusCode
@@ -125,6 +126,50 @@ def slurm_test_jobs():
 
     TESTLOGGER.warn("Reverted SACCT_FORMAT: %s", os.getenv('SACCT_FORMAT'))
     TESTLOGGER.warn("Reverted SQUEUE_FORMAT: %s", os.getenv('SQUEUE_FORMAT'))
+
+    TESTLOGGER.warn("Cleaning up slurm output logs")
+    max_tries = 12
+    attempt = 0
+
+    slurm_adapter = ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key)(
+        host='dummy_host',
+        bank='dummy_bank',
+        queue='dummy_queue',
+        nodes=''
+    )
+    failed_jobstatus_codes = [JobStatusCode.ERROR]
+    live_states = [State.PENDING, State.FINISHING, State.RUNNING]
+    jobs_running = {jobid: True for jobid in jobids}
+    jobs_still_running = True
+    while attempt < max_tries and jobs_still_running:
+        time.sleep(5)  # do one extra just in case it sticks in CG state
+        for jobid in jobids:
+            squeue_cmd = f'squeue -j {jobid} --start -O "dependency,reason"'
+            try:
+                job_info = check_output(squeue_cmd, shell=True).decode('utf-8').splitlines()
+                if job_info[1]:
+                    TESTLOGGER.warn("Job %s found in squeue: %s", jobid, job_info)
+                    jobs_running[jobid] = True
+
+            except CalledProcessError:
+                jobs_running[jobid] = False  # non-zero ret from squeue/couldn't find job
+            except IndexError:
+                jobs_running[jobid] = False  # no jobs in squeues' output
+
+        slurm_adapter.cancel_jobs([jobid for jobid, job_is_running in jobs_running.items() if job_is_running])
+        jobs_still_running = any([job_is_running for jobid, job_is_running in jobs_running.items()])
+        attempt += 1
+
+    # Now that jobs aren't still running we can remove the log files
+    for jobid in jobids:
+        slurm_log_file = os.path.abspath(f'slurm-{jobid}.out')
+        try:
+            os.remove(slurm_log_file)
+            TESTLOGGER.warn("Removed slurm log for jobid %s", str(jobid))
+        except FileNotFoundError as fnfe:
+            TESTLOGGER.error("Could not find '%s' to delete it", slurm_log_file, exc_info=True)
+            TESTLOGGER.error("Available files in cwd: %s", ', '.join(list(os.listdir())))
+
 
 @pytest.mark.sched_slurm
 def test_slurm_check(slurm_test_jobs, caplog):
