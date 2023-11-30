@@ -170,3 +170,37 @@ def test_slurm_check(slurm_test_jobs, caplog):
     for jobid, jobstate in job_status_sacct[1].items():
         assert jobstate         # Catch none with better err msg
         assert jobstate not in failed_states and jobstate in State
+
+
+@pytest.mark.sched_slurm
+def test_slurm_cancel(slurm_test_jobs, caplog):
+    jobids = slurm_test_jobs
+
+    TESTLOGGER.warn("SACCT_FORMAT = %s", os.environ['SACCT_FORMAT'])
+    TESTLOGGER.warn("SQUEUE_FORMAT = %s", os.environ['SQUEUE_FORMAT'])
+
+    slurm_adapter = ScriptAdapterFactory.get_adapter(SlurmScriptAdapter.key)(
+        host='dummy_host',
+        bank='dummy_bank',
+        queue='dummy_queue',
+        nodes=''
+    )
+    failed_jobstatus_codes = [JobStatusCode.ERROR]
+
+    time.sleep(5)               # Let it run for a bit to actually generate log files
+    slurm_adapter.cancel_jobs(jobids)
+
+    time.sleep(5)               # Give it time to avoid catching finishing/cg state
+    jobstatcode, job_status = slurm_adapter.check_jobs(jobids)
+
+    TESTLOGGER.warn("Looking for cancelled job states for jobids '%s'",
+                    ', '.join([str(jid) for jid in jobids]))
+
+    TESTLOGGER.warn("Testing job status code: %s", jobstatcode)
+    assert jobstatcode in JobStatusCode
+    assert jobstatcode not in failed_jobstatus_codes
+
+    # Note: what about finishing?  catch that and retry until it changes and
+    # then look for cancelled?
+    for jobid, jobstate in job_status.items():
+        assert jobstate == State.CANCELLED
