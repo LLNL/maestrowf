@@ -9,7 +9,8 @@ from maestrowf.specification.yamlspecification import YAMLSpecification
 
 
 # Tag every test in this file as requiring flux
-pytestmark = pytest.mark.sched_flux
+pytestmark = [pytest.mark.sched_flux,
+              pytest.mark.integration,]
 
 
 @pytest.mark.parametrize(
