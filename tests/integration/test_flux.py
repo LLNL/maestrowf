@@ -19,6 +19,7 @@ pytestmark = pytest.mark.sched_flux
     ]
 )
 def test_hello_world_flux(samples_spec_path,
+                          check_study_success,
                           spec_name,
                           tmp_dir,
                           flux_adaptor_version):
@@ -37,7 +38,6 @@ def test_hello_world_flux(samples_spec_path,
 
     spec = YAMLSpecification.load_specification(spec_path)
     study_name = spec.name
-    success_str = f"INFO] '{study_name}' is complete. Returning."
 
     # Run in foreground to enable easier checking of successful studies
     spec_results = run(["maestro",
@@ -55,10 +55,10 @@ def test_hello_world_flux(samples_spec_path,
         testlog.write(spec_results.stdout)
         testlog.write(spec_results.stderr)
 
-    completed_successfully = False
-    for line in spec_results.stderr.split('\n'):
-        if success_str in line:
-            completed_successfully = True
+    completed_successfully = check_study_success(
+        spec_results.stderr.split('\n'),
+        study_name
+    )
 
     assert completed_successfully
     assert spec_results.returncode == 0
