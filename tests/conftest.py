@@ -24,7 +24,14 @@ def check_slurm():
     """
     Checks if there is a slurm instance to schedule to. NOT IMPLEMENTED YET.
     """
-    slurm_ver_output_lines = check_output(['sinfo','-V'], encoding='utf8')
+    slurm_info_func = 'sinfo'
+    try:
+        slurm_ver_output_lines = check_output([slurm_info_func,'-V'], encoding='utf8')
+    except FileNotFoundError as fnfe:
+        if fnfe.filename == slurm_info_func:
+            return False
+
+        raise
 
     slurm_ver_parts = slurm_ver_output_lines.split('\n')[0].split()
     version = parse_version(slurm_ver_parts[1])
