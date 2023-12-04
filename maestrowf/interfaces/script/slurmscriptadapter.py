@@ -257,9 +257,11 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         # squeue options:
         # -u = username to search queues for.
         # -t = list of job states to search for. 'all' for all states.
-        # -f = custom format options to guard against user customizations
+        # -o = custom format options to guard against user customizations
 
         squeue_fmt = "%.18i %.8j %.8u %.2t"
+        # see https://slurm.schedmd.com/squeue.html#OPT_format for explanation
+        # NOTE: look into --json/--yaml output options
         # The squeue command output is split with the following indices
         # used for specific information:
         # 0 - Job Identifier
@@ -342,7 +344,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         .. note:: While more robust than squeue, testing reveals this
                   cmd is not always available to users
         """
-        cmd = "sacct -u $USER --jobs={jids} --format={cols}"
         # Note: can add similar columns as squeue defaults to if needed
         # sacct -u $USER --jobs=jobid1,jobid2,jobid3 \
         #    --format=jobid,partition,jobname,user,state,time,nnodes,\
@@ -353,6 +354,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         sacct_fmt = ["jobid", "jobname", "state", "exitcode"]
         # columns exposed in sacct
+        # see https://slurm.schedmd.com/sacct.html#OPT_format for explanation
+        # NOTE: look into --parsable2, --json, --yaml options
         # 1 - JobID (includes entries for job steps too: jobid.step)
         # 2 - JobName (includes job step names)
         # 3 - State
@@ -363,7 +366,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         state_index = 2
         jobid_index = 0
 
-        cmd = cmd.format(jids=','.join(joblist), cols=','.join(sacct_fmt))
+        cmd = f"sacct -u $USER --jobs={','.join(joblist)} --format={','.join(sacct_fmt)}"
         LOGGER.debug("Using sacct cmd: %s", cmd)
         p = start_process(cmd)
         output, err = p.communicate()
