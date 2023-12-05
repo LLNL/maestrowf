@@ -9,23 +9,22 @@ from maestrowf.specification.yamlspecification import YAMLSpecification
 
 
 # Tag every test in this file as requiring flux
-pytestmark = [pytest.mark.sched_flux,
+pytestmark = [pytest.mark.sched_slurm,
               pytest.mark.integration,]
 
 
 @pytest.mark.parametrize(
-    "spec_name, tmp_dir, flux_adaptor_version",
+    "spec_name, tmp_dir",
     [
-        ("hello_bye_parameterized_flux.yaml", "HELLO_BYE_FLUX", "0.49.0"),
+        ("hello_bye_parameterized_slurm.yaml", "HELLO_BYE_SLURM"),
     ]
 )
-def test_hello_world_flux(samples_spec_path,
-                          check_study_success,
-                          spec_name,
-                          tmp_dir,
-                          flux_adaptor_version):
+def test_hello_world_slurm(samples_spec_path,
+                           check_study_success,
+                           spec_name,
+                           tmp_dir):
     """
-    Run integration tests using the flux scheduler.
+    Run integration tests using the slurm scheduler.
     """
     spec_path = samples_spec_path(spec_name)
     # TEMP dir run tests always trigger failure when running on flux machine?
