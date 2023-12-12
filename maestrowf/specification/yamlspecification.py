@@ -103,6 +103,7 @@ class YAMLSpecification(Specification):
             # Load the YAML spec from the file.
             with open(path, "r") as data:
                 specification = cls.load_specification_from_stream(data)
+
         except Exception as e:
             logger.exception(e.args)
             raise e

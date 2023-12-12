@@ -43,7 +43,7 @@ def test_status_layout(load_csv_status, expected_status,
                        layout, title, expected):
     """Captures status table to string without color codes for verification"""
     expected_status_output = expected_status(expected)
-    status_renderer = status_renderer_factory.get_renderer(layout)
+    status_renderer = status_renderer_factory.get_renderer(layout, disable_theme=False, disable_pager=False)
     status_renderer.layout(status_data=load_csv_status,
                            study_title=title)
 

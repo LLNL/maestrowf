@@ -131,9 +131,9 @@ There are many definitions of workflow, so we try to keep it simple and define t
 A set of high level tasks to be executed in some order, with or without dependencies on each other.
 ```
 
-> *PHILOSOPHY*: Maestro believes in the principle of a clearly defined process, specified as a list of tasks, that are self-documenting and clear in their intent.
+We have designed Maestro around the core concept of what we call a "study". A study is defined as a set of steps that are executed (a workflow) over a set of parameters. A study in Maestro's context is analogous to an actual tangible scientific experiment, which has a set of clearly defined and repeatable steps which are repeated over multiple specimen.
 
-Running the `hello_world` study is as simple as...
+Maestro's core tenets are defined as follows:
 
 ##### Repeatability
 
@@ -147,33 +147,7 @@ Studies should be consistently documented and able to be run in a consistent fas
 
 Documentation is important in computational studies as much as it is in physical science. The YAML specification defined by Maestro provides a few required key encouraging human-readable documentation. Even further, the specification itself is a documentation of a complete workflow.
 
-``` yaml
-description:
-    name: hello_planet
-    description: A simple study to say hello to planets (and Pluto)
-
-study:
-    - name: say-hello
-      description: Say hello to a planet!
-      run:
-          cmd: |
-            echo "Hello, $(PLANET)!" > hello_$(PLANET).txt
-
-global.parameters:
-    PLANET:
-        values: [Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto]
-        label: PLANET.%%
-```
-
-> *PHILOSOPHY*: Maestro believes that a workflow should be easily parameterized with minimal modifications to the core process.
-
-Maestro will automatically expand each parameter into its own isolated workspace, generate a script for each parameter, and automatically monitor execution of each task.
-
-And, running the study is still as simple as:
-
-``` bash
-    maestro run study.yaml
-```
+----------------
 
 ## Setting up your Python Environment
 

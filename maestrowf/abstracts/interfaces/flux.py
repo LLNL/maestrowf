@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 import logging
 
 from maestrowf.abstracts.enums import StepPriority
+from maestrowf.utils import parse_version
+
+from packaging.version import InvalidVersion
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,33 +21,62 @@ class FluxInterface(ABC):
         if not cls.flux_handle:
             cls.flux_handle = flux.Flux()
             LOGGER.debug("New Flux handle created.")
-            broker_version = cls.flux_handle.attr_get("version")
-            adaptor_version = cls.key
+            broker_version_str = cls.flux_handle.attr_get("version")
+            adaptor_version_str = cls.key
             LOGGER.debug(
                 "Connected to Flux broker running version %s using Maestro "
-                "adapter version %s.", broker_version, adaptor_version)
+                "adapter version %s.", broker_version_str, adaptor_version_str)
+
+            versions_parsed = True
             try:
-                from distutils.version import StrictVersion
-                adaptor_version = StrictVersion(adaptor_version)
-                broker_version = StrictVersion(broker_version)
-                if adaptor_version > broker_version:
-                    LOGGER.error(
-                        "Maestro adapter version (%s) is too new for the Flux "
-                        "broker version (%s). Functionality not present in "
-                        "this Flux version may be required by the adapter and "
-                        "cause errors. Please switch to an older adapter.",
-                        adaptor_version, broker_version
-                    )
-                elif adaptor_version < broker_version:
-                    LOGGER.debug(
-                        "Maestro adaptor version (%s) is older than the Flux "
-                        "broker version (%s). This is usually OK, but if a "
-                        "newer Maestro adapter is available, please consider "
-                        "upgrading to maximize performance and compatibility.",
-                        adaptor_version, broker_version
-                    )
-            except ImportError:
-                pass
+                # from distutils.version import StrictVersion
+                # adaptor_version = StrictVersion(adaptor_version)
+                # broker_version = StrictVersion(broker_version)
+                adaptor_version = parse_version(adaptor_version_str)
+            except InvalidVersion:
+                LOGGER.warning("Could not parse flux adaptor version '%s'."
+                               "May experience unexpected behavior.",
+                               adaptor_version_str)
+                versions_parsed = False
+                
+            try:
+                broker_version = parse_version(broker_version_str)
+            except InvalidVersion:
+                LOGGER.warning("Could not parse flux broker version '%s'."
+                               "May experience unexpected behavior.",
+                               broker_version_str)
+                versions_parsed = False
+
+            if not versions_parsed:
+                return
+
+            if adaptor_version.base_version > broker_version.base_version:
+                LOGGER.error(
+                    "Maestro adapter version (%s) is too new for the Flux "
+                    "broker version (%s). Functionality not present in "
+                    "this Flux version may be required by the adapter and "
+                    "cause errors. Please switch to an older adapter.",
+                    adaptor_version, broker_version
+                )
+            elif adaptor_version.base_version < broker_version.base_version:
+                LOGGER.debug(
+                    "Maestro adaptor version (%s) is older than the Flux "
+                    "broker version (%s). This is usually OK, but if a "
+                    "newer Maestro adapter is available, please consider "
+                    "upgrading to maximize performance and compatibility.",
+                    adaptor_version, broker_version
+                )
+            # TODO: add custom version object to more properly handle dev
+            #       and prerelease versions for both semver and pep440 version
+            #       schemes.  Then add log message reflecting it if detected
+
+    @classmethod
+    def get_flux_version(cls):
+        cls.connect_to_flux()
+        # from distutils.version import StrictVersion
+        # return StrictVersion(cls.flux_handle.attr_get("version"))
+        # return parse_version(cls.flux_handle.attr_get("version"))
+        return cls.flux_handle.attr_get("version")
 
     @classmethod
     @abstractmethod
