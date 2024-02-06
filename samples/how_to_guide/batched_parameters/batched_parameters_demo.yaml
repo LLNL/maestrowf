@@ -1,0 +1,22 @@
+description:
+    name: batched_params_demo
+    description: A study for demonstrating use of pgen to process large parameter sets
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/batched_params_demo
+
+study:
+  # NOTE: Want to make a jinja templated version of this along with the csv generator to make testing
+  #       different param counts less tedious?
+    - name: echo-params
+      description: Echo the parameter set
+      run:
+          cmd: |
+            echo "PARAM1: $(PARAM1);  PARAM2: $(PARAM2);  PARAM3: $(PARAM3)"
+
+# NO PARAMETER BLOCK: SEE corresponding pgen
+
+# ADD CLEANUP STEPS LATER -> TAR UP PARENT DIRS/WHOLE WORKSPACE TREE?
+# - this starts going beyond maestro itself, but is likely good to include in the demo
+# - maybe use indexer to query the status and ensure completion before tarring/up, and add param status log tracking which sets are done? -> overlaps with use case involving db's

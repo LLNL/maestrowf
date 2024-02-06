@@ -60,7 +60,7 @@ class FluxInterface_0190(FluxInterface):
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=False
+        ngpus=0, job_name=None, force_broker=False, waitable=True
     ):
         cls.connect_to_flux()
 
@@ -104,7 +104,7 @@ class FluxInterface_0190(FluxInterface):
         try:
             # Submit our job spec.
             jobid = \
-                flux_job.submit(cls.flux_handle, jobspec, waitable=True)
+                flux_job.submit(cls.flux_handle, jobspec, waitable=waitable)
             submit_status = SubmissionCode.OK
             retcode = 0
 

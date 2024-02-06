@@ -39,8 +39,14 @@ from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
 import time
 import datetime
+import re
+from rich.pretty import pprint
+from packaging.version import parse as pkg_ver_parse
+from packaging.version import Version, InvalidVersion
 
 LOGGER = logging.getLogger(__name__)
+
+_SEMVER_REGEX = re.compile(r"""^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<build>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$""")
 
 
 def get_duration(time_delta):
@@ -348,3 +354,34 @@ class LoggerUtility:
             return logging.ERROR
         else:
             return logging.CRITICAL
+
+
+def parse_version(version_string):
+    """
+    Attempts using pep440 compliant version format and then falls back to a
+    semver format to handle things like flux's version formats which can be a
+    combination of the two.
+
+    Note: only major/minor/patch returned from semver parser; additional
+    modifiers currently ignored for comparison purposes.
+
+    :param version_string: version string to parse
+    :returns: Version object, or None
+    """
+    try:
+        version = pkg_ver_parse(version_string)
+        return version
+
+    except InvalidVersion:
+        LOGGER.info("Encountered version string '%s' that is not pep-440 compliant.  Attempting semver match instead.")
+
+    match = _SEMVER_REGEX.match(version_string)
+    if match:
+        groups = match.groupdict()
+        # NOTE: should we include prerelease if found here or some other pep
+        # 440 ~equivalent? May be able to add prerelease, but not build
+        return Version(f"{int(groups['major'])}.{int(groups['minor'])}.{int(groups['patch'])}")
+
+    LOGGER.info("Could not parse version '%s'", version_string)
+
+    raise InvalidVersion

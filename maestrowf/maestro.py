@@ -78,7 +78,7 @@ def status_study(args):
                 try:
                     # Wasteful to not reuse this renderer for all paths?
                     status_renderer = status_renderer_factory.get_renderer(
-                        status_layout)
+                        status_layout, args.disable_theme, args.disable_pager)
 
                 except ValueError:
                     print("Layout '{}' not implemented.".format(status_layout))
@@ -369,6 +369,9 @@ def setup_argparser():
         description="The Maestro Workflow Conductor for specifying, launching"
         ", and managing general workflows.",
         formatter_class=RawTextHelpFormatter)
+    # This call applies a default function to the main parser as described
+    # here: https://stackoverflow.com/a/61680800
+    parser.set_defaults(func=lambda args: parser.print_help())
     subparsers = parser.add_subparsers(dest='subparser')
 
     # subparser for a cancel subcommand
@@ -449,6 +452,15 @@ def setup_argparser():
         "--layout", type=str, choices=status_renderer_factory.get_layouts(),
         default='flat',
         help="Alternate status table layouts. [Default: %(default)s]")
+    status.add_argument(
+        "--disable-theme", action="store_true", default=False,
+        help="Turn off styling for the status layout. (If you want styling but it's not working, try modifying "
+        "the MANPAGER or PAGER environment variables to be 'less -r'; i.e. export MANPAGER='less -r')"
+    )
+    status.add_argument(
+        "--disable-pager", action="store_true", default=False,
+        help="Turn off the pager functionality when viewing the status."
+    )
     status.set_defaults(func=status_study)
 
     # global options
