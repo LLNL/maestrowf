@@ -125,7 +125,7 @@ def spec_path():
         dirpath = os.path.dirname(os.path.abspath(__file__))
         return os.path.join(dirpath, "specification", "test_specs", file_name)
 
-    return load_spec_path
+    return load_spec
 
 
 @pytest.fixture
