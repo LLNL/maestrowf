@@ -37,6 +37,7 @@ abstracts, base class abstracts, and general utilities.
 from abc import ABCMeta, abstractmethod
 import inspect
 from io import StringIO
+from collections import defaultdict, Counter
 
 import logging
 import sys
@@ -195,6 +196,13 @@ class FlatStatusRenderer(BaseStatusRenderer):
             "bgcolor": "grey7",
             "color": ""
         }
+        self.update_theme()
+
+    def update_theme(self):
+        pass
+
+    def process_status_data(self, status_data):
+        return status_data
 
     def layout(self, status_data, study_title=None, filter_dict=None):
         """Setup concrete status layout
@@ -210,7 +218,7 @@ class FlatStatusRenderer(BaseStatusRenderer):
 
         # Ensure status data is of type dict and isn't empty
         if isinstance(status_data, dict) and status_data:
-            self._status_data = status_data
+            self._status_data = self.process_status_data(status_data)
         else:
             raise ValueError("Status data required to layout a table")
 
@@ -275,6 +283,70 @@ class FlatStatusRenderer(BaseStatusRenderer):
         _printer.print(self._status_table)
 
         return _printer.file.getvalue()
+
+
+class SummaryStatusRenderer(FlatStatusRenderer):
+    """Flat, simple summary table layout"""
+
+    layout_type = "summary"        # Defines name in factory/cli
+
+    def update_theme(self):
+        self._theme_dict["Step Prefix"] = "blue"
+        self._theme_dict["State"] = "bold red"
+        self._theme_dict["Count"] = "blue"
+
+    def process_status_data(self, status_data):
+        """Construct the summary dictionary"""
+        summary_data = {
+            "Step Prefix": [],
+            "State": [],
+            "Count": [],
+        }
+
+        status_info = zip(status_data["Step Name"], status_data["State"])
+        status_info = sorted(status_info, key=lambda x: x[1])
+        working_data = defaultdict(list)
+        for step_name, state in status_info:
+            prefix = step_name.split("-")[0]
+            working_data[prefix].append(state)
+
+        for prefix, states in working_data.items():
+            counts = Counter(states)
+            summary_data["Step Prefix"] += ([prefix] * len(counts))
+            summary_data["State"] += counts.keys()
+            summary_data["Count"] += counts.values()
+
+        return summary_data
+
+
+class Narrow2StatusRenderer(FlatStatusRenderer):
+    """Flat, more simple table layout"""
+
+    layout_type = "narrow2"        # Defines name in factory/cli
+
+    def process_status_data(self, status_data):
+        """Construct the summary dictionary"""
+        columns = [
+            "Step Name",
+            "Job ID",
+            "Workspace",
+            "State",
+            "Submit Time",
+            "Start Time",
+            "End Time",
+            "Number Restarts",
+        ]
+        narrow_data = {}
+        for column in columns:
+            narrow_data[column] = status_data[column]
+        date_columns = [
+            "Submit Time",
+            "Start Time",
+            "End Time",
+        ]
+        for column in date_columns:
+            narrow_data[column] = [date[:-3] for date in narrow_data[column]]
+        return narrow_data
 
 
 class NarrowStatusRenderer(BaseStatusRenderer):
