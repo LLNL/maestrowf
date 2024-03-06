@@ -7,8 +7,13 @@ from typing import Protocol
 class PriorityExpr(Protocol):
     """
     Defines api for Priority Expressions for study steps.
-
-    :returns: Callable, returning type implementing __lt__ and __eq__
     """
     def __call__(self, study_step):
+        """
+        Compute priority for a study step
+
+        :param study_step: StudyStep instance to compute priority for
+        :returns: any type implementing __lt__ and __eq__.  Must be consistent
+                  type for all parameterized instances of this step
+        """
         ...
