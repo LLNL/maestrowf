@@ -467,7 +467,7 @@ class ExecutionGraph(DAG, PickleInterface):
         self._adapter = adapter
 
     def set_prioritizer(self, exec_block):
-        self.step_prioritizer = ExecutionBlock(exec_block).get_prioritization_factory()
+        self.step_prioritizer = ExecutionBlock(exec_block).get_step_prioritizer()
 
     def add_description(self, name, description, **kwargs):
         """

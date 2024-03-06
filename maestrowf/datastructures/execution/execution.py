@@ -23,14 +23,10 @@ class StepWeightPriorityDF(PriorityExpr):
         return -1*study_step.weight
 
 
-class PrioritizedStepFactory:
+class StepPrioritizer:
     """
-    Factory for composing tuples for manipulating step execution priority
-
-    The record contains all information used to generate associated scripts,
-    and settings for execution of the record. The StepRecord is a utility
-    class to the ExecutionGraph and maintains all information for any given
-    step in the DAG.
+    Container of expressions used for computing tuples for manipulating step
+    execution priority.
     """
     def __init__(self):
         """"""
@@ -38,11 +34,11 @@ class PrioritizedStepFactory:
         self.priority_expr_names = []    # Use this for controlling expr application ordering
         self.priority_expr_funcs = {}
 
-    def register_priority_expr(self, name, func, override=False):
+    def register_priority_expr(self, name: str, func: PriorityExpr, override: bool = False):
         """
         Register a new expression for computing a step's priority
         :param name: expression name/id
-        :param func: Callable, returning a type implementing __lt__ and __eq__
+        :param func: PriorityExpr, returning a type implementing __lt__ and __eq__
 
         Notes: expression name can be used to enable per step overrides of global
         expressions in future versions.  Should name be owned by the expression
@@ -92,24 +88,24 @@ class ExecutionBlock():
 
         self.step_order = self.exec_dict['step_order']
 
-        self.step_prioritization_factory = PrioritizedStepFactory()
+        self.step_prioritizer = StepPrioritizer()
 
         # NOTE: This is simple for now, but more composable expressions will be
         # parsed/built here in the future
 
         # Set expression for step order, which is always on
         if self.step_order == 'breadth-first':
-            self.step_prioritization_factory.register_priority_expr(
+            self.step_prioritizer.register_priority_expr(
                 'step_order',
                 StepWeightPriorityBF()
             )
         elif self.step_order == 'depth-first':
-            self.step_prioritization_factory.register_priority_expr(
+            self.step_prioritizer.register_priority_expr(
                 'step_order',
                 StepWeightPriorityDF()
             )
         else:
             raise ValueError(f"Received unknown step order '{self.step_order}'")
 
-    def get_prioritization_factory(self):
-        return self.step_prioritization_factory
+    def get_step_prioritizer(self):
+        return self.step_prioritizer

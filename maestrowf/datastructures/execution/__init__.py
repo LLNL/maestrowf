@@ -32,7 +32,7 @@
 import logging
 
 from maestrowf.datastructures.execution.execution import ExecutionBlock
-from maestrowf.datastructures.execution.execution import PrioritizedStepFactory
+from maestrowf.datastructures.execution.execution import StepPrioritizer
 
 logger = logging.getLogger(__name__)
 __all__ = ("ExecutionBlock", "PrioritizedStepFactory")
