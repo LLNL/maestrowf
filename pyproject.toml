@@ -45,6 +45,7 @@ pyyaml = ">=4.2b1"
 rich = "*"
 six = "*"
 tabulate = "*"
+typing-extensions = {version = "*", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]
 coverage = "*"
