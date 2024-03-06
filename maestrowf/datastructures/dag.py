@@ -131,7 +131,6 @@ class DAG(Graph):
         """
         DFS Iterator over the graph, always starting at _source/study root
         """
-        # pprint(self.values.keys())
         v_stack = ['_source']   # remove hard coding of this?
         v_visited = {key: False for key in self.values.keys()}
 
@@ -145,17 +144,6 @@ class DAG(Graph):
             for child_name in self.adjacency_table[vertex_key]:
                 v_stack.append(child_name)
 
-        # # for key, value in self.values.items():
-            
-        #     yield key, value
-        # return self.values.keys()
-        
-            
-
-    # def _dfs_iter(self, src):
-        
-    #     for node in self.adjacency_table[src]:
-            
     def dfs_subtree(self, src, par=None):
         """
         Create a subtree of the DAG starting at src in DFS order.
