@@ -129,7 +129,7 @@ class DAG(Graph):
 
     def __iter__(self):
         """
-        Iterator over the graph
+        DFS Iterator over the graph, always starting at _source/study root
         """
         # pprint(self.values.keys())
         v_stack = ['_source']   # remove hard coding of this?
