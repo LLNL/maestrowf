@@ -1,0 +1,43 @@
+description:
+    name: batched_params_demo_2
+    description: |
+      A study for demonstrating use of pgen to process large parameter sets and
+      using a second dependent step to upload data and clean up data files while
+      running.  This makes use of the execution block to run study depth-first
+      instead of breadth-first so dependent cleanup steps get run before new
+      data generation steps during the study
+
+execution:
+  step_order: depth-first
+
+env:
+    variables:
+        OUTPUT_PATH: ./samples/batched_params_demo_2
+        UPLOADER: $(SPECROOT)/uploader.py
+
+study:
+    - name: echo-params
+      description: Echo the parameter set
+      run:
+          cmd: |
+            echo "PARAM1: $(PARAM1);  PARAM2: $(PARAM2);  PARAM3: $(PARAM3)" 2>&1 | tee datafile.txt
+
+    - name: extract-data
+      description: |
+        Extract data and upload to external source, then clean up workspace
+      run:
+          cmd: |
+            # Placeholder for some database upload
+            python $(UPLOADER) -i $(echo-params.workspace)
+
+            upload_success=$?   # Capture retcode of uploader for use later
+            # Clean up workspace to save space
+            if [[ upload_success == 0 ]] then
+               echo 'Data upload successful'
+               echo 'Cleaning up data files'
+               rm $(echo-params.workspace)/datafile.txt
+            else
+               echo 'Data upload failed'
+               exit upload_success
+               
+# NO PARAMETER BLOCK: SEE corresponding pgen

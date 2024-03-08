@@ -16,7 +16,7 @@ Scaling up the numbers of parameter combinations in studies can run into a few r
     There are a few solutions to this problem depending on the specific study, including use of the `throttle` argument to the run command to limit the number of jobs to submit to the scheduler queue, or if jobs are quick running and/or small, use the [flux](../scheduling.md#flux) adapter to pack many jobs into an allocation.  However, this still leaves open the issue of swamping the file system.
 
 
-An alternative that can be used to address both concerns is to insert gaps in the execution by processing large numbers of parameter sets in batches across multiple studies.  This batched execution allows cleanup of each batch's outputs before the next begins, freeing up precious file system space and avoiding deadlocks when that space/quota is reached.  As a simple model problem we will use [`pgen`](../parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.  
+An alternative that can be used to address both concerns is to insert gaps in the execution by processing large numbers of parameter sets in batches across multiple studies.  This batched execution allows cleanup of each batch's outputs before the next begins, freeing up precious file system space and avoiding deadlocks when that space/quota is reached.  As a simple model problem we will use [`pgen`](../parameter_specification.md#parameter-generator-pgen) to provide command line control of the number of parameters to read out of a csv file in each executed study in this batched execution option.
 
 !!! note
 
@@ -120,3 +120,14 @@ The next step in this 'how-to' is left up to the reader.  At this point we have 
 * Archive the outputs to some other file system, either with or without tarring
 
 * ...
+
+## Inline data management option
+---
+
+File system management can be done inline as well.  A key here is to use the execution order controls to ensure the study gets processed in a depth-first order instead of the default breadth-first.  In this instance, say we add a second step the the study above that does some data extraction:
+
+``` yaml hl_lines="10 11"
+--8<-- "samples/how_to_guide/batched_parameters/batched_parameters_demo_2.yaml"
+```
+
+The default run mode results in all ``echo-params`` step being run before any of the ``extract-data`` steps.  Taking advantage of the [execution](../specification.md#execution-execution) block you can change the order to ``depth-first`` and have the data uploaded and then cleaned up while the study runs.  While it's not saving much in this very simplified workflow, this can make a significant difference when running large parallel jobs in the data generation steps (``echo-params`` in this study).
