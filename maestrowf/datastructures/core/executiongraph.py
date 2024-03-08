@@ -923,28 +923,13 @@ class ExecutionGraph(DAG, PickleInterface):
             # Available slots should never be negative, but on the off chance
             # we are in a slot deficit, then we will just say none are free.
             _available = max(0, _available)
-            # Now, we need to take the min of the length of the queue and the
-            # computed number of slots. We could have free slots, but have less
-            # in the queue.
-            # _available = min(_available, len(self.ready_steps))  # Kind of inconsistent if it's affected by queue size sometimes
+
             LOGGER.info("Found %d available slots...", _available)
 
-        # Sort the ready steps by weight (higher weights execute first)
-        pprint("STEP ORDER")
-        # que_steps = []
-        # while not self.ready_steps.empty():
-        #     que_steps.append(self.ready_steps.get())
-        #     # pprint(f"{que_steps[-1]}")
-
-        # for item in que_steps:
-        #     pprint(item)
-
-        
-        # for step_order, step in enumerate(self.ready_steps):
-        #     pprint(f"{step_order}: {step[0]}")
-        new_steps_running = 0
-        LOGGER.debug("Available slots: %d, Ready steps is empty %s",
-                     _available, self.ready_steps.empty() == True)
+        new_steps_running = 0   # Counter to ensure we only add as many jobs as are available
+        LOGGER.debug("Available slots: %d, Ready steps is%s empty",
+                     _available,
+                     "" if self.ready_steps.empty() else " not")
         while not self.ready_steps.empty() and (new_steps_running < _available or _available < 0):
         # for i in range(0, _available):
             # Pop the record and execute using the helper method.
