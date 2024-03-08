@@ -500,16 +500,40 @@ flowchart TD;
     COMBO4 --> J{{bye-all}}
     
     
-    style B fill:#fff7f3,color:#000000
-    style C fill:#f768a1,color:#000000
-    style D fill:#fde0dd,color:#000000
-    style E fill:#dd3497,color:#FFFFFF
-    style F fill:#fcc5c0,color:#000000
-    style G fill:#ae017e,color:#FFFFFF
-    style H fill:#fa9fb5,color:#000000
-    style I fill:#7a0177,color:#FFFFFF
-    style J fill:#49006a,color:#FFFFFF
+    style B fill:#fff7f3,color:#000000;
+    style C fill:#f768a1,color:#000000;
+    style D fill:#fde0dd,color:#000000;
+    style E fill:#dd3497,color:#FFFFFF;
+    style F fill:#fcc5c0,color:#000000;
+    style G fill:#ae017e,color:#FFFFFF;
+    style H fill:#fa9fb5,color:#000000;
+    style I fill:#7a0177,color:#FFFFFF;
+    style J fill:#49006a,color:#FFFFFF;
 
+    subgraph LEGEND [Legend: Execution order]
+      direction LR
+      BL[1]---> DL[2]
+      DL ---> FL[3]
+      FL ---> HL[4]
+      HL ---> CL[5]
+      CL ---> EL[6]
+      EL ---> GL[7]
+      GL ---> IL[8]
+      IL ---> JL[9]
+      style BL fill:#fff7f3,color:#000000;
+      style CL fill:#f768a1,color:#000000;
+      style DL fill:#fde0dd,color:#000000;
+      style EL fill:#dd3497,color:#FFFFFF;
+      style FL fill:#fcc5c0,color:#000000;
+      style GL fill:#ae017e,color:#FFFFFF;
+      style HL fill:#fa9fb5,color:#000000;
+      style IL fill:#7a0177,color:#FFFFFF;
+      style JL fill:#49006a,color:#FFFFFF;
+
+    end
+    
+    J --- LEGEND
+    linkStyle 20 stroke-width:0px;
 ```
 
 Depth-first, order of excution marked by colors with lighter colors executing first:
@@ -569,11 +593,35 @@ flowchart TD;
     style D fill:#fcc5c0,color:#000000
     style E fill:#fa9fb5,color:#000000
     style F fill:#f768a1,color:#000000
-    style G fill:#dd3497,color:#000000
+    style G fill:#dd3497,color:#FFFFFF
     style H fill:#ae017e,color:#FFFFFF
     style I fill:#7a0177,color:#FFFFFF
     style J fill:#49006a,color:#FFFFFF
 
+    subgraph LEGEND [Legend: Execution order]
+      direction LR
+      BL[1]---> DL[2]
+      DL ---> FL[3]
+      FL ---> HL[4]
+      HL ---> CL[5]
+      CL ---> EL[6]
+      EL ---> GL[7]
+      GL ---> IL[8]
+      IL ---> JL[9]
+      style BL fill:#fff7f3,color:#000000;
+      style CL fill:#f768a1,color:#000000;
+      style DL fill:#fde0dd,color:#000000;
+      style EL fill:#dd3497,color:#FFFFFF;
+      style FL fill:#fcc5c0,color:#000000;
+      style GL fill:#ae017e,color:#FFFFFF;
+      style HL fill:#fa9fb5,color:#000000;
+      style IL fill:#7a0177,color:#FFFFFF;
+      style JL fill:#49006a,color:#FFFFFF;
+
+    end
+    
+    J --- LEGEND
+    linkStyle 20 stroke-width:0px;
 ```
 
 See the [batch processing](how_to_guides/parameter_batches.md#inline-data-management-option) for another example of where you might want to use these options.
