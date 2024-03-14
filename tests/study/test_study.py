@@ -116,6 +116,7 @@ def test_study_step_priority(study_obj, spec, spec_file_name, expected_step_prio
     # Load up the execution block to setup prioritization
     study_spec = spec(spec_file_name)
     exec_block = study_spec.execution
+    print(f"Execution block: {exec_block}")
     test_exec_graph.set_prioritizer(exec_block)
     prioritizer = test_exec_graph.step_prioritizer
 
