@@ -3,7 +3,7 @@ description:
     description: A sample LULESH study that downloads, builds, and runs a parameter study of varying problem sizes and iterations.
 
 execution:
-  step_order: depth-first
+  - step_order: depth-first
 
 env:
     sources:

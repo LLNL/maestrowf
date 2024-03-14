@@ -11,14 +11,24 @@
     ]
   },
   "EXECUTION": {
-    "type": "object",
-    "properties": {
-      "step_order": {
-         "type": "string",
-         "enum": ["depth-first", "breadth-first"]
+      "type": "array",
+      "minLength": 1,
+      "items": {
+          "type": "object",
+          "properties": {
+              "step_order": {
+                  "type": "string",
+                  "enum": ["depth-first", "breadth-first"]
+              }
+          },
+          "additionalProperties": {
+              "anyOf": [
+                  {"type": "string", "minLength": 1},
+                  {"type": "number"}
+              ]
+          }
       }
-    }
-  },    
+  },
   "PARAM": {
     "type": "object",
     "properties": {

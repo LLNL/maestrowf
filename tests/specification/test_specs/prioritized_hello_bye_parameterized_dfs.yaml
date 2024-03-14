@@ -3,7 +3,7 @@ description:
     description: A study that says hello and bye to multiple people.
 
 execution:
-  step_order: depth-first
+  - step_order: depth-first
 
 env:
     variables:

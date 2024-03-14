@@ -153,4 +153,5 @@ def test_get_study_execution_block(spec_path):
 
     exec_block = spec.get_execution()
 
-    assert exec_block.step_order == 'depth-first'
+    # NOTE: better api for accessing these instead of using lists/dicts..
+    assert exec_block.exec_list[0]['step_order'] == 'depth-first'

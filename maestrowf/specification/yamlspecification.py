@@ -106,6 +106,8 @@ class YAMLSpecification(Specification):
             with open(path, "r") as data:
                 specification = cls.load_specification_from_stream(data)
 
+        except jsonschema.ValidationError as ve:
+            raise ve
         except Exception as e:
             logger.exception(e.args)
             raise e
@@ -290,7 +292,8 @@ class YAMLSpecification(Specification):
 
     def verify_execution_block(self, schema):
         """Verify that the execution block in a specification is valid."""
-        YAMLSpecification.validate_schema("execution", self.execution, schema)
+        if self.execution:
+            YAMLSpecification.validate_schema("execution", self.execution, schema)
 
     def verify_study(self, schema):
         """Verify the each step of the study in the specification."""
@@ -431,11 +434,17 @@ class YAMLSpecification(Specification):
                     .strip("is not of type ")
                     .strip("'")
                 )
-                raise jsonschema.ValidationError(
-                    f"In {parent_key}, {path} must be of type "
-                    f"'{expected_type}', but found "
-                    f"'{type(instance[path]).__name__}'."
-                )
+
+                if path:
+                    err_msg = (f"In {parent_key}, {path} must be of type "
+                               f"'{expected_type}', but found "
+                               f"'{type(instance[path]).__name__}'.")
+                else:
+                    # Handle case where error is at root (empty path)
+                    err_msg = (f"'{parent_key}' must be of type "
+                               f"'{expected_type}', but found "
+                               f"'{type(instance).__name__}'.")
+                raise jsonschema.ValidationError(err_msg)
 
             elif error.validator == "required":
                 missing = re.search(r"'.+'", error.message)
