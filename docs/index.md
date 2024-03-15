@@ -165,7 +165,7 @@ The primary goal of Maestro is to provide a lightweight tool for encouraging mod
 2. Workflow best practices should always be encouraged wherever possible, and enforced where reasonable.
 3. It is not a workflow framework's place to force a user to use specific technologies -- a framework should couple minimally, but offer a high degree of flexibility.
 4. Division of responsibility is critical. Data management, optimal performance, and orchestration are related but separate.
-5. A workflow should be coherent and easy to communicate, with a framework sproviding users a mental framework to think and discuss such challenges.
+5. A workflow should be coherent and easy to communicate, with a framework providing users a mental framework to think and discuss such challenges.
 
 We firmly believe that a user-friendly tool and environment that promotes provenance and best practices, while minimizing the effort needed for users to achieve progress, will greatly improve the quality of computational science.
 
