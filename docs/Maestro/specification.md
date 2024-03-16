@@ -378,253 +378,257 @@ execution:
     step_order: depth-first
 ```
 
-These execution orders can be shown with the sample hello-bye world specification as shown in the tutorials:
+!!! warning
 
-``` yaml
-description:
-    name: hello_bye_parameterized_funnel
-    description: A study that says hello and bye to multiple people, and a final good bye to all.
-
-execution:
-    step_order: depth-first
-
-env:
-    variables:
-        OUTPUT_PATH: ./samples/hello_bye_parameterized_funnel
-    labels:
-        HELLO_FORMAT: $(GREETING)_$(NAME).txt
-        BYE_FORMAT: $(FAREWELL)_$(NAME).txt
-
-study:
-    - name: say-hello
-      description: Say hello to someone!
-      run:
-          cmd: |
-            echo "$(GREETING), $(NAME)!" > $(HELLO_FORMAT)
-
-    - name: say-bye
-      description: Say bye to someone!
-      run:
-          cmd: |
-            echo "$(FAREWELL), $(NAME)!" > $(BYE_FORMAT)
-          depends: [say-hello]
-
-    - name: bye-all
-      description: Say bye to everyone!
-      run:
-          cmd: |
-            echo "Good-bye, World!" > good_bye_all.txt
-          depends: [say-bye_*]
-
-global.parameters:
-    NAME:
-        values: [Pam, Jim, Michael, Dwight]
-        label: NAME.%%
-    GREETING:
-        values: [Hello, Ciao, Hey, Hi]
-        label: GREETING.%%
-    FAREWELL:
-        values: [Goodbye, Farewell, So long, See you later]
-        label: FAREWELL.%%
-```
-
-!!! note
-
-    This execution can interact with the [throttle](cli.md#run) setting,
-    resulting in a mix of breadth/depth-first ordering.  This is due to the step
-    dependencies limiting what can be put into the queue: ``say-bye`` steps
+    For [throttle](cli.md#run) > 1 the ``depth-first`` option will not behave as a pure
+    depth-first traversal, but rather a mix of breadth/depth-first ordering.  The step
+    dependencies limit what can be put into the queue: ``say-bye`` steps
     cannot enter the queue until their dependencies are met, e.g. the
     corresponding ``say-hello`` steps.  Thus for throttle settings > 1, you may
-    have multiple ``say-hello`` steps run before any ``say-bye`` steps.  For the
-    two modes diagrammed below we will assume throttle = 1 to make things more
+    have multiple ``say-hello`` steps run before any ``say-bye`` steps.  The
+    two modes diagrammed below assume throttle = 1 to make things more
     clear.
-
-
-Breadth first, order of excution marked by colors with lighter colors executing first:
-
-``` mermaid
-flowchart TD;
-    A(study root) --> COMBO1;
-    subgraph COMBO1 [Combo #1]
-      subgraph say_hello1 [say-hello]
-        B(Hello, Pam)
-
-      end
-      subgraph say_bye1 [say-bye]
-        C(Goodbye, Pam)
-        
-      end
-      say_hello1 --> say_bye1
-    end
-    A --> COMBO2
-    subgraph COMBO2 [Combo #2]
-      direction TB
-      subgraph say_hello2 [say-hello]
-        D(Ciao, Jim)
-        
-      end
-      subgraph say_bye2 [say-bye]
-        E(Farewell, Jim)
-        
-      end
-      say_hello2 --> say_bye2
-    end
-    A --> COMBO3
-    subgraph COMBO3 [Combo #3]
-      subgraph say_hello3 [say-hello]
-        F(Hey, Michael)
-        
-      end
-      subgraph say_bye3 [say-bye]
-        G(So long, Michael)
-        
-      end
-      say_hello3 --> say_bye3
-    end
-    A --> COMBO4
-    subgraph COMBO4 [Combo #4]
-      subgraph say_hello4 [say-hello]
-        H(Hi, Dwight)
-        
-      end
-      subgraph say_bye4 [say-bye]
-        I(See you later, Dwight)
-        
-      end
-      say_hello4 --> say_bye4;
-    end
-    
-    COMBO1 --> J{{bye-all}}
-    COMBO2 --> J{{bye-all}}
-    COMBO3 --> J{{bye-all}}
-    COMBO4 --> J{{bye-all}}
     
     
-    style B fill:#fff7f3,color:#000000;
-    style C fill:#f768a1,color:#000000;
-    style D fill:#fde0dd,color:#000000;
-    style E fill:#dd3497,color:#FFFFFF;
-    style F fill:#fcc5c0,color:#000000;
-    style G fill:#ae017e,color:#FFFFFF;
-    style H fill:#fa9fb5,color:#000000;
-    style I fill:#7a0177,color:#FFFFFF;
-    style J fill:#49006a,color:#FFFFFF;
+These execution orders can be shown with the sample hello-bye world specification as shown in the tutorials:
 
-    subgraph LEGEND [Legend: Execution order]
-      direction LR
-      BL[1]---> DL[2]
-      DL ---> FL[3]
-      FL ---> HL[4]
-      HL ---> CL[5]
-      CL ---> EL[6]
-      EL ---> GL[7]
-      GL ---> IL[8]
-      IL ---> JL[9]
-      style BL fill:#fff7f3,color:#000000;
-      style CL fill:#f768a1,color:#000000;
-      style DL fill:#fde0dd,color:#000000;
-      style EL fill:#dd3497,color:#FFFFFF;
-      style FL fill:#fcc5c0,color:#000000;
-      style GL fill:#ae017e,color:#FFFFFF;
-      style HL fill:#fa9fb5,color:#000000;
-      style IL fill:#7a0177,color:#FFFFFF;
-      style JL fill:#49006a,color:#FFFFFF;
+=== "Example specification"
 
-    end
+    ``` yaml
+    description:
+        name: hello_bye_parameterized_funnel
+        description: A study that says hello and bye to multiple people, and a final good bye to all.
     
-    J --- LEGEND
-    linkStyle 20 stroke-width:0px;
-```
-
-Depth-first, order of excution marked by colors with lighter colors executing first:
-
-
-``` mermaid
-flowchart TD;
-    A(study root) --> COMBO1;
-    subgraph COMBO1 [Combo #1]
-      subgraph say_hello1 [say-hello]
-        B(Hello, Pam)
-      end
-      subgraph say_bye1 [say-bye]
-        C(Goodbye, Pam)
-      end
-      say_hello1 --> say_bye1
-    end
-    A --> COMBO2
-    subgraph COMBO2 [Combo #2]
-      direction TB
-      subgraph say_hello2 [say-hello]
-        D(Ciao, Jim)
-      end
-      subgraph say_bye2 [say-bye]
-        E(Farewell, Jim)
-      end
-      say_hello2 --> say_bye2
-    end
-    A --> COMBO3
-    subgraph COMBO3 [Combo #3]
-      subgraph say_hello3 [say-hello]
-        F(Hey, Michael)
-      end
-      subgraph say_bye3 [say-bye]
-        G(So long, Michael)
-      end
-      say_hello3 --> say_bye3
-    end
-    A --> COMBO4
-    subgraph COMBO4 [Combo #4]
-      subgraph say_hello4 [say-hello]
-        H(Hi, Dwight)
-      end
-      subgraph say_bye4 [say-bye]
-        I(See you later, Dwight)
-      end
-      say_hello4 --> say_bye4;
-    end
+    execution:
+        step_order: depth-first
     
-    COMBO1 --> J{{bye-all}}
-    COMBO2 --> J{{bye-all}}
-    COMBO3 --> J{{bye-all}}
-    COMBO4 --> J{{bye-all}}
+    env:
+        variables:
+            OUTPUT_PATH: ./samples/hello_bye_parameterized_funnel
+        labels:
+            HELLO_FORMAT: $(GREETING)_$(NAME).txt
+            BYE_FORMAT: $(FAREWELL)_$(NAME).txt
     
-    style B fill:#fff7f3,color:#000000
-    style C fill:#fde0dd,color:#000000
-    style D fill:#fcc5c0,color:#000000
-    style E fill:#fa9fb5,color:#000000
-    style F fill:#f768a1,color:#000000
-    style G fill:#dd3497,color:#FFFFFF
-    style H fill:#ae017e,color:#FFFFFF
-    style I fill:#7a0177,color:#FFFFFF
-    style J fill:#49006a,color:#FFFFFF
-
-    subgraph LEGEND [Legend: Execution order]
-      direction LR
-      BL[1]---> DL[2]
-      DL ---> FL[3]
-      FL ---> HL[4]
-      HL ---> CL[5]
-      CL ---> EL[6]
-      EL ---> GL[7]
-      GL ---> IL[8]
-      IL ---> JL[9]
-      style BL fill:#fff7f3,color:#000000;
-      style CL fill:#f768a1,color:#000000;
-      style DL fill:#fde0dd,color:#000000;
-      style EL fill:#dd3497,color:#FFFFFF;
-      style FL fill:#fcc5c0,color:#000000;
-      style GL fill:#ae017e,color:#FFFFFF;
-      style HL fill:#fa9fb5,color:#000000;
-      style IL fill:#7a0177,color:#FFFFFF;
-      style JL fill:#49006a,color:#FFFFFF;
-
-    end
+    study:
+        - name: say-hello
+          description: Say hello to someone!
+          run:
+              cmd: |
+                echo "$(GREETING), $(NAME)!" > $(HELLO_FORMAT)
     
-    J --- LEGEND
-    linkStyle 20 stroke-width:0px;
-```
+        - name: say-bye
+          description: Say bye to someone!
+          run:
+              cmd: |
+                echo "$(FAREWELL), $(NAME)!" > $(BYE_FORMAT)
+              depends: [say-hello]
+    
+        - name: bye-all
+          description: Say bye to everyone!
+          run:
+              cmd: |
+                echo "Good-bye, World!" > good_bye_all.txt
+              depends: [say-bye_*]
+    
+    global.parameters:
+        NAME:
+            values: [Pam, Jim, Michael, Dwight]
+            label: NAME.%%
+        GREETING:
+            values: [Hello, Ciao, Hey, Hi]
+            label: GREETING.%%
+        FAREWELL:
+            values: [Goodbye, Farewell, So long, See you later]
+            label: FAREWELL.%%
+    ```
+    
+=== "Breadth-first order, throttle=1"
+
+    Breadth first, order of excution marked by colors with lighter colors executing first:
+    
+    ``` mermaid
+    flowchart TD;
+        A(study root) --> COMBO1;
+        subgraph COMBO1 [Combo #1]
+          subgraph say_hello1 [say-hello]
+            B(Hello, Pam)
+    
+          end
+          subgraph say_bye1 [say-bye]
+            C(Goodbye, Pam)
+            
+          end
+          say_hello1 --> say_bye1
+        end
+        A --> COMBO2
+        subgraph COMBO2 [Combo #2]
+          direction TB
+          subgraph say_hello2 [say-hello]
+            D(Ciao, Jim)
+            
+          end
+          subgraph say_bye2 [say-bye]
+            E(Farewell, Jim)
+            
+          end
+          say_hello2 --> say_bye2
+        end
+        A --> COMBO3
+        subgraph COMBO3 [Combo #3]
+          subgraph say_hello3 [say-hello]
+            F(Hey, Michael)
+            
+          end
+          subgraph say_bye3 [say-bye]
+            G(So long, Michael)
+            
+          end
+          say_hello3 --> say_bye3
+        end
+        A --> COMBO4
+        subgraph COMBO4 [Combo #4]
+          subgraph say_hello4 [say-hello]
+            H(Hi, Dwight)
+            
+          end
+          subgraph say_bye4 [say-bye]
+            I(See you later, Dwight)
+            
+          end
+          say_hello4 --> say_bye4;
+        end
+        
+        COMBO1 --> J{{bye-all}}
+        COMBO2 --> J{{bye-all}}
+        COMBO3 --> J{{bye-all}}
+        COMBO4 --> J{{bye-all}}
+        
+        
+        style B fill:#f7fbff,color:#000000;
+        style C fill:#6baed6,color:#000000;
+        style D fill:#deebf7,color:#000000;
+        style E fill:#4292c6,color:#FFFFFF;
+        style F fill:#c6dbef,color:#000000;
+        style G fill:#2171b5,color:#FFFFFF;
+        style H fill:#9ecae1,color:#000000;
+        style I fill:#08519c,color:#FFFFFF;
+        style J fill:#08306b,color:#FFFFFF;
+    
+        subgraph LEGEND [Legend: Execution order]
+          direction LR
+          BL[1]---> DL[2]
+          DL ---> FL[3]
+          FL ---> HL[4]
+          HL ---> CL[5]
+          CL ---> EL[6]
+          EL ---> GL[7]
+          GL ---> IL[8]
+          IL ---> JL[9]
+          style BL fill:#f7fbff,color:#000000;
+          style CL fill:#6baed6,color:#000000;
+          style DL fill:#deebf7,color:#000000;
+          style EL fill:#4292c6,color:#FFFFFF;
+          style FL fill:#c6dbef,color:#000000;
+          style GL fill:#2171b5,color:#FFFFFF;
+          style HL fill:#9ecae1,color:#000000;
+          style IL fill:#08519c,color:#FFFFFF;
+          style JL fill:#08306b,color:#FFFFFF;
+        end
+        
+        J --- LEGEND
+        linkStyle 20 stroke-width:0px;
+    ```
+    
+=== "Depth-first order, throttle=1"
+
+    Depth-first, order of excution marked by colors with lighter colors executing first:
+    
+    
+    ``` mermaid
+    flowchart TD;
+        A(study root) --> COMBO1;
+        subgraph COMBO1 [Combo #1]
+          subgraph say_hello1 [say-hello]
+            B(Hello, Pam)
+          end
+          subgraph say_bye1 [say-bye]
+            C(Goodbye, Pam)
+          end
+          say_hello1 --> say_bye1
+        end
+        A --> COMBO2
+        subgraph COMBO2 [Combo #2]
+          direction TB
+          subgraph say_hello2 [say-hello]
+            D(Ciao, Jim)
+          end
+          subgraph say_bye2 [say-bye]
+            E(Farewell, Jim)
+          end
+          say_hello2 --> say_bye2
+        end
+        A --> COMBO3
+        subgraph COMBO3 [Combo #3]
+          subgraph say_hello3 [say-hello]
+            F(Hey, Michael)
+          end
+          subgraph say_bye3 [say-bye]
+            G(So long, Michael)
+          end
+          say_hello3 --> say_bye3
+        end
+        A --> COMBO4
+        subgraph COMBO4 [Combo #4]
+          subgraph say_hello4 [say-hello]
+            H(Hi, Dwight)
+          end
+          subgraph say_bye4 [say-bye]
+            I(See you later, Dwight)
+          end
+          say_hello4 --> say_bye4;
+        end
+        
+        COMBO1 --> J{{bye-all}}
+        COMBO2 --> J{{bye-all}}
+        COMBO3 --> J{{bye-all}}
+        COMBO4 --> J{{bye-all}}
+    
+        style B fill:#f7fbff,color:#000000;
+        style C fill:#deebf7,color:#000000;
+        style D fill:#c6dbef,color:#000000;
+        style E fill:#9ecae1,color:#000000;
+        style F fill:#6baed6,color:#000000;
+        style G fill:#4292c6,color:#FFFFFF;
+        style H fill:#2171b5,color:#FFFFFF;
+        style I fill:#08519c,color:#FFFFFF;
+        style J fill:#08306b,color:#FFFFFF;
+        subgraph LEGEND [Legend: Execution order]
+          direction LR
+          BL[1]---> CL[2]
+          CL ---> DL[3]
+          DL ---> EL[4]
+          EL ---> FL[5]
+          FL ---> GL[6]
+          GL ---> HL[7]
+          HL ---> IL[8]
+          IL ---> JL[9]
+          style BL fill:#f7fbff,color:#000000;
+          style CL fill:#deebf7,color:#000000;
+          style DL fill:#c6dbef,color:#000000;
+          style EL fill:#9ecae1,color:#000000;
+          style FL fill:#6baed6,color:#000000;
+          style GL fill:#4292c6,color:#FFFFFF;
+          style HL fill:#2171b5,color:#FFFFFF;
+          style IL fill:#08519c,color:#FFFFFF;
+          style JL fill:#08306b,color:#FFFFFF;
+    
+        end
+        J --- LEGEND
+        linkStyle 20 stroke-width:0px;
+    ```
 
 See the [batch processing](how_to_guides/parameter_batches.md#inline-data-management-option) for another example of where you might want to use these options.
+
 
 ## Study: `study`
 ----
