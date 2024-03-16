@@ -6,6 +6,8 @@ import pytest
 
 from maestrowf.utils import parse_version
 
+from rich.pretty import pprint
+
 SCHEDULERS = set(('sched_lsf', 'sched_slurm', 'sched_flux'))
 SCHED_CHECKS = defaultdict(lambda: False)
 
@@ -113,6 +115,8 @@ def samples_spec_path():
 
     return load_spec
 
+from maestrowf.specification.yamlspecification import YAMLSpecification
+
 
 @pytest.fixture
 def spec_path():
@@ -127,6 +131,24 @@ def spec_path():
 
 
 @pytest.fixture
+def spec(spec_path):
+    def load_spec(file_name):
+        spec = YAMLSpecification.load_specification(spec_path(file_name))
+        return spec
+    return load_spec
+
+@pytest.fixture
+def study_steps(spec):
+    def load_study_steps(spec_file_name):
+        study_spec = spec(spec_file_name)
+
+        steps = study_spec.get_study_steps()
+
+        return steps
+
+    return load_study_steps
+
+@pytest.fixture
 def status_csv_path():
     """Fixture for providing status files from test data directories"""
     def load_status_csv(file_name):
@@ -134,3 +156,27 @@ def status_csv_path():
         return os.path.join(dirpath, "status", "test_status_data", file_name)
 
     return load_status_csv
+
+
+from maestrowf.datastructures.core.study import Study
+
+@pytest.fixture
+def study_obj(spec, tmp_path):
+    """Fixture for providing Study objects"""
+
+    def load_study(spec_file_name):
+        study_spec = spec(spec_file_name)
+        pprint(f"Loaded spec {study_spec}")
+        study_env = study_spec.get_study_environment()
+        pprint(f"Found study environment {study_env}")
+        study_params = study_spec.get_parameters()
+        pprint(f"Found study parameters {study_params}")
+        study_steps = study_spec.get_study_steps()
+        pprint(f"Found study steps {study_steps}")
+        output_path = tmp_path
+
+        study = Study(study_spec.name, study_spec.description, studyenv=study_env,
+                  parameters=study_params, steps=study_steps, out_path=output_path)
+        return study
+
+    return load_study

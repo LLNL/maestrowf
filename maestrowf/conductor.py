@@ -34,6 +34,7 @@ import glob
 import inspect
 import logging
 import os
+from rich.pretty import pprint
 import sys
 from time import sleep
 import dill
@@ -41,6 +42,7 @@ import yaml
 
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
+from maestrowf.datastructures.execution import ExecutionBlock
 from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
 
 # Logger instantiation
@@ -141,6 +143,7 @@ class Conductor:
     _pkl_extension = ".study.pkl"
     _cancel_lock = ".cancel.lock"
     _batch_info = "batch.info"
+    _exec_info = "exec.info"
 
     def __init__(self, study):
         """
@@ -218,6 +221,46 @@ class Conductor:
             batch_info.write(yaml.dump(batch).encode("utf-8"))
 
     @classmethod
+    def load_exec_block(cls, out_path):
+        """
+        Load the execution block information for the study rooted in 'out_path'.
+
+        :param out_path: A string containing the path to a study root.
+        :returns: A dict containing the execution block information for the study.
+        """
+        exec_path = os.path.join(out_path, cls._exec_info)
+
+        if not os.path.exists(exec_path):
+            msg = "Execution info file is missing. Please re-run Maestro."
+            LOGGER.error(msg)
+            raise Exception(msg)
+
+        with open(exec_path, 'r') as data:
+            try:
+                exec_info = yaml.load(data, yaml.FullLoader)
+            except AttributeError:
+                LOGGER.warning(
+                    "*** PyYAML is using an unsafe version with a known "
+                    "load vulnerability. Please upgrade your installation "
+                    "to a more recent version! ***")
+                exec_info = yaml.load(data)
+
+        return exec_info
+
+    @classmethod
+    def store_exec_block(cls, out_path, exec_block):
+        """
+        Store the specified execution block information to the study in 
+        'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :param exc_block: The ExecutionBlock object to store
+        """
+        path = os.path.join(out_path, cls._exec_info)
+        with open(path, "wb") as exec_info:
+            exec_info.write(yaml.dump(exec_block).encode("utf-8"))
+
+    @classmethod
     def load_study(cls, out_path):
         """
         Load the Study instance in the study root specified by 'out_path'.
@@ -289,7 +332,7 @@ class Conductor:
         with open(lock_path, 'a'):
             os.utime(lock_path, None)
 
-    def initialize(self, batch_info, sleeptime=60):
+    def initialize(self, batch_info, exec_info, sleeptime=60):
         """
         Initializes the Conductor instance based on the stored study.
 
@@ -301,6 +344,16 @@ class Conductor:
         self.sleep_time = sleeptime
         # Stage the study.
         self._pkl_path, self._exec_dag = self._study.stage()
+        # print(exec_block)
+        self._exec_dag.set_prioritizer(exec_info)
+        # VERIFY WEIGHTS
+        # graph = self._exec_dag.dfs_subtree("_source", par="_source")
+        for node_name, node in self._exec_dag:
+            pprint(node_name)
+            pprint(node)
+        # pprint(graph)
+        # pprint(step)
+
         # Write metadata
         self._exec_dag.set_adapter(batch_info)
         self._study.store_metadata()
@@ -377,8 +430,9 @@ def main():
                       args.logpath, args.logstdout)
         batch_info = Conductor.load_batch(args.directory)
 
+        exec_block = Conductor.load_exec_block(args.directory)
         conductor = Conductor(study)
-        conductor.initialize(batch_info, args.sleeptime)
+        conductor.initialize(batch_info, exec_block, args.sleeptime)
         completion_status = conductor.monitor_study()
 
         LOGGER.info("Study completed with state '%s'.", completion_status)

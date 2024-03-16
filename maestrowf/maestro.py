@@ -195,7 +195,7 @@ def run_study(args):
     try:
         spec = YAMLSpecification.load_specification(args.specification)
     except jsonschema.ValidationError as e:
-        LOGGER.error(e.message)
+        LOGGER.error("Invalid specification: " + e.message)
         sys.exit(1)
     environment = spec.get_study_environment()
     steps = spec.get_study_steps()
@@ -317,12 +317,17 @@ def run_study(args):
         batch = spec.batch
         if "type" not in batch:
             batch["type"] = "local"
+
+    # Check the execution block early, then store it
+    exec_block = spec.execution
+
     # Copy the spec to the output directory
     shutil.copy(args.specification, study.output_path)
 
     # Use the Conductor's classmethod to store the study.
     Conductor.store_study(study)
     Conductor.store_batch(study.output_path, batch)
+    Conductor.store_exec_block(study.output_path, exec_block)
 
     # If we are automatically launching, just set the input as yes.
     if args.autoyes or args.dry:
@@ -337,7 +342,7 @@ def run_study(args):
             # Launch in the foreground.
             LOGGER.info("Running Maestro Conductor in the foreground.")
             conductor = Conductor(study)
-            conductor.initialize(batch, sleeptime)
+            conductor.initialize(batch, exec_block, sleeptime)
             completion_status = conductor.monitor_study()
             conductor.cleanup()
             return completion_status.value

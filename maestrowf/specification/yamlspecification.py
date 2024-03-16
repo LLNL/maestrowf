@@ -45,6 +45,7 @@ from maestrowf.datastructures.core import (
     StudyStep,
 )
 from maestrowf.datastructures import environment
+from maestrowf.datastructures.execution import ExecutionBlock
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class YAMLSpecification(Specification):
         self.path = ""
         self.description = {}
         self.environment = {}
+        self.execution = {}
         self.batch = {}
         self.study = []
         self.globals = {}
@@ -104,6 +106,8 @@ class YAMLSpecification(Specification):
             with open(path, "r") as data:
                 specification = cls.load_specification_from_stream(data)
 
+        except jsonschema.ValidationError as ve:
+            raise ve
         except Exception as e:
             logger.exception(e.args)
             raise e
@@ -143,7 +147,8 @@ class YAMLSpecification(Specification):
         specification.batch = spec.pop("batch", {})
         specification.study = spec.pop("study", [])
         specification.globals = spec.pop("global.parameters", {})
-
+        specification.execution = spec.pop("execution", {})
+        
         logger.debug("Specification object created. Verifying...")
         specification.verify()
         logger.debug("Returning verified specification.")
@@ -163,6 +168,7 @@ class YAMLSpecification(Specification):
         self.verify_environment(schemas["ENV"])
         self.verify_study(schemas["STUDY_STEP"])
         self.verify_parameters(schemas["PARAM"])
+        self.verify_execution_block(schemas["EXECUTION"])
 
         logger.debug(
             "Specification %s - Verified. No apparent issues.", self.name
@@ -283,6 +289,11 @@ class YAMLSpecification(Specification):
         self._verify_sources()
         # Verify the dependencies in the specification.
         self._verify_dependencies(keys_seen)
+
+    def verify_execution_block(self, schema):
+        """Verify that the execution block in a specification is valid."""
+        if self.execution:
+            YAMLSpecification.validate_schema("execution", self.execution, schema)
 
     def verify_study(self, schema):
         """Verify the each step of the study in the specification."""
@@ -423,11 +434,17 @@ class YAMLSpecification(Specification):
                     .strip("is not of type ")
                     .strip("'")
                 )
-                raise jsonschema.ValidationError(
-                    f"In {parent_key}, {path} must be of type "
-                    f"'{expected_type}', but found "
-                    f"'{type(instance[path]).__name__}'."
-                )
+
+                if path:
+                    err_msg = (f"In {parent_key}, {path} must be of type "
+                               f"'{expected_type}', but found "
+                               f"'{type(instance[path]).__name__}'.")
+                else:
+                    # Handle case where error is at root (empty path)
+                    err_msg = (f"'{parent_key}' must be of type "
+                               f"'{expected_type}', but found "
+                               f"'{type(instance).__name__}'.")
+                raise jsonschema.ValidationError(err_msg)
 
             elif error.validator == "required":
                 missing = re.search(r"'.+'", error.message)
@@ -603,3 +620,16 @@ class YAMLSpecification(Specification):
             steps.append(_)
 
         return steps
+
+    def get_execution(self):
+        """
+        Generate an ExecutionBlock from the specification.
+
+        :returns: An ExecutionBlock.
+        """
+        exec_block = ExecutionBlock(self.execution)
+
+        # NOTE: in future we will parse the custom expressions to ensure
+        # they point to valid step/resource keys, before handing off the block
+        # object
+        return exec_block
