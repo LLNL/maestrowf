@@ -217,6 +217,8 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         """
         # Leading command is 'sbatch'
         cmd = ["sbatch"]
+        # add "--parsable": https://slurm.schedmd.com/sbatch.html#OPT_parsable
+        cmd += ["--parsable"]
         # Check and see if we should be submitting into a reservation.
         if "reservation" in self._batch:
             if self._batch["reservation"]:
@@ -238,7 +240,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         if retcode == 0:
             LOGGER.info("Submission returned status OK.")
-            jid = re.search('[0-9]+', output).group(0)
+            # parse only last line of sbatch output (see: https://github.com/LLNL/maestrowf/issues/441)
+            output_lastline = output.splitlines()[-1]
+            jid = re.search('[0-9]+', output_lastline).group(0)
             return SubmissionRecord(SubmissionCode.OK, retcode, jid)
         else:
             LOGGER.warning(
