@@ -47,6 +47,7 @@ from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
 
+from rich.prompt import FloatPrompt, IntPrompt, Prompt
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -138,6 +139,68 @@ def cancel_study(args):
                 return -1
         else:
             print("Cancellation aborted.")
+    else:
+        print("Path(s) or glob(s) did not resolve to a directory(ies).")
+        ret_code = 1
+
+    return ret_code
+
+
+def update_study_exec(args):
+    """
+    Update a running study with new restart limits, throttle, other study
+    metadata.
+    """
+    # Force logging to Warning and above
+    LOG_UTIL.configure(LFORMAT, log_lvl=3)
+
+    directory_list = args.directory
+
+    ret_code = 0
+    to_update = []
+    if directory_list:
+        for directory in directory_list:
+            abs_path = os.path.abspath(directory)
+            if not os.path.isdir(abs_path):
+                print(
+                    f"Attempted to update '{abs_path}' "
+                    "-- study directory not found.")
+                ret_code = 1
+            else:
+                print(f"Study in '{abs_path}' to be updated.")
+                to_update.append(abs_path)
+
+        if to_update:
+
+            for directory in directory_list:
+                new_limits = {}
+                still_updating = True
+                while still_updating:
+                
+                    update_menu_choice = Prompt.ask(
+                        f"Choose study config to update, or quit\nStudy: {directory}",
+                        choices=["rlimit", "throttle", "sleep", "quit"]
+                    )
+                    print(f"{update_menu_choice=}")
+                    if update_menu_choice == "rlimit":
+                        print("Updating restart limit")
+                        new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit")
+                    elif update_menu_choice == "throttle":
+                        new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit")
+                    elif update_menu_choice == "sleep":
+                        new_limits["sleep"] = IntPrompt.ask("Enter new sleep duration for Conductor")
+                    else:
+                        # Quit
+                        still_updating = False
+
+                try:
+                    Conductor.update_study_exec(directory, new_limits)
+                except Exception as excpt:
+                    print(f"Error:\n{excpt}")
+                    print("Error updating study config. Aborting.")
+                return -1
+        else:
+            print("Study update aborted.")
     else:
         print("Path(s) or glob(s) did not resolve to a directory(ies).")
         ret_code = 1
@@ -382,6 +445,14 @@ def setup_argparser():
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
     cancel.set_defaults(func=cancel_study)
+
+    update = subparsers.add_parser(
+        'update',
+        help="Update config of a running study (throttle, rlimit, sleep).")
+    update.add_argument(
+        "directory", type=str, nargs="+",
+        help="Directory containing a launched study.")
+    update.set_defaults(func=update_study_exec)
 
     # subparser for a run subcommand
     run = subparsers.add_parser('run',
