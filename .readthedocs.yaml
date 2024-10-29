@@ -6,7 +6,7 @@ build:
     python: '3.11'
   jobs:
     post_install:
-      - pip install "poetry>=1.8,<1.9"
+      - pip install "poetry==1.8.4"
       - poetry config virtualenvs.create false
       - poetry install
 
