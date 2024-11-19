@@ -11,21 +11,14 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: ['.']
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
   - pymdownx.superfences:
-      # make exceptions to highlighting of code:
-      # custom_fences:
-      #   - name: mermaid
-      #     class: mermaid
-      #     format: !!python/name:pymdownx.superfences.fence_div_format #mermaid2.fence_mermaid
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format #mermaid.fence_mermaid 
-        # - name: mermaid_center
-        #   class: mermaid
-        #   format: !!python/name:mermaid2.fence_mermaid_custom
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
 
@@ -45,15 +38,9 @@ plugins:
         nav_file: SUMMARY.md
     - glightbox
     # - section-index
-    # - mermaid2:
-    #     arguments:
-    #       securityLevel: 'loose'
-    #       theme: 'default'
-            # darkMode: True
-          # theme: |
-          #   ^(JSON.parse(__md_get("__palette").index == 1)) ? 'dark' : 'light'
+
 extra_javascript:
-    - https://unpkg.com/mermaid@9.4.3/dist/mermaid.min.js
+    - https://unpkg.com/mermaid@10.9.3/dist/mermaid.min.js
 
 extra_css:
   - custom.css
