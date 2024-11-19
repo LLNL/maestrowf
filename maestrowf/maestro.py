@@ -29,6 +29,7 @@
 
 """A script for launching a YAML study specification."""
 from argparse import ArgumentParser, ArgumentError, RawTextHelpFormatter
+import itertools
 import jsonschema
 import logging
 import os
@@ -146,66 +147,150 @@ def cancel_study(args):
     return ret_code
 
 
+def validate_update_args(args, directory_list):
+    """
+    Ensure any study config update fields are consistent with the list of study
+    directories.  If any config field has > 1 value, it must be of the same
+    length as number of study directories.
+    """
+    def validate_attr(namespace_obj, attr_name, dir_list):
+        attr_tmp = getattr(namespace_obj, attr_name)
+
+        # If no override, skip this one
+        if not attr_tmp:
+            return True
+
+        return len(attr_tmp) == 1 or len(attr_tmp) == len(dir_list)
+
+    # Add rich formatting, or spin up logger here with stdout only handler?
+    err_msg_template = "ERROR: {var_name} is incompatible with directory: "\
+        + "{var_name} have either 1 value (same value for all directories) " \
+        + "or the same number of values as study directories."
+    vars_are_valid = True
+    for update_config_var in ['rlimit', 'throttle', 'sleep']:
+        var_is_valid = validate_attr(args, update_config_var, directory_list)
+        if not var_is_valid:
+            print(err_msg_template.format(var_name=update_config_var))
+            vars_are_valid = False
+
+    return vars_are_valid
+
+
+def expand_update_args(args, directory_list):
+    """
+    Take any length one args and replicate for each directory in directory list
+    """
+    config_args = ["rlimit", "throttle", "sleep"]
+    update_args = {}
+    for update_config_var in config_args:
+        cvar_input = getattr(args, update_config_var)
+        if not cvar_input:
+            continue
+
+        if len(cvar_input) == 1 and len(cvar_input) != len(directory_list):
+            cvar_input = list(itertools.repeat(cvar_input[0], len(directory_list)))
+
+        update_args[update_config_var] = cvar_input
+
+    # Invert it for easier paired iterating later
+    inverted_update_args = []
+    for idx, _ in enumerate(directory_list):
+        inverted_update_args.append(
+            # {
+            #     cvar: update_args[cvar][idx]
+            #     for cvar in config_args
+            #     if cvar in update_args and update_args[cvar]
+            # }
+            {
+                cvar: update_args[cvar][idx] if cvar in update_args and update_args[cvar] else None
+                for cvar in config_args
+            }
+        )
+
+    return inverted_update_args
+
+
 def update_study_exec(args):
     """
     Update a running study with new restart limits, throttle, other study
-    metadata.
+    metadata.  If inputs are valid, write new limits in yaml format to
+    '.study.update.lock' at the top level of a running study workspace
+    for conductor to read in when it wakes up.
+
+    :param args: argparse Namespace containing cli arguments from 'update' command
+    :returns: 1 if update failes, -1 if update succeeds
     """
     # Force logging to Warning and above
     LOG_UTIL.configure(LFORMAT, log_lvl=3)
 
     directory_list = args.directory
 
-    ret_code = 0
-    to_update = []
-    if directory_list:
-        for directory in directory_list:
-            abs_path = os.path.abspath(directory)
-            if not os.path.isdir(abs_path):
-                print(
-                    f"Attempted to update '{abs_path}' "
-                    "-- study directory not found.")
-                ret_code = 1
-            else:
-                print(f"Study in '{abs_path}' to be updated.")
-                to_update.append(abs_path)
-
-        if to_update:
-
-            for directory in directory_list:
-                new_limits = {}
-                still_updating = True
-                while still_updating:
-                
-                    update_menu_choice = Prompt.ask(
-                        f"Choose study config to update, or quit\nStudy: {directory}",
-                        choices=["rlimit", "throttle", "sleep", "quit"]
-                    )
-                    print(f"{update_menu_choice=}")
-                    if update_menu_choice == "rlimit":
-                        print("Updating restart limit")
-                        new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit")
-                    elif update_menu_choice == "throttle":
-                        new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit")
-                    elif update_menu_choice == "sleep":
-                        new_limits["sleep"] = IntPrompt.ask("Enter new sleep duration for Conductor")
-                    else:
-                        # Quit
-                        still_updating = False
-
-                try:
-                    Conductor.update_study_exec(directory, new_limits)
-                except Exception as excpt:
-                    print(f"Error:\n{excpt}")
-                    print("Error updating study config. Aborting.")
-                return -1
-        else:
-            print("Study update aborted.")
-    else:
+    if not directory_list:
         print("Path(s) or glob(s) did not resolve to a directory(ies).")
-        ret_code = 1
+        return 1 # ret_code = 1
 
-    return ret_code
+    to_update = []
+    for directory in directory_list:
+        abs_path = os.path.abspath(directory)
+        if not os.path.isdir(abs_path):
+            print(
+                f"Attempted to update '{abs_path}' "
+                "-- study directory not found.")
+        else:
+            print(f"Study in '{abs_path}' to be updated.")
+            to_update.append(abs_path)
+
+    # Validate the update args
+    update_args_are_valid = validate_update_args(args, directory_list)
+    expanded_update_args = expand_update_args(args, directory_list)
+
+    if not to_update or not update_args_are_valid:
+        print("Study update aborted.")
+        if not to_update:
+            print(
+                "Found no studies to update in specified study workspace directories: {}".format(
+                    ','.join(directory_list)
+                )
+            )
+
+        if not update_args_are_valid:
+            print("Incompatible numbers of values for study config and study directories")
+        return 1
+
+    # Apply updated study config, prompting for values interactively if needed
+    for new_limits, directory in zip(expanded_update_args, directory_list):
+        # new_limits = {}
+        # Skip interactive mode if explicit args passed in
+        if new_limits:
+            still_updating = False
+        else:
+            still_updating = True
+
+        while still_updating:
+
+            update_menu_choice = Prompt.ask(
+                f"Choose study config to update, or quit\nStudy: {directory}",
+                choices=["rlimit", "throttle", "sleep", "quit"]
+            )
+            print(f"{update_menu_choice=}")
+            if update_menu_choice == "rlimit":
+                print("Updating restart limit")
+                new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit")
+            elif update_menu_choice == "throttle":
+                new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit")
+            elif update_menu_choice == "sleep":
+                new_limits["sleep"] = IntPrompt.ask("Enter new sleep duration for Conductor")
+            else:
+                # Quit
+                still_updating = False
+
+        try:
+            Conductor.update_study_exec(directory, new_limits)
+        except Exception as excpt:
+            print(f"Error:\n{excpt}")
+            print("Error updating study config. Aborting.")
+            
+    return -1
 
 
 def load_parameter_generator(path, env, kwargs):
@@ -443,7 +528,7 @@ def setup_argparser():
         help="Cancel all running jobs.")
     cancel.add_argument(
         "directory", type=str, nargs="+",
-        help="Directory containing a launched study.")
+        help="Directory or list of directories containing running studies.")
     cancel.set_defaults(func=cancel_study)
 
     update = subparsers.add_parser(
@@ -452,6 +537,30 @@ def setup_argparser():
     update.add_argument(
         "directory", type=str, nargs="+",
         help="Directory containing a launched study.")
+    update.add_argument(
+        "--throttle",
+        action="append",
+        type=str,
+        default=[],
+        help="Update the maximum number of inflight jobs allowed to execute"
+        " simultaneously (0 denotes no throttling)."
+    )
+    update.add_argument(
+        "--rlimit",
+        action="append",
+        type=str,
+        default=[],
+        help="Update the maximum number of restarts allowed when steps "
+        "specify a restart command (0 denotes no limit)."
+    )
+    update.add_argument(
+        "--sleep",
+        action="append",
+        type=str,
+        default=[],
+        help="Update the time (in seconds) that the manager will "
+        "wait between job status checks.",
+    )
     update.set_defaults(func=update_study_exec)
 
     # subparser for a run subcommand
@@ -461,7 +570,7 @@ def setup_argparser():
                      help="Maximum number of submission attempts before a "
                      "step is marked as failed. [Default: %(default)d]")
     run.add_argument("-r", "--rlimit", type=int, default=1,
-                     help="Maximum number of restarts allowed when steps. "
+                     help="Maximum number of restarts allowed when steps "
                      "specify a restart command (0 denotes no limit). "
                      "[Default: %(default)d]")
     run.add_argument("-t", "--throttle", type=int, default=0,
