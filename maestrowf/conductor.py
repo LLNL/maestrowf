@@ -302,7 +302,7 @@ class Conductor:
         study_update_path = make_safe_path(output_path, cls._study_update)
         # NOTE: should we timestamp these, or append separate timestamped docs
         # to the yaml?
-        print(f"Writing updated config to %s", study_update_path)
+        print(f"Writing updated study config to '{study_update_path}'")
         with open(study_update_path, 'wb') as study_update:
             study_update.write(yaml.dump(updated_config).encode("utf-8"))
 
