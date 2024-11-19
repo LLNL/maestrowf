@@ -406,18 +406,18 @@ class Conductor:
             if os.path.exists(study_update_path):
                 updated_study_config = self.load_updated_study_exec(self.output_path)
 
-                if "throttle" in updated_study_config:
+                if "throttle" in updated_study_config and updated_study_config["throttle"]:
                     LOGGER.info("Updating throttle from %d to %d",
                                 dag._submission_throttle,  # NOTE: make a property?
                                 updated_study_config["throttle"])
                     dag.update_throttle(updated_study_config["throttle"])
 
-                if "rlimit" in updated_study_config:
+                if "rlimit" in updated_study_config and updated_study_config["rlimit"]:
                     LOGGER.info("Updating restart limit to %d",
                                 updated_study_config["rlimit"])
                     dag.update_rlimit(updated_study_config["rlimit"])
 
-                if "sleep" in updated_study_config:
+                if "sleep" in updated_study_config and updated_study_config["sleep"]:
                     LOGGER.info("Updating conductor sleep time from %s to %s",
                                 str(self.sleep_time),
                                 str(updated_study_config["sleep"]))
