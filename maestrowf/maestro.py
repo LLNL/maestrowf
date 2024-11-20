@@ -261,7 +261,7 @@ def update_study_exec(args):
     for new_limits, directory in zip(expanded_update_args, directory_list):
         # new_limits = {}
         # Skip interactive mode if explicit args passed in
-        if new_limits:
+        if any([update_val for update_arg, update_val in new_limits.items()]):
             still_updating = False
         else:
             still_updating = True
