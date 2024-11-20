@@ -141,6 +141,24 @@ maestro update --rlimit 4 /path/to/my/timestamped/study/workspace/
 maestro update --rlimit 4 --rlimit 2 /path/to/my/timestamped/study/workspace_1/ /path/to/my/timestamped/study/workspace_2/
 ```
 
+``` console title="Interactively update 1 study"
+$ maestro update samples/hello_world/sample_output/hello_world_restart/hello_bye_world_20241119-173122
+Study in '/path/to/maestro_repo/samples/hello_world/sample_output/hello_world_restart/hello_bye_world_20241119-173122' to be updated.
+Choose study config to update, or quit
+Study: sample_output/hello_world_restart/hello_bye_world_20241119-173122 [rlimit/throttle/sleep/quit]: rlimit
+update_menu_choice='rlimit'
+Updating restart limit
+Enter new restart limit: 4
+Choose study config to update, or quit
+Study: sample_output/hello_world_restart/hello_bye_world_20241119-173122 [rlimit/throttle/sleep/quit]: sleep
+update_menu_choice='sleep'
+Enter new sleep duration for Conductor: 30
+Choose study config to update, or quit
+Study: sample_output/hello_world_restart/hello_bye_world_20241119-173122 [rlimit/throttle/sleep/quit]: quit
+update_menu_choice='quit'
+Writing updated study config to 'sample_output/hello_world_restart/hello_bye_world_20241119-173122/.study.update.lock'
+```
+
 ## **conductor**
 
 A application for checking and managing and ExecutionDAG within an executing study.
