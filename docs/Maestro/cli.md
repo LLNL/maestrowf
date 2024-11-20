@@ -38,6 +38,7 @@ maestro [OPTIONS] COMMAND [ARGS]...
 - [*cancel*](#cancel): Cancel all running jobs.
 - [*run*](#run): Launch a study based on a specification
 - [*status*](#status): Check the status of a running study.
+- [*update*](#update): Update a running study
 
 ### **cancel**
 
@@ -105,6 +106,40 @@ maestro status [OPTIONS] DIRECTORY [DIRECTORY ...]
 | `--disable-theme` | boolean | Turn off styling for the status layout. See [Status Theme](monitoring.md#status-theme) for more information on this option. | `False` |
 | `--disable-pager` | boolean | Turn off the pager for the status display. See [Status Pager](monitoring.md#status-pager) for more information on this option. | `False` |
 
+
+### **update**
+
+Update the config of a running study.  Currently limited to three settings: throttle, restart limit (rlimit), and sleep.  Explicitly set each argument via keyword args, interactively set for each study, or a mix of the two. Supports updating multiple studies at once.
+
+!!! note
+
+    This command will drop a hidden file in your study workspace '.study.update.lock' which conductor reads asynchronously and removes upon successful reading.  Applying this command to a finished study will currently leave this file in your workspace.  Similarly, this file will also not be cleaned up if conductor crashes before reading.
+
+**Usage:**
+
+``` console
+maestro update [-h] [--rlimit RLIMIT] [--sleep SLEEP] [--throttle THROTTLE] DIRECTORY [DIRECTORY ...]
+```
+
+**Options:**
+
+| Name | Type | Description | Default |
+| ---- | ---- | ----------- | ------- |
+| `-h`, `--help` | boolean | Show this help message and exit. | `False` |
+| `--rlimit` | integer | Update maximum number of restarts when steps specify a restart command (0 denotes no limit) | None |
+| `--sleep` | integer  | Update the time (in seconds) that the manager (conductor) will wait between job status checks. | None |
+| `--throttle` | integer  | Update the maximum number of inflight jobs allowed to execute simultaneously (0 denotes no throttling). | None |
+
+
+**Examples:**
+
+``` console title="Update 1 study"
+maestro update --rlimit 4 /path/to/my/timestamped/study/workspace/
+```
+
+``` console title="Update 2 studies"
+maestro update --rlimit 4 --rlimit 2 /path/to/my/timestamped/study/workspace_1/ /path/to/my/timestamped/study/workspace_2/
+```
 
 ## **conductor**
 
