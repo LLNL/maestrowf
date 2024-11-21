@@ -159,6 +159,9 @@ def validate_update_args(args, directory_list):
     Ensure any study config update fields are consistent with the list of study
     directories.  If any config field has > 1 value, it must be of the same
     length as number of study directories.
+
+    :param args: argparse Namespace containing cli arguments from 'update' command
+    :returns: True if study update args are valid, False if not
     """
     def validate_attr(namespace_obj, attr_name, dir_list):
         attr_tmp = getattr(namespace_obj, attr_name)
@@ -185,7 +188,11 @@ def validate_update_args(args, directory_list):
 
 def expand_update_args(args, directory_list):
     """
-    Take any length one args and replicate for each directory in directory list
+    Take any length one study update args and replicate for each directory
+    in directory list
+
+    :param args: argparse Namespace containing cli arguments from 'update' command
+    :returns: List of dictionaries containing study update args for each directory
     """
     config_args = ["rlimit", "throttle", "sleep"]
     update_args = {}
@@ -203,13 +210,9 @@ def expand_update_args(args, directory_list):
     inverted_update_args = []
     for idx, _ in enumerate(directory_list):
         inverted_update_args.append(
-            # {
-            #     cvar: update_args[cvar][idx]
-            #     for cvar in config_args
-            #     if cvar in update_args and update_args[cvar]
-            # }
             {
-                cvar: update_args[cvar][idx] if cvar in update_args and update_args[cvar] else None
+                cvar: update_args[cvar][idx]
+                if cvar in update_args and update_args[cvar] else None
                 for cvar in config_args
             }
         )
@@ -276,26 +279,31 @@ def update_study_exec(args):
 
         console.print(f"Updating study at [blue]'{directory}'[/]")
         while still_updating:
+            finish_message = f"No new study config settings provided, skipping update of study at [blue]'{directory}'[/]"
             update_menu_choice = Prompt.ask(
-                f"Choose study configuration to update, or quit to abort\n",
-                choices=["rlimit", "throttle", "sleep", "quit"]
+                "Choose study configuration to update, or done/quit to finish/abort\n",
+                choices=["rlimit", "throttle", "sleep", "done", "quit"]
             )
             if update_menu_choice == "rlimit":
-                console.print("Updating restart limit")
-                new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit")
+                new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit [Integer, 0 = unlimited]")
             elif update_menu_choice == "throttle":
-                new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit")
+                new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit [Integer, 0 = no throttling]")
             elif update_menu_choice == "sleep":
-                new_limits["sleep"] = IntPrompt.ask("Enter new sleep duration for Conductor")
+                new_limits["sleep"] = IntPrompt.ask("Enter new sleep duration for Conductor [Integer, seconds]")
+            elif update_menu_choice == "done":
+                still_updating = False
             else:
                 # Quit
+                finish_message = f"Discarding updates to study at [blue]'{directory}'[/]"
+                #console.print(f"Discarding updates to study at [blue]'{directory}'[/]")
+                new_limits = {}  # Abandon changes and abort
                 still_updating = False
 
         try:
             if any([update_val for update_arg, update_val in new_limits.items()]):
                 Conductor.update_study_exec(directory, new_limits)
             else:
-                console.print("No new study config settings provided; exiting.")
+                console.print(finish_message)
         except Exception as excpt:
             console.print(f"[bold red]ERROR:[/]\n{excpt}")
             console.print("[bold red]ERROR:[/] Encountered unexpected exception while "
