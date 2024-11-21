@@ -48,7 +48,14 @@ from maestrowf.utils import \
     create_parentdir, create_dictionary, LoggerUtility, make_safe_path, \
     start_process
 
-from rich.prompt import FloatPrompt, IntPrompt, Prompt
+from rich.console import Console
+from rich.prompt import IntPrompt, Prompt
+
+# Ensure actual input is on it's own line
+Prompt.prompt_suffix = "\n> "
+IntPrompt.prompt_suffix = "\n> "
+
+console = Console()
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
@@ -226,18 +233,17 @@ def update_study_exec(args):
     directory_list = args.directory
 
     if not directory_list:
-        print("Path(s) or glob(s) did not resolve to a directory(ies).")
-        return 1 # ret_code = 1
+        console.print("Path(s) or glob(s) did not resolve to a directory(ies).")
+        console.print("Aborting study update")
+        return 1
 
     to_update = []
     for directory in directory_list:
         abs_path = os.path.abspath(directory)
         if not os.path.isdir(abs_path):
-            print(
-                f"Attempted to update '{abs_path}' "
-                "-- study directory not found.")
+            console.print(
+                f"'{abs_path}' is not a directory; skipping update for this study.")
         else:
-            print(f"Study in '{abs_path}' to be updated.")
             to_update.append(abs_path)
 
     # Validate the update args
@@ -245,16 +251,18 @@ def update_study_exec(args):
     expanded_update_args = expand_update_args(args, directory_list)
 
     if not to_update or not update_args_are_valid:
-        print("Study update aborted.")
         if not to_update:
-            print(
-                "Found no studies to update in specified study workspace directories: {}".format(
+            console.print(
+                "[bold red]ERROR:[/] Found no studies to update in specified study workspace directories: {}".format(
                     ','.join(directory_list)
                 )
             )
 
         if not update_args_are_valid:
-            print("Incompatible numbers of values for study config and study directories")
+            console.print("[bold red]ERROR:[/] Incompatible numbers of values for study config and study directories")
+
+        console.print("Aborting study update.")
+
         return 1
 
     # Apply updated study config, prompting for values interactively if needed
@@ -266,15 +274,14 @@ def update_study_exec(args):
         else:
             still_updating = True
 
+        console.print(f"Updating study at [blue]'{directory}'[/]")
         while still_updating:
-
             update_menu_choice = Prompt.ask(
-                f"Choose study config to update, or quit\nStudy: {directory}",
+                f"Choose study configuration to update, or quit to abort\n",
                 choices=["rlimit", "throttle", "sleep", "quit"]
             )
-            print(f"{update_menu_choice=}")
             if update_menu_choice == "rlimit":
-                print("Updating restart limit")
+                console.print("Updating restart limit")
                 new_limits["rlimit"] = IntPrompt.ask("Enter new restart limit")
             elif update_menu_choice == "throttle":
                 new_limits["throttle"] = IntPrompt.ask("Enter new throttle limit")
@@ -285,10 +292,14 @@ def update_study_exec(args):
                 still_updating = False
 
         try:
-            Conductor.update_study_exec(directory, new_limits)
+            if any([update_val for update_arg, update_val in new_limits.items()]):
+                Conductor.update_study_exec(directory, new_limits)
+            else:
+                console.print("No new study config settings provided; exiting.")
         except Exception as excpt:
-            print(f"Error:\n{excpt}")
-            print("Error updating study config. Aborting.")
+            console.print(f"[bold red]ERROR:[/]\n{excpt}")
+            console.print("[bold red]ERROR:[/] Encountered unexpected exception while "
+                          "updating study config. Aborting.")
             
     return -1
 
