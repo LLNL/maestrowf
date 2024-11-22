@@ -1,6 +1,9 @@
-import argparse
 from maestrowf import maestro
+from maestrowf.conductor import Conductor
+
 import pytest
+
+from rich.pretty import pprint
 
 # NOTE: good place for property testing with hypothesis?
 @pytest.mark.parametrize(
@@ -80,3 +83,34 @@ def test_expand_update_args(cli_args, expected_expanded_args):
     print(f"{expanded_args=}")
     print(f"{expected_expanded_args=}")
     assert expanded_args == expected_expanded_args
+
+
+@pytest.mark.parametrize(
+    "cli_args, expected_lock_dict",
+    [
+        (
+            ["--rlimit", "2"],
+            {'rlimit': 2, 'throttle': None, 'sleep': None},
+        ),
+    ]
+)
+def test_write_update_args(cli_args, expected_lock_dict, tmp_path):
+    """
+    Test writing and reading of study config updates,
+    """
+    parser = maestro.setup_argparser()
+    maestro_cli = ["update"]
+
+    maestro_cli.extend(cli_args)
+    pprint(f"{tmp_path=}")
+    maestro_cli.append(str(tmp_path))
+    print(f"{maestro_cli=}")
+    args = parser.parse_args(maestro_cli)
+    print(f"{args=}")
+    print(f"{expected_lock_dict=}")
+
+    maestro.update_study_exec(args)
+
+    update_dict = Conductor.load_updated_study_exec(tmp_path)
+
+    assert update_dict == expected_lock_dict
