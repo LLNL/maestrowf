@@ -174,8 +174,8 @@ def validate_update_args(args, directory_list):
 
     # Add rich formatting, or spin up logger here with stdout only handler?
     err_msg_template = "ERROR: {var_name} is incompatible with directory: "\
-        + "{var_name} have either 1 value (same value for all directories) " \
-        + "or the same number of values as study directories."
+        + "{var_name} must have either 1 value (same value for all " \
+        + "directories) or the same number of values as study directories."
     vars_are_valid = True
     for update_config_var in ['rlimit', 'throttle', 'sleep']:
         var_is_valid = validate_attr(args, update_config_var, directory_list)
