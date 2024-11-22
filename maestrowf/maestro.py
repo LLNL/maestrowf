@@ -559,7 +559,7 @@ def setup_argparser():
     update.add_argument(
         "--throttle",
         action="append",
-        type=str,
+        type=int,
         default=[],
         help="Update the maximum number of inflight jobs allowed to execute"
         " simultaneously (0 denotes no throttling)."
@@ -567,7 +567,7 @@ def setup_argparser():
     update.add_argument(
         "--rlimit",
         action="append",
-        type=str,
+        type=int,
         default=[],
         help="Update the maximum number of restarts allowed when steps "
         "specify a restart command (0 denotes no limit)."
@@ -575,7 +575,7 @@ def setup_argparser():
     update.add_argument(
         "--sleep",
         action="append",
-        type=str,
+        type=int,
         default=[],
         help="Update the time (in seconds) that the manager will "
         "wait between job status checks.",
