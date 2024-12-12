@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.11dev1"
+version = "1.1.11dev2"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [
@@ -37,27 +37,15 @@ python = ">=3.8,<4.0"
 coloredlogs = "*"
 dill = "*"
 filelock = "*"
-# importlib_metadata = {version = "*", python = "<3.8"}
 jsonschema = ">=3.2.0"
 packaging = ">=22.0"
 pyyaml = ">=4.2b1"
 rich = "*"
 six = "*"
 tabulate = "*"
-mkdocs-mermaid2-plugin = "^1.1.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 coverage = "*"
-mkdocs = "<2.0"
-mkdocs-material = "*"
-mkdocs-material-extensions = "*"
-# mkdocs-mermaid2-plugin = "*"
-mkdocstrings = "*"
-mkdocstrings-python = "*"
-mkdocs-gen-files = "*"
-mkdocs-literate-nav = "*"       # Make sub groups here for docs, formatting, etc?
-mkdocs-glightbox = "*"
-pymdown-extensions = "*"
 flake8 = "*"
 pydocstyle = "*"
 pylint = "*"
@@ -67,6 +55,18 @@ pytest-cov = "*"
 pre-commit = "*"
 tox-travis = "*"
 tox-pyenv = "*"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = { version = "<2.0", python = "^3.9" }
+mkdocs-material = { version = "*", python = "^3.9" }
+mkdocs-material-extensions = { version = "*", python = "^3.9" }
+mkdocstrings = { version = "*", python = "^3.9" }
+mkdocstrings-python = { version = "*", python = "^3.9" }
+mkdocs-gen-files = { version = "*", python = "^3.9" }
+mkdocs-literate-nav = { version = "*", python = "^3.9" }
+mkdocs-glightbox = { version = "*", python = "^3.9" }
+pymdown-extensions = { version = "*", python = "^3.9" }
+termynal = { version = "*", python = "^3.9" }
 
 [tool.poetry.plugins."console_scripts"]
 "maestro" = "maestrowf.maestro:main"
