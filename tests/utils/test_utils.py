@@ -171,4 +171,4 @@ def test_path_sanitizer(tmpdir, test_path_str):
     else:
         # Handle case of strings that only contain characters make_safe_path says are invalid,
         # leading to empty strings.
-        assert test_path_name == None
+        assert test_path_name == ""
