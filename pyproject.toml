@@ -57,7 +57,7 @@ tox-travis = "*"
 tox-pyenv = "*"
 hypothesis = [
    {version = "<6.114", python = "3.8"},
-   {version = ">6.114", python = ">=3.9"}
+   {version = ">=6.114", python = ">=3.9"}
 ]
 
 [tool.poetry.group.docs.dependencies]
