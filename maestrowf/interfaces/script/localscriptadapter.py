@@ -35,7 +35,7 @@ from maestrowf.abstracts.enums import JobStatusCode, SubmissionCode, \
     CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.abstracts.interfaces import ScriptAdapter
-from maestrowf.utils import start_process
+from maestrowf.utils import make_safe_path, start_process
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,7 +80,8 @@ class LocalScriptAdapter(ScriptAdapter):
         to_be_scheduled = False
 
         fname = "{}.sh".format(step.name)
-        script_path = os.path.join(ws_path, fname)
+        script_path = make_safe_path(script_path, fname)
+        # script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             script.write("#!{0}\n\n{1}\n".format(self._exec, cmd))
 
