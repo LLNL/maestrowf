@@ -80,8 +80,7 @@ class LocalScriptAdapter(ScriptAdapter):
         to_be_scheduled = False
 
         fname = "{}.sh".format(step.name)
-        script_path = make_safe_path(script_path, fname)
-        # script_path = os.path.join(ws_path, fname)
+        script_path = make_safe_path(ws_path, fname)
         with open(script_path, "w") as script:
             script.write("#!{0}\n\n{1}\n".format(self._exec, cmd))
 
