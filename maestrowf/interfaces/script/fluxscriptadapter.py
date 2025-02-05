@@ -37,6 +37,7 @@ from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord, \
     FluxFactory
+from maestrowf.utils import make_safe_path
 
 LOGGER = logging.getLogger(__name__)
 status_re = re.compile(r"Job \d+ status: (.*)$")
