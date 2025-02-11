@@ -340,7 +340,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         fname = "{}.{}".format(step.name, self._extension)
         script_path = make_safe_path(ws_path, fname)
-        # script_path = os.path.join(ws_path, fname)
         with open(script_path, "w") as script:
             script.write(self.get_header(step))
             cmd = "\n\n{}\n".format(cmd)

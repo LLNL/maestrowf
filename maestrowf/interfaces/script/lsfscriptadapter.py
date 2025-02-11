@@ -464,7 +464,7 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
 
         fname = "{}.{}".format(step.name, self._extension)
         script_path = make_safe_path(ws_path, fname)
-        # script_path = os.path.join(ws_path, fname)
+
         with open(script_path, "w") as script:
             if to_be_scheduled:
                 script.write(self.get_header(step))

@@ -557,7 +557,6 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
 
         fname = "{}.slurm.sh".format(step.name)
         script_path = make_safe_path(ws_path, fname)
-        # script_path = os.path.join(ws_path, fname)
 
         if to_be_scheduled:
             header = self.get_header(step)
