@@ -62,6 +62,7 @@ theme:
     - navigation.indexes
     # - toc.integrate
     - content.code.annotate
+    - content.code.copy
   palette:
     - scheme: slate
       primary: black
