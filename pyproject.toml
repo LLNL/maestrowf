@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.11dev2"
+version = "1.1.11dev3"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [
@@ -55,6 +55,10 @@ pytest-cov = "*"
 pre-commit = "*"
 tox-travis = "*"
 tox-pyenv = "*"
+hypothesis = [
+   {version = "<6.114", python = "3.8"},
+   {version = ">=6.114", python = ">=3.9"}
+]
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = { version = "<2.0", python = "^3.9" }

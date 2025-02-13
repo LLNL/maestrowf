@@ -39,7 +39,7 @@ from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import CancelCode, JobStatusCode, State, \
     SubmissionCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
-
+from maestrowf.utils import make_safe_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -463,7 +463,8 @@ class LSFScriptAdapter(SchedulerScriptAdapter):
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
         fname = "{}.{}".format(step.name, self._extension)
-        script_path = os.path.join(ws_path, fname)
+        script_path = make_safe_path(ws_path, fname)
+
         with open(script_path, "w") as script:
             if to_be_scheduled:
                 script.write(self.get_header(step))
