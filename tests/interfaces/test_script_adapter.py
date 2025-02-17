@@ -34,9 +34,15 @@ This was created to verify existing functionality of the ScriptAdapterFactory
 as it was converted to dynamically load all ScriptAdapters using a namespace
 plugin methodology.
 """
+import os
+
 import pytest
 
 from maestrowf.interfaces import ScriptAdapterFactory
+from maestrowf.interfaces.script.slurmscriptadapter import SlurmParallelizeCmd
+from maestrowf.datastructures.core import StudyStep
+
+from rich.pretty import pprint
 
 
 def test_factory():
@@ -53,7 +59,7 @@ def test_get_valid_adapters():
     the results from get_valid_adapters()
     """
     saf = ScriptAdapterFactory
-    assert(saf.factories.keys() == ScriptAdapterFactory.get_valid_adapters())
+    assert(sorted(saf.factories.keys()) == sorted(ScriptAdapterFactory.get_valid_adapters()))
 
 
 def test_adapter_none_found():
@@ -63,3 +69,34 @@ def test_adapter_none_found():
     """
     with pytest.raises(Exception):
         ScriptAdapterFactory.get_adapter('empty-adapter')
+
+def test_adapter_script_generator():
+    """
+    Tests script generation and launcher token replacement
+    """
+    test_step = StudyStep()
+    test_step.name = 'test-step'
+    test_step.description = 'script writer test'
+    test_step.run = {
+        'cmd': '\n'.join(['$(LAUNCHER) echo "Hello, $(NAME)!" > hello_world.txt',
+                          'sleep 5']),
+        'procs': 1,
+        'nodes': '',
+        'restart': '\n'.join([''])
+    }
+    pprint(test_step)
+
+    batch_info = {
+        'type': 'local_parallel',
+        'proc_count': 4,
+        'shell': '/bin/bash'
+    }
+    adapter = ScriptAdapterFactory.get_adapter(batch_info['type'])
+
+    adapter2 = adapter(**batch_info)
+    adapter2.register_parallelize_command(SlurmParallelizeCmd)
+
+    print(adapter2)
+    adapter2.write_script(os.path.abspath('.'), test_step)
+
+    assert(1 == None)

@@ -33,13 +33,80 @@ import logging
 import os
 import re
 
-from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
+from maestrowf.abstracts.interfaces import SchedulerScriptAdapter, \
+    ParallelizeCmd
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
 from maestrowf.utils import make_safe_path, start_process
 
 LOGGER = logging.getLogger(__name__)
+
+DEFAULT_SLURM_CMD_FLAGS = {
+    "cmd": "srun",
+    "depends": "--dependency",
+    "ntasks": "-n",
+    "nodes": "-N",
+    "cores per task": "-c",
+}
+
+
+def get_default_slurm_cmd_flags():
+    """
+    Returns default cmd flags for slurm adapters
+    """
+    return DEFAULT_SLURM_CMD_FLAGS
+
+
+class SlurmParallelizeCmd(ParallelizeCmd):
+    key = 'slurm'
+
+    def __init__(self, cmd_flags=None, unsupported=None):
+        self._cmd_flags = {}
+        self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
+
+        self._cmd_flags.update(get_default_slurm_cmd_flags())
+
+        if cmd_flags:
+            self._cmd_flags.update(cmd_flags)
+
+    def __call__(self, procs, nodes=None, **kwargs):
+        """
+        Generate the SLURM parallelization segement of the command line.
+
+        :param procs: Number of processors to allocate to the parallel call.
+        :param nodes: Number of nodes to allocate to the parallel call
+            (default = 1).
+        :returns: A string of the parallelize command configured using nodes
+            and procs.
+        """
+        args = [
+            # SLURM srun command
+            self._cmd_flags["cmd"],
+            # Processors segment
+            self._cmd_flags["ntasks"],
+            str(procs)
+        ]
+
+        if nodes:
+            args += [
+                self._cmd_flags["nodes"],
+                str(nodes),
+            ]
+
+        supported = set(kwargs.keys()) - self._unsupported
+        for key in supported:
+            value = kwargs.get(key)
+            if key not in self._cmd_flags:
+                LOGGER.warning("'%s' is not supported -- omitted.", key)
+                continue
+            if value:
+                args += [
+                    self._cmd_flags[key],
+                    "{}".format(str(value))
+                ]
+
+        return " ".join(args)
 
 
 class SlurmScriptAdapter(SchedulerScriptAdapter):
@@ -99,13 +166,13 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         self._exclusive = "#SBATCH --exclusive"
         self._qos = "#SBATCH --qos={qos}"
 
-        self._cmd_flags = {
-            "cmd": "srun",
-            "depends": "--dependency",
-            "ntasks": "-n",
-            "nodes": "-N",
-            "cores per task": "-c",
-        }
+        # Load cmd flags for launcher token replacement
+        if "cmd_flags" in kwargs:
+            cmd_flags = kwargs.pop("cmd_flags")
+        else:
+            cmd_flags = get_default_slurm_cmd_flags()
+
+        self._cmd_flags.update(cmd_flags)
 
         self._extension = ".slurm.sh"
         self._unsupported = set(["cmd", "depends", "ntasks", "nodes"])
@@ -174,6 +241,9 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         :returns: A string of the parallelize command configured using nodes
             and procs.
         """
+        if self._parallelize_func:
+            return self._parallelize_func(procs, nodes, **kwargs)
+
         args = [
             # SLURM srun command
             self._cmd_flags["cmd"],

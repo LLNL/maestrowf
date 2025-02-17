@@ -152,6 +152,19 @@ class StudyStep:
         """
         return not self.__eq__(other)
 
+    def __rich_repr__(self):
+        """
+        Unique representation of this StudyStep object structure for 
+        pretty printing with the Rich library
+
+        NOTE: does this account for parameter expanded steps?
+        """
+        yield 'name', self.name
+        yield 'description', self.description
+        yield 'nickname', self.nickname
+        yield 'run', self.run
+        
+
 
 class Study(DAG, PickleInterface):
     """
