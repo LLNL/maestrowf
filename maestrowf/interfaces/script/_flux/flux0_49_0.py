@@ -11,6 +11,8 @@ from maestrowf.abstracts.enums import (
 )
 from maestrowf.abstracts.interfaces.flux import FluxInterface
 
+import concurrent.futures
+
 LOGGER = logging.getLogger(__name__)
 
 try:
@@ -150,6 +152,385 @@ class FluxInterface_0490(FluxInterface):
             submit_status = SubmissionCode.ERROR
 
         return jobid, retcode, submit_status
+
+    @classmethod
+    def bulk_submit(
+        cls,
+        job_specs,
+    ):
+        # TODO: add better error handling/throwing in the class func
+        # to enable more uniform detection/messaging when connection fails
+        # to deal with both missing uri in allocations on non-flux machines
+        cls.connect_to_flux()
+
+        # NOTE: This previously placed everything under a broker. However,
+        # if there's a job that schedules items to Flux, it will schedule
+        # all new jobs to the sub-broker. Sometimes this is desired, but
+        # it's incorrect to make that the general case. If we are asking
+        # for a single node, don't use a broker -- but introduce a flag
+        # that can force a single node to run in a broker.
+
+        with flux.job.FluxExecutor(threads=10) as executor:
+            flux_job_specs = []
+            for job_spec in job_specs:
+                force_broker = job_spec['force_broker']
+                nodes = job_spec['nodes']
+                cores_per_task = job_spec['cores_per_task']
+                procs = job_spec['processors']
+                ngpus = job_spec['ngpus']
+                waitable = job_spec['waitable']
+                cwd = job_spec['cwd']
+                path = job_spec['path']
+                job_name = job_spec['stepid']
+                walltime = job_spec['walltime']
+                if force_broker:
+                    LOGGER.debug(
+                        "Launch under Flux sub-broker. [force_broker=%s, "
+                        "nodes=%d]",
+                        force_broker,
+                        nodes,
+                    )
+                    ngpus_per_slot = int(ceil(ngpus / nodes))
+                    jobspec = flux.job.JobspecV1.from_nest_command(
+                        [path],
+                        num_nodes=nodes,
+                        cores_per_slot=cores_per_task,
+                        num_slots=procs,
+                        gpus_per_slot=ngpus_per_slot,
+                    )
+                else:
+                    LOGGER.debug(
+                        "Launch under root Flux broker. [force_broker=%s, "
+                        "nodes=%d]",
+                        force_broker,
+                        nodes,
+                    )
+                    jobspec = flux.job.JobspecV1.from_command(
+                        [path],
+                        num_tasks=procs,
+                        num_nodes=nodes,
+                        cores_per_task=cores_per_task,
+                        gpus_per_task=ngpus,
+                    )
+
+                LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
+                if job_name:
+                    jobspec.setattr("system.job.name", job_name)
+                jobspec.cwd = cwd
+                jobspec.environment = dict(os.environ)
+
+                if walltime > 0:
+                    jobspec.duration = walltime
+
+                jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
+                jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
+
+                flux_job_specs.append(jobspec)
+
+            # for jname, js in zip(job_specs, flux_job_specs):
+            #     print("Submitting jobs:")
+            #     print(f"Name: {jname['stepid']}")
+            #     print(js)
+            # Submit our job spec.
+            future_jobids = {executor.submit(fjspec, waitable=mjspec['waitable']): mjspec['stepid'] for fjspec, mjspec in zip(flux_job_specs, job_specs)}
+            
+            # jobid = executor.submit(
+            #     cls.flux_handle, jobspec, waitable=waitable, urgency=urgency
+            # )
+            # for future_jobid, jobname in future_jobids.items():
+            #     try:
+            #         jobid_f58_tmp = flux.job.JobID(future_jobid.jobid(timeout=0.1)).f58
+            #         print(f"step {jobname} recieved jobid {str(jobid_f58_tmp)}")
+            #     except concurrent.futures.TimeoutError as cfte:
+            #         jobid_f58_tmp = None
+            #         print(f"step {jobname} hasn't recieved a jobid within the timeout of 0.1s")
+
+
+
+            for future_jobid in concurrent.futures.as_completed(future_jobids):
+                stepid = future_jobids[future_jobid]
+                print(f"awaiting {stepid}")
+
+                try:
+                    jobid = future_jobid.result()
+                    submit_status = SubmissionCode.OK
+                    # LOGGER.info(
+                    #     "Submission returned status OK. -- "
+                    #     "Assigned identifier (%s)",
+                    #     jobid,
+                    # )
+                    retcode = 0
+                except flux.job.event.JobException as fje:
+                    jobid = -1
+                    submit_status = SubmissionCode.ERROR
+                    retcode = 1
+                    # LOGGER.error("Submission failed -- Message (%s).",
+                    #              fje,
+                    #              exc_info=True)
+                    print(f"Error submitting job for step {stepid}: {fje.note}")
+
+                # NOTE: cannot pickle JobID instances, so must store jobid's as
+                # strings and reconstruct for use later. Also ensure we get the
+                # Base58 form instead of integer for better user facing logging
+                # print(f"jobid type: {type(jobid)}")
+                jobid_f58 = flux.job.JobID(jobid).f58
+                jobid = str(jobid_f58)
+
+                yield jobid, retcode, submit_status
+
+    @classmethod
+    def bulk_submit_async(
+        cls,
+        job_specs,
+        executor
+    ):
+        # TODO: add better error handling/throwing in the class func
+        # to enable more uniform detection/messaging when connection fails
+        # to deal with both missing uri in allocations on non-flux machines
+        # cls.connect_to_flux()
+
+        # NOTE: This previously placed everything under a broker. However,
+        # if there's a job that schedules items to Flux, it will schedule
+        # all new jobs to the sub-broker. Sometimes this is desired, but
+        # it's incorrect to make that the general case. If we are asking
+        # for a single node, don't use a broker -- but introduce a flag
+        # that can force a single node to run in a broker.
+
+        flux_job_specs = []
+        for job_spec in job_specs:
+            force_broker = job_spec['force_broker']
+            nodes = job_spec['nodes']
+            cores_per_task = job_spec['cores_per_task']
+            procs = job_spec['processors']
+            ngpus = job_spec['ngpus']
+            waitable = job_spec['waitable']
+            cwd = job_spec['cwd']
+            path = job_spec['path']
+            job_name = job_spec['stepid']
+            walltime = job_spec['walltime']
+            if force_broker:
+                LOGGER.debug(
+                    "Launch under Flux sub-broker. [force_broker=%s, "
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
+                )
+                ngpus_per_slot = int(ceil(ngpus / nodes))
+                jobspec = flux.job.JobspecV1.from_nest_command(
+                    [path],
+                    num_nodes=nodes,
+                    cores_per_slot=cores_per_task,
+                    num_slots=procs,
+                    gpus_per_slot=ngpus_per_slot,
+                )
+            else:
+                LOGGER.debug(
+                    "Launch under root Flux broker. [force_broker=%s, "
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
+                )
+                jobspec = flux.job.JobspecV1.from_command(
+                    [path],
+                    num_tasks=procs,
+                    num_nodes=nodes,
+                    cores_per_task=cores_per_task,
+                    gpus_per_task=ngpus,
+                )
+
+            LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
+            if job_name:
+                jobspec.setattr("system.job.name", job_name)
+            jobspec.cwd = cwd
+            jobspec.environment = dict(os.environ)
+
+            if walltime > 0:
+                jobspec.duration = walltime
+
+            jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
+            jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
+
+            flux_job_specs.append(jobspec)
+
+        # for jname, js in zip(job_specs, flux_job_specs):
+        #     print("Submitting jobs:")
+        #     print(f"Name: {jname['stepid']}")
+        #     print(js)
+        # Submit our job spec.
+        future_jobids = {executor.submit(fjspec, waitable=mjspec['waitable']): mjspec['stepid'] for fjspec, mjspec in zip(flux_job_specs, job_specs)}
+        print("Done submitting")
+        # jobid = executor.submit(
+        #     cls.flux_handle, jobspec, waitable=waitable, urgency=urgency
+        # )
+        # for future_jobid, jobname in future_jobids.items():
+        #     try:
+        #         jobid_f58_tmp = flux.job.JobID(future_jobid.jobid(timeout=0.1)).f58
+        #         print(f"step {jobname} recieved jobid {str(jobid_f58_tmp)}")
+        #     except concurrent.futures.TimeoutError as cfte:
+        #         jobid_f58_tmp = None
+        #         print(f"step {jobname} hasn't recieved a jobid within the timeout of 0.1s")
+
+        # for future_jobid in concurrent.futures.as_completed(future_jobids):
+        for future_jobid, stepid in future_jobids.items():
+            # stepid = future_jobids[future_jobid]
+            print(f"awaiting {stepid}")
+
+            try:
+                jobid = future_jobid.jobid() # future_jobid.result()
+
+                # NOTE: might not need this with the executor?
+                jobid_f58 = flux.job.JobID(jobid).f58
+                jobid = str(jobid_f58)
+                
+                submit_status = SubmissionCode.OK
+                LOGGER.info(
+                    "Submission returned status OK. -- "
+                    "Assigned identifier (%s)",
+                    jobid,
+                )
+                retcode = 0
+            except flux.job.event.JobException as fje:
+                jobid = "-1"
+                submit_status = SubmissionCode.ERROR
+                retcode = 1
+                LOGGER.error("Submission failed -- Message (%s).",
+                             fje,
+                             exc_info=True)
+                print(f"Error submitting job for step {stepid}: {fje.note}")
+
+            # NOTE: cannot pickle JobID instances, so must store jobid's as
+            # strings and reconstruct for use later. Also ensure we get the
+            # Base58 form instead of integer for better user facing logging
+            # print(f"jobid type: {type(jobid)}")
+
+            yield jobid, retcode, submit_status
+
+    @classmethod
+    def bulk_submit_async_mod(
+        cls,
+        job_specs,
+        executor
+    ):
+        # TODO: add better error handling/throwing in the class func
+        # to enable more uniform detection/messaging when connection fails
+        # to deal with both missing uri in allocations on non-flux machines
+        cls.connect_to_flux()
+
+        # NOTE: This previously placed everything under a broker. However,
+        # if there's a job that schedules items to Flux, it will schedule
+        # all new jobs to the sub-broker. Sometimes this is desired, but
+        # it's incorrect to make that the general case. If we are asking
+        # for a single node, don't use a broker -- but introduce a flag
+        # that can force a single node to run in a broker.
+        
+        for job_spec in job_specs:
+            force_broker = job_spec['force_broker']
+            nodes = job_spec['nodes']
+            cores_per_task = job_spec['cores_per_task']
+            procs = job_spec['processors']
+            ngpus = job_spec['ngpus']
+            waitable = job_spec['waitable']
+            cwd = job_spec['cwd']
+            path = job_spec['path']
+            job_name = job_spec['stepid']
+            walltime = job_spec['walltime']
+            if force_broker:
+                LOGGER.debug(
+                    "Launch under Flux sub-broker. [force_broker=%s, "
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
+                )
+                ngpus_per_slot = int(ceil(ngpus / nodes))
+                jobspec = flux.job.JobspecV1.from_nest_command(
+                    [path],
+                    num_nodes=nodes,
+                    cores_per_slot=cores_per_task,
+                    num_slots=procs,
+                    gpus_per_slot=ngpus_per_slot,
+                )
+            else:
+                LOGGER.debug(
+                    "Launch under root Flux broker. [force_broker=%s, "
+                    "nodes=%d]",
+                    force_broker,
+                    nodes,
+                )
+                jobspec = flux.job.JobspecV1.from_command(
+                    [path],
+                    num_tasks=procs,
+                    num_nodes=nodes,
+                    cores_per_task=cores_per_task,
+                    gpus_per_task=ngpus,
+                )
+
+            LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
+            if job_name:
+                jobspec.setattr("system.job.name", job_name)
+            jobspec.cwd = cwd
+            jobspec.environment = dict(os.environ)
+
+            if walltime > 0:
+                jobspec.duration = walltime
+
+            jobspec.stdout = f"{job_name}.{{{{id}}}}.out"
+            jobspec.stderr = f"{job_name}.{{{{id}}}}.err"
+
+            flux_job_specs.append(jobspec)
+
+            def submit_callback(future: flux.job.submit.SubmitFuture,
+                                flux_handle: flux.core.handle.Flux):
+                jobid = future.get_id()
+
+                result_future = flux.job.result_async(flux_handle, jobid)
+
+                result_future.then(result_callback)
+
+        future_jobids = {executor.submit(fjspec, waitable=mjspec['waitable']): mjspec['stepid'] for fjspec, mjspec in zip(flux_job_specs, job_specs)}
+
+        # jobid = executor.submit(
+        #     cls.flux_handle, jobspec, waitable=waitable, urgency=urgency
+        # )
+        # for future_jobid, jobname in future_jobids.items():
+        #     try:
+        #         jobid_f58_tmp = flux.job.JobID(future_jobid.jobid(timeout=0.1)).f58
+        #         print(f"step {jobname} recieved jobid {str(jobid_f58_tmp)}")
+        #     except concurrent.futures.TimeoutError as cfte:
+        #         jobid_f58_tmp = None
+        #         print(f"step {jobname} hasn't recieved a jobid within the timeout of 0.1s")
+
+
+
+        for future_jobid in concurrent.futures.as_completed(future_jobids):
+            stepid = future_jobids[future_jobid]
+            print(f"awaiting {stepid}")
+
+            try:
+                jobid = future_jobid.result()
+                submit_status = SubmissionCode.OK
+                # LOGGER.info(
+                #     "Submission returned status OK. -- "
+                #     "Assigned identifier (%s)",
+                #     jobid,
+                # )
+                retcode = 0
+            except flux.job.event.JobException as fje:
+                jobid = -1
+                submit_status = SubmissionCode.ERROR
+                retcode = 1
+                # LOGGER.error("Submission failed -- Message (%s).",
+                #              fje,
+                #              exc_info=True)
+                print(f"Error submitting job for step {stepid}: {fje.note}")
+
+            # NOTE: cannot pickle JobID instances, so must store jobid's as
+            # strings and reconstruct for use later. Also ensure we get the
+            # Base58 form instead of integer for better user facing logging
+            # print(f"jobid type: {type(jobid)}")
+            jobid_f58 = flux.job.JobID(jobid).f58
+            jobid = str(jobid_f58)
+
+            yield jobid, retcode, submit_status
 
     @classmethod
     def parallelize(cls, procs, nodes=None, **kwargs):

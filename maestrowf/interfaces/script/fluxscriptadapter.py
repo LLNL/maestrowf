@@ -261,6 +261,136 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         return SubmissionRecord(submit_status, retcode, jobid)
 
+    def _process_step_for_submit(self, step):
+        step_params = {}        # Make this a dataclass later
+        nodes = step.run.get("nodes", 1)
+        processors = step.run.get("procs", 0)
+        step_params['stepid'] = step.name
+
+        if not isinstance(nodes, int):
+            if not nodes:
+                nodes = 1
+            else:
+                nodes = int(nodes)
+
+        if not isinstance(processors, int):
+            if not processors:
+                processors = 1
+            else:
+                processors = int(processors)
+
+        step_params['processors'] = processors
+        step_params['nodes'] = nodes
+
+        force_broker = step.run.get("nested", False)
+        walltime = \
+            self._convert_walltime_to_seconds(step.run.get("walltime", 0))
+        urgency = step.run.get("priority", "medium")
+        urgency = self.get_priority(urgency)
+
+        step_params['force_broker'] = force_broker
+        step_params['walltime'] = walltime
+        step_params['urgency'] = urgency
+
+        # Compute cores per task
+        cores_per_task = step.run.get("cores per task", None)
+        if isinstance(cores_per_task, str):
+            try:
+                cores_per_task = int(cores_per_task)
+            except:
+                cores_per_task = 1
+        if not cores_per_task:
+            cores_per_task = 1 # max((1, ceil(processors / nodes)))
+            LOGGER.warn(
+                "'cores per task' set to a non-value. Populating with a "
+                "sensible default. (cores per task = %d", cores_per_task)
+
+        step_params['cores_per_task'] = cores_per_task
+
+        try:
+            # Calculate ngpus
+            ngpus = step.run.get("gpus", "0")
+            ngpus = int(ngpus) if ngpus else 0
+        except ValueError as val_error:
+            msg = f"Specified gpus '{ngpus}' is not a decimal value."
+            LOGGER.error(msg)
+            raise val_error
+
+        step_params['ngpus'] = ngpus
+
+        # Calculate nprocs
+        ncores = cores_per_task * nodes
+        # Raise an exception if ncores is 0
+        if ncores <= 0:
+            msg = "Invalid number of cores specified. " \
+                  "Aborting. (ncores = {})".format(ncores)
+            LOGGER.error(msg)
+            raise ValueError(msg)
+
+        step_params['ncores'] = ncores
+        
+        # Unpack waitable flag and pass it along if there: only pass it along if
+        # it's in the step maybe, leaving each adapter to retain their defaults?
+        step_params['waitable'] = step.run.get("waitable", False)
+
+        return step_params
+
+    def bulk_submit(self, steps, paths, cwds, job_map=None, env=None):
+        """
+        Submit multiple scripts to the Flux scheduler.
+
+        :param steps: The StudyStep instances this submission is based on.
+        :param paths: Local paths to the scripts to be executed.
+        :param cwds: Paths to the current working directories.
+        :param job_map: A dictionary mapping step names to their job
+                        identifiers.
+        :param env: A dict containing a modified environment for execution.
+        :returns: The return status of the submission command and job
+                  identiifer.
+        """
+        job_params = []
+        for step, path, cwd in zip(steps, paths, cwds):
+            step_params = self._process_step_for_submit(step)
+            step_params['path'] = path
+            step_params['cwd'] = cwd
+            job_params.append(step_params)
+
+        for jobid, retcode, submit_status in self._interface.bulk_submit(job_params):
+            yield SubmissionRecord(submit_status, retcode, jobid)
+        # self._interface.submit(
+        #     nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
+        #     job_name=step.name, force_broker=force_broker, urgency=urgency,
+        #     waitable=waitable
+        # )
+
+    def bulk_submit_async(self, steps, paths, cwds, executor, job_map=None, env=None):
+        """
+        Submit multiple scripts to the Flux scheduler.
+
+        :param steps: The StudyStep instances this submission is based on.
+        :param paths: Local paths to the scripts to be executed.
+        :param cwds: Paths to the current working directories.
+        :param job_map: A dictionary mapping step names to their job
+                        identifiers.
+        :param env: A dict containing a modified environment for execution.
+        :returns: The return status of the submission command and job
+                  identiifer.
+        """
+        job_params = []
+        for step, path, cwd in zip(steps, paths, cwds):
+            step_params = self._process_step_for_submit(step)
+            step_params['path'] = path
+            step_params['cwd'] = cwd
+            job_params.append(step_params)
+
+        for jobid, retcode, submit_status in self._interface.bulk_submit_async(job_params, executor):
+            yield SubmissionRecord(submit_status, retcode, jobid)
+        # self._interface.submit(
+        #     nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
+        #     job_name=step.name, force_broker=force_broker, urgency=urgency,
+        #     waitable=waitable
+        # )
+
     def check_jobs(self, joblist):
         """
         For the given job list, query execution status.

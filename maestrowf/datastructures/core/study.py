@@ -152,6 +152,12 @@ class StudyStep:
         """
         return not self.__eq__(other)
 
+    def __rich_repr__(self):
+        yield 'name', self.name
+        yield 'description', self.description
+        yield 'nickname', self.nickname
+        yield 'run', self.run
+
 
 class Study(DAG, PickleInterface):
     """

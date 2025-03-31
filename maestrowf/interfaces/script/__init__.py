@@ -97,6 +97,10 @@ class SubmissionRecord(Record):
         """
         self._info[key] = value
 
+    def __rich_repr__(self):
+        yield 'submission_code:', self.submission_code
+        yield 'retcode:', self.return_code
+        yield 'jobid:', self.job_identifier
 
 class CancellationRecord(Record):
     """A container for data returned from a scheduler cancellation call."""
