@@ -88,12 +88,23 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
         self._addl_args = kwargs.get("args", {})
 
+        # Add --setattr fields to batch job/broker; default to "" such
+        # that 'truthiness' can exclude them from the jobspec if not provided
+        queue = kwargs.pop("queue", "")
+        self._batch_attrs = {
+            "system.queue": queue,
+            "system.bank": kwargs.pop("bank", ""),
+        }
+        self.add_batch_parameter("queue", queue)
+
         # Header is only for informational purposes.
+        # TODO: export these as flux directives for manual step rerunning
         self._header = {
             "nodes": "#INFO (nodes) {nodes}",
             "walltime": "#INFO (walltime) {walltime}",
             "version": "#INFO (flux adapter version) {version}",
             "flux_version": "#INFO (flux version) {flux_version}",
+            "queue": "#INFO (queue) {queue}",
         }
 
         self._cmd_flags = {
@@ -257,7 +268,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
                 job_name=step.name, force_broker=force_broker, urgency=urgency,
-                waitable=waitable
+                waitable=waitable, batch_attrs=self._batch_attrs
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)
