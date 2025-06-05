@@ -112,7 +112,7 @@ class FluxInterface_0490(FluxInterface):
             jobspec.cwd = cwd
             jobspec.environment = dict(os.environ)
 
-            # Slurp in extra attributes (queue, bank, ..)
+            # Slurp in extra attributes if not null (queue, bank, ..)
             for batch_attr_name, batch_attr_value in batch_attrs.items():
                 if batch_attr_value:
                     jobspec.setattr(batch_attr_name, batch_attr_value)

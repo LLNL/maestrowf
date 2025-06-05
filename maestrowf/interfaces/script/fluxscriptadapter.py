@@ -69,6 +69,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         """
         super(FluxScriptAdapter, self).__init__(**kwargs)
 
+        # Store the interface we're using
+        _version = kwargs.pop("version", FluxFactory.latest)
+        self.add_batch_parameter("version", _version)
+        self._interface = FluxFactory.get_interface(_version)
+        # Note, should we also log parsed 'base version' used when comparing
+        # the adaptor/broker versions along with the raw string we get back
+        # from flux.
+        self._broker_version = self._interface.get_flux_version()
         
         uri = kwargs.pop("uri", None)
         if not uri:             # Check if flux uri env var is set, log if so
@@ -91,6 +99,17 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # Add --setattr fields to batch job/broker; default to "" such
         # that 'truthiness' can exclude them from the jobspec if not provided
         queue = kwargs.pop("queue", "")
+        available_queues = self._interface.get_broker_queues()
+        # Ignore queue if specified and we detect broker only has anonymous queue
+        if not available_queues and queue:
+            LOGGER.info(
+                "Flux Broker '%s' only has an anonymous queue: "
+                "ignoring batch setting '%s'",
+                uri,
+                queue,
+            )
+            queue = ""
+
         self._batch_attrs = {
             "system.queue": queue,
             "system.bank": kwargs.pop("bank", ""),
@@ -118,14 +137,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             self.add_batch_parameter("flux_uri", uri)
             self._header['flux_uri'] = "#INFO (flux_uri) {flux_uri}"
 
-        # Store the interface we're using
-        _version = kwargs.pop("version", FluxFactory.latest)
-        self.add_batch_parameter("version", _version)
-        self._interface = FluxFactory.get_interface(_version)
-        # Note, should we also log parsed 'base version' used when comparing
-        # the adaptor/broker versions along with the raw string we get back
-        # from flux.
-        self._broker_version = self._interface.get_flux_version()
+        
 
     @property
     def extension(self):
