@@ -13,9 +13,9 @@ steps:
 |    :-         |      :-:       |    :-:   |       :-        |
 |  `type`       |      Yes        |   str    | Select scheduler adapter to use.  Currently supported are: {`local`, `slurm`, `lsf`, `flux`} |
 |  `shell`      |      No        |   str    | Optional specification path to shell to use for execution.  Defaults to `"/bin/bash"` |
-| `bank`        |      Yes       |   str    | Account which runs the job; this is used for computing job priority on the cluster. '--account' on slurm, '-G' on lsf, ...|
+| `bank` (1)        |      Yes       |   str    | Account which runs the job; this is used for computing job priority on the cluster. '--account' on slurm, '-G' on lsf, ...|
 | `host`        |      Yes       |   str    | The name of the cluster to execute this study on |
-| `queue`       |      Yes       |   str    | Scheduler queue/machine partition to submit jobs (study steps) to |
+| `queue` (2)       |      Yes       |   str    | Scheduler queue/machine partition to submit jobs (study steps) to |
 | `nodes`       |      No        |   int    | Number of compute nodes to be reserved for jobs: note this is also a per step key |
 | `reservation` |      No        |   str    | Optional prereserved allocation/partition to submit jobs to |
 | `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
@@ -26,11 +26,19 @@ steps:
 | `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
 
 
+
 The information in this block is used to populate the step specific batch scripts with the appropriate
 header comment blocks (e.g. '#SBATCH --partition' for slurm).  Additional keys such as step specific
 resource requirements (number of nodes, cpus/tasks, gpus, ...) get added here when processing
 individual steps; see subsequent sections for scheduler specific details.  Note that job steps will
 run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.  The keys attached to the study steps also get used to construct the parallel launcer (e.g. `srun` for [SLURM](#SLURM)).  The following subsections describe the options in the currently supported scheduler types.
+
+!!! note "Flux behaviors"
+
+    1.  Flux brokers may not always have a bank, in which case this will have no effect
+    2.  Flux brokers may not always have named queues (nested allocations).
+	
+	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
 
 ## LAUNCHER Token
 ---
@@ -167,9 +175,16 @@ Flux adapter also supports some keys that control batch job behavior instead of 
 
 See the [flux framework](https://flux-framework.readthedocs.io/en/latest/index.html) for more information on flux.  Additionally, checkout the [flux-how-to-guides](how_to_guides/running_with_flux.md) for the options available for using flux with Maestro.  Also check out a [full example spec run with flux](specification.md#full-example).
 
+!!! note "Flux batch block behaviors"
+
+    1.  Flux brokers may not always have a bank, in which case this will have no effect
+    2.  Flux brokers may not always have named queues (nested allocations).
+	
+	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
+
 !!! danger
 
-   The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
+    The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
    
 
    

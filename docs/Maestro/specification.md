@@ -316,9 +316,9 @@ The `batch` block is an optional block that enables specification of HPC schedul
 |    :-         |      :-:       |    :-:   |       :-        |
 |  `type`       |      Yes        |   str    | Type of scheduler managing execution.  Currently one of: {`local`, `slurm`, `lsf`, `flux`} |
 |  `shell`      |      No        |   str    | Optional specification path to shell to use for execution.  Defaults to `"/bin/bash"` |
-| `bank`        |      Yes       |   str    | Account to charge computing time to |
+| `bank` (1)        |      Yes       |   str    | Account to charge computing time to |
 | `host`        |      Yes       |   str    | The name of the cluster to execute this study on |
-| `queue`       |      Yes       |   str    | Scheduler queue/partition to submit jobs (study steps) to |
+| `queue` (2)       |      Yes       |   str    | Scheduler queue/partition to submit jobs (study steps) to |
 | `nodes`       |      No        |   int    | Number of compute nodes to be reserved for jobs: note this is also a per step key |
 | `reservation` |      No        |   str    | Optional reserved allocation to submit jobs to |
 | `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
@@ -346,7 +346,7 @@ The `batch` block is an optional block that enables specification of HPC schedul
         host        : quartz
         bank        : baasic
         queue       : pbatch
-        flux_uri    : ƒ8RmSm8mYW3 # sample flux job id based uri; uri can take other forms too
+        flux_uri    : ƒ8RmSm8mYW3 # optional sample flux job id based uri; uri can take other forms too
     ```
 
 === "LSF"
@@ -362,6 +362,13 @@ The `batch` block is an optional block that enables specification of HPC schedul
 
 
 <br/>
+
+!!! note "Flux behaviors"
+
+    1.  Flux brokers may not always have a bank, in which case this will have no effect
+    2.  Flux brokers may not always have named queues (nested allocations).
+	
+	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
 
 ## Study: `study`
 ----

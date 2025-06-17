@@ -79,6 +79,46 @@ Then you can install Maestro and start scheduling jobs to a Flux instance
 
 As mentioned at the above, the Flux adapter is different from the SLURM and LSF adapters in that it also enables usage as an allocation packing option where you may be running a Flux instance inside of SLURM/LSF.  The adapter in Maestro can use an optional 'uri' to specify a particular Flux instance to schedule to, or in its absence assume it's talking to a system level broker where Maestro submits standalone batch jobs just as with SLURM and LSF.
 
+### Queues and Banks
+
+Flux's use of the queue and banks from the batch block depend upon the broker that you are submitting to.  Current Flux (~<=0.74 as of this writing) default behaviors for nested brokers or manually started brokers running under Slurm/LSF, is to not have any queues or banks configured.  The exception being if you explicitly configure those for that broker.
+
+* **Queues**
+
+    By default, nested Flux brokers or manually started Flux brokers run under Slurm/LSF provide a single anonymous queue. This allows you to submit jobs (`flux run`, `flux submit`, `flux batch`) without specifying a queue. However, if you specify a named queue, the job will be rejected.
+    
+    Starting with Maestro Flux adapters version 0.49 (as of Maestro ≥ 1.1.11dev3), the queue field is omitted from the jobspec if only an anonymous queue is detected. If named queues are configured, the adapter includes the appropriate queue. Logs will indicate which behavior is used, aiding in step batch script review (simultaneous named/unnamed queue batch script support is coming in a future release).
+    
+    Below are examples of flux queue list output for each scenario to demonstrate how to spot the difference:
+    
+    **Named Queues:**
+    
+    ``` console
+    > flux queue list
+    QUEUE    EN ST TDEFAULT   TLIMIT     NNODES     NCORES      NGPUS
+    pdebug    ✔  ✔       1h       4h        0-2      0-512       0-32
+    pbatch    ✔  ✗      24h       1d       0-20      0-8192      0-512
+    ```
+    
+    **Anonymous Queues:**
+
+    Note the omission of the `QUEUE` column for the name as the indicator that you only have an anonymous queue
+	
+    ``` console
+    > flux queue list
+    EN ST TDEFAULT   TLIMIT     NNODES     NCORES      NGPUS
+     ✔  ✔       inf       inf        0-1      0-64       0-4
+    ```
+    
+    !!! warning "Time limits"
+    
+        Time limits in anonymous queue scenarios are often infinite or uncapped. However, Flux may still enforce the outer batch job's time limit (e.g., when submitting to a broker inside a Flux batch job). Even if the queue shows no limit, Flux can reject jobs that request more time than allowed by that outer layer. To avoid rejections, do not set your Maestro step walltime exactly equal to the batch job walltime—omit it or set it slightly lower to account for scheduling overhead.
+    	
+    	
+* **Banks**
+
+    Banks, i.e. the flux-accounting plugin, are not configured by default in nested brokers.  The nested behavior for banks in Flux is to ignore it even when the accounting plugin is not there.  Thus, Maestro currently does not strip this from the jobspec or the generated batch scripts.  This behavior may change in future versions as Flux evolves; please report issues if you find this changes or you run into a configuration where it results in issues such as jobs being rejected.
+
 ### Adapter version
 
 The Flux adapter has an optional version switching mechanism to accomodate the variety of installs and more rapid behavior changes for this pre 1.0 scheduler.  The default behavior is to try using the latest adapter version.  This can be overridden using the [`version`](../specification.md#batch-batch) key in the batch block, choosing from one of the available options using the selection mechanism added in Maestro v1.1.9dev1:
@@ -97,7 +137,7 @@ The Flux adapter has an optional version switching mechanism to accomodate the v
 ### Standalone batch jobs
 
 In the absence of either populating the 'flux_uri' key in the batch block or the presence of the `FLUX_URI` environment variable, Maestro assumes you are scheduling to a system level instance, i.e. a machine managed natively by Flux.  This will behave the same as the SLURM and LSF adapters.
-    
+
     
 ### Allocation packing mode
 
