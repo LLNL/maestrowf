@@ -5,6 +5,7 @@ from subprocess import check_output
 import pytest
 
 from maestrowf.utils import parse_version
+from packaging.version import InvalidVersion
 
 SCHEDULERS = set(('sched_lsf', 'sched_slurm', 'sched_flux'))
 SCHED_CHECKS = defaultdict(lambda: False)
@@ -34,7 +35,13 @@ def check_slurm():
         raise
 
     slurm_ver_parts = slurm_ver_output_lines.split('\n')[0].split()
-    version = parse_version(slurm_ver_parts[1])
+
+    try:
+        version = parse_version(slurm_ver_parts[1])
+    except InvalidVersion:
+        # This can happen when encountering LLNL's slurm wrappers for flux machines
+        print(f"Error extracting SLURM version from 'sinfo' output: {slurm_ver_output_lines} does not have a verison in the expected location, item 0: {slurm_ver_parts}")
+        return False
 
     if slurm_ver_parts[0].lower() == 'slurm' and version:
         return True
@@ -90,7 +97,9 @@ def pytest_runtest_setup(item):
         if marker.name not in SCHEDULERS:
             pytest.skip(f"'{marker}' is not a supported scheduler")
 
+        print(f"CHECKING IF ON SCHEDULER: {marker.name}")
         if not check_for_scheduler(marker.name):
+
             pytest.skip(f"not currently running tests on '{marker}' managed system")
 
 
