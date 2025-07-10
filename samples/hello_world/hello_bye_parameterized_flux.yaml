@@ -20,7 +20,7 @@ study:
       run:
           cmd: |
             $(LAUNCHER) echo "$(GREETING), $(NAME)!" > $(OUT_FORMAT)
-            $(LAUNCHER) sleep 10
+            $(LAUNCHER) sleep 5
           procs: 1
           nested: True
           walltime: "00:60"
@@ -30,7 +30,7 @@ study:
       run:
           cmd: |
             $(LAUNCHER) echo "Bye, World!" > bye.txt
-            $(LAUNCHER) sleep 10
+            $(LAUNCHER) sleep 5
           procs: 1
           nested: True
           walltime: "00:60"
