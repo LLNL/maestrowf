@@ -109,9 +109,10 @@ class FluxInterface(ABC):
             banks = cls.flux_handle.rpc("accounting.view_user",
                                         {"list_banks": True,
                                          "username": username,
+                                         "parsable": True,  # Mandatory in 0.75?
                                          "format": ""}).get()
         except OSError as be:
-            if '[Errno 38] No service matching accounting.view_user is registered' not in be.message:
+            if '[Errno 38] No service matching accounting.view_user is registered' not in str(be):
                 raise           # If some other unexpected error raise it
             banks = ""
 
@@ -125,16 +126,17 @@ class FluxInterface(ABC):
         Use flux's rpc interface to get all available banks on this machine.
         Current (~0.74) flux behavior for nested brokers' is to not have
         accounting plugin active.
-        """        
+        """
         cls.connect_to_flux()
         try:
             banks = cls.flux_handle.rpc("accounting.list_banks",
                                         {"inactive": True,
                                          "table": False,
+                                         "json": True,  # Default in 0.75 is no longer json
                                          "fields": "bank",
                                          "format": ""}).get()
         except OSError as be:
-            if '[Errno 38] No service matching accounting.list_banks is registered' not in be.message:
+            if '[Errno 38] No service matching accounting.list_banks is registered' not in str(be):
                 raise           # If some other unexpected error raise it
             banks = "[{}]"
 
