@@ -146,15 +146,19 @@ When the `FLUX_URI` environment variable is set, Maestro will submit jobs to tha
 #### Launch Maestro inside the batch job/Flux broker
     
 When you are inside a Flux batch job, or start a Flux broker inside of a SLURM or LSF allocation, Flux will automatically export the `FLUX_URI`.  In this case you can simply execute `maestro run <specification>` inside of that broker/allocation and it will read that environment variable and submit all jobs to that broker.  The primary concern here will be you may want/need to account for Maestro's conductor process consuming resources on one of the cores, depending on how often conductor sleeps and how resource intensive your processes are.
+
+!!! warning "Environment Variables, SSH Behavior"
+
+    The `FLUX_URI` environment variable is only set in the shell started by Flux for a job. Like SLURM, if you separately SSH into a batch allocation, `FLUX_URI` (and similar variables like SLURM's `SLURM_JOB_ID`) will not be present. While `flux proxy <uri/jobid>` can display this info, commands executed outside of Flux's control (anyting not wrapped by `flux run`,  `flux submit`, etc) will run on the local node, not within the allocation. Therefore, rely on these environment variables only within the launched job shell or access them via `flux proxy` or other scheduler commands for querying job information.
         
 #### Launch Maestro external to the batch job/Flux broker
 
 !!! success "Recommended Option"
 
 
-On HPC clusters this often means running Maestro on the login node, but can be any machine that has ssh access to node/allocation that the Flux broker is running in.  This option has the benefit that Maestro's conductor process does not consume allocation resources, and also that the allocation terminating early does not interrupt conductor's management of the study and leave it in an error state.  There are multiple recipes for this, which vary in complexity based on machine configuration and flux version.  See the Flux docs for more thorough discussions of this process on the non flux native machines such as [Slurm](https://flux-framework.readthedocs.io/en/latest/quickstart.html#starting-a-flux-instance) and [LSF](https://flux-framework.readthedocs.io/en/latest/tutorials/lab/coral.html).
+On HPC clusters this often means running Maestro on the login node, but can be any machine that has ssh access to node/allocation that the Flux broker is running in.  This option has the benefit that Maestro's conductor process does not consume allocation resources, and also that the allocation terminating early does not interrupt conductor's management of the study and leave it in an error state.  There are multiple recipes for this, which vary in complexity based on machine configuration and Flux version.  See the Flux docs for more thorough discussions of this process on the non Flux native machines such as [Slurm](https://flux-framework.readthedocs.io/en/latest/quickstart.html#starting-a-flux-instance) and [LSF](https://flux-framework.readthedocs.io/en/latest/tutorials/lab/coral.html).
        
-* Current versions of flux (~>0.40)
+* Current versions of Flux (~>0.40)
 
     This process becomes much easier in the newest Flux versions which have native support for resolving nested uri on both SLURM and LSF; see more discussion in the flux documentation linked earlier
     
@@ -180,7 +184,7 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         Resolving the uri can be done using the system native job id of the batch jobs where the flux broker was launched
         
         ```console
-        $ flux uri --remote slurm:<slurm jobid>
+        $ flux uri --remote slurm:<slurm_jobid>
         ssh://<job hostname>/var/tmp/flux-<hash>/local-0
         ```
         
@@ -191,7 +195,51 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         
         $ maestro run <study_specification> [run opts]
         ```
+		
+    === "FLUX"
+    
+        Resolving the uri can be done using the system native job id of the batch jobs, each of which contain a broker
+        
+        ```console
+        $ flux uri --remote <flux_jobid>
+        ssh://<job hostname>/var/tmp/flux-<hash>/local-0
+        ```
+        
+        The full recipe of updating the `FLUX_URI` environment variable and running a study in that broker:
+        
+        ```console
+        $ export FLUX_URI=`flux uri --remote <flux_jobid>`
+        
+        $ maestro run <study_specification> [run opts]
+        ```
+    === "Flux"
+    
+        On a Flux managed cluster the process is simpler as each batch job contains a broker by default, so no need to start one.  Simply use `flux batch` to submit a batch job and then get the uri
+        
+        ```console
+        $ flux batch -N1 -n112 -q pdebug -t 30m --wrap sleep inf
+	    <flux_jobid>
+        ```
 
+        Then from the login node you can launch a Maestro study that schedules to this nested Flux instance
+        
+        ```console
+        $ export FLUX_URI=`flux uri --remote <flux_jobid>`
+        
+        $ maestro run <study_specification> [run opts]
+        ```
+
+
+    Additionally you drop this uri to a file using the same `flux_address.sh` script as used in the 'Older verison of Flux' examples below, and
+    then from the login node you can launch a Maestro study that schedules to this nested Flux instance.
+    
+    ```console
+	$ 
+    $ export FLUX_URI=`cat flux_address.txt`
+    
+    $ maestro run <study_specification> [run opts]
+    ```
+		
 * Older versions of Flux (~<0.40)
 
     First, for older versions of Flux which do not have the lsf/slurm jobid proxy helpers, there is a recipe you can bake into your batch job that's launching Flux to expose the uri of the Flux broker to processes outside of that allocation using ssh.
@@ -217,6 +265,15 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         
         $ jsrun -a 1 -c 40 -g 0 -n 1 --bind=none flux start ./flux_address.sh
         ```
+
+        Then from the login node you can launch a Maestro study that schedules to this nested Flux instance.
+        
+        ```console
+        $ export FLUX_URI=`cat flux_address.txt`
+        
+        $ maestro run <study_specification> [run opts]
+        ```
+		
     === "SLURM"
     
         Either use `sbatch` or interactively via `salloc` as shown below
@@ -226,14 +283,15 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         
         $ srun -n1 -c112 flux start ./flux_address.sh
         ```
-    
-    Then from the login node you can launch a Maestro study that schedules to this nested Flux instance
-    
-    ```console
-    $ export FLUX_URI=`cat flux_address.txt`
-    
-    $ maestro run <study_specification> [run opts]
-    ```
+
+        Then from the login node you can launch a Maestro study that schedules to this nested Flux instance.
+        
+        ```console
+        $ export FLUX_URI=`cat flux_address.txt`
+        
+        $ maestro run <study_specification> [run opts]
+        ```
+		
 
 * Extras
 
@@ -242,6 +300,10 @@ On HPC clusters this often means running Maestro on the login node, but can be a
     ```console
     $ flux proxy `flux uri --remote slurm:<slurm_jobid>` flux top
     ```
+	
+	!!! warning "Flux proxy cmd execution"
+	
+	    Beware of executing commands while under `flux proxy`.  Unless it's a flux command, or you're wrapping with `flux run`/etc, that command will run on your local node, not the remote allocation.  Anything run this way, like say maestro's conductor process launched by `maestro run` will be summarily killed upon exiting `flux proxy`.
     
 
 ## Example Specs
