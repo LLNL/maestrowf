@@ -117,7 +117,11 @@ class FluxInterface(ABC):
             banks = ""
 
         # rpc call returns single string: 'bank1\nbank2\nbank3\n'
-        bank_list = banks['view_user'].split('\n')
+        if isinstance(banks, dict) and 'view_user' in banks:
+            bank_list = banks['view_user'].split('\n')
+        else:
+            bank_list = []
+
         return bank_list
 
     @classmethod
@@ -138,12 +142,16 @@ class FluxInterface(ABC):
         except OSError as be:
             if '[Errno 38] No service matching accounting.list_banks is registered' not in str(be):
                 raise           # If some other unexpected error raise it
-            banks = "[{}]"
+            banks = {'list_banks': "[{}]"}
 
         # rpc call returns list of banks as json string
         bank_dicts = json.loads(banks['list_banks'])
+        bank_list = []
+        for bdict in bank_dicts:
+            if isinstance(bdict, dict) and 'bank' in bdict:
+                bank_list.append(bdict['bank'])
 
-        return [bdict['bank'] for bdict in bank_dicts]
+        return bank_list
 
     @classmethod
     @abstractmethod
