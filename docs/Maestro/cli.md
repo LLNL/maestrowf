@@ -191,7 +191,7 @@ Writing updated study config to 'sample_output/hello_world_restart/hello_bye_wor
 
 ## **conductor**
 
-A application for checking and managing and ExecutionDAG within an executing study.
+An application for checking and managing an ExecutionDAG within an executing study.
 
 **Usage:**
 

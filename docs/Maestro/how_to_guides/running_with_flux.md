@@ -1,6 +1,6 @@
 # Using Maestro with Flux
 ---
-Flux is unique amongst the scheduler adapters as it can be used in standalong batch job mode just like Slurm and LSF as well as in node/allocation packing mode.  The allocation packing mode can be used regardless of the scheduler that is used to launch Flux:
+Flux is unique amongst the scheduler adapters as it can be used in standalone batch job mode just like Slurm and LSF as well as in node/allocation packing mode.  The allocation packing mode can be used regardless of the scheduler that is used to launch Flux:
 
 * Schedule to Flux batch jobs, which have nested brokers
 * Startup Flux brokers/instances inside of LSF and Slurm allocations and submit to those
@@ -29,7 +29,7 @@ build-options:		+ascii-only+systemd+hwloc==2.8.0+zmq==4.3.4
 $ pip install "flux-python==0.50.0"
 ```
   
-The full list of available versions can be found on [pypi](https://pypi.org/project/flux-python/#history), one per Flux version.  Note that for some versions you may need to use one of the release candidates (rc<num>).
+The full list of available versions can be found on [pypi](https://pypi.org/project/flux-python/#history), ~one for each version of Flux.  Note that for some versions you may need to use one of the release candidates (rc<num>).
 
 ### Spack environment
 
@@ -121,7 +121,7 @@ Flux's use of the queue and banks from the batch block depend upon the broker th
 
 ### Adapter version
 
-The Flux adapter has an optional version switching mechanism to accomodate the variety of installs and more rapid behavior changes for this pre 1.0 scheduler.  The default behavior is to try using the latest adapter version.  This can be overridden using the [`version`](../specification.md#batch-batch) key in the batch block, choosing from one of the available options using the selection mechanism added in Maestro v1.1.9dev1:
+The Flux adapter has an optional version switching mechanism to accommodate the variety of installs and more rapid behavior changes for this pre 1.0 scheduler.  The default behavior is to try using the latest adapter version.  This can be overridden using the [`version`](../specification.md#batch-batch) key in the batch block, choosing from one of the available options using the selection mechanism added in Maestro v1.1.9dev1:
 
 | Adapter Version | Flux Version |
 | :-              | :-           |
@@ -149,7 +149,7 @@ When you are inside a Flux batch job, or start a Flux broker inside of a SLURM o
 
 !!! warning "Environment Variables, SSH Behavior"
 
-    The `FLUX_URI` environment variable is only set in the shell started by Flux for a job. Like SLURM, if you separately SSH into a batch allocation, `FLUX_URI` (and similar variables like SLURM's `SLURM_JOB_ID`) will not be present. While `flux proxy <uri/jobid>` can display this info, commands executed outside of Flux's control (anyting not wrapped by `flux run`,  `flux submit`, etc) will run on the local node, not within the allocation. Therefore, rely on these environment variables only within the launched job shell or access them via `flux proxy` or other scheduler commands for querying job information.
+    The `FLUX_URI` environment variable is only set in the shell started by Flux for a job. Like SLURM, if you separately SSH into a batch allocation, `FLUX_URI` (and similar variables like SLURM's `SLURM_JOB_ID`) will not be present. While `flux proxy <uri/jobid>` can display this info, commands executed outside of Flux's control (anything not wrapped by `flux run`,  `flux submit`, etc) will run on the local node, not within the allocation. Therefore, rely on these environment variables only within the launched job shell or access them via `flux proxy` or other scheduler commands for querying job information.
         
 #### Launch Maestro external to the batch job/Flux broker
 
@@ -230,7 +230,7 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         ```
 
 
-    Additionally you drop this uri to a file using the same `flux_address.sh` script as used in the 'Older verison of Flux' examples below, and
+    Additionally you drop this uri to a file using the same `flux_address.sh` script as used in the 'Older version of Flux' examples below, and
     then from the login node you can launch a Maestro study that schedules to this nested Flux instance.
     
     ```console
@@ -303,7 +303,7 @@ On HPC clusters this often means running Maestro on the login node, but can be a
 	
 	!!! warning "Flux proxy cmd execution"
 	
-	    Beware of executing commands while under `flux proxy`.  Unless it's a flux command, or you're wrapping with `flux run`/etc, that command will run on your local node, not the remote allocation.  Anything run this way, like say maestro's conductor process launched by `maestro run` will be summarily killed upon exiting `flux proxy`.
+      Beware of executing commands while under `flux proxy`.  Unless it's a flux command, or you're wrapping with `flux run`/etc, that command will run on your local node, not the remote allocation.  Anything run this way, such as Maestro's conductor process launched by `maestro run`, will be immediately terminated when you exit `flux proxy`.
     
 
 ## Example Specs

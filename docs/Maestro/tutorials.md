@@ -80,7 +80,6 @@ options:
   --usetmp              Make use of a temporary directory for dumping scripts and other Maestro related files.
 ```
 
-<!-- ADD IN SAMPLE OUTPUT YOU SEE WHEN CALLING MAESTRO RUN -> including the prompt to submit or not -->
 
 
 ``` console title='Running the Hello World study'

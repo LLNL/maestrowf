@@ -21,8 +21,8 @@ steps:
 | `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
 | `gpus`        |      No        |   str    | Optional reservation of gpu resources for jobs |
 | `procs`       |      No        |   int    | Optional number of tasks in batch allocations: note this is also a per step key |
-| `flux_uri`    |      Yes*      |   str    | Uri of flux instance to schedule jobs to. * only required with `type`=`flux`. NOTE: it is recommended to rely on env vars instead as uri's are very ephemeral things.|
-| `version`     |      No        |   str    | Optional version of flux scheduler; for accomodating api changes |
+| `flux_uri`    |      Yes*      |   str    | URI of the Flux instance to schedule jobs to. * Only used with `type`=`flux`. NOTE: It is recommended to rely on environment variables instead, as URIs are very ephemeral and may change frequently.|
+| `version`     |      No        |   str    | Optional version of flux scheduler; for accommodating api changes |
 | `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
 
 
@@ -96,7 +96,7 @@ This updated variant allows more granular control of the launcher token to alloc
 
 !!! note
 
-    You do not need both 'n' and 'p' with this syntax.  You can also allocate soley based on tasks (p) or nodes (n).
+    You do not need both 'n' and 'p' with this syntax.  You can also allocate solely based on tasks (p) or nodes (n).
 
 === "Maestro Step"
 
@@ -226,7 +226,7 @@ Now for a few examples of how to map these to Maestro's resource specifications.
 Note the `node` key is not directly used for any of these, but is still used for
 the reservation itself.  The rest of the keys serve to control the per task resources
 and then the per node packing of resource sets.  Consider a few examples run on the
-LLNL Sierra architechture which has 44 cores and 4 gpus per node:
+LLNL Sierra architecture which has 44 cores and 4 gpus per node:
 
 
 ### Multiple tasks with single cpu and gpu per task

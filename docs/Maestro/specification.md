@@ -315,7 +315,7 @@ The `batch` block is an optional block that enables specification of HPC schedul
 |  **Key**      |  **Required**  | **Type** | **Description** |
 |    :-         |      :-:       |    :-:   |       :-        |
 |  `type`       |      Yes        |   str    | Type of scheduler managing execution.  Currently one of: {`local`, `slurm`, `lsf`, `flux`} |
-|  `shell`      |      No        |   str    | Optional specification path to shell to use for execution.  Defaults to `"/bin/bash"` |
+|  `shell`      |      No        |   str    | Optional absolute path to the shell to use for execution (e.g., `"/bin/bash"`). Note: On non-Linux systems, this path may differ or `/bin/bash` may not exist. |
 | `bank` (1)        |      Yes       |   str    | Account to charge computing time to |
 | `host`        |      Yes       |   str    | The name of the cluster to execute this study on |
 | `queue` (2)       |      Yes       |   str    | Scheduler queue/partition to submit jobs (study steps) to |
