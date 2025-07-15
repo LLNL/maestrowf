@@ -204,7 +204,9 @@ def test_hello_world_flux(samples_spec_path,
         time.sleep(poll_interval)
 
     if not status_file_exists:
-        pytest.fail(f"Test timed out looking for status file at '{status_file}'")
+        pytest.fail(
+            f"Test timed out looking for status file at '{status_file}'."            
+        )
 
     console.rule(f"Walking study workspace: {tmp_outdir}")
     for file in tmp_outdir.iterdir():

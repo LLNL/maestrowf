@@ -40,7 +40,7 @@ def check_slurm():
         version = parse_version(slurm_ver_parts[1])
     except InvalidVersion:
         # This can happen when encountering LLNL's slurm wrappers for flux machines
-        print(f"Error extracting SLURM version from 'sinfo' output: {slurm_ver_output_lines} does not have a verison in the expected location, item 0: {slurm_ver_parts}")
+        print(f"Error extracting SLURM version from 'sinfo' output: {slurm_ver_output_lines} does not have a version in the expected location, item 0: {slurm_ver_parts}")
         return False
 
     if slurm_ver_parts[0].lower() == 'slurm' and version:

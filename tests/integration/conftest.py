@@ -3,6 +3,7 @@ import pytest
 from maestrowf.abstracts.enums import State
 from maestrowf.conductor import Conductor
 
+
 @pytest.fixture
 def check_study_success():
     """Fixture to provide log based study completion test"""
@@ -21,10 +22,11 @@ def check_study_success():
 
     return _check_study_success
 
+
 @pytest.fixture
 def check_study_warnings():
     """Fixture to provide check for warnings in the study log"""
-    def _check_study_warnings(log_lines, study_name):
+    def _check_study_warnings(log_lines):
         """Helper to check log file for presence of warnings like 'job failure reported'"""
         warnings_found = False
         warning_str = "WARNING"
@@ -42,8 +44,8 @@ def check_study_warnings():
 @pytest.fixture
 def check_study_errors():
     """Fixture to provide check for presence of errors in the study log"""
-    def _check_study_errors(log_lines, study_name):
-        """Helper to check log file for successful completion entry"""
+    def _check_study_errors(log_lines):
+        """Helper to check log file for presence of errors"""
         errors_found = False
         error_str = "ERROR"
         log_setup_str = "setup_logging"  # ignore ERROR marker here
@@ -66,6 +68,11 @@ def check_all_steps_finished():
         # NOTE: can this be empty?
         step_status = Conductor.get_status(study_output_dir)
         print(step_status)
+
+        # Catch error case where status might be empty
+        if 'State' not in step_status or not step_status['State']:
+            return False
+        
         return all(state == State.FINISHED.name for state in step_status['State'])
 
     return _check_all_steps_finished
