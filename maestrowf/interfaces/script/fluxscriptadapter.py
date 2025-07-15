@@ -77,13 +77,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # the adaptor/broker versions along with the raw string we get back
         # from flux.
         self._broker_version = self._interface.get_flux_version()
-        
+
         uri = kwargs.pop("uri", None)
         if not uri:             # Check if flux uri env var is set, log if so
             uri = os.environ.get("FLUX_URI", None)
             if uri:
                 LOGGER.info(f"Found FLUX_URI in environment, scheduling jobs to broker uri {uri}")
-            LOGGER.info(f"No FLUX_URI; scheduling standalone batch job to root instance")
+            else:
+                LOGGER.info(f"No FLUX_URI; scheduling standalone batch job to root instance")
         else:
             LOGGER.info(f"Using FLUX_URI found in study specification: {uri}")
         # if not uri:
@@ -136,8 +137,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         if uri:
             self.add_batch_parameter("flux_uri", uri)
             self._header['flux_uri'] = "#INFO (flux_uri) {flux_uri}"
-
-        
 
     @property
     def extension(self):
@@ -236,7 +235,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             else:
                 processors = int(processors)
                 
-        force_broker = step.run.get("nested", False)
+        force_broker = step.run.get("nested", True)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
         urgency = step.run.get("priority", "medium")
