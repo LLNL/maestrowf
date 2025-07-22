@@ -315,8 +315,8 @@ On HPC clusters this often means running Maestro on the login node, but can be a
     ```
 	
 	!!! warning "Flux proxy cmd execution"
-	
-      Beware of executing commands while under `flux proxy`.  Unless it's a flux command, or you're wrapping with `flux run`/etc, that command will run on your local node, not the remote allocation.  Anything run this way, such as Maestro's conductor process launched by `maestro run`, will be immediately terminated when you exit `flux proxy`.
+    
+        Beware of executing commands while under `flux proxy`.  Unless it's a flux command, or you're wrapping with `flux run`/etc, that command will run on your local node, not the remote allocation.  Anything run this way, such as Maestro's conductor process launched by `maestro run`, will be immediately terminated when you exit `flux proxy`.
     
 
 ## Example Specs
