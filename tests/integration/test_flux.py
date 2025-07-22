@@ -26,37 +26,61 @@ pytestmark = [pytest.mark.sched_flux,
               pytest.mark.integration,]
 
 
+def retcode_is_non_zero(x):
+    """Predicate for testing non-zero retcodes for clearer pytest outputs"""
+    return x != 0
+
+
+def retcode_is_zero(x):
+    """Predicate for testing zero retcodes for clearer pytest outputs"""
+    return x == 0
+
+
 @pytest.mark.parametrize(
-    "spec_name, queue, tmp_study_dir, flux_adaptor_version, test_instance_level, expected_conductor_state, expected_retcode, expected_step_finished",
+    "spec_name, queue, bank, tmp_study_dir, flux_adaptor_version, test_instance_level, expected_conductor_state, retcode_predicate, expected_step_finished",
     [
         (                       # Standalone batch jobs, valid queue
             "hello_bye_parameterized_flux.yaml",
             "pdebug",
+            "guests",
             "HELLO_BYE_FLUX",
             "0.49.0",
             0,
             True,
-            0,
+            retcode_is_zero,
             True
         ),
         (                       # Standalone batch jobs, invalid queue
             "hello_bye_parameterized_flux.yaml",
             "invalid_queue",
+            "guests",
             "HELLO_BYE_FLUX_INVALID_QUEUE",
             "0.49.0",
             0,
             False,
-            2,                  # Why is this 2?
+            retcode_is_non_zero,                  # Why is the actual number 2?
+            False
+        ),
+        (                       # Standalone batch jobs, invalid bank
+            "hello_bye_parameterized_flux.yaml",
+            "pdebug",
+            "the-bad-bank",
+            "HELLO_BYE_FLUX_INVALID_BANK",
+            "0.49.0",
+            0,
+            False,              # Complete with failures!
+            retcode_is_non_zero,
             False
         ),
         (                       # Allocation packing, autouse anonymous queue
             "hello_bye_parameterized_flux.yaml",
             "in_alloc_queue",
+            "pdebug",           # Expected no-op here
             "HELLO_BYE_FLUX_NEST",
             "0.49.0",
             1,
             True,
-            0,
+            retcode_is_zero,
             True                # Default anonymous queue should be detected
         ),
     ]
@@ -67,11 +91,12 @@ def test_hello_world_flux(samples_spec_path,
                           check_all_steps_finished,
                           spec_name,
                           queue,
+                          bank,
                           tmp_study_dir,
                           flux_adaptor_version,
                           test_instance_level,
                           expected_conductor_state,
-                          expected_retcode,
+                          retcode_predicate,
                           expected_step_finished):
     """
     Run integration tests using the flux scheduler.
@@ -102,6 +127,7 @@ def test_hello_world_flux(samples_spec_path,
         spec = yaml.safe_load(raw_yaml_file)
 
     spec['batch']['queue'] = queue
+    spec['batch']['bank'] = bank
 
     tmp_spec_path = tmp_path / spec_name
     with open(tmp_spec_path, 'w') as updated_yaml_spec_file:
@@ -179,7 +205,9 @@ def test_hello_world_flux(samples_spec_path,
     # TODO: revisit when conductor/maestro patched to also write the log file
     #       when running in foreground and scrape that
     assert completed_successfully == expected_conductor_state
-    assert spec_results.returncode == expected_retcode
+    spec_retcode = spec_results.returncode
+    expected_retcode_str = retcode_predicate.__name__.replace('_', ' ').capitalize()
+    assert retcode_predicate(spec_retcode), f"Expected '{expected_retcode_str}', got '{spec_retcode}'"
 
     # Before scraping status.csv we need to be sure we can see the outputs,
     # accounting for networked filesystem lag.  If logs show an error we shouldn't
