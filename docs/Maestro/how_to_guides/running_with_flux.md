@@ -194,7 +194,7 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         ```console
         $ salloc -N 1 -p pdebug -A guests
         
-        $ srun -n1 -c112 flux start sleep inf
+        $ srun -n 1 -c 112 flux start sleep inf
         ```
         
         Resolving the uri can be done using the system native job id of the batch jobs where the flux broker was launched
@@ -218,7 +218,7 @@ On HPC clusters this often means running Maestro on the login node, but can be a
         On a Flux managed cluster the process is simpler as each batch job contains a broker by default, so no need to start one.  Simply use `flux batch` to submit a batch job and then get the uri
         
         ```console
-        $ flux batch -N1 -n112 -q pdebug -t 30m --wrap sleep inf
+        $ flux batch -N 1 -n 112 -q pdebug -t 30m --wrap sleep inf
 	    <flux_jobid>
         ```
 
@@ -242,9 +242,11 @@ On HPC clusters this often means running Maestro on the login node, but can be a
     
     !!! note "Optimize Resource Usage"
         
-        You may want something smarter than `sleep inf` running in that batch job/allocation if you want to optimize the resource usage.  This sleep inf will keep the broker running, and thus the batch job/allocation, for the maximum duration no matter what.  One example being launching maestro directly in the allocation with a batch script that polls 'conductor' process until it shuts down, such as this simplified bash loop:
+        You may want something smarter than `sleep inf` running in that batch job/allocation if you want to optimize the resource usage.  This sleep inf will keep the broker running, and thus the batch job/allocation, for the maximum duration no matter what.  One example being launching maestro directly in the allocation with a batch script that polls the background 'conductor' process until it shuts down, such as this simplified bash loop:
         
         ``` bash
+        maestro run ...
+        
         while pgrep "conductor" > /dev/null; do
             echo "$(date +'%Y-%m-%d %H:%M:%S') - INFO: Process 'conductor' is still running..."
             sleep 5
