@@ -78,7 +78,7 @@ maestro run [OPTIONS] SPECIFICATION
 | `-s`, `--sleeptime` | integer | Amount of time (in seconds) for the manager to wait between job status checks. | 60 |
 | `--dry` | boolean | Generate the directory structure and scripts for a study but do not launch it. | `False` |
 | `-p`, `--pgen` | filename/path | Path to a Python code file containing a function that returns a custom filled ParameterGenerator instance. | None |
-| `--pargs` | string | A string that represents a single argument to pass a custom parameter generation function. Reuse '--parg' to pass multiple arguments. [Use with '--pgen'] | None |
+| `--pargs` | string | A string that represents a single argument to pass a custom parameter generation function. Reuse '--pargs' to pass multiple arguments. [Use with '--pgen'] | None |
 | `-o`, `--out` | path | Output path to place study in. [NOTE: overrides OUTPUT_PATH in the specified specification] | "<study name\>_timestamp" |
 | `-fg` | boolean | Runs the backend conductor in the foreground instead of using nohup. | `False` |
 | `--hashws` | boolean | Enable hashing of subdirectories in parameterized studies (NOTE: breaks commands that use parameter labels to search directories). | `False` |
@@ -191,7 +191,7 @@ Writing updated study config to 'sample_output/hello_world_restart/hello_bye_wor
 
 ## **conductor**
 
-A application for checking and managing and ExecutionDAG within an executing study.
+An application for checking and managing an ExecutionDAG within an executing study.
 
 **Usage:**
 

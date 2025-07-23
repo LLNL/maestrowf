@@ -355,7 +355,7 @@ There is an additional [`pgen`](#parameter-generator-pgen) feature that can be u
 
 ``` console
 
-$ maestro run study.yaml --pgen itertools_pgen_pargs.py --parg "SIZE_MIN:10" --parg "SIZE_STEP:10" --parg "NUM_SIZES:4"
+$ maestro run study.yaml --pgen itertools_pgen_pargs.py --pargs "SIZE_MIN:10" --pargs "SIZE_STEP:10" --pargs "NUM_SIZES:4"
 
 ```
 
@@ -478,7 +478,7 @@ Running this parameter generator with the following pargs
 
 ``` console
 
-$ maestro run study.yaml --pgen np_cheb_pgen.py --parg "X_MIN:0" --parg "X_MAX:3" --parg "NUM_PTS:11"
+$ maestro run study.yaml --pgen np_cheb_pgen.py --pargs "X_MIN:0" --pargs "X_MAX:3" --pargs "NUM_PTS:11"
    
 ```
 

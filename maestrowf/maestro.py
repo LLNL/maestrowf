@@ -608,7 +608,7 @@ def setup_argparser():
                      "instance.")
     run.add_argument("--pargs", type=str, action="append", default=[],
                      help="A string that represents a single argument to pass "
-                     "a custom parameter generation function. Reuse '--parg' "
+                     "a custom parameter generation function. Reuse '--pargs' "
                      "to pass multiple arguments. [Use with '--pgen']")
     run.add_argument("-o", "--out", type=str,
                      help="Output path to place study in. [NOTE: overrides "

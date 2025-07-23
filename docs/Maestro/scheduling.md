@@ -13,17 +13,18 @@ steps:
 |    :-         |      :-:       |    :-:   |       :-        |
 |  `type`       |      Yes        |   str    | Select scheduler adapter to use.  Currently supported are: {`local`, `slurm`, `lsf`, `flux`} |
 |  `shell`      |      No        |   str    | Optional specification path to shell to use for execution.  Defaults to `"/bin/bash"` |
-| `bank`        |      Yes       |   str    | Account which runs the job; this is used for computing job priority on the cluster. '--account' on slurm, '-G' on lsf, ...|
+| `bank` (1)        |      Yes       |   str    | Account which runs the job; this is used for computing job priority on the cluster. '--account' on slurm, '-G' on lsf, ...|
 | `host`        |      Yes       |   str    | The name of the cluster to execute this study on |
-| `queue`       |      Yes       |   str    | Scheduler queue/machine partition to submit jobs (study steps) to |
+| `queue` (2)       |      Yes       |   str    | Scheduler queue/machine partition to submit jobs (study steps) to |
 | `nodes`       |      No        |   int    | Number of compute nodes to be reserved for jobs: note this is also a per step key |
 | `reservation` |      No        |   str    | Optional prereserved allocation/partition to submit jobs to |
 | `qos`         |      No        |   str    | Quality of service specification -> i.e. run in standby mode to use idle resources when user priority is low/job limits already reached |
 | `gpus`        |      No        |   str    | Optional reservation of gpu resources for jobs |
 | `procs`       |      No        |   int    | Optional number of tasks in batch allocations: note this is also a per step key |
-| `flux_uri`    |      Yes*      |   str    | Uri of flux instance to schedule jobs to. * only required with `type`=`flux`. NOTE: it is recommended to rely on env vars instead as uri's are very ephemeral things.|
-| `version`     |      No        |   str    | Optional version of flux scheduler; for accomodating api changes |
+| `flux_uri`    |      Yes*      |   str    | URI of the Flux instance to schedule jobs to. * Only used with `type`=`flux`. NOTE: It is recommended to rely on environment variables instead, as URIs are very ephemeral and may change frequently.|
+| `version`     |      No        |   str    | Optional version of flux scheduler; for accommodating api changes |
 | `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
+
 
 
 The information in this block is used to populate the step specific batch scripts with the appropriate
@@ -31,6 +32,13 @@ header comment blocks (e.g. '#SBATCH --partition' for slurm).  Additional keys s
 resource requirements (number of nodes, cpus/tasks, gpus, ...) get added here when processing
 individual steps; see subsequent sections for scheduler specific details.  Note that job steps will
 run locally unless at least the ``nodes`` or ``procs`` key in the step is populated.  The keys attached to the study steps also get used to construct the parallel launcer (e.g. `srun` for [SLURM](#SLURM)).  The following subsections describe the options in the currently supported scheduler types.
+
+!!! note "Flux behaviors"
+
+    1.  Flux brokers may not always have a bank, in which case this will have no effect
+    2.  Flux brokers may not always have named queues (nested allocations).
+	
+	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
 
 ## LAUNCHER Token
 ---
@@ -88,7 +96,7 @@ This updated variant allows more granular control of the launcher token to alloc
 
 !!! note
 
-    You do not need both 'n' and 'p' with this syntax.  You can also allocate soley based on tasks (p) or nodes (n).
+    You do not need both 'n' and 'p' with this syntax.  You can also allocate solely based on tasks (p) or nodes (n).
 
 === "Maestro Step"
 
@@ -167,9 +175,16 @@ Flux adapter also supports some keys that control batch job behavior instead of 
 
 See the [flux framework](https://flux-framework.readthedocs.io/en/latest/index.html) for more information on flux.  Additionally, checkout the [flux-how-to-guides](how_to_guides/running_with_flux.md) for the options available for using flux with Maestro.  Also check out a [full example spec run with flux](specification.md#full-example).
 
+!!! note "Flux batch block behaviors"
+
+    1.  Flux brokers may not always have a bank, in which case this will have no effect
+    2.  Flux brokers may not always have named queues (nested allocations).
+	
+	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
+
 !!! danger
 
-   The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
+    The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
    
 
    
@@ -211,7 +226,7 @@ Now for a few examples of how to map these to Maestro's resource specifications.
 Note the `node` key is not directly used for any of these, but is still used for
 the reservation itself.  The rest of the keys serve to control the per task resources
 and then the per node packing of resource sets.  Consider a few examples run on the
-LLNL Sierra architechture which has 44 cores and 4 gpus per node:
+LLNL Sierra architecture which has 44 cores and 4 gpus per node:
 
 
 ### Multiple tasks with single cpu and gpu per task
