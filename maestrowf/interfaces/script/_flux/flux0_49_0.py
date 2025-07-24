@@ -59,8 +59,13 @@ class FluxInterface_0490(FluxInterface):
         job_name=None,
         force_broker=True,
         urgency=StepPriority.MEDIUM,
-        waitable=False
+        waitable=False,
+        batch_attrs=None,         # TODO: expose opts/conf/shell_opts
+        **kwargs,
     ):
+        if batch_attrs is None:
+            batch_attrs = {}
+
         try:
             # TODO: add better error handling/throwing in the class func
             # to enable more uniform detection/messaging when connection fails
@@ -107,8 +112,15 @@ class FluxInterface_0490(FluxInterface):
             LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
             if job_name:
                 jobspec.setattr("system.job.name", job_name)
+            else:
+                job_name = "maestro_flux_job"  # Make safe for .out/.err
             jobspec.cwd = cwd
             jobspec.environment = dict(os.environ)
+
+            # Slurp in extra attributes if not null (queue, bank, ..)
+            for batch_attr_name, batch_attr_value in batch_attrs.items():
+                if batch_attr_value:
+                    jobspec.setattr(batch_attr_name, batch_attr_value)
 
             if walltime > 0:
                 jobspec.duration = walltime

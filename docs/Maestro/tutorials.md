@@ -71,7 +71,7 @@ options:
                         Amount of time (in seconds) for the manager to wait between job status checks. [Default: 60]
   --dry                 Generate the directory structure and scripts for a study but do not launch it. [Default: False]
   -p PGEN, --pgen PGEN  Path to a Python code file containing a function that returns a custom filled ParameterGenerator instance.
-  --pargs PARGS         A string that represents a single argument to pass a custom parameter generation function. Reuse '--parg' to pass multiple arguments. [Use with '--pgen']
+  --pargs PARGS         A string that represents a single argument to pass a custom parameter generation function. Reuse '--pargs' to pass multiple arguments. [Use with '--pgen']
   -o OUT, --out OUT     Output path to place study in. [NOTE: overrides OUTPUT_PATH in the specified specification]
   -fg                   Runs the backend conductor in the foreground instead of using nohup. [Default: False]
   --hashws              Enable hashing of subdirectories in parameterized studies (NOTE: breaks commands that use parameter labels to search directories). [Default: False]
@@ -80,7 +80,6 @@ options:
   --usetmp              Make use of a temporary directory for dumping scripts and other Maestro related files.
 ```
 
-<!-- ADD IN SAMPLE OUTPUT YOU SEE WHEN CALLING MAESTRO RUN -> including the prompt to submit or not -->
 
 
 ``` console title='Running the Hello World study'

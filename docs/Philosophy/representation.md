@@ -96,11 +96,11 @@ high-performance computing as an example; simulation.
     step in this chain fails, it blocks the rest from being completed. This process
     is a linearization just like the process of baking bread.
 
-    <div class="mermaid" align="center">
+	``` mermaid
     graph TD;
         A(Setup inputs)-->B(Simulate);
         B-->C(Post Process);
-    </div>
+	```
 
 !!! try-it "Try it: Breakdown You Own Workflow into a Process"
     **Exercise:** Take a moment and think about one of your own workflows. It can be something in your daily routine or a technical item that requires multiple steps to complete (commands, or scripts, etc.). In much the same way that the recipe above is an abstract set of steps without implementation, try to break down your own workflow into an intent-based process. Some questions to think about as you come up with a process:

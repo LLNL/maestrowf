@@ -59,7 +59,8 @@ class FluxInterface_0260(FluxInterface):
         job_name=None,
         force_broker=True,
         urgency=StepPriority.MEDIUM,
-        waitable=True
+        waitable=True,
+        **kwargs
     ):
         try:
             # TODO: add better error handling/throwing in the class func

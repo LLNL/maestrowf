@@ -84,6 +84,14 @@ class _StepRecord:
             self._params = {}
         return self._params
 
+    @property
+    def restart_limit(self):
+        return self._restart_limit
+
+    @restart_limit.setter
+    def restart_limit(self, new_restart_limit):
+        self._restart_limit = new_restart_limit
+
     def setup_workspace(self):
         """Initialize the record's workspace."""
         create_parentdir(self.workspace.value)
@@ -398,6 +406,27 @@ class ExecutionGraph(DAG, PickleInterface):
         # recreate it.
         if self._tmp_dir and not os.path.exists(self._tmp_dir):
             self._tmp_dir = tempfile.mkdtemp()
+
+    def update_throttle(self, new_submission_throttle):
+        self._submission_throttle = new_submission_throttle
+
+    def update_rlimit(self, new_restart_limit):
+        # subtree, _ = self.bfs_subtree(SOURCE)
+            
+        # update_subtree = [key for key in subtree
+        #                             if key != '_source']
+
+        for key in self.values.keys():
+            if key == SOURCE:
+                continue
+
+            # Get the step record to update
+            step_record = self.values[key]
+            LOGGER.debug("Updating restart limit from %d to %d for step '%s'",
+                         step_record.restart_limit,
+                         new_restart_limit,
+                         key)
+            step_record.restart_limit = new_restart_limit
 
     def add_step(self, name, step, workspace, restart_limit, params=None):
         """

@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "maestrowf"
-version = "1.1.10"
+version = "1.1.11"
 description = "A tool to easily orchestrate general computational workflows both locally and on supercomputers."
 license = "MIT License"
 classifiers = [
@@ -11,7 +11,6 @@ classifiers = [
     "Intended Audience :: Science/Research", "Topic :: Scientific/Engineering",
     "Topic :: System :: Distributed Computing",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -34,11 +33,10 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7.1,<4.0"
+python = ">=3.8,<4.0"
 coloredlogs = "*"
 dill = "*"
 filelock = "*"
-importlib_metadata = {version = "*", python = "<3.8"}
 jsonschema = ">=3.2.0"
 packaging = ">=22.0"
 pyyaml = ">=4.2b1"
@@ -46,18 +44,8 @@ rich = "*"
 six = "*"
 tabulate = "*"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 coverage = "*"
-mkdocs = "~1.3"
-mkdocs-material = "*"
-mkdocs-material-extensions = "*"
-mkdocs-mermaid2-plugin = "*"
-mkdocstrings = "*"
-mkdocstrings-python = "*"
-mkdocs-gen-files = "*"
-mkdocs-literate-nav = "*"       # Make sub groups here for docs, formatting, etc?
-mkdocs-glightbox = "*"
-pymdown-extensions = "*"
 flake8 = "*"
 pydocstyle = "*"
 pylint = "*"
@@ -67,6 +55,22 @@ pytest-cov = "*"
 pre-commit = "*"
 tox-travis = "*"
 tox-pyenv = "*"
+hypothesis = [
+   {version = "<6.114", python = "3.8"},
+   {version = ">=6.114", python = ">=3.9"}
+]
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = { version = "<2.0", python = "^3.9" }
+mkdocs-material = { version = "*", python = "^3.9" }
+mkdocs-material-extensions = { version = "*", python = "^3.9" }
+mkdocstrings = { version = "*", python = "^3.9" }
+mkdocstrings-python = { version = "*", python = "^3.9" }
+mkdocs-gen-files = { version = "*", python = "^3.9" }
+mkdocs-literate-nav = { version = "*", python = "^3.9" }
+mkdocs-glightbox = { version = "*", python = "^3.9" }
+pymdown-extensions = { version = "*", python = "^3.9" }
+termynal = { version = "*", python = "^3.9" }
 
 [tool.poetry.plugins."console_scripts"]
 "maestro" = "maestrowf.maestro:main"

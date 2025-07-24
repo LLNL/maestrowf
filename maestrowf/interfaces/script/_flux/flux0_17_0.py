@@ -58,7 +58,8 @@ class FluxInterface_0170(FluxInterface):
     @classmethod
     def submit(
         cls, nodes, procs, cores_per_task, path, cwd, walltime,
-        ngpus=0, job_name=None, force_broker=False, waitable=True
+        ngpus=0, job_name=None, force_broker=False, waitable=True,
+        **kwargs
     ):
         cls.connect_to_flux()
 

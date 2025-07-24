@@ -37,7 +37,7 @@ from maestrowf.abstracts.interfaces import SchedulerScriptAdapter
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
     CancelCode
 from maestrowf.interfaces.script import CancellationRecord, SubmissionRecord
-from maestrowf.utils import start_process
+from maestrowf.utils import make_safe_path, start_process
 
 LOGGER = logging.getLogger(__name__)
 
@@ -556,7 +556,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         to_be_scheduled, cmd, restart = self.get_scheduler_command(step)
 
         fname = "{}.slurm.sh".format(step.name)
-        script_path = os.path.join(ws_path, fname)
+        script_path = make_safe_path(ws_path, fname)
 
         if to_be_scheduled:
             header = self.get_header(step)

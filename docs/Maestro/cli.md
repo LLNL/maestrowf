@@ -38,6 +38,7 @@ maestro [OPTIONS] COMMAND [ARGS]...
 - [*cancel*](#cancel): Cancel all running jobs.
 - [*run*](#run): Launch a study based on a specification
 - [*status*](#status): Check the status of a running study.
+- [*update*](#update): Update a running study
 
 ### **cancel**
 
@@ -77,7 +78,7 @@ maestro run [OPTIONS] SPECIFICATION
 | `-s`, `--sleeptime` | integer | Amount of time (in seconds) for the manager to wait between job status checks. | 60 |
 | `--dry` | boolean | Generate the directory structure and scripts for a study but do not launch it. | `False` |
 | `-p`, `--pgen` | filename/path | Path to a Python code file containing a function that returns a custom filled ParameterGenerator instance. | None |
-| `--pargs` | string | A string that represents a single argument to pass a custom parameter generation function. Reuse '--parg' to pass multiple arguments. [Use with '--pgen'] | None |
+| `--pargs` | string | A string that represents a single argument to pass a custom parameter generation function. Reuse '--pargs' to pass multiple arguments. [Use with '--pgen'] | None |
 | `-o`, `--out` | path | Output path to place study in. [NOTE: overrides OUTPUT_PATH in the specified specification] | "<study name\>_timestamp" |
 | `-fg` | boolean | Runs the backend conductor in the foreground instead of using nohup. | `False` |
 | `--hashws` | boolean | Enable hashing of subdirectories in parameterized studies (NOTE: breaks commands that use parameter labels to search directories). | `False` |
@@ -106,9 +107,91 @@ maestro status [OPTIONS] DIRECTORY [DIRECTORY ...]
 | `--disable-pager` | boolean | Turn off the pager for the status display. See [Status Pager](monitoring.md#status-pager) for more information on this option. | `False` |
 
 
+### **update**
+
+Update the config of a running study.  Currently limited to three settings: throttle, restart limit (rlimit), and sleep.  Explicitly set each argument via keyword args, interactively set for each study, or a mix of the two. Supports updating multiple studies at once.
+
+!!! note
+
+    This command will drop a hidden file in your study workspace '.study.update.lock' which conductor reads asynchronously and removes upon successful reading.  Applying this command to a finished study will currently leave this file in your workspace.  Similarly, this file will also not be cleaned up if conductor crashes before reading.
+
+**Usage:**
+
+``` console
+maestro update [-h] [--rlimit RLIMIT] [--sleep SLEEP] [--throttle THROTTLE] DIRECTORY [DIRECTORY ...]
+```
+
+**Options:**
+
+| Name | Type | Description | Default |
+| ---- | ---- | ----------- | ------- |
+| `-h`, `--help` | boolean | Show this help message and exit. | `False` |
+| `--rlimit` | integer | Update maximum number of restarts when steps specify a restart command (0 denotes no limit) | None |
+| `--sleep` | integer  | Update the time (in seconds) that the manager (conductor) will wait between job status checks. | None |
+| `--throttle` | integer  | Update the maximum number of inflight jobs allowed to execute simultaneously (0 denotes no throttling). | None |
+
+
+#### **Examples**
+
+**Update a single study configuration value for a single study:**
+
+``` console title="Change single config value for a single study"
+maestro update --rlimit 4 /path/to/my/timestamped/study/workspace/
+```
+
+**Update multiple study configuration values for a single study:**
+
+``` console title="Change multiple config values for a single study"
+maestro update --rlimit 4 --throttle 2 /path/to/my/timestamped/study/workspace/
+```
+**Update single study configuration value for multiple studies:**
+
+``` console title="Single config value, two studies"
+maestro update --rlimit 4 --rlimit 2 /path/to/my/timestamped/study/workspace_1/ /path/to/my/timestamped/study/workspace_2/
+```
+
+**Update multiple study configuration values for multiple studies:**
+
+``` console title="Multiple config values, two studies"
+maestro update --rlimit 4 --rlimit 2 /path/to/my/timestamped/study/workspace_1/ /path/to/my/timestamped/study/workspace_2/
+```
+
+**Interactively update study configuration for one study:**
+
+<!-- termynal -->
+```
+$ maestro update ./sample_output/hello_world_restart/hello_bye_world_20241119-173122
+Updating study at '/path/to/sample_output/hello_world_restart/hello_bye_world_20241119-173122'
+Choose study config to update, or done/quit to finish/abort
+[rlimit/throttle/sleep/done/quit]
+> rlimit
+Enter new restart limit [Integer, 0 = unlimited]
+> 4
+Choose study config to update, or quit
+ [rlimit/throttle/sleep/done/quit]
+> sleep
+Enter new sleep duration for Conductor [Integer, seconds]
+> 30
+Choose study config to update, or quit
+ [rlimit/throttle/sleep/done/quit]
+> quit
+Discarding updates to 'sample_output/hello_world_restart/hello_bye_world_20241119-173122/'
+$ maestro update ./sample_output/hello_world_restart/hello_bye_world_20241119-173122
+Updating study at '/path/to/sample_output/hello_world_restart/hello_bye_world_20241119-173122'
+Choose study config to update, or done/quit to finish/abort
+[rlimit/throttle/sleep/done/quit]
+> rlimit
+Enter new restart limit [Integer, 0 = unlimited]
+> 4
+Choose study config to update, or quit
+ [rlimit/throttle/sleep/done/quit]
+> done
+Writing updated study config to 'sample_output/hello_world_restart/hello_bye_world_20241119-173122/.study.update.lock'
+```
+
 ## **conductor**
 
-A application for checking and managing and ExecutionDAG within an executing study.
+An application for checking and managing an ExecutionDAG within an executing study.
 
 **Usage:**
 

@@ -100,8 +100,8 @@ Maestro gives an easy path to automating and orchestrating your workflows, build
     === "Hello World Workflow Graph"
         
         ``` mermaid
-        flowchart TD;
-            A(study root) --> COMBO1;
+        flowchart TD
+            A(study root) --> COMBO1
             subgraph COMBO1 [Combo #1]
               subgraph say_hello1 [say-hello]
                 B(Hello, Pam)
@@ -113,7 +113,6 @@ Maestro gives an easy path to automating and orchestrating your workflows, build
             end
             A --> COMBO2
             subgraph COMBO2 [Combo #2]
-              direction TB
               subgraph say_hello2 [say-hello]
                 D(Ciao, Jim)
               end
@@ -140,13 +139,13 @@ Maestro gives an easy path to automating and orchestrating your workflows, build
               subgraph say_bye4 [say-bye]
                 I(See you later, Dwight)
               end
-              say_hello4 --> say_bye4;
+              say_hello4 --> say_bye4
             end
-            
-            COMBO1 --> J{{bye-all}}
-            COMBO2 --> J{{bye-all}}
-            COMBO3 --> J{{bye-all}}
-            COMBO4 --> J{{bye-all}}
+            J{{bye-all}}
+            COMBO1 --> J
+            COMBO2 --> J
+            COMBO3 --> J
+            COMBO4 --> J
         ```
 
     === "Hello World Executed Workspace"
@@ -154,6 +153,7 @@ Maestro gives an easy path to automating and orchestrating your workflows, build
         Maestro manages the workspaces for each parameter set for you, ensuring isolation, and capturing the generated execution scripts with parameter/variable values inserted in place of the `$(PARAMNAME)` tokens
                 
         ![Labeled Hello Bye Parameterized Workspace with Funnel](./assets/images/examples/hello_bye_parameterized/hello_bye_parameterized_labeled_funnel_workspace.svg){: style="width:80ch"}
+
 
 
 ## Maestro's Goals and Motivations
@@ -165,7 +165,7 @@ The primary goal of Maestro is to provide a lightweight tool for encouraging mod
 2. Workflow best practices should always be encouraged wherever possible, and enforced where reasonable.
 3. It is not a workflow framework's place to force a user to use specific technologies -- a framework should couple minimally, but offer a high degree of flexibility.
 4. Division of responsibility is critical. Data management, optimal performance, and orchestration are related but separate.
-5. A workflow should be coherent and easy to communicate, with a framework sproviding users a mental framework to think and discuss such challenges.
+5. A workflow should be coherent and easy to communicate, with a framework providing users a mental framework to think and discuss such challenges.
 
 We firmly believe that a user-friendly tool and environment that promotes provenance and best practices, while minimizing the effort needed for users to achieve progress, will greatly improve the quality of computational science.
 

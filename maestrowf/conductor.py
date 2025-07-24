@@ -34,6 +34,7 @@ import glob
 import inspect
 import logging
 import os
+import shutil
 import sys
 from time import sleep
 import dill
@@ -140,6 +141,7 @@ class Conductor:
 
     _pkl_extension = ".study.pkl"
     _cancel_lock = ".cancel.lock"
+    _study_update = ".study.update.lock"
     _batch_info = "batch.info"
 
     def __init__(self, study):
@@ -289,6 +291,60 @@ class Conductor:
         with open(lock_path, 'a'):
             os.utime(lock_path, None)
 
+    @classmethod
+    def update_study_exec(cls, output_path, updated_config):
+        """
+        Mark the study rooted at 'out_path'.
+
+        :param out_path: A string containing the patht to a study root.
+        :returns: A dictionary containing the status of the study.
+        """
+        study_update_path = make_safe_path(output_path, cls._study_update)
+        # NOTE: should we timestamp these, or append separate timestamped docs
+        # to the yaml?
+        print(f"Writing updated study config to '{study_update_path}'")
+        with open(study_update_path, 'wb') as study_update:
+            study_update.write(yaml.dump(updated_config).encode("utf-8"))
+
+    @classmethod
+    def load_updated_study_exec(cls, output_path):
+        """
+        Load the updated study config for the study rooted in 'out_path'.
+
+        :param out_path: A string containing the path to a study root.
+        :returns: A dict containing the updated config for the study.
+        """
+        study_update_path = os.path.join(output_path, cls._study_update)
+
+        if not os.path.exists(study_update_path):
+            # No update record found
+            return {}
+
+        with open(study_update_path, 'r') as data:
+            try:
+                updated_study_config = yaml.load(data, yaml.FullLoader)
+            except AttributeError:
+                LOGGER.warning(
+                    "*** PyYAML is using an unsafe version with a known "
+                    "load vulnerability. Please upgrade your installation "
+                    "to a more recent version! ***")
+                updated_study_config = yaml.load(data)
+
+        if updated_study_config:
+            LOGGER.debug("Successfully read updated study config; removing record at %s",
+                         study_update_path)
+            os.remove(study_update_path)
+
+        return updated_study_config
+
+    @property
+    def sleep_time(self):
+        return self._sleep_time
+
+    @sleep_time.setter
+    def sleep_time(self, new_sleep_time):
+        self._sleep_time = new_sleep_time
+
     def initialize(self, batch_info, sleeptime=60):
         """
         Initializes the Conductor instance based on the stored study.
@@ -318,6 +374,7 @@ class Conductor:
 
         # Set some fixed variables that monitor will use.
         cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
+        study_update_path = make_safe_path(self.output_path, self._study_update)
         dag = self._exec_dag
         pkl_path = \
             os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
@@ -346,6 +403,26 @@ class Conductor:
                     LOGGER.error("Failed to acquire cancellation lock.")
                     pass
 
+            if os.path.exists(study_update_path):
+                updated_study_config = self.load_updated_study_exec(self.output_path)
+
+                if "throttle" in updated_study_config and updated_study_config["throttle"]:
+                    LOGGER.info("Updating throttle from %d to %d",
+                                dag._submission_throttle,  # NOTE: make a property?
+                                updated_study_config["throttle"])
+                    dag.update_throttle(updated_study_config["throttle"])
+
+                if "rlimit" in updated_study_config and updated_study_config["rlimit"]:
+                    LOGGER.info("Updating restart limit to %d",
+                                updated_study_config["rlimit"])
+                    dag.update_rlimit(updated_study_config["rlimit"])
+
+                if "sleep" in updated_study_config and updated_study_config["sleep"]:
+                    LOGGER.info("Updating conductor sleep time from %s to %s",
+                                str(self.sleep_time),
+                                str(updated_study_config["sleep"]))
+                    self.sleep_time = updated_study_config["sleep"]
+                    
             LOGGER.info("Checking DAG status at %s", str(datetime.now()))
             # Execute steps that are ready
             # Receives StudyStatus enum

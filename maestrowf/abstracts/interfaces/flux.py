@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import getpass
+import json
 import logging
 
 from maestrowf.abstracts.enums import StepPriority
@@ -77,6 +79,79 @@ class FluxInterface(ABC):
         # return StrictVersion(cls.flux_handle.attr_get("version"))
         # return parse_version(cls.flux_handle.attr_get("version"))
         return cls.flux_handle.attr_get("version")
+
+    @classmethod
+    def get_broker_queues(cls):
+        """
+        Use flux's rpc interface to get available queues to submit to.
+        Current (~0.74) flux behavior for nested brokers' is to only have an
+        anonymous queue without explicit user configuration to create some.
+
+        Todo: locate flux version where queue support was added in case not all
+        adapters can support it.
+        """
+        cls.connect_to_flux()
+        queue_config = cls.flux_handle.rpc("config.get").get().get("queues", {})
+        return list(queue_config.keys())
+
+    @classmethod
+    def get_broker_user_banks(cls):
+        """
+        Use flux's rpc interface to get available banks for current user.
+        Current (~0.74) flux behavior for nested brokers' is to not have
+        accounting plugin active.
+
+        Todo: locate flux version where accounting was available
+        """
+        cls.connect_to_flux()
+        username = getpass.getuser()
+        try:
+            banks = cls.flux_handle.rpc("accounting.view_user",
+                                        {"list_banks": True,
+                                         "username": username,
+                                         "parsable": True,  # Mandatory in 0.75?
+                                         "format": ""}).get()
+        except OSError as be:
+            if '[Errno 38] No service matching accounting.view_user is registered' not in str(be):
+                raise           # If some other unexpected error raise it
+            banks = ""
+
+        # rpc call returns single string: 'bank1\nbank2\nbank3\n'
+        if isinstance(banks, dict) and 'view_user' in banks:
+            bank_list = banks['view_user'].split('\n')
+        else:
+            bank_list = []
+
+        return bank_list
+
+    @classmethod
+    def get_broker_all_banks(cls):
+        """
+        Use flux's rpc interface to get all available banks on this machine.
+        Current (~0.74) flux behavior for nested brokers' is to not have
+        accounting plugin active.
+        """
+        cls.connect_to_flux()
+        try:
+            banks = cls.flux_handle.rpc("accounting.list_banks",
+                                        {"inactive": True,
+                                         "table": False,
+                                         "json": True,  # Default in 0.75 is no longer json
+                                         "fields": "bank",
+                                         "format": ""}).get()
+        except OSError as be:
+            if '[Errno 38] No service matching accounting.list_banks is registered' not in str(be):
+                raise           # If some other unexpected error raise it
+            banks = {'list_banks': "[{}]"}
+
+        # rpc call returns list of banks as json string
+        bank_dicts = json.loads(banks['list_banks'])
+        bank_list = []
+        for bdict in bank_dicts:
+            if isinstance(bdict, dict) and 'bank' in bdict:
+                bank_list.append(bdict['bank'])
+
+        return bank_list
 
     @classmethod
     @abstractmethod
