@@ -40,6 +40,21 @@ LOGGER = logging.getLogger(__name__)
 
 
 @six.add_metaclass(ABCMeta)
+class ParallelizeCmd():
+    """
+    Callable object which generates the concrete scheduler task
+    launch commands.
+    """
+    def __init__(self, cmd_flags=None, unsupported=None):
+        self._cmd_flags = {}
+        self._unsupported = {}
+
+    @abstractmethod
+    def __call__(self, procs, nodes, **kwargs):
+        pass
+
+
+@six.add_metaclass(ABCMeta)
 class SchedulerScriptAdapter(ScriptAdapter):
     """
     Abstract class representing the interface for scheduling scripts.
@@ -82,6 +97,9 @@ class SchedulerScriptAdapter(ScriptAdapter):
         super(SchedulerScriptAdapter, self).__init__(**kwargs)
         self._batch = {}
 
+        # Store launcher -> concrete parallel command mappings
+        self._cmd_flags = {}
+
     def add_batch_parameter(self, name, value):
         """
         Add a parameter to the ScriptAdapter instance.
@@ -91,6 +109,17 @@ class SchedulerScriptAdapter(ScriptAdapter):
             str method).
         """
         self._batch[name] = value
+
+    def add_cmd_flags(self, name, value):
+        """
+        Add command flags to the ScriptAdapter instance.  Command flags
+        map the launcher tokens to specific parallel invocations
+        """
+        if name in self._cmd_flags:
+            LOGGER.info(f"Overwriting '{name}' value ('{self._cmd_flags[name]}"
+                        f"') in cmd_flags with '{value}'")
+
+        self._cmd_flags[name] = value
 
     @abstractmethod
     def get_header(self, step):
@@ -103,6 +132,10 @@ class SchedulerScriptAdapter(ScriptAdapter):
         """
         pass
 
+    def register_parallelize_command(self, parallelize_func):
+        # Note do some validation here -> callable types only
+        self._parallelize_func = parallelize_func()
+        
     @abstractmethod
     def get_parallelize_command(self, procs, nodes, **kwargs):
         """

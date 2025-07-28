@@ -66,7 +66,12 @@ def test_slurm_adapter_in_factory():
     """
     saf = ScriptAdapterFactory
     # Make sure SlurmScriptAdapter is in the facotries object
-    assert(saf.factories[SlurmScriptAdapter.key] == SlurmScriptAdapter)
+    print(SlurmScriptAdapter)
+    test_adapter = SlurmScriptAdapter
+    # assert(saf.factories[SlurmScriptAdapter.key] is test_adapter)
+    print(id(saf.factories[SlurmScriptAdapter.key]))
+    print(id(SlurmScriptAdapter))
+    assert(saf.factories[SlurmScriptAdapter.key] is SlurmScriptAdapter)
     # Make sure the SlurmScriptAdapter key is in the valid adapters
     assert(SlurmScriptAdapter.key in ScriptAdapterFactory.get_valid_adapters())
     # Make sure that get_adapter returns the SlurmScriptAdapter when asking

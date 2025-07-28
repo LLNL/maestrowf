@@ -9,6 +9,7 @@ import shutil
 import tempfile
 from time import sleep
 from filelock import FileLock, Timeout
+from concurrent import futures
 
 from maestrowf.abstracts import PickleInterface
 from maestrowf.abstracts.enums import JobStatusCode, State, SubmissionCode, \
@@ -370,6 +371,7 @@ class ExecutionGraph(DAG, PickleInterface):
         self._submission_throttle = submission_throttle
         self.dry_run = dry_run
 
+
         # A map that tracks the dependencies of a step.
         # NOTE: I don't know how performant the Python dict structure is, but
         # we'll use it for now. I think this may want to be changed to an AVL
@@ -482,6 +484,7 @@ class ExecutionGraph(DAG, PickleInterface):
             msg = "'{}' adapter must be specfied in ScriptAdapterFactory." \
                   .format(adapter)
             LOGGER.error(msg)
+            LOGGER.error("Valid adapters: {}".format(ScriptAdapterFactory.get_valid_adapters()))
             raise TypeError(msg)
 
         self._adapter = adapter
@@ -563,7 +566,9 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # Set up the adapter.
         LOGGER.info("Generating scripts...")
-        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])
+        # adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"],
+        #                                            self._adapter.get('parallel_type')
+        adapter = ScriptAdapterFactory.get_adapter(self._adapter["type"])                                                   
         adapter = adapter(**self._adapter)
 
         self._check_tmp_dir()
@@ -928,9 +933,19 @@ class ExecutionGraph(DAG, PickleInterface):
 
         # We now have a collection of ready steps. Execute.
         # If we don't have a submission limit, go ahead and submit all.
+        # Check requested resources -> nprocs
+        # nthreads = 1
+        # if self._local_procs > 0:
+        #     nthreads = self._local_procs
+
+        # if adapter.total_procs != nthreads:
+        #     adapter.total_procs = nthreads
+        #     adapter.avail_procs = nthreads
+
         if self._submission_throttle == 0:
             LOGGER.info("Launching all ready steps...")
             _available = len(self.ready_steps)
+            LOGGER.info("Ready steps: {}".format(self.ready_steps))
         # Else, we have a limit -- adhere to it.
         else:
             # Compute the number of available slots we have for execution.
@@ -944,9 +959,23 @@ class ExecutionGraph(DAG, PickleInterface):
             _available = min(_available, len(self.ready_steps))
             LOGGER.info("Found %d available slots...", _available)
 
+        # for i in range(0, _available):
+        #     # Pop the record and execute using the helper method.
+        #     _record = self.values[self.ready_steps.popleft()]
+
+        #     # If we get to this point and we've cancelled, cancel the record.
+        #     if self.is_canceled:
+        #         logger.info("Cancelling '%s' -- continuing.", _record.name)
+        #         _record.mark_end(State.CANCELLED)
+        #         self.cancelled_steps.add(_record.name)
+        #         continue
+
+        #     logger.debug("Launching job %d -- %s", i, _record.name)
+        #     self._execute_record(_record, adapter)
+
         for i in range(0, _available):
             # Pop the record and execute using the helper method.
-            _record = self.values[self.ready_steps.popleft()]
+            _record = self.values[self.ready_steps[0]]
 
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
@@ -955,8 +984,32 @@ class ExecutionGraph(DAG, PickleInterface):
                 self.cancelled_steps.add(_record.name)
                 continue
 
-            LOGGER.debug("Launching job %d -- %s", i, _record.name)
-            self._execute_record(_record, adapter)
+            # NOTE: verify this actually updates avail_procs on the fly, thus allowing the
+            # available tasks to be fully consumed before going back to sleep
+            LOGGER.debug("Attempting to submit step {} with total procs = {}, available procs = {}".format(_record.step.name, adapter.total_procs, adapter.avail_procs))
+            avail_procs = adapter.avail_procs
+            LOGGER.debug("avail_procs from the adapter = %d", avail_procs)
+            LOGGER.debug("total_procs from the adapter = %d", adapter.total_procs)
+            step_procs = _record.step.run.get("procs")
+            if not step_procs:
+                step_procs = 1
+            else:
+                try:
+                    step_procs = int(step_procs)
+                except ValueError:
+                    step_procs = 1
+                    LOGGER.error("Setting step {} with no 'procs' attribute to use 1 processor.".format(_record.step.name))
+                    
+            # NOTE: better place to set this default, and do type conversions?
+            if step_procs <= avail_procs:
+                LOGGER.debug("Launching job %d -- %s", i, _record.name)
+                self.ready_steps.popleft()  # remove key now that it's sure to run
+                self._execute_record(_record, adapter)
+            else:
+                LOGGER.debug("step_procs thought > avail_procs: %d : %d", step_procs, avail_procs)
+                if avail_procs == 0:
+                    break       # exit loop early to avoid needless churn
+                
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
