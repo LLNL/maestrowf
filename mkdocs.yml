@@ -3,6 +3,7 @@ use_directory_urls: false
 markdown_extensions:
   - admonition
   - attr_list
+  - def_list
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -21,6 +22,8 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
 
 plugins:
     - search
@@ -46,6 +49,8 @@ plugins:
 
 extra_javascript:
     - https://unpkg.com/mermaid@10.9.3/dist/mermaid.min.js
+    - extra/mathjax.js
+    - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 extra_css:
   - custom.css
@@ -103,7 +108,14 @@ nav:
         - Maestro Reference: Maestro/reference_guide/index.md
         - Design Reference: Maestro/reference_guide/design_reference/
         - API Reference: Maestro/reference_guide/api_reference/
-
+    - What's New:
+        - Index: 'Maestro/meps/index.md'
+        # - Maestro/
+        # - Release Notes: Maestro/release_notes/index.md
+        - Changelog: 'changelog_placeholder.md'
+        - Maestro Enhancement Proposals:
+            - MEP 001: 'Maestro/meps/mep-001-encore-study-iteration.md'
+            - MEP 002: 'Maestro/meps/mep-002-parameter-composition.md'
             # - API Reference: 'reference/'
               
 extra:
