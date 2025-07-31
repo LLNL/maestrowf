@@ -3,6 +3,7 @@ use_directory_urls: false
 markdown_extensions:
   - admonition
   - attr_list
+  - def_list
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
