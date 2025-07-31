@@ -109,10 +109,13 @@ nav:
         - Design Reference: Maestro/reference_guide/design_reference/
         - API Reference: Maestro/reference_guide/api_reference/
     - What's New:
+        - Index: 'Maestro/meps/index.md'
         # - Maestro/
         # - Release Notes: Maestro/release_notes/index.md
-        - Changelog: changelog_placeholder.md
-        - Maestro Enhancement Proposals: Maestro/meps/index.md
+        - Changelog: 'changelog_placeholder.md'
+        - Maestro Enhancement Proposals:
+            - MEP 001: 'Maestro/meps/mep-001-encore-study-iteration.md'
+            - MEP 002: 'Maestro/meps/mep-002-parameter-composition.md'
             # - API Reference: 'reference/'
               
 extra:
