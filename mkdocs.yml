@@ -111,6 +111,7 @@ nav:
     - What's New:
         # - Maestro/
         # - Release Notes: Maestro/release_notes/index.md
+        - Changelog: changelog_placeholder.md
         - Maestro Enhancement Proposals: Maestro/meps/index.md
             # - API Reference: 'reference/'
               
