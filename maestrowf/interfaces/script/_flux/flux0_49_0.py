@@ -33,6 +33,45 @@ class FluxInterface_0490(FluxInterface):
         StepPriority.EXPEDITE: 31,
     }
 
+    # Config for the groups of alloc args with their own jobspec methods
+    known_alloc_arg_types = ["attributes", "shell_options", "conf"]
+    addtl_alloc_arg_type_map = {
+        "setopt": "shell_options",
+        "o": "shell_options",
+        "setattr": "attributes",
+        "S": "attributes",
+        "conf": "conf",
+    }
+
+    @classmethod
+    def addtl_alloc_arg_types(cls):
+        """
+        Return set of additional allocation args that this adapter knows how
+        to wire up to the jobspec python apis, e.g. 'attributes',
+        'shell_options', ... This is aimed specifically at the repeated types,
+        which collect many flags/key=value pairs which go through a specific
+        jobspec call.  Everything not here gets dumped into a 'misc' group
+        for individual handling.
+
+        :return: List of string
+
+        .. note::
+
+           Should we have an enum for these or something vs random strings?
+        """
+        return cls.known_alloc_arg_types
+
+    @classmethod
+    def addtl_alloc_arg_type_map(cls, option):
+        """
+        Map verbose/brief cli arg option name (o from -o, setopt from --setopt)
+        onto known alloc arg types this interface implements
+
+        :param option: option string corresponding to flux cli input
+        :return: string, one of known_alloc_arg_types
+        """
+        return cls.addtl_alloc_arg_type_map.get(option, None)
+
     @classmethod
     def get_flux_urgency(cls, urgency) -> int:
         if isinstance(urgency, str):
@@ -45,6 +84,45 @@ class FluxInterface_0490(FluxInterface):
         else:
             LOGGER.debug("Float urgency of '%s' given..", urgency)
             return ceil(float(urgency) * 31)
+
+    @classmethod
+    def render_additional_args(cls, args_dict):
+        """
+        Helper to render additional argument sets to flux cli format for
+        use in constructing $(LAUNCHER) line and flux batch directives.
+
+        :param args_dict: Dictionary of flux arg keys and name: value pairs
+        :yield: formatted strings of cli options/values
+
+        .. note::
+
+           Promote this to the general/base adapters to handle non-normalizable
+           scheduler/machine specific options
+        """
+        def arg_info_type(arg_key):
+            if len(arg_key) == 1:
+                return {"prefix": "-", "sep": " "}
+            else:
+                return {"prefix": "--", "sep": "="}
+
+        def render_arg_value(arg_name, arg_value):
+            # Handling for flag type values, e.g. -o fastload
+            if arg_value:
+                return f"{arg_name}={arg_value}"
+            else:
+                return f"{arg_name}"
+
+        for arg_key, arg_value in args_dict.items():
+            arg_info = arg_info_type(arg_key)
+
+            for av_name, av_value in arg_value.items():
+                value_str = render_arg_value(av_name, av_value)
+                yield "{prefix}{key}{sep}{value}".format(
+                    prefix=arg_info['prefix'],
+                    key=arg_key,
+                    sep=arg_info['sep'],
+                    value=value_str
+                )
 
     @classmethod
     def submit(
@@ -60,11 +138,19 @@ class FluxInterface_0490(FluxInterface):
         force_broker=True,
         urgency=StepPriority.MEDIUM,
         waitable=False,
-        batch_attrs=None,         # TODO: expose opts/conf/shell_opts
+        addtl_batch_args=None,
+        exclusive=False,
         **kwargs,
     ):
-        if batch_attrs is None:
-            batch_attrs = {}
+        # Sanitize/initialize the extra batch args
+        if addtl_batch_args is None:
+            addtl_batch_args = {}
+
+        # May want to also support setattr_shell_option at some point?
+        for batch_arg_type in ["attributes", "shell_options", "conf"]:
+
+            if batch_arg_type not in addtl_batch_args:
+                addtl_batch_args[batch_arg_type] = {}
 
         try:
             # TODO: add better error handling/throwing in the class func
@@ -79,6 +165,13 @@ class FluxInterface_0490(FluxInterface):
             # for a single node, don't use a broker -- but introduce a flag
             # that can force a single node to run in a broker.
 
+            # Attach any conf inputs to the jobspec
+            if "conf" in addtl_batch_args:
+                conf_dict = addtl_batch_args['conf']
+
+            else:
+                conf_dict = None
+                
             if force_broker:
                 LOGGER.debug(
                     "Launch under Flux sub-broker. [force_broker=%s, "
@@ -86,6 +179,8 @@ class FluxInterface_0490(FluxInterface):
                     force_broker,
                     nodes,
                 )
+                # Need to attach broker opts to the constructor?
+                # TODO: Add in extra broker options if not null
                 ngpus_per_slot = int(ceil(ngpus / nodes))
                 jobspec = flux.job.JobspecV1.from_nest_command(
                     [path],
@@ -93,8 +188,13 @@ class FluxInterface_0490(FluxInterface):
                     cores_per_slot=cores_per_task,
                     num_slots=procs,
                     gpus_per_slot=ngpus_per_slot,
+                    conf=conf_dict,
+                    exclusive=exclusive,
                 )
             else:
+                if conf_dict:
+                    LOGGER.warn("'conf' options not currently supported with "
+                                " nested=False.  Ignoring.")
                 LOGGER.debug(
                     "Launch under root Flux broker. [force_broker=%s, "
                     "nodes=%d]",
@@ -107,6 +207,7 @@ class FluxInterface_0490(FluxInterface):
                     num_nodes=nodes,
                     cores_per_task=cores_per_task,
                     gpus_per_task=ngpus,
+                    exclusive=exclusive
                 )
 
             LOGGER.debug("Handle address -- %s", hex(id(cls.flux_handle)))
@@ -118,10 +219,26 @@ class FluxInterface_0490(FluxInterface):
             jobspec.environment = dict(os.environ)
 
             # Slurp in extra attributes if not null (queue, bank, ..)
-            for batch_attr_name, batch_attr_value in batch_attrs.items():
+            # (-S/--setattr)
+            for batch_attr_name, batch_attr_value in addtl_batch_args["setattr"].items():
                 if batch_attr_value:
                     jobspec.setattr(batch_attr_name, batch_attr_value)
+                else:
+                    LOGGER.warn("Flux adapter v0.49 received null value of '%s'"
+                                " for attribute '%s'. Omitting from jobspec.",
+                                batch_opt_name,
+                                batch_opt_value)
 
+            # Add in job shell options if not null (-o/--setopt)
+            for batch_opt_name, batch_opt_value in addtl_batch_args["setopt"].items():
+                if batch_opt_value:
+                    jobspec.setattr_shell_option(batch_opt_name, batch_opt_value)
+                else:
+                    LOGGER.warn("Flux adapter v0.49 received null value of '%s'"
+                                " for shell option '%s'. Omitting from jobspec.",
+                                batch_opt_name,
+                                batch_opt_value)
+            
             if walltime > 0:
                 jobspec.duration = walltime
 
@@ -164,7 +281,8 @@ class FluxInterface_0490(FluxInterface):
         return jobid, retcode, submit_status
 
     @classmethod
-    def parallelize(cls, procs, nodes=None, **kwargs):
+    def parallelize(cls, procs, nodes=None, launcher_args=None, **kwargs):
+
         args = ["flux", "run", "-n", str(procs)]
 
         # if we've specified nodes, add that to wreckrun
@@ -192,15 +310,38 @@ class FluxInterface_0490(FluxInterface):
             args.append("-g")
             args.append(gpus)
 
-        # flux has additional arguments that can be passed via the '-o' flag.
-        addtl = []
-        addtl_args = kwargs.get("addtl_args", {})
-        for key, value in addtl_args.items():
-            addtl.append(f"{key}={value}")
+        # flux has additional arguments that can be passed via flags such as
+        # '-o', '-S', ...
+        if launcher_args is None:
+            launcher_args = {}
 
-        if addtl:
-            args.append("-o")
-            args.append(",".join(addtl))
+        # Look for optional exclusive flag
+        exclusive = kwargs.pop('exclusive', False)
+
+        addtl = []
+        LOGGER.info("Processing 'exclusive': %s", exclusive)
+        if exclusive:
+            addtl.append("--exclusive")
+
+        addtl_args = kwargs.get("addtl_args", {})
+        if addtl_args and launcher_args:
+            # TODO: better way to mark things deprecated that's not buried?
+            LOGGER.warn("'args' input is deprecated in v1.1.12.  Use the more "
+                        "flexible 'launcher_args' going forward. Combining.")
+        if 'o' in launcher_args:
+            launcher_args['o'].update(**addtl_args)
+        else:
+            launcher_args['o'] = addtl_args
+
+        addtl += [arg for arg in cls.render_additional_args(launcher_args)]
+        args.extend(addtl)
+        # for key, value in addtl_args.items():
+
+        #     addtl.append(f"{key}={value}")
+
+        # if addtl:
+        #     args.append("-o")
+        #     args.append(",".join(addtl))
 
         return " ".join(args)
 

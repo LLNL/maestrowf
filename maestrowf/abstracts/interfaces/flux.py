@@ -248,3 +248,38 @@ class FluxInterface(ABC):
         :return: A string of the name of a FluxInterface class.
         """
         ...
+
+    @classmethod
+    def addtl_alloc_arg_types(cls):
+        """
+        Return set of additional allocation args that this adapter knows how
+        to wire up to the jobspec python apis, e.g. 'attributes',
+        'shell_options', ... This is aimed specifically at the repeated types,
+        which collect many flags/key=value pairs which go through a specific
+        jobspec call.  Everything not here gets dumped into a 'misc' group
+        for individual handling.
+
+        :return: List of string
+
+        .. note::
+
+           Should we have an enum for these or something vs random strings?
+        """
+        return []
+
+    @classmethod
+    def render_additional_args(cls, args_dict):
+        """
+        Helper to render additional argument sets to flux cli format for
+        use in constructing $(LAUNCHER) line and flux batch directives.
+        This default implementation yields a single empty string.
+
+        :param args_dict: Dictionary of flux arg keys and name: value pairs
+        :yield: formatted strings of cli options/values
+
+        .. note::
+
+           Promote this to the general/base adapters to handle non-normalizable
+           scheduler/machine specific options
+        """
+        yield ""
