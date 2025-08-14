@@ -92,8 +92,8 @@ class SchedulerScriptAdapter(ScriptAdapter):
         """
         self._batch[name] = value
 
-    @classmethod
-    def get_exclusive(cls, step_exclusive):
+    @staticmethod
+    def get_exclusive(step_exclusive):
         """
         Helper for normalizing new/legacy exclusive syntax in the step keys.
 

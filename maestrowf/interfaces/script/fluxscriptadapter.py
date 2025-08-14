@@ -380,7 +380,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         # TODO: fix this temp hack when standardizing the exclusive key handling
         kwargs['exclusive'] = step_exclusive['launcher']
-        
+
         return self._interface.parallelize(
             procs, nodes=ntasks, addtl_args=self._addl_args,
             launcher_args=self._launcher_args, **kwargs)
