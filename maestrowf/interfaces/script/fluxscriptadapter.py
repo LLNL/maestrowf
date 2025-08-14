@@ -149,18 +149,11 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self.add_batch_parameter("queue", queue)
         self.add_batch_parameter("bank", bank)
 
-        # Pop off the exclusive flags
-        step_exclusive = 'exclusive' in kwargs
-        exclusive = kwargs.pop("exclusive", False)  # Default to old < 1.1.12 behavior
-        if not isinstance(exclusive, dict):
-            self._exclusive = {
-                "allocation": exclusive,
-                "launcher": False,
-            }
-        else:
-            self._exclusive = exclusive
+        # Pop off the exclusive flags (NOTE: usually comes from steps, not through constructor?)
+        step_exclusive = 'exclusive' in kwargs  # Track whether it was in there at all
+        self._exclusive = self.get_exclusive(kwargs.pop("exclusive", False))  # Default to old < 1.1.12 behavior
 
-        # Check for the flag in additional args and pop it off, letting step key win
+        # Check for the flag in additional args and pop it off, letting step key win later
         # NOTE: only need presence of key as this mimics cli like flag behavior
         # TODO: promote this to formally supported behavior for all adapters
         exclusive_keys = ['x', 'exclusive']
@@ -186,6 +179,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             else:
                 self._exclusive['launcher'] = True
 
+        # NOTE: 
         self.add_batch_parameter("exclusive", self._exclusive['allocation'])
 
         # Populate formally supported flux directives in the header
@@ -198,8 +192,6 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             "bank": f"{self._flux_directive}" + "--bank {bank}",
 
         }
-        if self._exclusive['allocation']:
-            self._header["exclusive"]= f"{self._flux_directive}" + "--exclusive"
 
         self._cmd_flags = {
             "ntasks": "-n",
@@ -342,9 +334,17 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
             modified_header.append(value.format(**batch_header))
 
+        # Handle exclusive flag
+        step_exclusive_given = "exclusive" in step.run
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(step.run.get("exclusive", False)))
+
+        if step_exclusive['allocation']:
+            modified_header.append(f"{self._flux_directive}" + "--exclusive")
+
         # Process any optional allocation args
-        # for alloc_arg_key, alloc_args in self._allocation_args.items():
-        # LOGGER.info(f"{alloc_arg_key=}: {alloc_args=}")
         for rendered_arg in self._interface.render_additional_args(self._allocation_args):
             if rendered_arg:
                 # Silent pass through for old versions which don't implement any
@@ -369,8 +369,18 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                   and procs.
         """
         ntasks = nodes if nodes else self._batch.get("nodes", 1)
+        
+        # Handle the exclusive flags, updating batch block settings (default)
+        # with what's set in the step
+        step_exclusive_given = "exclusive" in kwargs
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(kwargs.get("exclusive", False)))
+
         # TODO: fix this temp hack when standardizing the exclusive key handling
-        kwargs['exclusive'] = self._exclusive['launcher']
+        kwargs['exclusive'] = step_exclusive['launcher']
+        
         return self._interface.parallelize(
             procs, nodes=ntasks, addtl_args=self._addl_args,
             launcher_args=self._launcher_args, **kwargs)
@@ -440,6 +450,14 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+        # Handle the exclusive flags, updating batch block settings (default)
+        # with what's set in the step
+        step_exclusive_given = "exclusive" in step.run
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(step.run.get("exclusive", False)))
+
         # Unpack waitable flag and pass it along if there: only pass it along if
         # it's in the step maybe, leaving each adapter to retain their defaults?
         waitable = step.run.get("waitable", False)
@@ -450,7 +468,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 job_name=step.name, force_broker=force_broker, urgency=urgency,
                 waitable=waitable,
                 addtl_batch_args=self.pack_addtl_batch_args(),
-                exclusive=self._exclusive['allocation']
+                exclusive=step_exclusive['allocation']
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)
