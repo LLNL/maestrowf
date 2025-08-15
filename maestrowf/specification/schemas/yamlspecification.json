@@ -93,8 +93,26 @@
           "exclusive": {
             "anyOf": [
               {"type": "boolean"},
-              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
-            ]},
+              {"type": "string", "pattern": "^\\$\\(\\w+\\)$"},
+              {
+                "type": "object",
+                "properties": {
+                  "allocation": {
+                    "anyOf": [
+                      {"type": "boolean"},
+                      {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+                    ]
+                  },
+                  "launcher": {
+                    "anyOf": [
+                      {"type": "boolean"},
+                      {"type": "string", "pattern": "^\\$\\(\\w+\\)$"}
+                    ]
+                  }
+                }
+              }
+            ]
+          },
           "nested": {"type": "boolean"},
           "waitable": {"type": "boolean"},  
           "priority": {

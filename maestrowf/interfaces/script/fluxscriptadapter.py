@@ -95,11 +95,42 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         # NOTE: Host doesn"t seem to matter for FLUX. sbatch assumes that the
         # current host is where submission occurs.
         self.add_batch_parameter("nodes", kwargs.pop("nodes", "1"))
+        self._allocation_args = kwargs.get("allocation_args", {})
+        LOGGER.info(f"Allocation args: {self._allocation_args}")
+        self._launcher_args = kwargs.get("launcher_args", {})
         self._addl_args = kwargs.get("args", {})
+
+        
+        # Setup prefixes associated with each kind of option for routing to
+        # appropriate jobspec api's
+        # Additional args can pass through on launcher only, using rule of
+        # verbose has '--' prefix, '=' flag/value separator and
+        # brief has '-' prefix, ' ' flag/value seaprator: e.g.
+        # --setattr=foo=bar, or -S foo=bar
+        self._brief_arg_info = {"prefix": "-", "sep": " "}
+        self._verbose_arg_info = {"prefix": "--", "sep": "="}
+
+        # Setup known arg types
+        self._known_alloc_arg_types = ["attributes", "shell_options", "conf"]
+        self._allocation_args_map = {
+            "setopt": "shell_options",
+            "o": "shell_options",
+            "setattr": "attributes",
+            "S": "attributes",
+            "conf": "conf",
+        }
+
+        # setup template string that all flux cli args/batch directives use for rendering
+        self._flux_arg_str = "{prefix}{key}{sep}{value}"
+        
+        self._attr_prefixes = ['S', 'setattr']
+        self._opts_prefixes = ['o', 'setopt']
+        self._conf_prefixes = ['conf']  # No abbreviated form for this in flux docs
 
         # Add --setattr fields to batch job/broker; default to "" such
         # that 'truthiness' can exclude them from the jobspec if not provided
         queue = kwargs.pop("queue", "")
+        bank = kwargs.pop("bank", "")
         available_queues = self._interface.get_broker_queues()
         # Ignore queue if specified and we detect broker only has anonymous queue
         if not available_queues and queue:
@@ -113,18 +144,53 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
 
         self._batch_attrs = {
             "system.queue": queue,
-            "system.bank": kwargs.pop("bank", ""),
+            "system.bank": bank,
         }
         self.add_batch_parameter("queue", queue)
+        self.add_batch_parameter("bank", bank)
 
-        # Header is only for informational purposes.
-        # TODO: export these as flux directives for manual step rerunning
+        # Pop off the exclusive flags (NOTE: usually comes from steps, not through constructor?)
+        step_exclusive = 'exclusive' in kwargs  # Track whether it was in there at all
+        self._exclusive = self.get_exclusive(kwargs.pop("exclusive", False))  # Default to old < 1.1.12 behavior
+
+        # Check for the flag in additional args and pop it off, letting step key win later
+        # NOTE: only need presence of key as this mimics cli like flag behavior
+        # TODO: promote this to formally supported behavior for all adapters
+        exclusive_keys = ['x', 'exclusive']
+        if all(ekey in self._allocation_args for ekey in exclusive_keys):
+            LOGGER.warn("Repeated addition of exclusive flags 'x' and 'exclusive' in allocation_args.")
+
+        alloc_eflags = [self._allocation_args.pop(ekey, None) for ekey in exclusive_keys]
+        if alloc_eflags:
+            if step_exclusive:
+                LOGGER.warn("Overriding batch block allocation_args with steps exclusive setting '%s'",
+                            exclusive)
+            else:
+                self._exclusive['allocation'] = True
+
+        if all(ekey in self._launcher_args for ekey in exclusive_keys):
+            LOGGER.warn("Repeated addition of exclusive flags 'x' and 'exclusive' in launcher_args.")
+
+        launcher_eflags = [self._launcher_args.pop(ekey, None) for ekey in exclusive_keys]
+        if launcher_eflags:
+            if step_exclusive and self._exclusive['launcher']:
+                LOGGER.warn("Overriding batch block launcher_args with steps exclusive setting '%s'",
+                            exclusive)
+            else:
+                self._exclusive['launcher'] = True
+
+        # NOTE: 
+        self.add_batch_parameter("exclusive", self._exclusive['allocation'])
+
+        # Populate formally supported flux directives in the header
+        self._flux_directive = "#flux: "
         self._header = {
-            "nodes": "#INFO (nodes) {nodes}",
-            "walltime": "#INFO (walltime) {walltime}",
-            "version": "#INFO (flux adapter version) {version}",
-            "flux_version": "#INFO (flux version) {flux_version}",
-            "queue": "#INFO (queue) {queue}",
+            "nodes": f"{self._flux_directive}" + "-N {nodes}",
+            # NOTE: always use seconds to guard against upstream default behavior changes
+            "walltime": f"{self._flux_directive}" + "-t {walltime}s",
+            "queue": f"{self._flux_directive}" + "-q {queue}",
+            "bank": f"{self._flux_directive}" + "--bank {bank}",
+
         }
 
         self._cmd_flags = {
@@ -134,9 +200,17 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         self._extension = "flux.sh"
         self.h = None
 
+        # Addition info flags to add to the header: MAESTRO only! flux ignores
+        # anything after first non-flux-directive line so this must go last
+        self._info_directive = "#INFO "
+        self._header_info = {
+            "version": f"{self._info_directive}" + "(flux adapter version) {version}",
+            "flux_version": f"{self._info_directive}" + "(flux version) {flux_version}"
+        }
+
         if uri:
             self.add_batch_parameter("flux_uri", uri)
-            self._header['flux_uri'] = "#INFO (flux_uri) {flux_uri}"
+            self._header_info['flux_uri'] = f"{self._info_directive}" + "(flux_uri) {flux_uri}"
 
     @property
     def extension(self):
@@ -165,6 +239,74 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+    def render_additional_args(self, args_dict):
+        """
+        Helper to render additional argument sets to flux cli format for
+        use in constructing $(LAUNCHER) line and flux batch directives.
+
+        :param args_dict: Dictionary of flux arg keys and name: value pairs
+        """
+        def arg_info_type(arg_key):
+            if len(arg_key) == 1:
+                return {"prefix": "-", "sep": " "}
+            else:
+                return {"prefix": "--", "sep": "="}
+
+        def render_arg_value(arg_name, arg_value):
+            # Handling for flag type values, e.g. -o fastload
+            if arg_value:
+                return f"{arg_name}={arg_value}"
+            else:
+                return f"{arg_name}"
+
+        for arg_key, arg_value in args_dict.items():
+            arg_info = arg_info_type(arg_key)
+
+            for av_name, av_value in arg_value.items():
+                value_str = render_arg_value(av_name, av_value)
+                yield "{prefix}{key}{sep}{value}".format(
+                    prefix=arg_info['prefix'],
+                    key=arg_key,
+                    sep=arg_info['sep'],
+                    value=value_str
+                )
+
+    def pack_addtl_batch_args(self):
+        """
+        Normalize the allocation args and pack up into the interface specific
+        groups that have assocated jobspec methods, e.g. conf, setattr, setopt.
+
+        :return: dictionary of allocation arg groups to attach to jobspecs
+        """
+        addtl_batch_args = {
+            arg_type: {}
+            for arg_type in self._interface.addtl_alloc_arg_types
+        }
+        for arg_key, arg_values in self._allocation_args.items():
+            # TODO: move this into a validation function for pre launch
+            #       batch args validation
+            arg_type = self._interface.addtl_alloc_arg_type_map(arg_key)
+            if arg_type is None:
+                # NO WARNINGS HERE: args in 'misc' type handled elsewhere
+                # TODO: add better mechanism for tracking whicn args
+                #       actually get used; dicts can't do this..
+                continue
+
+            new_arg_values = arg_values
+            # Match default of flag types in flux cli.
+            # see https://github.com/flux-framework/flux-core/blob/a3860d4dea5b5a17c473cff4385276e882275252/src/bindings/python/flux/cli/base.py#L734
+            # NOTE: only doing this in alloc; let LAUNCHER cli pass through
+            #       to flux cli (None values are omittied, e.g.
+            #       {o: fastload: None} renders to -o fastload
+            #       Python api doesn't appear to have default value handling?
+            for key, value in new_arg_values.items():
+                if value is None:
+                    value = 1
+
+            addtl_batch_args[arg_type].update(new_arg_values)
+
+        return addtl_batch_args
+
     def get_header(self, step):
         """
         Generate the header present at the top of Flux execution scripts.
@@ -189,6 +331,29 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
         for key, value in self._header.items():
             if key not in batch_header:
                 continue
+
+            modified_header.append(value.format(**batch_header))
+
+        # Handle exclusive flag
+        step_exclusive_given = "exclusive" in step.run
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(step.run.get("exclusive", False)))
+
+        if step_exclusive['allocation']:
+            modified_header.append(f"{self._flux_directive}" + "--exclusive")
+
+        # Process any optional allocation args
+        for rendered_arg in self._interface.render_additional_args(self._allocation_args):
+            if rendered_arg:
+                # Silent pass through for old versions which don't implement any
+                # interface for batch/allocation args
+                modified_header.append(f"{self._flux_directive}" + rendered_arg)
+
+        # Process INFO lines at the end: flux stops parsing directives after any
+        # lines starting tag+prefix (e.g. "#flux:" ) that doesn't match the flux directives
+        for key, value in self._header_info.items():
             modified_header.append(value.format(**batch_header))
 
         return "\n".join(modified_header)
@@ -204,8 +369,21 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                   and procs.
         """
         ntasks = nodes if nodes else self._batch.get("nodes", 1)
+        
+        # Handle the exclusive flags, updating batch block settings (default)
+        # with what's set in the step
+        step_exclusive_given = "exclusive" in kwargs
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(kwargs.get("exclusive", False)))
+
+        # TODO: fix this temp hack when standardizing the exclusive key handling
+        kwargs['exclusive'] = step_exclusive['launcher']
+
         return self._interface.parallelize(
-            procs, nodes=ntasks, addtl_args=self._addl_args, **kwargs)
+            procs, nodes=ntasks, addtl_args=self._addl_args,
+            launcher_args=self._launcher_args, **kwargs)
 
     def submit(self, step, path, cwd, job_map=None, env=None):
         """
@@ -234,7 +412,7 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
                 processors = 1
             else:
                 processors = int(processors)
-                
+
         force_broker = step.run.get("nested", True)
         walltime = \
             self._convert_walltime_to_seconds(step.run.get("walltime", 0))
@@ -272,14 +450,25 @@ class FluxScriptAdapter(SchedulerScriptAdapter):
             LOGGER.error(msg)
             raise ValueError(msg)
 
+        # Handle the exclusive flags, updating batch block settings (default)
+        # with what's set in the step
+        step_exclusive_given = "exclusive" in step.run
+        step_exclusive = self._exclusive
+        if step_exclusive_given:
+            # Override the default with this step's setting
+            step_exclusive.update(self.get_exclusive(step.run.get("exclusive", False)))
+
         # Unpack waitable flag and pass it along if there: only pass it along if
         # it's in the step maybe, leaving each adapter to retain their defaults?
         waitable = step.run.get("waitable", False)
+
         jobid, retcode, submit_status = \
             self._interface.submit(
                 nodes, processors, cores_per_task, path, cwd, walltime, ngpus,
                 job_name=step.name, force_broker=force_broker, urgency=urgency,
-                waitable=waitable, batch_attrs=self._batch_attrs
+                waitable=waitable,
+                addtl_batch_args=self.pack_addtl_batch_args(),
+                exclusive=step_exclusive['allocation']
             )
 
         return SubmissionRecord(submit_status, retcode, jobid)

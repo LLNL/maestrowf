@@ -92,6 +92,36 @@ class SchedulerScriptAdapter(ScriptAdapter):
         """
         self._batch[name] = value
 
+    @staticmethod
+    def get_exclusive(step_exclusive):
+        """
+        Helper for normalizing new/legacy exclusive syntax in the step keys.
+
+        :param step_exclusive: value of 'exclusive' key in StudyStep.run
+        :return dict: normalized dict with 'allocation' and 'launcher' keys
+                      and bool values for each
+
+        .. note::
+
+           Move this upstream into a future studystep validator?  also add
+           hooks for per scheduler normalizing of the extra args from batch
+           blocks
+        """
+        # Handle old scalar syntax which applied to allocatios only
+        if not isinstance(step_exclusive, dict):
+            return {
+                "allocation": step_exclusive,
+                "launcher": False,
+            }
+        else:
+            # Yaml schema limits keys already
+            exclusive_dict = step_exclusive
+            if 'allocation' not in step_exclusive:
+                exclusive_dict['allocation'] = False
+            if 'launcher' not in step_exclusive:
+                exclusive_dict['launcher'] = False
+            return exclusive_dict
+
     @abstractmethod
     def get_header(self, step):
         """

@@ -96,7 +96,7 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         }
 
         self._ntask_header = "#SBATCH --ntasks={procs}"
-        self._exclusive = "#SBATCH --exclusive"
+        self._exclusive_header = "#SBATCH --exclusive"
         self._qos = "#SBATCH --qos={qos}"
 
         self._cmd_flags = {
@@ -154,9 +154,10 @@ class SlurmScriptAdapter(SchedulerScriptAdapter):
         if procs_in_batch or not nodes:
             modified_header.append(self._ntask_header.format(**resources))
 
-        exclusive = resources.get("exclusive", False)
-        if exclusive:
-            modified_header.append(self._exclusive)
+        exclusive = self.get_exclusive(resources.get("exclusive", False))
+
+        if exclusive['allocation']:
+            modified_header.append(self._exclusive_header)
 
         qos = resources.get("qos")
         if qos:
