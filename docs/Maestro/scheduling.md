@@ -23,9 +23,13 @@ steps:
 | `procs`       |      No        |   int    | Optional number of tasks in batch allocations: note this is also a per step key |
 | `flux_uri`    |      Yes*      |   str    | URI of the Flux instance to schedule jobs to. * Only used with `type`=`flux`. NOTE: It is recommended to rely on environment variables instead, as URIs are very ephemeral and may change frequently.|
 | `version`     |      No        |   str    | Optional version of flux scheduler; for accommodating api changes |
-| `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
+| :warning: `args`        |      No        |   dict   | Optional additional args to pass to scheduler; keys are arg names, values are arg values |
+| `allocation_args` | No  | dict | Optional scheduler specific options/flags to add to allocations :material-information-slab-circle: flux only in :material-tag:`1.1.12` |
+| `launcher_args` | No  | dict | Optional scheduler specific options/flags to add to launcher commands :material-information-slab-circle: flux only in :material-tag:`1.1.12` |
 
+!!! warning "`args` deprecated"
 
+    `args` has been marked deprecated in :material-tag: `1.1.12` in favor of the more flexible `allocation_args` and `launcher_args`
 
 The information in this block is used to populate the step specific batch scripts with the appropriate
 header comment blocks (e.g. '#SBATCH --partition' for slurm).  Additional keys such as step specific
@@ -39,6 +43,26 @@ run locally unless at least the ``nodes`` or ``procs`` key in the step is popula
     2.  Flux brokers may not always have named queues (nested allocations).
 	
 	See [queues and banks](how_to_guides/running_with_flux.md#queues-and-banks) section in the how-to guide on running with flux for more discussion.
+
+### Extra Arguments
+---
+
+There are new groups in the batch block in :material-tag:`1.1.12` that facilitate adding custom options to both allocations and the `$(LAUNCHER)` invocations independently.  These are grouped into two dictionaries in the batch block which are meant to enable passing in options that Maestro cannot abstract across schedulers more generally:
+
+* `allocation_args` for the allocation target (batch directives such as `#Flux: --setopt=foo=bar`)
+* `launcher_args` for the `$(LAUNCHER)` target (`flux run --setopt=foo=bar`)
+
+These are ~structured mappings which are designed to mimic cli usage for intuitive mapping from raw scheduler usage to Maestro.  Each of these dictionaries' keys correspond to a scheduler specific CLI argument/option or flag.  The serialization rules are as follows, with specific examples here shown for the initial implementation in the flux adapter (other schedulers will yield prefix/separator rules specific to their implementation):
+
+|  **Key Type**   | **CLI Prefix** | **Separator** | **Example YAML**    | **Example CLI Output** |
+|    :-           | :-:            |     :-:       |    :-:              |       :-               |
+|  Single letter  |  `-`           | space (`" "`) | `o: {bar: 42}`      | `-o bar=42`            |
+|  Multi-letter   | `--`           |  `=`          | `setopt: {foo: bar} | `--setopt=foo=bar`     |
+|  Boolean flag w/key   | as above       | as above      | `setopt: {foobar: } | `--setopt=foobar`      |
+|  Boolean flag w/o key   | as above       | as above      | `exclusive: ` | `--exclusive`      |
+
+Note in the boolean flag strategies, a space is required after the `:` after `foobar: ` or `exclusive`, otherwise yaml will fail to parse and assign the Null value used to tag a key as a boolean flag.  See [flux](#Flux) for special considerations fo the `allocation_args`
+
 
 ## LAUNCHER Token
 ---
@@ -187,6 +211,64 @@ See the [flux framework](https://flux-framework.readthedocs.io/en/latest/index.h
     The Flux scheduler itself and Maestro's flux adapter are still in a state of flux and may go through breaking changes more frequently than the Slurm and LSF scheduler adapters.
    
 
+### Extra Flux Args
+----
+
+As of :material-tag:`1.1.12`, the flux adapter takes advantage of new argument pass through for scheduler options that Maestro cannot abstract away.  This is done via `allocation_args` and `launcher_args` in the batch block, which expand upon the previous `args` input which only applied to `$(LAUNCHER)`.  There are some caveat's here due to the way Maestro talks to flux.  The current flux adapters all use the python api's from Flux to build the batch jobs, with the serialized batch script being serialized separately instead of submitted directly as with the other schedulers.  A consequence of this is the `allocation_args` map to specific call points on that python api, and thus the option pass through is not quite arbitrary.  There are 4 currently supported options for allocations which cover a majority of usecases (open an issue and let us know if one you need isn't covered!):
+
+* shell options: `-o/--setopt` prefixed arguments
+* attributes: `-S/--setattr` prefixed arguments
+* conf: `--conf` prefixed arguments
+* exclusive flags: `-x, --exclusive` are used to set defaults, with step exclusive keys overriding
+
+!!! warning
+
+    All other flags will be allowed in `allocation_args`, but they will essentially be ignored when serializing the step scripts and submitting jobs
+	
+The `launcher_args` (`$(LAUNCHER)`) will pass through anything as it is a string generator just like other script adapters.  :warning: These are not validated!  Passing arguments that flux doesn't know what to do with may result in errors.
+
+#### Example Batch Block
+---
+
+``` yaml
+batch:
+  type: flux
+  host: machineA
+  bank: guests
+  queue: debug
+  allocation_args:
+    setopt:
+      foo: bar
+    o:
+      bar: 42
+    setattr:
+      foobar: "whoops"
+    conf:
+      resource.rediscover: "true"  # Use string "true" for Flux compatibility, not "True" or bool True
+  launcher_args:
+    setopt:
+      optiona:   # Boolean flag, no value needed
+```
+
+#### Example Batch Script
+---
+Assuming the step has keys `{procs: 1, nodes: 1, cores per task: 1, walltime: "5:00"}`:
+
+``` console
+#flux: -q debug
+#flux: --bank=guests
+#flux: -t 300s
+#flux: --setopt=foo=bar
+#flux: -o bar=42
+#flux: --setattr=foobar=whoops
+#flux: --conf=resource.rediscover=true
+
+flux run -n 1 -N 1 -c 1 --setopt=optiona  myapplication
+```
+
+!!! note
+
+    Using flux directives here to illustrate even though python api is used.  These directives will be in the step scripts, retaining repeatability/record of what was submitted and viewable with the dry run feature
    
 ## LSF: a Tale of Two Launchers
 ----
