@@ -41,7 +41,7 @@ import dill
 import yaml
 
 from maestrowf.abstracts.enums import StudyStatus
-from maestrowf.datastructures.core import Study
+from maestrowf.datastructures.core import ExecutionGraph, Study
 from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
 
 # Logger instantiation
@@ -96,44 +96,7 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
     LOGGER.debug("DEBUG Logging Level -- Enabled")
 
 
-def setup_parser():
-    """
-    Set up the Conductors's argument parser.
 
-    :returns: A ArgumentParser that's initialized with the conductor's CLI.
-    """
-
-    # Set up the parser for our conductor here.
-    parser = ArgumentParser(prog="Conductor",
-                            description="An application for checking and "
-                            "managing an ExecutionDAG within an executing "
-                            "study.",
-                            formatter_class=RawTextHelpFormatter)
-
-    parser.add_argument("directory", type=str, help="The directory where "
-                        "a study has been set up and where a pickle file "
-                        "of an ExecutionGraph is stored.")
-    parser.add_argument("-s", "--status", action="store_true",
-                        help="Check the status of the ExecutionGraph "
-                        "located as specified by the 'directory' "
-                        "argument.")
-    parser.add_argument("-l", "--logpath", type=str,
-                        help="Alternate path to store program logging.")
-    parser.add_argument("-d", "--debug_lvl", type=int, default=2,
-                        help="Level of logging messages to be output:\n"
-                             "5 - Critical\n"
-                             "4 - Error\n"
-                             "3 - Warning\n"
-                             "2 - Info (Default)\n"
-                             "1 - Debug")
-    parser.add_argument("-c", "--logstdout", action="store_true",
-                        help="Output logging to stdout in addition to a "
-                             "file.")
-    parser.add_argument("-t", "--sleeptime", type=int, default=60,
-                        help="Amount of time (in seconds) for the manager"
-                             " to wait between job status checks.")
-
-    return parser
 
 
 class Conductor:
@@ -258,6 +221,72 @@ class Conductor:
         return obj
 
     @classmethod
+    def load_in_progress_study(cls, out_path):
+        """
+        Load the execution graph instance in the study root specified by 'out_path'.
+
+        :param out_path: A string containing the path to a study root.
+        :returns: A string containing the path to the study's root.
+        """
+        study_glob = \
+            glob.glob(os.path.join(out_path, "meta", "study", "*.pkl"))
+
+        if len(study_glob) == 1:
+            # We only expect one result.If we only get one, let's assume and
+            # check after.
+            path = study_glob[0]
+
+            with open(path, 'rb') as pkl:
+                obj = dill.load(pkl)
+
+            if not isinstance(obj, Study):
+                msg = \
+                    "Object loaded from {path} is of type {type}. Expected " \
+                    "an object of type '{cls}.'" \
+                    .format(path=path, type=type(obj), cls=type(Study))
+                LOGGER.error(msg)
+                raise TypeError(msg)
+        else:
+            if len(study_glob) > 1:
+                msg = "More than one pickle found. Expected one. Aborting."
+            else:
+                msg = "No pickle found. Aborting."
+
+            msg = "Corrupted study directory found. {}".format(msg)
+            raise Exception(msg)
+
+        # Now get the execution graph
+        exec_graph = None
+        exec_glob = \
+            glob.glob(os.path.join(out_path, "*{}".format(cls._pkl_extension)))
+        if len(exec_glob) == 1:
+            # We only expect one result.If we only get one, let's assume and
+            # check after.
+            path = exec_glob[0]
+
+            with open(path, 'rb') as pkl:
+                exec_graph = dill.load(pkl)
+
+            if not isinstance(exec_graph, ExecutionGraph):
+                msg = \
+                    "Object loaded from {path} is of type {type}. Expected " \
+                    "an object of type '{cls}.'" \
+                    .format(path=path, type=type(exec_graph), cls=type(ExecutionGraph))
+                LOGGER.error(msg)
+                raise TypeError(msg)
+        else:
+            if len(exec_glob) > 1:
+                msg = "More than one pickle found. Expected one. Aborting."
+            else:
+                msg = "No pickle found. Aborting."
+
+            msg = "Corrupted study directory found. {}".format(msg)
+            raise Exception(msg)
+        
+        # Return the Study, execution graph objects
+        return obj, exec_graph
+
+    @classmethod
     def get_status(cls, output_path):
         """
         Retrieve the status of the study rooted at 'out_path'.
@@ -380,7 +409,7 @@ class Conductor:
             os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
         sleep_time = self.sleep_time
 
-        LOGGER.debug(
+        LOGGER.info(
             "\n -------- Calling monitor study -------\n"
             "pkl path    = %s\n"
             "cancel path = %s\n"
@@ -441,14 +470,42 @@ class Conductor:
         self._exec_dag.cleanup()
 
 
-def main():
-    """Run the main segment of the conductor."""
+def resume_study(args):
+    """
+    Helper to resume conductor if the process gets killed mid study.  Main
+    difference vs stadard invocation of conductor is loading the execution
+    graph pickle instead of starting from scratch with the study pickle.
+    """
     conductor = None
-
     try:
-        # Parse the command line args and load the study.
-        parser = setup_parser()
-        args = parser.parse_args()
+        study, exec_graph = Conductor.load_in_progress_study(args.directory)
+        setup_logging(study.name, args.directory, args.debug_lvl,
+                      args.logpath, args.logstdout)
+        batch_info = Conductor.load_batch(args.directory)
+        conductor = Conductor(study)
+        # Skip initialize and just set _setup, adapter, and sleep time manually
+        conductor.sleep_time = (args.sleeptime)
+        conductor._pkl_path = args.directory
+        conductor._exec_dag = exec_graph
+        conductor._exec_dag.set_adapter(batch_info)
+        # TODO: check metadata in case there's adapter info needed to be updated in there
+        conductor._setup = True
+        completion_status = conductor.monitor_study()
+        sys.exit(completion_status.value)
+        LOGGER.info("Study completed with state '%s'.", completion_status)
+    except Exception as e:
+        LOGGER.error(e.args, exc_info=True)
+        raise e
+    finally:
+        if conductor:
+            LOGGER.info("Study exiting, cleaning up...")
+            conductor.cleanup()
+            LOGGER.info("Squeaky clean!")
+
+
+def launch_study(args):
+    conductor = None
+    try:
         study = Conductor.load_study(args.directory)
         setup_logging(study.name, args.directory, args.debug_lvl,
                       args.logpath, args.logstdout)
@@ -468,6 +525,69 @@ def main():
             LOGGER.info("Study exiting, cleaning up...")
             conductor.cleanup()
             LOGGER.info("Squeaky clean!")
+
+def setup_parser():
+    """
+    Set up the Conductors's argument parser.
+
+    :returns: A ArgumentParser that's initialized with the conductor's CLI.
+    """
+
+    # Set up the parser for our conductor here.
+    parser = ArgumentParser(prog="Conductor",
+                            description="An application for checking and "
+                            "managing an ExecutionDAG within an executing "
+                            "study.",
+                            formatter_class=RawTextHelpFormatter)
+
+    # parser.set_defaults(func=main)
+    parser.set_defaults(func=lambda args: parser.print_help())
+    subparsers = parser.add_subparsers(dest='subparser')
+
+    launch_parser = subparsers.add_parser("launch")
+    launch_parser.add_argument("directory", type=str, help="The directory where "
+                        "a study has been set up and where a pickle file "
+                        "of an ExecutionGraph is stored.")
+    launch_parser.set_defaults(func=launch_study)
+    
+    resume_parser = subparsers.add_parser("resume")
+    resume_parser.add_argument("directory", type=str, help="The directory where "
+                        "a study has been set up and where a pickle file "
+                        "of an ExecutionGraph is stored.")
+    resume_parser.set_defaults(func=resume_study)
+
+    parser.add_argument("-s", "--status", action="store_true",
+                        help="Check the status of the ExecutionGraph "
+                        "located as specified by the 'directory' "
+                        "argument.")
+    
+    parser.add_argument("-l", "--logpath", type=str,
+                        help="Alternate path to store program logging.")
+    parser.add_argument("-d", "--debug_lvl", type=int, default=2,
+                        help="Level of logging messages to be output:\n"
+                             "5 - Critical\n"
+                             "4 - Error\n"
+                             "3 - Warning\n"
+                             "2 - Info (Default)\n"
+                             "1 - Debug")
+    parser.add_argument("-c", "--logstdout", action="store_true",
+                        help="Output logging to stdout in addition to a "
+                             "file.")
+    parser.add_argument("-t", "--sleeptime", type=int, default=60,
+                        help="Amount of time (in seconds) for the manager"
+                             " to wait between job status checks.")
+
+    return parser
+
+def main():
+    """Run the main segment of the conductor."""
+    # Parse the command line args and load the study.
+    parser = setup_parser()
+    args = parser.parse_args()
+
+    print(f"{args=}")
+    rc = args.func(args)
+    sys.exit(rc)
 
 
 if __name__ == "__main__":
