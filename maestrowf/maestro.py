@@ -523,6 +523,7 @@ def run_study(args):
             cmd = ["nohup", "conductor",
                    "-t", str(sleeptime),
                    "-d", str(args.debug_lvl),
+                   "launch",
                    study.output_path,
                    ">", log_path, "2>&1"]
             LOGGER.debug(" ".join(cmd))
