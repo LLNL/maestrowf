@@ -136,7 +136,13 @@ def cancel_study(args):
                 to_cancel.append(abs_path)
 
         if to_cancel:
-            ok_cancel = input("Are you sure? [y|[n]]: ")
+            # If we are automatically launching, just set the input as yes.
+            if args.autoyes:
+                ok_cancel = "y"
+            else:
+                ok_cancel = six.moves.input("Are you sure? [y|[n]]: ")
+            # ok_cancel = input("Are you sure? [y|[n]]: ")
+
             try:
                 if ok_cancel in ACCEPTED_INPUT:
                     for directory in to_cancel:
@@ -545,6 +551,9 @@ def setup_argparser():
     cancel = subparsers.add_parser(
         'cancel',
         help="Cancel all running jobs.")
+    cancel.add_argument("-y", "--autoyes", action="store_true", default=False,
+                        help="Automatically answer yes to input prompts")
+
     cancel.add_argument(
         "directory", type=str, nargs="+",
         help="Directory or list of directories containing running studies.")
