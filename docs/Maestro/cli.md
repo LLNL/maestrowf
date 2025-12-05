@@ -55,7 +55,7 @@ maestro cancel [OPTIONS] DIRECTORY [DIRECTORY ...]
 | Name | Type | Description | Default |
 | ---- | ---- | ----------- | ------- |
 | `-h`, `--help` | boolean | Show this help message and exit. | `False` |
-
+| `-y`, `--autoyes` | boolean | Automatically answer yes to input prompts. | `False` |
 
 ### **run**
 
