@@ -359,8 +359,15 @@ class Conductor:
         self._pkl_path, self._exec_dag = self._study.stage()
         # Write metadata
         self._exec_dag.set_adapter(batch_info)
+        # Configure status path for incremental updates
+        self._exec_dag.set_status_path(self._pkl_path)
+        # Configure cancel lock path for responsive cancellation
+        cancel_lock_path: str = os.path.join(self.output_path, self._cancel_lock)
+        self._exec_dag.set_cancel_lock_path(cancel_lock_path)
         self._study.store_metadata()
         self._setup = True
+        # Write initial status.csv immediately after graph construction
+        self._exec_dag.write_status()
 
     def monitor_study(self):
         """Monitor a running study."""
@@ -422,15 +429,15 @@ class Conductor:
                                 str(self.sleep_time),
                                 str(updated_study_config["sleep"]))
                     self.sleep_time = updated_study_config["sleep"]
-                    
+
             LOGGER.info("Checking DAG status at %s", str(datetime.now()))
             # Execute steps that are ready
             # Receives StudyStatus enum
             completion_status = dag.execute_ready_steps()
             # Re-pickle the ExecutionGraph.
             dag.pickle(pkl_path)
-            # Write out the state
-            dag.write_status(os.path.split(pkl_path)[0])
+            # Write out the state (uses configured status path)
+            dag.write_status()
             # Sleep for SLEEPTIME in args if study not complete.
             if completion_status == StudyStatus.RUNNING:
                 sleep(sleep_time)

@@ -20,6 +20,8 @@ from maestrowf.utils import create_parentdir, get_duration, \
     round_datetime_seconds
 
 from rich.console import Console
+from typing import Optional
+
 console=Console()
 LOGGER = logging.getLogger(__name__)
 SOURCE = "_source"
@@ -374,6 +376,8 @@ class ExecutionGraph(DAG, PickleInterface):
 
         self._status_order = 'bfs'  # Set status order type
         self._status_subtree = None  # Cache bfs_subtree for status writing
+        self._status_path: os.PathLike | None = None  # Path for writing status updates
+        self._cancel_lock_path: os.PathLike | None = None  # Path to cancel lock file
 
         # Values for management of the DAG. Things like submission attempts,
         # throttling, etc. should be listed here.
@@ -423,7 +427,7 @@ class ExecutionGraph(DAG, PickleInterface):
 
     def update_rlimit(self, new_restart_limit):
         # subtree, _ = self.bfs_subtree(SOURCE)
-            
+
         # update_subtree = [key for key in subtree
         #                             if key != '_source']
 
@@ -682,8 +686,69 @@ class ExecutionGraph(DAG, PickleInterface):
 
         return self._status_subtree
 
-    def write_status(self, path):
-        """Write the status of the DAG to a CSV file."""
+    def set_status_path(self, path: os.PathLike) -> None:
+        """
+        Set the path where status files will be written.
+
+        :param path: Directory path for status file output.
+        """
+        self._status_path = path
+
+    def set_cancel_lock_path(self, path: os.PathLike) -> None:
+        """
+        Set the path to the cancel lock file for checking cancellation.
+
+        :param path: File path to the cancel lock file.
+        """
+        self._cancel_lock_path = path
+
+    def _check_for_cancellation(self) -> bool:
+        """
+        Check if a cancellation has been requested via cancel lock file.
+
+        This method checks for the existence of a cancel lock file and
+        initiates study cancellation if found. The cancel lock file is
+        removed after cancellation is initiated to prevent redundant
+        processing.
+
+        :returns: True if cancellation was requested and initiated,
+                  False otherwise.
+        """
+        if self._cancel_lock_path and os.path.exists(self._cancel_lock_path):
+            LOGGER.info("Cancel lock file detected. Initiating cancellation.")
+            # Import here to avoid circular dependency issues
+            from filelock import FileLock, Timeout
+            cancel_lock = FileLock(self._cancel_lock_path)
+            try:
+                with cancel_lock.acquire(timeout=1):
+                    self.cancel_study()
+                # Remove the lock file after cancellation is initiated
+                try:
+                    os.remove(self._cancel_lock_path)
+                    LOGGER.info("Removed cancel lock file.")
+                except OSError as e:
+                    LOGGER.warning("Could not remove cancel lock file: %s", e)
+                return True
+            except Timeout:
+                LOGGER.warning("Could not acquire cancel lock. Will retry.")
+                return False
+        return False
+
+    def write_status(self, path: Optional[str] = None) -> None:
+        """
+        Write the status of the DAG to a CSV file.
+
+        :param path: Directory path for status file output. If not provided,
+                     uses the path set via set_status_path().
+        """
+        # Use provided path, or fall back to stored path
+        if path is None:
+            if self._status_path is None:
+                LOGGER.warning("No status path provided or configured. "
+                             "Skipping status write.")
+                return
+            path = self._status_path
+
         header = "Step Name,Job ID,Workspace,State,Run Time,Elapsed Time," \
                  "Start Time,Submit Time,End Time,Number Restarts,Params"
         status = [header]
@@ -959,6 +1024,11 @@ class ExecutionGraph(DAG, PickleInterface):
             # Pop the record and execute using the helper method.
             _record = self.values[self.ready_steps.popleft()]
 
+            # Check for cancellation before executing (handles cancel requests
+            # that arrive between job executions in the same iteration)
+            if not self.is_canceled:
+                self._check_for_cancellation()
+
             # If we get to this point and we've cancelled, cancel the record.
             if self.is_canceled:
                 LOGGER.info("Cancelling '%s' -- continuing.", _record.name)
@@ -968,6 +1038,12 @@ class ExecutionGraph(DAG, PickleInterface):
 
             LOGGER.debug("Launching job %d -- %s", i, _record.name)
             self._execute_record(_record, adapter)
+
+            # Write status after each job execution to provide incremental
+            # updates, especially for login node jobs that complete
+            # synchronously.
+            if self._status_path:
+                self.write_status()
 
         # check the status of the study upon finishing this round of execution
         completion_status = self._check_study_completion()
