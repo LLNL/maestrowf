@@ -37,6 +37,7 @@ import shlex
 import shutil
 import six
 import sys
+import tempfile
 # import tabulate
 import time
 
@@ -75,17 +76,27 @@ ACCEPTED_INPUT = set(["yes", "y"])
 
 def create_staged_log_handler(log_lvl):
     """
-    Create a hidden setup log in cwd for early `maestro run` messages.
+    Create a setup log in the system temp area for early `maestro run` messages.
 
     The file is promoted into the study workspace once the output path and
     final log path are known.
     """
-    log_name = ".maestro-setup-{}-{}.log".format(
+    log_prefix = "maestro-setup-{}-{}-".format(
         time.strftime("%Y%m%d-%H%M%S"), os.getpid())
-    log_path = os.path.abspath(log_name)
+    staged_file = tempfile.NamedTemporaryFile(
+        prefix=log_prefix, suffix=".log", delete=False)
+    log_path = staged_file.name
+    staged_file.close()
     ROOTLOGGER.setLevel(LoggerUtility.map_level(log_lvl))
     handler = ROOT_LOG_UTIL.add_file_handler(
         log_path, FILE_LFORMAT, log_lvl)
+    log_to_handler(
+        handler, logging.INFO,
+        "===== maestro run setup logging started =====")
+    log_to_handler(
+        handler, logging.INFO,
+        "Temporary setup log path: %s (removed after promotion)",
+        log_path)
     return log_path, handler
 
 
@@ -103,7 +114,12 @@ def cleanup_staged_log(log_path, handler=None):
     """Close the staged log handler and remove its file."""
     close_log_handler(handler)
     if log_path and os.path.exists(log_path):
-        os.remove(log_path)
+        try:
+            os.remove(log_path)
+        except OSError as exc:
+            LOGGER.warning(
+                "Unable to remove temporary setup log file '%s': %s",
+                log_path, exc)
 
 
 def promote_staged_log(staged_path, staged_handler, log_path, log_lvl):
@@ -113,14 +129,34 @@ def promote_staged_log(staged_path, staged_handler, log_path, log_lvl):
     close_log_handler(staged_handler)
     create_parentdir(os.path.dirname(log_path))
 
+    staged_log_removed = False
+    staged_log_remove_error = None
     if staged_path and os.path.exists(staged_path):
         with open(staged_path, "r") as source:
             with open(log_path, "a") as target:
                 shutil.copyfileobj(source, target)
-        os.remove(staged_path)
+        try:
+            os.remove(staged_path)
+            staged_log_removed = True
+        except OSError as exc:
+            staged_log_remove_error = exc
 
     ROOTLOGGER.setLevel(LoggerUtility.map_level(log_lvl))
-    return ROOT_LOG_UTIL.add_file_handler(log_path, FILE_LFORMAT, log_lvl)
+    handler = ROOT_LOG_UTIL.add_file_handler(log_path, FILE_LFORMAT, log_lvl)
+    log_to_handler(
+        handler, logging.INFO,
+        "===== maestro run setup logging promoted to study log =====")
+    if staged_log_removed:
+        log_to_handler(
+            handler, logging.INFO,
+            "Removed temporary setup log file after promotion: %s",
+            staged_path)
+    elif staged_log_remove_error:
+        log_to_handler(
+            handler, logging.WARNING,
+            "Unable to remove temporary setup log file after promotion: "
+            "%s: %s", staged_path, staged_log_remove_error)
+    return handler
 
 
 def log_to_handler(handler, level, msg, *args):
@@ -596,7 +632,10 @@ def run_study(args):
             if args.fg:
                 # Launch in the foreground.
                 LOGGER.info("Running Maestro Conductor in the foreground.")
-                conductor = Conductor(study)
+                log_to_handler(
+                    file_handler, logging.INFO,
+                    "Study launched successfully.")
+                conductor = Conductor(study, conductor_mode="foreground")
                 conductor.initialize(batch, sleeptime)
                 completion_status = conductor.monitor_study()
                 conductor.cleanup()
