@@ -95,6 +95,9 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
     ROOTLOGGER.addHandler(handler)
     ROOTLOGGER.setLevel(loglevel)
 
+    LOGGER.info("Running Maestro Conductor standalone.")
+    LOGGER.info("Conductor log file: %s", log_file)
+
     # Print the level of logging.
     LOGGER.info("INFO Logging Level -- Enabled")
     LOGGER.warning("WARNING Logging Level -- Enabled")
@@ -151,13 +154,15 @@ class Conductor:
     _batch_info = "batch.info"
     _conductor_registry = ".conductors"
 
-    def __init__(self, study):
+    def __init__(self, study, conductor_mode="standalone"):
         """
         Create a new instance of a Conductor class.
 
         :param study: An instance of a populated Maestro study.
+        :param conductor_mode: How this conductor instance was launched.
         """
         self._study = study
+        self._conductor_mode = conductor_mode
         self._setup = False
         self._conductor_id = None
 
@@ -302,6 +307,31 @@ class Conductor:
         return record
 
     @classmethod
+    def _try_update_conductor_record(
+            cls, output_path, conductor_id, updates, action):
+        """
+        Best-effort conductor record update.
+
+        Conductor tracking is operational metadata. A transient filesystem
+        problem with this record should be visible in logs, but it should not
+        prevent the study from continuing.
+        """
+        path = cls._conductor_record_path(output_path, conductor_id)
+        try:
+            record = cls._update_conductor_record(
+                output_path, conductor_id, updates)
+        except (OSError, ValueError) as exc:
+            LOGGER.warning(
+                "Unable to %s conductor record '%s' at '%s': %s",
+                action, conductor_id, path, exc)
+            return None
+
+        LOGGER.debug(
+            "Updated conductor record '%s' at '%s' (%s).",
+            conductor_id, path, action)
+        return record
+
+    @classmethod
     def get_conductors(cls, output_path):
         """
         Retrieve recorded conductor processes for the study rooted at out_path.
@@ -364,17 +394,19 @@ class Conductor:
             "conductor_argv": list(sys.argv),
             "conductor_executable": self._get_conductor_executable(),
             "conductor_command": shlex.join(sys.argv),
+            "conductor_mode": self._conductor_mode,
             "python_executable": sys.executable,
-            "status": "running",
-            "started_at": now,
-            "last_heartbeat_at": now,
-            "ended_at": None,
-            "last_status_message": "started",
+            "conductor_status": "running",
+            "conductor_started_at": now,
+            "conductor_last_heartbeat_at": now,
+            "conductor_ended_at": None,
+            "conductor_status_message": "started",
+            "last_observed_study_status": None,
             "final_study_status": None,
         }
 
-        self._update_conductor_record(
-            self.output_path, self._conductor_id, record)
+        self._try_update_conductor_record(
+            self.output_path, self._conductor_id, record, "register")
         LOGGER.info(
             "Conductor '%s' started for study '%s' at '%s' "
             "(pid=%s, host=%s, fqdn=%s, addresses=%s).",
@@ -393,20 +425,36 @@ class Conductor:
             self.register_conductor()
 
         now = self._timestamp()
-        self._update_conductor_record(
+        self._try_update_conductor_record(
             self.output_path,
             self._conductor_id,
             {
-                "status": "running",
-                "last_heartbeat_at": now,
-                "last_status_message": message,
-            })
+                "conductor_status": "running",
+                "conductor_last_heartbeat_at": now,
+                "conductor_status_message": message,
+            },
+            "heartbeat")
         LOGGER.info(
             "Conductor '%s' heartbeat at %s (pid=%s, host=%s): %s",
             self._conductor_id, now, os.getpid(), socket.gethostname(),
             message)
 
-    def finish_conductor(self, status, final_study_status=None, message=None):
+    def observe_study_status(self, study_status):
+        """Record the last study status observed by this conductor."""
+        if not self._conductor_id:
+            return
+
+        if isinstance(study_status, StudyStatus):
+            study_status = study_status.name
+
+        self._try_update_conductor_record(
+            self.output_path,
+            self._conductor_id,
+            {"last_observed_study_status": study_status},
+            "update observed study status")
+
+    def finish_conductor(
+            self, conductor_status, final_study_status=None, message=None):
         """Mark this conductor process as completed or failed."""
         if not self._conductor_id:
             return
@@ -415,20 +463,25 @@ class Conductor:
         if isinstance(final_study_status, StudyStatus):
             final_study_status = final_study_status.name
 
-        self._update_conductor_record(
+        updates = {
+            "conductor_status": conductor_status,
+            "conductor_ended_at": now,
+            "conductor_last_heartbeat_at": now,
+            "conductor_status_message": message or conductor_status,
+            "final_study_status": final_study_status,
+        }
+        if final_study_status is not None:
+            updates["last_observed_study_status"] = final_study_status
+
+        self._try_update_conductor_record(
             self.output_path,
             self._conductor_id,
-            {
-                "status": status,
-                "ended_at": now,
-                "last_heartbeat_at": now,
-                "last_status_message": message or status,
-                "final_study_status": final_study_status,
-            })
+            updates,
+            "finish")
         LOGGER.info(
             "Conductor '%s' marked %s at %s for study '%s' "
             "(final study status=%s).",
-            self._conductor_id, status, now, self.study_name,
+            self._conductor_id, conductor_status, now, self.study_name,
             final_study_status)
 
     @classmethod
@@ -650,6 +703,7 @@ class Conductor:
                 # Execute steps that are ready
                 # Receives StudyStatus enum
                 completion_status = dag.execute_ready_steps()
+                self.observe_study_status(completion_status)
                 # Re-pickle the ExecutionGraph.
                 dag.pickle(pkl_path)
                 # Write out the state
@@ -658,8 +712,11 @@ class Conductor:
                 if completion_status == StudyStatus.RUNNING:
                     sleep(self.sleep_time)
         except Exception:
+            final_study_status = None
+            if completion_status != StudyStatus.RUNNING:
+                final_study_status = completion_status
             self.finish_conductor(
-                "failed", completion_status,
+                "failed", final_study_status,
                 "monitoring failed with an exception")
             raise
 
