@@ -36,6 +36,7 @@ import coloredlogs
 import logging
 import os
 import string
+import tempfile
 from subprocess import PIPE, Popen
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.error import HTTPError, URLError
@@ -132,6 +133,59 @@ def create_parentdir(path):
                     path)
         path = os.path.expanduser(path)
         os.makedirs(path)
+
+
+def atomic_write_file(path, contents, mode="w", encoding="utf-8"):
+    """
+    Write contents to path using a same-directory temp file and os.replace.
+
+    The target path is never opened for writing directly. If the process dies
+    before replacement, the previous target file remains in place. This helper
+    is intended for shared filesystems where readers should see either the old
+    complete file or the new complete file.
+
+    :param path: Path to the file to write.
+    :param contents: String or bytes to write.
+    :param mode: File mode for writing contents.
+    :param encoding: Text encoding to use when mode is text.
+    """
+    directory = os.path.abspath(os.path.dirname(path) or ".")
+    create_parentdir(directory)
+
+    fd, tmp_path = tempfile.mkstemp(
+        prefix="{}.tmp.".format(os.path.basename(path)),
+        dir=directory)
+    try:
+        open_kwargs = {}
+        if "b" not in mode:
+            open_kwargs["encoding"] = encoding
+
+        with os.fdopen(fd, mode, **open_kwargs) as tmp_file:
+            fd = None
+            tmp_file.write(contents)
+            tmp_file.flush()
+            os.fsync(tmp_file.fileno())
+
+        os.replace(tmp_path, path)
+        try:
+            dir_fd = os.open(directory, getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            LOGGER.debug("Unable to fsync directory '%s'.", directory)
+    except Exception:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def apply_function(item, func):
@@ -340,6 +394,7 @@ class LoggerUtility:
         fh.setLevel(self.map_level(log_lvl))
         fh.setFormatter(formatter)
         self._logger.addHandler(fh)
+        return fh
 
     @staticmethod
     def map_level(log_lvl):
