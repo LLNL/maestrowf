@@ -33,9 +33,11 @@ import itertools
 import jsonschema
 import logging
 import os
+import shlex
 import shutil
 import six
 import sys
+import tempfile
 # import tabulate
 import time
 
@@ -59,13 +61,116 @@ console = Console()
 
 # Program Globals
 LOGGER = logging.getLogger(__name__)
+ROOTLOGGER = logging.getLogger()
 LOG_UTIL = LoggerUtility(LOGGER)
+ROOT_LOG_UTIL = LoggerUtility(ROOTLOGGER)
 
 # Configuration globals
 DEBUG_FORMAT = "[%(asctime)s: %(levelname)s] " \
                "[%(module)s: %(lineno)d] %(message)s"
 LFORMAT = "[%(asctime)s: %(levelname)s] %(message)s"
+FILE_LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
+               "%(levelname)s - %(message)s"
 ACCEPTED_INPUT = set(["yes", "y"])
+
+
+def create_staged_log_handler(log_lvl):
+    """
+    Create a setup log in the system temp area for early `maestro run` messages.
+
+    The file is promoted into the study workspace once the output path and
+    final log path are known.
+    """
+    log_prefix = "maestro-setup-{}-{}-".format(
+        time.strftime("%Y%m%d-%H%M%S"), os.getpid())
+    staged_file = tempfile.NamedTemporaryFile(
+        prefix=log_prefix, suffix=".log", delete=False)
+    log_path = staged_file.name
+    staged_file.close()
+    ROOTLOGGER.setLevel(LoggerUtility.map_level(log_lvl))
+    handler = ROOT_LOG_UTIL.add_file_handler(
+        log_path, FILE_LFORMAT, log_lvl)
+    log_to_handler(
+        handler, logging.INFO,
+        "===== maestro run setup logging started =====")
+    log_to_handler(
+        handler, logging.INFO,
+        "Temporary setup log path: %s (removed after promotion)",
+        log_path)
+    return log_path, handler
+
+
+def close_log_handler(handler):
+    """Detach and close a logging handler."""
+    if not handler:
+        return
+
+    handler.flush()
+    ROOTLOGGER.removeHandler(handler)
+    handler.close()
+
+
+def cleanup_staged_log(log_path, handler=None):
+    """Close the staged log handler and remove its file."""
+    close_log_handler(handler)
+    if log_path and os.path.exists(log_path):
+        try:
+            os.remove(log_path)
+        except OSError as exc:
+            LOGGER.warning(
+                "Unable to remove temporary setup log file '%s': %s",
+                log_path, exc)
+
+
+def promote_staged_log(staged_path, staged_handler, log_path, log_lvl):
+    """
+    Move staged setup logging into the final study log and append from there.
+    """
+    close_log_handler(staged_handler)
+    create_parentdir(os.path.dirname(log_path))
+
+    staged_log_removed = False
+    staged_log_remove_error = None
+    if staged_path and os.path.exists(staged_path):
+        with open(staged_path, "r") as source:
+            with open(log_path, "a") as target:
+                shutil.copyfileobj(source, target)
+        try:
+            os.remove(staged_path)
+            staged_log_removed = True
+        except OSError as exc:
+            staged_log_remove_error = exc
+
+    ROOTLOGGER.setLevel(LoggerUtility.map_level(log_lvl))
+    handler = ROOT_LOG_UTIL.add_file_handler(log_path, FILE_LFORMAT, log_lvl)
+    log_to_handler(
+        handler, logging.INFO,
+        "===== maestro run setup logging promoted to study log =====")
+    if staged_log_removed:
+        log_to_handler(
+            handler, logging.INFO,
+            "Removed temporary setup log file after promotion: %s",
+            staged_path)
+    elif staged_log_remove_error:
+        log_to_handler(
+            handler, logging.WARNING,
+            "Unable to remove temporary setup log file after promotion: "
+            "%s: %s", staged_path, staged_log_remove_error)
+    return handler
+
+
+def log_to_handler(handler, level, msg, *args):
+    """
+    Emit a log record directly to a handler without using stdout handlers.
+
+    This is used for command provenance that belongs in the study log file but
+    should not add noise to the interactive `maestro run` output.
+    """
+    caller = sys._getframe(1)
+    record = LOGGER.makeRecord(
+        LOGGER.name, level, caller.f_code.co_filename, caller.f_lineno,
+        msg, args, None, caller.f_code.co_name)
+    handler.handle(record)
 
 
 def status_study(args):
@@ -359,180 +464,211 @@ def load_parameter_generator(path, env, kwargs):
 
 def run_study(args):
     """Run a Maestro study."""
-    # Report log lvl
-    LOGGER.info("INFO Logging Level -- Enabled")
-    LOGGER.warning("WARNING Logging Level -- Enabled")
-    LOGGER.critical("CRITICAL Logging Level -- Enabled")
-    LOGGER.debug("DEBUG Logging Level -- Enabled")
-    # Load the Specification
-    try:
-        spec = YAMLSpecification.load_specification(args.specification)
-    except jsonschema.ValidationError as e:
-        LOGGER.error(e.message)
-        sys.exit(1)
-    environment = spec.get_study_environment()
-    steps = spec.get_study_steps()
+    staged_log_path = None
+    staged_handler = None
+    file_handler = None
 
-    # Set up the output directory.
-    out_dir = environment.remove("OUTPUT_PATH")
-    if args.out:
-        # If out is specified in the args, ignore OUTPUT_PATH.
-        output_path = os.path.abspath(args.out)
+    try:
+        staged_log_path, staged_handler = \
+            create_staged_log_handler(args.debug_lvl)
+        log_to_handler(
+            staged_handler, logging.INFO, "Maestro command: %s",
+            shlex.join(sys.argv))
+
+        # Report log lvl
+        LOGGER.info("INFO Logging Level -- Enabled")
+        LOGGER.warning("WARNING Logging Level -- Enabled")
+        LOGGER.critical("CRITICAL Logging Level -- Enabled")
+        LOGGER.debug("DEBUG Logging Level -- Enabled")
+        # Load the Specification
+        try:
+            spec = YAMLSpecification.load_specification(args.specification)
+        except jsonschema.ValidationError as e:
+            LOGGER.error(e.message)
+            sys.exit(1)
+        environment = spec.get_study_environment()
+        steps = spec.get_study_steps()
+
+        # Set up the output directory.
+        out_dir = environment.remove("OUTPUT_PATH")
+        if args.out:
+            # If out is specified in the args, ignore OUTPUT_PATH.
+            output_path = os.path.abspath(args.out)
+
+            # If we are automatically launching, just set the input as yes.
+            if os.path.exists(output_path):
+                if args.autoyes:
+                    uinput = "y"
+                elif args.autono:
+                    uinput = "n"
+                else:
+                    uinput = six.moves.input(
+                        "Output path already exists. Would you like to "
+                        "overwrite it? [yn] ")
+
+                if uinput.lower() in ACCEPTED_INPUT:
+                    print("Cleaning up existing out path...")
+                    shutil.rmtree(output_path)
+                else:
+                    print("Opting to quit -- not cleaning up old out path.")
+                    return 0
+
+        else:
+            if out_dir is None:
+                # If we don't find OUTPUT_PATH in the environment, assume pwd.
+                out_dir = os.path.abspath("./")
+            else:
+                # We just take the value from the environment.
+                out_dir = os.path.abspath(out_dir.value)
+
+            out_name = "{}_{}".format(
+                spec.name.replace(" ", "_"),
+                time.strftime("%Y%m%d-%H%M%S")
+            )
+            output_path = make_safe_path(out_dir, *[out_name])
+        environment.add(Variable("OUTPUT_PATH", output_path))
+
+        # Set up file logging
+        log_path = os.path.join(
+            output_path, "logs", "{}.log".format(spec.name))
+        file_handler = promote_staged_log(
+            staged_log_path, staged_handler, log_path, args.debug_lvl)
+        staged_log_path = None
+        staged_handler = None
+
+        # Check for pargs without the matching pgen
+        if args.pargs and not args.pgen:
+            msg = \
+                "Cannot use the 'pargs' parameter without specifying a 'pgen'!"
+            LOGGER.exception(msg)
+            raise ArgumentError(msg)
+
+        # Addition of the $(SPECROOT) to the environment.
+        spec_root = os.path.split(args.specification)[0]
+        spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
+        environment.add(spec_root)
+
+        # Handle loading a custom ParameterGenerator if specified.
+        if args.pgen:
+            # 'pgen_args' has a default of an empty list, which should
+            # translate to an empty dictionary.
+            kwargs = create_dictionary(args.pargs)
+            # Copy the Python file used to generate parameters.
+            shutil.copy(args.pgen, output_path)
+
+            # Add keywords and environment from the spec to pgen args.
+            kwargs["OUTPUT_PATH"] = output_path
+            kwargs["SPECROOT"] = spec_root
+
+            # Load the parameter generator.
+            parameters = load_parameter_generator(
+                args.pgen, environment, kwargs)
+        else:
+            parameters = spec.get_parameters()
+
+        # Setup the study.
+        study = Study(spec.name, spec.description, studyenv=environment,
+                      parameters=parameters, steps=steps,
+                      out_path=output_path)
+
+        # Check if the submission attempts is greater than 0:
+        if args.attempts < 1:
+            _msg = "Submission attempts must be greater than 0. " \
+                   "'{}' provided.".format(args.attempts)
+            LOGGER.error(_msg)
+            raise ArgumentError(_msg)
+
+        # Check if the throttle is zero or greater:
+        if args.throttle < 0:
+            _msg = "Submission throttle must be a value of zero or greater. " \
+                   "'{}' provided.".format(args.throttle)
+            LOGGER.error(_msg)
+            raise ArgumentError(_msg)
+
+        # Check if the restart limit is zero or greater:
+        if args.rlimit < 0:
+            _msg = "Restart limit must be a value of zero or greater. " \
+                   "'{}' provided.".format(args.rlimit)
+            LOGGER.error(_msg)
+            raise ArgumentError(_msg)
+
+        # Set up the study workspace and configure it for execution.
+        study.setup_workspace()
+        study.configure_study(
+            throttle=args.throttle, submission_attempts=args.attempts,
+            restart_limit=args.rlimit, use_tmp=args.usetmp,
+            hash_ws=args.hashws, dry_run=args.dry)
+        study.setup_environment()
+
+        if args.dry:
+            # Drive sleep time down during dry runs to generate scripts.
+            sleeptime = 1
+        else:
+            # else, use args to decide sleeptime
+            sleeptime = args.sleeptime
+
+        batch = {"type": "local"}
+        if spec.batch:
+            batch = spec.batch
+            if "type" not in batch:
+                batch["type"] = "local"
+        # Copy the spec to the output directory
+        shutil.copy(args.specification, study.output_path)
+
+        # Use the Conductor's classmethod to store the study.
+        Conductor.store_study(study)
+        Conductor.store_batch(study.output_path, batch)
 
         # If we are automatically launching, just set the input as yes.
-        if os.path.exists(output_path):
-            if args.autoyes:
-                uinput = "y"
-            elif args.autono:
-                uinput = "n"
-            else:
-                uinput = six.moves.input(
-                    "Output path already exists. Would you like to overwrite "
-                    "it? [yn] ")
-
-            if uinput.lower() in ACCEPTED_INPUT:
-                print("Cleaning up existing out path...")
-                shutil.rmtree(output_path)
-            else:
-                print("Opting to quit -- not cleaning up old out path.")
-                sys.exit(0)
-
-    else:
-        if out_dir is None:
-            # If we don't find OUTPUT_PATH in the environment, assume pwd.
-            out_dir = os.path.abspath("./")
+        if args.autoyes or args.dry:
+            uinput = "y"
+        elif args.autono:
+            uinput = "n"
         else:
-            # We just take the value from the environment.
-            out_dir = os.path.abspath(out_dir.value)
+            uinput = six.moves.input(
+                "Would you like to launch the study? [yn] ")
 
-        out_name = "{}_{}".format(
-            spec.name.replace(" ", "_"),
-            time.strftime("%Y%m%d-%H%M%S")
-        )
-        output_path = make_safe_path(out_dir, *[out_name])
-    environment.add(Variable("OUTPUT_PATH", output_path))
+        if uinput.lower() in ACCEPTED_INPUT:
+            if args.fg:
+                # Launch in the foreground.
+                LOGGER.info("Running Maestro Conductor in the foreground.")
+                log_to_handler(
+                    file_handler, logging.INFO,
+                    "Study launched successfully.")
+                conductor = Conductor(study, conductor_mode="embedded")
+                conductor.initialize(batch, sleeptime)
+                completion_status = conductor.monitor_study()
+                conductor.cleanup()
+                return completion_status.value
+            else:
+                # Launch manager with nohup
+                log_path = make_safe_path(
+                    study.output_path,
+                    *["{}.txt".format(study.name)])
 
-    # Set up file logging
-    create_parentdir(os.path.join(output_path, "logs"))
-    log_path = os.path.join(output_path, "logs", "{}.log".format(spec.name))
-    LOG_UTIL.add_file_handler(log_path, LFORMAT, args.debug_lvl)
+                cmd = ["nohup", "conductor",
+                       "-t", str(sleeptime),
+                       "-d", str(args.debug_lvl),
+                       study.output_path,
+                       ">", log_path, "2>&1"]
+                conductor_cmd = " ".join(cmd)
+                log_to_handler(
+                    file_handler, logging.INFO,
+                    "Conductor launch command: %s", conductor_cmd)
+                start_process(conductor_cmd)
 
-    # Check for pargs without the matching pgen
-    if args.pargs and not args.pgen:
-        msg = "Cannot use the 'pargs' parameter without specifying a 'pgen'!"
-        LOGGER.exception(msg)
-        raise ArgumentError(msg)
-
-    # Addition of the $(SPECROOT) to the environment.
-    spec_root = os.path.split(args.specification)[0]
-    spec_root = Variable("SPECROOT", os.path.abspath(spec_root))
-    environment.add(spec_root)
-
-    # Handle loading a custom ParameterGenerator if specified.
-    if args.pgen:
-        # 'pgen_args' has a default of an empty list, which should translate
-        # to an empty dictionary.
-        kwargs = create_dictionary(args.pargs)
-        # Copy the Python file used to generate parameters.
-        shutil.copy(args.pgen, output_path)
-
-        # Add keywords and environment from the spec to pgen args.
-        kwargs["OUTPUT_PATH"] = output_path
-        kwargs["SPECROOT"] = spec_root
-
-        # Load the parameter generator.
-        parameters = load_parameter_generator(args.pgen, environment, kwargs)
-    else:
-        parameters = spec.get_parameters()
-
-    # Setup the study.
-    study = Study(spec.name, spec.description, studyenv=environment,
-                  parameters=parameters, steps=steps, out_path=output_path)
-
-    # Check if the submission attempts is greater than 0:
-    if args.attempts < 1:
-        _msg = "Submission attempts must be greater than 0. " \
-               "'{}' provided.".format(args.attempts)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
-
-    # Check if the throttle is zero or greater:
-    if args.throttle < 0:
-        _msg = "Submission throttle must be a value of zero or greater. " \
-               "'{}' provided.".format(args.throttle)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
-
-    # Check if the restart limit is zero or greater:
-    if args.rlimit < 0:
-        _msg = "Restart limit must be a value of zero or greater. " \
-               "'{}' provided.".format(args.rlimit)
-        LOGGER.error(_msg)
-        raise ArgumentError(_msg)
-
-    # Set up the study workspace and configure it for execution.
-    study.setup_workspace()
-    study.configure_study(
-        throttle=args.throttle, submission_attempts=args.attempts,
-        restart_limit=args.rlimit, use_tmp=args.usetmp, hash_ws=args.hashws,
-        dry_run=args.dry)
-    study.setup_environment()
-
-    if args.dry:
-        # If performing a dry run, drive sleep time down to generate scripts.
-        sleeptime = 1
-    else:
-        # else, use args to decide sleeptime
-        sleeptime = args.sleeptime
-
-    batch = {"type": "local"}
-    if spec.batch:
-        batch = spec.batch
-        if "type" not in batch:
-            batch["type"] = "local"
-    # Copy the spec to the output directory
-    shutil.copy(args.specification, study.output_path)
-
-    # Use the Conductor's classmethod to store the study.
-    Conductor.store_study(study)
-    Conductor.store_batch(study.output_path, batch)
-
-    # If we are automatically launching, just set the input as yes.
-    if args.autoyes or args.dry:
-        uinput = "y"
-    elif args.autono:
-        uinput = "n"
-    else:
-        uinput = six.moves.input("Would you like to launch the study? [yn] ")
-
-    if uinput.lower() in ACCEPTED_INPUT:
-        if args.fg:
-            # Launch in the foreground.
-            LOGGER.info("Running Maestro Conductor in the foreground.")
-            conductor = Conductor(study)
-            conductor.initialize(batch, sleeptime)
-            completion_status = conductor.monitor_study()
-            conductor.cleanup()
-            return completion_status.value
+                log_to_handler(
+                    file_handler, logging.INFO,
+                    "Study launched successfully.")
+                print("Study launched successfully.")
         else:
-            # Launch manager with nohup
-            log_path = make_safe_path(
-                study.output_path,
-                *["{}.txt".format(study.name)])
+            log_to_handler(file_handler, logging.INFO, "Study launch aborted.")
+            print("Study launch aborted.")
 
-            cmd = ["nohup", "conductor",
-                   "-t", str(sleeptime),
-                   "-d", str(args.debug_lvl),
-                   study.output_path,
-                   ">", log_path, "2>&1"]
-            LOGGER.debug(" ".join(cmd))
-            start_process(" ".join(cmd))
-
-            print("Study launched successfully.")
-    else:
-        print("Study launch aborted.")
-
-    return 0
+        return 0
+    finally:
+        close_log_handler(file_handler)
+        cleanup_staged_log(staged_log_path, staged_handler)
 
 
 def setup_argparser():

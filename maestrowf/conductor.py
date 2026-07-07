@@ -30,19 +30,25 @@
 from argparse import ArgumentParser, RawTextHelpFormatter
 from filelock import FileLock, Timeout
 from datetime import datetime
+import getpass
 import glob
 import inspect
+import json
 import logging
 import os
+import shlex
 import shutil
+import socket
 import sys
 from time import sleep
+import uuid
 import dill
 import yaml
 
 from maestrowf.abstracts.enums import StudyStatus
 from maestrowf.datastructures.core import Study
-from maestrowf.utils import create_parentdir, csvtable_to_dict, make_safe_path
+from maestrowf.utils import \
+    atomic_write_file, create_parentdir, csvtable_to_dict, make_safe_path
 
 # Logger instantiation
 ROOTLOGGER = logging.getLogger(inspect.getmodule(__name__))
@@ -54,11 +60,19 @@ LFORMAT = "%(asctime)s - %(name)s:%(funcName)s:%(lineno)s - " \
 
 
 def setup_logging(name, output_path, log_lvl=2, log_path=None,
-                  log_stdout=False, log_format=None):
+                  log_stdout=False, log_format=None,
+                  conductor_mode="standalone"):
     """
     Set up logging in the Main class.
-    :param args: A Namespace object created by a parsed ArgumentParser.
+
     :param name: The name of the log file.
+    :param output_path: A string containing the path to a study root.
+    :param log_lvl: Level of logging messages to output, defaults to 2 (Info).
+    :param log_path: Alternate path to store program logging.
+    :param log_stdout: Whether to also output logging to stdout.
+    :param log_format: Optional log format string.
+    :param conductor_mode: How this conductor instance was launched. Valid
+        values are "standalone" and "embedded"; defaults to "standalone".
     """
     # Check if the user has specified a custom log path.
     if log_path:
@@ -88,6 +102,9 @@ def setup_logging(name, output_path, log_lvl=2, log_path=None,
     handler.setFormatter(formatter)
     ROOTLOGGER.addHandler(handler)
     ROOTLOGGER.setLevel(loglevel)
+
+    LOGGER.info("Running Maestro Conductor %s.", conductor_mode)
+    LOGGER.info("Conductor log file: %s", log_file)
 
     # Print the level of logging.
     LOGGER.info("INFO Logging Level -- Enabled")
@@ -132,7 +149,6 @@ def setup_parser():
     parser.add_argument("-t", "--sleeptime", type=int, default=60,
                         help="Amount of time (in seconds) for the manager"
                              " to wait between job status checks.")
-
     return parser
 
 
@@ -143,15 +159,21 @@ class Conductor:
     _cancel_lock = ".cancel.lock"
     _study_update = ".study.update.lock"
     _batch_info = "batch.info"
+    _conductor_registry = ".conductors"
 
-    def __init__(self, study):
+    def __init__(self, study, conductor_mode="standalone"):
         """
         Create a new instance of a Conductor class.
 
         :param study: An instance of a populated Maestro study.
+        :param conductor_mode: How this conductor instance was launched. Valid
+            values are "standalone" and "embedded"; defaults to "standalone".
         """
         self._study = study
+        self._conductor_mode = conductor_mode
         self._setup = False
+        self._conductor_id = None
+        self._conductor_record = None
 
     @property
     def output_path(self):
@@ -218,6 +240,379 @@ class Conductor:
         path = os.path.join(out_path, cls._batch_info)
         with open(path, "wb") as batch_info:
             batch_info.write(yaml.dump(batch).encode("utf-8"))
+
+    @staticmethod
+    def _timestamp():
+        """Return a UTC timestamp suitable for durable process records."""
+        return datetime.utcnow().isoformat() + "Z"
+
+    @staticmethod
+    def _get_host_addresses():
+        """Return best-effort IP addresses for the current host."""
+        addresses = set()
+
+        for host in (socket.gethostname(), socket.getfqdn()):
+            try:
+                for entry in socket.getaddrinfo(host, None):
+                    address = entry[4][0]
+                    if address:
+                        addresses.add(address)
+            except socket.error:
+                LOGGER.debug(
+                    "Unable to resolve addresses for host '%s'.", host)
+
+        return sorted(addresses)
+
+    @staticmethod
+    def _get_safeguard_username(default="unknown_user"):
+        """
+        Return a best-effort username without blocking conductor startup.
+
+        :param default: Username to return when no lookup succeeds, defaults
+            to "unknown_user".
+        :returns: The best-effort username.
+        :rtype: str
+        """
+        try:
+            user = getpass.getuser()
+            if user:
+                return user
+        except Exception:
+            pass
+
+        if sys.platform != "win32":
+            try:
+                import pwd
+                user = pwd.getpwuid(os.getuid()).pw_name
+                if user:
+                    return user
+            except Exception:
+                pass
+
+        for variable in ("SUDO_USER", "USER", "LOGNAME", "USERNAME"):
+            user = os.getenv(variable)
+            if user:
+                return user
+
+        try:
+            import psutil
+            user = psutil.Process().username()
+            if user:
+                return user
+        except Exception:
+            pass
+
+        if sys.platform != "win32":
+            try:
+                return "uid_{}".format(os.getuid())
+            except Exception:
+                pass
+
+        return default
+
+    @staticmethod
+    def _get_safeguard_cwd():
+        """
+        Return the current working directory when it is still available.
+
+        :returns: The current working directory, or None when unavailable.
+        :rtype: str or None
+        """
+        try:
+            return os.getcwd()
+        except OSError:
+            return None
+
+    @classmethod
+    def _conductor_registry_path(cls, output_path):
+        return make_safe_path(output_path, "logs", cls._conductor_registry)
+
+    @classmethod
+    def _conductor_record_path(cls, output_path, conductor_id):
+        registry_path = cls._conductor_registry_path(output_path)
+        return make_safe_path(registry_path, "{}.json".format(conductor_id))
+
+    @classmethod
+    def _load_conductor_record(cls, output_path, conductor_id):
+        path = cls._conductor_record_path(output_path, conductor_id)
+        if not os.path.exists(path):
+            return {}
+
+        return cls._load_conductor_record_file(path)
+
+    @staticmethod
+    def _load_conductor_record_file(path, attempts=3, delay=0.1):
+        """
+        Load a conductor JSON record, retrying transient filesystem errors.
+
+        Some networked filesystems can briefly report stale handles around
+        replace-heavy files. A short retry avoids treating that as a missing
+        conductor when readers race a heartbeat update.
+
+        :param path: path to the conductor record to load
+        :type path: str or os.PathLike
+        :param attempts: Number of read retry attempts, defaults to 3.
+        :type attempts: int
+        :param delay: Multiplier for computing time in seconds to wait between
+            retry attempts, defaults to 0.1.  Actual delay = delay*attempt.
+        :type delay: float
+        """
+        last_error = None
+        for attempt in range(attempts):
+            try:
+                with open(path, "r") as data:
+                    return json.load(data) or {}
+            except (OSError, ValueError) as exc:
+                last_error = exc
+                if attempt + 1 < attempts:
+                    sleep(delay * (attempt + 1))
+
+        raise last_error
+
+    @classmethod
+    def _store_conductor_record(cls, output_path, conductor_id, record):
+        """
+        Store a complete conductor record.
+
+        :param output_path: A string containing the path to a study root.
+        :param conductor_id: The conductor id whose record is being stored.
+        :param record: The complete conductor record to write.
+        :type record: dict
+        """
+        path = cls._conductor_record_path(output_path, conductor_id)
+        contents = json.dumps(record, indent=2, sort_keys=True)
+        atomic_write_file(path, contents + "\n")
+
+    @classmethod
+    def _try_store_conductor_record(
+            cls, output_path, conductor_id, record, action):
+        """
+        Best-effort conductor record store.
+
+        Conductor tracking is operational metadata. A transient filesystem
+        problem with this record should be visible in logs, but it should not
+        prevent the study from continuing.
+
+        :param output_path: A string containing the path to a study root.
+        :param conductor_id: The conductor id whose record is being stored.
+        :param record: The complete conductor record to write.
+        :type record: dict
+        :param action: The record action being flushed, for logging.
+        :returns: True if the record was stored, False otherwise.
+        :rtype: bool
+        """
+        path = cls._conductor_record_path(output_path, conductor_id)
+        try:
+            cls._store_conductor_record(output_path, conductor_id, record)
+        except (OSError, ValueError) as exc:
+            LOGGER.warning(
+                "Unable to %s conductor record '%s' at '%s': %s",
+                action, conductor_id, path, exc)
+            return False
+
+        LOGGER.debug(
+            "Stored conductor record '%s' at '%s' (%s).",
+            conductor_id, path, action)
+        return True
+
+    @classmethod
+    def get_conductors(cls, output_path):
+        """
+        Retrieve recorded conductor processes for the study rooted at out_path.
+
+        :param output_path: A string containing the path to a study root.
+        :returns: A dictionary of conductor records keyed by conductor id.
+        """
+        registry_path = cls._conductor_registry_path(output_path)
+        if not os.path.isdir(registry_path):
+            return {}
+
+        conductors = {}
+        for path in glob.glob(os.path.join(registry_path, "*.json")):
+            try:
+                record = cls._load_conductor_record_file(path)
+            except (OSError, ValueError):
+                LOGGER.warning("Unable to read conductor record '%s'.", path)
+                continue
+
+            conductor_id = record.get("conductor_id")
+            if conductor_id:
+                conductors[conductor_id] = record
+
+        return conductors
+
+    def _new_conductor_id(self):
+        return f"{uuid.uuid4().hex[:12]}"
+
+    @staticmethod
+    def _get_conductor_executable():
+        """Return the resolved conductor executable path when available."""
+        if not sys.argv:
+            return None
+
+        executable = sys.argv[0]
+        if os.path.isabs(executable) or os.path.dirname(executable):
+            return os.path.abspath(executable)
+
+        return shutil.which(executable) or executable
+
+    def _flush_conductor_record(self, action):
+        """
+        Store this conductor's current in-memory record.
+
+        :param action: The record action being flushed, for logging.
+        :returns: True if the record was stored, False otherwise.
+        :rtype: bool
+        """
+        if not self._conductor_id or self._conductor_record is None:
+            return False
+
+        return self._try_store_conductor_record(
+            self.output_path, self._conductor_id,
+            self._conductor_record, action)
+
+    def register_conductor(self):
+        """
+        Register this conductor process in the study registry.
+
+        :returns: The conductor id for this process.
+        :rtype: str
+        """
+        if not self._conductor_id:
+            self._conductor_id = self._new_conductor_id()
+
+        record = self._build_conductor_record()
+        self._conductor_record = dict(record)
+
+        self._flush_conductor_record("register")
+        LOGGER.info(
+            "Conductor '%s' started for study '%s' at '%s' "
+            "(pid=%s, host=%s, fqdn=%s, addresses=%s).",
+            self._conductor_id, self.study_name, self.output_path,
+            record["pid"], record["hostname"], record["fqdn"],
+            ",".join(record["addresses"]))
+        LOGGER.info(
+            "Conductor '%s' command: %s",
+            self._conductor_id, record["conductor_command"])
+
+        return self._conductor_id
+
+    def _build_conductor_record(self):
+        """
+        Build the initial conductor record for this process.
+
+        :returns: A complete conductor record.
+        :rtype: dict
+        """
+        now = self._timestamp()
+        return {
+            "conductor_id": self._conductor_id,
+            "study_name": self.study_name,
+            "output_path": self.output_path,
+            "pid": os.getpid(),
+            "ppid": os.getppid(),
+            "hostname": socket.gethostname(),
+            "fqdn": socket.getfqdn(),
+            "addresses": self._get_host_addresses(),
+            "user": self._get_safeguard_username(),
+            "cwd": self._get_safeguard_cwd(),
+            "argv": list(sys.argv),
+            "conductor_argv": list(sys.argv),
+            "conductor_executable": self._get_conductor_executable(),
+            "conductor_command": shlex.join(sys.argv),
+            "conductor_mode": self._conductor_mode,
+            "python_executable": sys.executable,
+            "conductor_status": "running",
+            "conductor_started_at": now,
+            "conductor_last_heartbeat_at": now,
+            "conductor_ended_at": None,
+            "conductor_status_message": "started",
+            "last_observed_study_status": None,
+            "final_study_status": None,
+        }
+
+    def heartbeat_conductor(self, message="running", flush=True):
+        """
+        Update this conductor process' heartbeat.
+
+        :param message: Status message to store with the heartbeat, defaults
+            to "running".
+        :param flush: Whether to write the full in-memory record immediately.
+            True writes immediately; False only updates memory for a later
+            batched flush. Defaults to True.
+        :type flush: bool
+        """
+        if not self._conductor_id:
+            self.register_conductor()
+
+        now = self._timestamp()
+        self._conductor_record.update({
+            "conductor_status": "running",
+            "conductor_last_heartbeat_at": now,
+            "conductor_status_message": message,
+        })
+        if flush:
+            self._flush_conductor_record("heartbeat")
+        LOGGER.info(
+            "Conductor '%s' heartbeat at %s (pid=%s, host=%s): %s",
+            self._conductor_id, now, os.getpid(), socket.gethostname(),
+            message)
+
+    def observe_study_status(self, study_status, flush=True):
+        """
+        Record the last study status observed by this conductor.
+
+        :param study_status: The observed study status. StudyStatus values are
+            stored by enum name; string values are stored as given.
+        :param flush: Whether to write the full in-memory record immediately.
+            True writes immediately; False only updates memory for a later
+            batched flush. Defaults to True.
+        :type flush: bool
+        """
+        if not self._conductor_id:
+            return
+
+        if isinstance(study_status, StudyStatus):
+            study_status = study_status.name
+
+        self._conductor_record["last_observed_study_status"] = study_status
+        if flush:
+            self._flush_conductor_record("update observed study status")
+
+    def finish_conductor(
+            self, conductor_status, final_study_status=None, message=None):
+        """
+        Mark this conductor process as completed or failed.
+
+        :param conductor_status: Final conductor status. Expected values are
+            "completed" or "failed".
+        :param final_study_status: Final study status, if known.
+        :param message: Status message to store. Defaults to conductor_status.
+        """
+        if not self._conductor_id:
+            return
+
+        now = self._timestamp()
+        if isinstance(final_study_status, StudyStatus):
+            final_study_status = final_study_status.name
+
+        updates = {
+            "conductor_status": conductor_status,
+            "conductor_ended_at": now,
+            "conductor_last_heartbeat_at": now,
+            "conductor_status_message": message or conductor_status,
+            "final_study_status": final_study_status,
+        }
+        if final_study_status is not None:
+            updates["last_observed_study_status"] = final_study_status
+
+        self._conductor_record.update(updates)
+        self._flush_conductor_record("finish")
+        LOGGER.info(
+            "Conductor '%s' marked %s at %s for study '%s' "
+            "(final study status=%s).",
+            self._conductor_id, conductor_status, now, self.study_name,
+            final_study_status)
 
     @classmethod
     def load_study(cls, out_path):
@@ -331,8 +726,9 @@ class Conductor:
                 updated_study_config = yaml.load(data)
 
         if updated_study_config:
-            LOGGER.debug("Successfully read updated study config; removing record at %s",
-                         study_update_path)
+            LOGGER.debug(
+                "Read updated study config; removing record at %s",
+                study_update_path)
             os.remove(study_update_path)
 
         return updated_study_config
@@ -361,6 +757,7 @@ class Conductor:
         self._exec_dag.set_adapter(batch_info)
         self._study.store_metadata()
         self._setup = True
+        self.register_conductor()
 
     def monitor_study(self):
         """Monitor a running study."""
@@ -374,7 +771,8 @@ class Conductor:
 
         # Set some fixed variables that monitor will use.
         cancel_lock_path = make_safe_path(self.output_path, self._cancel_lock)
-        study_update_path = make_safe_path(self.output_path, self._study_update)
+        study_update_path = make_safe_path(
+            self.output_path, self._study_update)
         dag = self._exec_dag
         pkl_path = \
             os.path.join(self._pkl_path, "{}.pkl".format(self._study.name))
@@ -389,52 +787,73 @@ class Conductor:
             pkl_path, cancel_lock_path, sleep_time)
 
         completion_status = StudyStatus.RUNNING
-        while completion_status == StudyStatus.RUNNING:
-            if os.path.exists(cancel_lock_path):
-                # cancel the study if a cancel lock file is found
-                cancel_lock = FileLock(cancel_lock_path)
-                try:
-                    with cancel_lock.acquire(timeout=10):
-                        # we have the lock
-                        dag.cancel_study()
-                    os.remove(cancel_lock_path)
-                    LOGGER.info("Study '%s' has been cancelled.", dag.name)
-                except Timeout:
-                    LOGGER.error("Failed to acquire cancellation lock.")
-                    pass
+        try:
+            while completion_status == StudyStatus.RUNNING:
+                if os.path.exists(cancel_lock_path):
+                    # cancel the study if a cancel lock file is found
+                    cancel_lock = FileLock(cancel_lock_path)
+                    try:
+                        with cancel_lock.acquire(timeout=10):
+                            # we have the lock
+                            dag.cancel_study()
+                        os.remove(cancel_lock_path)
+                        LOGGER.info("Study '%s' has been cancelled.", dag.name)
+                    except Timeout:
+                        LOGGER.error("Failed to acquire cancellation lock.")
+                        pass
 
-            if os.path.exists(study_update_path):
-                updated_study_config = self.load_updated_study_exec(self.output_path)
+                if os.path.exists(study_update_path):
+                    updated_study_config = \
+                        self.load_updated_study_exec(self.output_path)
 
-                if "throttle" in updated_study_config and updated_study_config["throttle"]:
-                    LOGGER.info("Updating throttle from %d to %d",
-                                dag._submission_throttle,  # NOTE: make a property?
-                                updated_study_config["throttle"])
-                    dag.update_throttle(updated_study_config["throttle"])
+                    if "throttle" in updated_study_config and \
+                            updated_study_config["throttle"]:
+                        LOGGER.info("Updating throttle from %d to %d",
+                                    dag._submission_throttle,
+                                    updated_study_config["throttle"])
+                        dag.update_throttle(updated_study_config["throttle"])
 
-                if "rlimit" in updated_study_config and updated_study_config["rlimit"]:
-                    LOGGER.info("Updating restart limit to %d",
-                                updated_study_config["rlimit"])
-                    dag.update_rlimit(updated_study_config["rlimit"])
+                    if "rlimit" in updated_study_config and \
+                            updated_study_config["rlimit"]:
+                        LOGGER.info("Updating restart limit to %d",
+                                    updated_study_config["rlimit"])
+                        dag.update_rlimit(updated_study_config["rlimit"])
 
-                if "sleep" in updated_study_config and updated_study_config["sleep"]:
-                    LOGGER.info("Updating conductor sleep time from %s to %s",
-                                str(self.sleep_time),
-                                str(updated_study_config["sleep"]))
-                    self.sleep_time = updated_study_config["sleep"]
-                    
-            LOGGER.info("Checking DAG status at %s", str(datetime.now()))
-            # Execute steps that are ready
-            # Receives StudyStatus enum
-            completion_status = dag.execute_ready_steps()
-            # Re-pickle the ExecutionGraph.
-            dag.pickle(pkl_path)
-            # Write out the state
-            dag.write_status(os.path.split(pkl_path)[0])
-            # Sleep for SLEEPTIME in args if study not complete.
-            if completion_status == StudyStatus.RUNNING:
-                sleep(sleep_time)
+                    if "sleep" in updated_study_config and \
+                            updated_study_config["sleep"]:
+                        LOGGER.info(
+                            "Updating conductor sleep time from %s to %s",
+                            str(self.sleep_time),
+                            str(updated_study_config["sleep"]))
+                        self.sleep_time = updated_study_config["sleep"]
 
+                msg = "Checking DAG status at {}".format(str(datetime.now()))
+                self.heartbeat_conductor(msg, flush=False)
+                LOGGER.info(msg)
+                # Execute steps that are ready
+                # Receives StudyStatus enum
+                completion_status = dag.execute_ready_steps()
+                self.observe_study_status(completion_status, flush=False)
+                self._flush_conductor_record("heartbeat and study status")
+                # Re-pickle the ExecutionGraph.
+                dag.pickle(pkl_path)
+                # Write out the state
+                dag.write_status(os.path.split(pkl_path)[0])
+                # Sleep for SLEEPTIME in args if study not complete.
+                if completion_status == StudyStatus.RUNNING:
+                    sleep(self.sleep_time)
+        except Exception:
+            final_study_status = None
+            if completion_status != StudyStatus.RUNNING:
+                final_study_status = completion_status
+            self.finish_conductor(
+                "failed", final_study_status,
+                "monitoring failed with an exception")
+            raise
+
+        self.finish_conductor(
+            "completed", completion_status,
+            "study completed with state '{}'".format(completion_status))
         return completion_status
 
     def cleanup(self):
