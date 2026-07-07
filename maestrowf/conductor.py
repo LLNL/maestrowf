@@ -358,8 +358,7 @@ class Conductor:
         return conductors
 
     def _new_conductor_id(self):
-        hostname = socket.gethostname()
-        return "{}.{}.{}".format(hostname, os.getpid(), uuid.uuid4().hex[:12])
+        return f"{uuid.uuid4().hex[:12]}"
 
     @staticmethod
     def _get_conductor_executable():
