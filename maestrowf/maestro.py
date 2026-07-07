@@ -635,7 +635,7 @@ def run_study(args):
                 log_to_handler(
                     file_handler, logging.INFO,
                     "Study launched successfully.")
-                conductor = Conductor(study, conductor_mode="foreground")
+                conductor = Conductor(study, conductor_mode="embedded")
                 conductor.initialize(batch, sleeptime)
                 completion_status = conductor.monitor_study()
                 conductor.cleanup()
@@ -667,6 +667,7 @@ def run_study(args):
 
         return 0
     finally:
+        close_log_handler(file_handler)
         cleanup_staged_log(staged_log_path, staged_handler)
 
 
