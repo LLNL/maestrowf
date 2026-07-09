@@ -331,7 +331,7 @@ class ParameterGenerator:
             return
         elif isinstance(item, str):
             for key in self.parameters.keys():
-                _ = r"\{}\({}\.*\w*\)".format(self.token, key)
+                _ = r"\{}\({}(\.\w+)?\)".format(self.token, re.escape(key))
                 matches = re.findall(_, item)
                 if matches:
                     params.add(key)
