@@ -1,4 +1,11 @@
-"""Schema migration registry for primitive checkpoint envelopes."""
+"""Schema migration registry for primitive document envelopes.
+
+The registry upgrades one target payload schema version at a time. A migration
+registered for version ``N`` must produce version ``N + 1`` for the same
+``target``. Chaining small migrations keeps each schema change reviewable,
+gives tests a stable place to pin every historical transition, and lets loaders
+upgrade older documents by repeatedly applying the same simple rule.
+"""
 
 import copy
 
@@ -10,18 +17,37 @@ from maestrowf.serialization.errors import FutureVersionError, MigrationError
 
 
 class MigrationRegistry:
-    """Register and apply target-specific checkpoint schema migrations."""
+    """Register and apply target-specific document schema migrations.
+
+    Migration functions operate on full primitive envelopes, not only on the
+    payload. That lets a target migration update payload data and the envelope's
+    ``schema_version`` together while the generic registry verifies that the
+    migration did not change the target or skip a version.
+    """
 
     def __init__(self):
+        """Create an empty migration registry."""
         self._migrations = {}
 
     def register(self, target, from_version, to_version=None, func=None):
-        """
-        Register a migration function.
+        """Register a one-step migration function.
 
         If called without ``func``, this returns a decorator. Migration
         functions receive a primitive envelope and must return a primitive
         envelope for the next schema version.
+
+        :param target: Open string identifying the payload contract that owns
+            the migration.
+        :param from_version: Source schema version. Persisted schema versions
+            start at ``1``; ``0`` is reserved for unversioned/draft/legacy data.
+        :param to_version: Destination schema version. When omitted, it
+            defaults to ``from_version + 1``.
+        :param func: Optional migration callable. If omitted, ``register``
+            returns a decorator for the callable.
+        :returns: The registered migration callable when ``func`` is provided,
+            otherwise a decorator that registers one callable.
+        :raises MigrationError: If the target/version step is invalid or a
+            migration has already been registered for the same step.
         """
         if to_version is None:
             to_version = from_version + 1
@@ -40,7 +66,21 @@ class MigrationRegistry:
         return decorator
 
     def upgrade(self, envelope, current_version):
-        """Upgrade an envelope to the current schema version for its target."""
+        """Upgrade an envelope to the current schema version for its target.
+
+        The input envelope is deep-copied before validation and migration, so
+        callers keep their original value unchanged.
+
+        :param envelope: Primitive document envelope loaded from storage.
+        :param current_version: Highest schema version supported by the
+            target-specific loader.
+        :returns: A validated primitive envelope at ``current_version``.
+        :rtype: dict
+        :raises FutureVersionError: If the envelope schema version is newer
+            than ``current_version``.
+        :raises MigrationError: If a required migration is missing or a
+            migration returns an invalid next envelope.
+        """
         envelope = copy.deepcopy(validate_envelope(envelope))
         info = inspect_envelope(envelope)
 
@@ -85,6 +125,7 @@ class MigrationRegistry:
 
     @staticmethod
     def _validate_step(target, from_version, to_version):
+        """Validate that a migration registration advances exactly one step."""
         if not isinstance(target, str) or not target:
             raise MigrationError("migration target must be a non-empty string")
         if not isinstance(from_version, int) or from_version < 1:

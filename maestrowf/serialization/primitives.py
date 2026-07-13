@@ -14,11 +14,16 @@ PRIMITIVE_SCALARS = (str, int, float, bool, type(None))
 
 
 def validate_primitive(value, path="$"):
-    """
-    Validate that a value contains only portable primitive data.
+    """Validate that a value contains only portable primitive data.
 
     Portable primitives are dictionaries with string keys, lists, strings,
     finite numbers, booleans, and nulls.
+
+    :param value: Value to validate.
+    :param path: Human-readable location used in error messages.
+    :returns: The original value, unchanged.
+    :raises PrimitiveTypeError: If the value contains unsupported objects,
+        non-string dictionary keys, or non-finite floats.
     """
     if value is None or isinstance(value, (str, bool)):
         return value
@@ -53,7 +58,12 @@ def validate_primitive(value, path="$"):
 
 
 def is_primitive(value):
-    """Return True if value contains only portable primitive data."""
+    """Return whether a value contains only portable primitive data.
+
+    :param value: Value to inspect.
+    :returns: ``True`` when ``value`` passes ``validate_primitive``.
+    :rtype: bool
+    """
     try:
         validate_primitive(value)
     except PrimitiveTypeError:
@@ -62,12 +72,16 @@ def is_primitive(value):
 
 
 def to_primitive(value):
-    """
-    Convert common simple values to portable primitive data.
+    """Convert common simple values to portable primitive data.
 
     This helper is intentionally conservative. It handles basic containers,
     enums, datetimes, dates, paths, and sets. Domain-specific objects should be
     converted by target projectors instead.
+
+    :param value: Value to normalize into portable primitives.
+    :returns: Primitive representation of ``value``.
+    :raises PrimitiveTypeError: If the value cannot be converted without
+        target-specific knowledge.
     """
     if value is None or isinstance(value, (str, bool, int)):
         return value

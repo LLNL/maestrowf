@@ -10,7 +10,7 @@ class PrimitiveTypeError(SerializationError, TypeError):
 
 
 class EnvelopeError(SerializationError, ValueError):
-    """Raised when a checkpoint envelope is missing required structure."""
+    """Raised when a document envelope is missing required structure."""
 
 
 class SerializationDecodeError(SerializationError, ValueError):
@@ -22,4 +22,4 @@ class MigrationError(SerializationError, ValueError):
 
 
 class FutureVersionError(MigrationError):
-    """Raised when a checkpoint is newer than the supported schema version."""
+    """Raised when a document is newer than the supported schema version."""

@@ -1,7 +1,7 @@
-"""Target-agnostic serialization helpers for Maestro checkpoint data."""
+"""Target-agnostic serialization helpers for Maestro document data."""
 
 from maestrowf.serialization.envelope import (
-    CHECKPOINT_FORMAT,
+    DOCUMENT_FORMAT,
     EnvelopeInfo,
     inspect_envelope,
     make_envelope,
@@ -10,7 +10,7 @@ from maestrowf.serialization.envelope import (
 from maestrowf.serialization.migrations import MigrationRegistry
 
 __all__ = [
-    "CHECKPOINT_FORMAT",
+    "DOCUMENT_FORMAT",
     "EnvelopeInfo",
     "MigrationRegistry",
     "inspect_envelope",

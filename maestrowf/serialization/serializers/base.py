@@ -8,8 +8,16 @@ class PrimitiveSerializer(ABC):
 
     @abstractmethod
     def dumps(self, data):
-        """Serialize primitive data."""
+        """Serialize primitive data.
+
+        :param data: Primitive value to encode.
+        :returns: Encoded representation accepted by a matching ``loads`` call.
+        """
 
     @abstractmethod
     def loads(self, data):
-        """Deserialize primitive data."""
+        """Deserialize primitive data.
+
+        :param data: Text or bytes produced by a matching serializer.
+        :returns: Decoded primitive value.
+        """
