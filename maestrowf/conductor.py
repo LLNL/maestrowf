@@ -362,7 +362,7 @@ class Conductor:
         self._study.store_metadata()
         self._setup = True
         # Write initial status.csv immediately after graph construction
-        self._exec_dag.write_status()
+        self._exec_dag.write_status(self.output_path)
 
     def monitor_study(self):
         """Monitor a running study."""
