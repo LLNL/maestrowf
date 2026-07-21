@@ -361,6 +361,8 @@ class Conductor:
         self._exec_dag.set_adapter(batch_info)
         self._study.store_metadata()
         self._setup = True
+        # Write initial status.csv immediately after graph construction
+        self._exec_dag.write_status(self.output_path)
 
     def monitor_study(self):
         """Monitor a running study."""
@@ -422,7 +424,7 @@ class Conductor:
                                 str(self.sleep_time),
                                 str(updated_study_config["sleep"]))
                     self.sleep_time = updated_study_config["sleep"]
-                    
+
             LOGGER.info("Checking DAG status at %s", str(datetime.now()))
             # Execute steps that are ready
             # Receives StudyStatus enum
