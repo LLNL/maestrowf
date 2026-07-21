@@ -2,6 +2,7 @@ build/
 dist/
 *egg-info/
 *.DS_Store
+.venv
 venv
 .output/
 sample_output/
