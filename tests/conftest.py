@@ -59,7 +59,7 @@ SCHED_CHECKS['sched_lsf'] = check_lsf
 
 def check_slurm():
     """
-    Checks if there is a slurm instance to schedule to. NOT IMPLEMENTED YET.
+    Checks if there is a slurm instance to schedule to.
     """
     slurm_info_func = 'sinfo'
     try:
