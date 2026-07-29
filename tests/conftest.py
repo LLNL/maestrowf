@@ -26,6 +26,23 @@ from maestrowf.utils import (
 
 from packaging.version import InvalidVersion
 
+# Hypothesis profiles
+from hypothesis import settings
+
+#  Profile for local development using default deadlines
+settings.register_profile("local", deadline=200, max_examples=100)
+
+#  Profile for CI with relaxed deadlines to handle system variability
+settings.register_profile("ci", deadline=500, max_examples=100)
+
+#  Auto-detect and load correct profile
+if os.getenv("CI") == "true":
+    settings.load_profile("ci")
+else:
+    settings.load_profile("local")
+    
+
+# Check for active schedulers to enable/disable appropriate tests
 SCHEDULERS = set(('sched_lsf', 'sched_slurm', 'sched_flux', 'sched_local'))
 SCHED_CHECKS = defaultdict(lambda: False)
 
