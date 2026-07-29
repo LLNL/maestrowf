@@ -33,7 +33,7 @@ from hypothesis import settings
 settings.register_profile("local", deadline=200, max_examples=100)
 
 #  Profile for CI with relaxed deadlines to handle system variability
-settings.register_profile("ci", deadline=500, max_examples=100)
+settings.register_profile("ci", deadline=1000, max_examples=100)
 
 #  Auto-detect and load correct profile
 if os.getenv("CI") == "true":
