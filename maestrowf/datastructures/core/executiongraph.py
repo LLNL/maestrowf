@@ -642,7 +642,8 @@ class ExecutionGraph(DAG, PickleInterface):
             # Increment the number of restarts we've attempted.
             LOGGER.debug("Completed submission attempt %d", num_restarts)
             num_restarts += 1
-            sleep((random.random() + 1) * num_restarts)
+            if retcode != SubmissionCode.OK:
+                sleep((random.random() + 1) * num_restarts)
 
         if retcode == SubmissionCode.OK:
             self.in_progress.add(record.name)
