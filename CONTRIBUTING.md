@@ -43,9 +43,7 @@ Hotfixes on `main` are allowed in principle, but no formal hotfix workflow has b
 
 ## Changelog fragments
 
-This project uses `scriv` to manage changelog fragments.
-
-Fragments are stored in:
+This project uses `scriv` to manage changelog fragments.  `scriv` is installed with the project dependencies, and creating the fragment is as simple as `scrive create` from the top level and then edit that fragment. Fragments are stored in:
 
 - `changelog.d/`
 
@@ -76,7 +74,7 @@ Use one of the following categories in changelog fragments:
 | Fixed | Bug fixes |
 | Removed | Removed functionality |
 | Documentation | Important documentation changes |
-| Maintenance | Internal maintenance or dependency updates |
+| Maintenance | Internal maintenance or dependency updates, CI, tooling, ... |
 
 ## Changelog files
 
