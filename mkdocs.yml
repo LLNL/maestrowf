@@ -117,6 +117,7 @@ nav:
             - MEP 001: 'Maestro/meps/mep-001-encore-study-iteration.md'
             - MEP 002: 'Maestro/meps/mep-002-parameter-composition.md'
             - MEP 003: 'Maestro/meps/mep-003-human-readable-hashing.md'
+            - MEP 004: 'Maestro/meps/mep-004-step-dependency-execution-policy.md'
             # - API Reference: 'reference/'
               
 extra:

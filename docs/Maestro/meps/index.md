@@ -8,3 +8,5 @@
 
 [MEP 003](mep-003-human-readable-hashing.md) Human readable hashing
 
+[MEP 004](mep-004-step-dependency-execution-policy.md) Step Dependency Execution Policy
+
