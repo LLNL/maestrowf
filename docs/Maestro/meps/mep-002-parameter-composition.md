@@ -251,6 +251,9 @@ Here we detail a base set of operators to provide out of the box for building an
 
 :   Generate permutations from a list of values, or between values of multiple lists
 
+`Combinations`
+
+:   See itertools.combinations....
 
 ## Study Specification Interface
 

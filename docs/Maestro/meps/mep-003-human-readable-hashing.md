@@ -153,3 +153,40 @@ There will be some corresponding tweaks to the parameters.yaml metadata to expos
 !!! question
 
     Add snippets of parameters.yaml, both old and new, and also demo gif of yq + fzf dir navigation workflow?
+
+## Additional Considerations
+
+### Adding parameter combinations to existing study
+
+Consider a hypothetical feature to enable running new parameter combinations through an existing completed study.  The additional step instances such a process creates makes a bit of a mess of the naming convention given there are no guarantees on the ordering of the values in such new combinations being > what's already there. So what solutions could there be for this:
+
+- Don't allow adding new parameter combinations to existing study workspace (current behavior)
+- Dynamic renaming: this would be very disruptive and make a mess of any metadata slurped up into anything else as both that and the workspace paths would be changed
+- Ignore the tuple style ordering on the names and values after the initial batch: i.e. compute that up front with local ordering per batch of parameters, but join them based on insert order.
+    - Not very intuitive for users given lack of indicator when that order assumption changes if we don't also perturb the name of the combination
+- Add a new suffix/prefix to the new steps to indicate the break in ordering.  There are a few options:
+    - **group**: Pretty self explanatory marker for a new batch of parameter combinations
+    - **batch**: Same as above
+    - **movement**: More music themed name for the different groups/sets
+    - **set**: Still ~self explanatory, but also overloaded with the music theme.  Bonus for being more compact than movement
+    - Others, that start deviating: **chorus** (repeating sections of music), **verse** (..), **wave**, ...
+  
+  
+Here's what a few of the options might look like, either omitting or includign the suffix on even the initial batch if such a feature is enabled, or making it implicit (first batch, i.e. no suffix on the first group, only adding it if a second batch of parameter combinations is run thorugh the study):
+
+<!-- NOTE: aliasing/filtering step names falls into this same troublesome bucket where new parameters may violate any uniqueness constraints -->
+
+### Multi-machine workflows
+
+Given multi-machine workflows are on the roadmap, there's yet another wrench to throw into the works: what to do with the resource sets, i.e. procs, nodes, ... These are frequently templated with parameters just like the body of the steps.  However, what does this specific set of parameters, or even a condensed 'resource_set_id' grouping of them mean in this context?  Simply removing them from this naming, i.e. filtering them from the combination id/sorting order, is not an option as that may interfere with resolution and scaling studies where they may be the source of uniqueness relative to other combinations in the set.  Further complicating this is that they may not be single valued per step instance in a given study when extrapolated to the multi-machine context.  Currently available hardware spans a range of resource sets that may fit a given step's requirements, limiting our selves to exclusive usage for now as on a node-scheduled HPC cluster:
+
+
+| **Resource Set ID** | **Tasks** | **Cores per node** | **Nodes** | **GPUS** |
+| :-----------------: | :-------: | :----------------: | :-------: | :------: |
+| rs_cpu_1            | 144       | 36                 | 4         | 0        |
+| rs_cpu_2            | 112       | 56                 | 2         | 0        |
+| rs_cpu_3            | 112       | 112                | 1         | 0        |
+| rs_cpu_4            | 192       | 96                 | 2         | 0        |
+| rs_cpu_5            | 128       | 128                | 1         | 0        |
+| rs_gpu_1            | 4         | 112                | 1         | 4        |
+| rs_gpu_2            | 4         |  96                | 1         | 4        |
