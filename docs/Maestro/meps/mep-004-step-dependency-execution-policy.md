@@ -229,8 +229,8 @@ Topology of our sample study, unexecuted
 
 ```mermaid
 flowchart LR
-    A1["run-simulation-A - RES=1"]
-    A2["run-simulation-A - RES=2"]
+    A1(["run-simulation-A - RES=1"])
+    A2(["run-simulation-A - RES=2"])
     B1["run-simulation-B - RES=1"]
     B2["run-simulation-B - RES=2"]
     P["process-simulation - funnel step"]
@@ -257,12 +257,12 @@ if one of those parents fails.
 
 ```mermaid
 flowchart LR
-    A1["run-simulation-A - RES=1 - Success"]
-    A2["run-simulation-A - RES=2 - Success"]
+    A1(["run-simulation-A - RES=1 - Success"])
+    A2(["run-simulation-A - RES=2 - Success"])
     B1["run-simulation-B - RES=1 - Failed"]
     B2["run-simulation-B - RES=2 - Success"]
-    P["✕ process-simulation - Not run - all-succeeded unmet"]
-    R["✕ report - Not run - upstream dependency blocked"]
+    P["❌ process-simulation - Not run - all-succeeded unmet"]
+    R["❌ report - Not run - upstream dependency blocked"]
 
     A1 --> P
     A2 --> P
@@ -286,8 +286,8 @@ if one of those parents fails.
 
 ```mermaid
 flowchart LR
-    A1["run-simulation-A - RES=1 - Success"]
-    A2["run-simulation-A - RES=2 - Success"]
+    A1(["run-simulation-A - RES=1 - Success"])
+    A2(["run-simulation-A - RES=2 - Success"])
     B1["run-simulation-B - RES=1 - Failed"]
     B2["run-simulation-B - RES=2 - Success"]
     P["process-simulation - Success - all-completed satisfied"]
@@ -315,12 +315,12 @@ conditions.
 
 ```mermaid
 flowchart LR
-    A1["run-simulation-A - RES=1 - Success"]
-    A2["run-simulation-A - RES=2 - Success"]
+    A1(["run-simulation-A - RES=1 - Success"])
+    A2(["run-simulation-A - RES=2 - Success"])
     B1["run-simulation-B - RES=1 - Cancelled"]
     B2["run-simulation-B - RES=2 - Success"]
-    P["✕ process-simulation - Not run - cancellation barrier"]
-    R["✕ report - Not run - upstream dependency blocked"]
+    P["❌ process-simulation - Not run - cancellation barrier"]
+    R["❌ report - Not run - upstream dependency blocked"]
 
     A1 --> P
     A2 --> P
