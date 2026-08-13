@@ -53,6 +53,16 @@ study:
         steps: [run-simulation]
         condition: all-completed
 
+  - name: report
+    description: Simple step that generates a report of processed data
+    run:
+      cmd: |
+        echo "Generating report of processed simulation data in $(process-simulation)"
+
+      depends:
+        steps: [process-simulation]
+        condition: all-completed
+
 global.parameters:
   RES:
     values: [1, 2]
@@ -97,6 +107,16 @@ study:
       depends:
         steps: [run-simulation-A, run-simulation-B]
         condition: [all-completed, all-succeeded]
+
+  - name: report
+    description: Simple step that generates a report of processed data
+    run:
+      cmd: |
+        echo "Generating report of processed simulation data in $(process-simulation)"
+
+      depends:
+        steps: [process-simulation]
+        condition: [all-completed]
 
 global.parameters:
   RES_A:
@@ -146,10 +166,21 @@ study:
         echo "Processing simulations in $(run-simulation-B.workspace)"
 
       depends:
-        - step: run-simulation-A
+        - step: run-simulation-A_*
           condition: all-completed
-        - step: run-simulation-B
+        - step: run-simulation-B_*
           condition: all-succeeded
+          
+  - name: report
+    description: Simple step that generates a report of processed data
+    run:
+      cmd: |
+        echo "Generating report of processed simulation data in $(process-simulation)"
+
+      depends:
+        - step: process-simulation
+          condition: all-completed
+
 
 global.parameters:
   RES_A:
@@ -192,5 +223,117 @@ Hardware Failure and Timeout are not considered completed until no further resta
 
 ### Application to various topologies
 
-This proposal assumes a singular 'condition', and it is applied to all parent steps.  To illustrate,
-here's a funnel step with multiple parent steps, each of which has multiple.
+#### Workflow topology
+
+Topology of our sample study, unexecuted
+
+```mermaid
+flowchart LR
+    A1["run-simulation-A - RES=1"]
+    A2["run-simulation-A - RES=2"]
+    B1["run-simulation-B - RES=1"]
+    B2["run-simulation-B - RES=2"]
+    P["process-simulation - funnel step"]
+    R["report"]
+
+    A1 --> P
+    A2 --> P
+    B1 --> P
+    B2 --> P
+    P --> R
+
+    classDef simulation fill:#e8f4fd,stroke:#2471a3,color:#154360,stroke-width:2px
+    classDef process fill:#fcf3cf,stroke:#b7950b,color:#7d6608,stroke-width:2px
+
+    class A1,A2,B1,B2 simulation
+    class P process
+    class R simulation
+```
+
+#### `all-succeeded`, one parent fails
+
+This scenario applies `all-succeeded` conditions to both simulation steps, and shows execution states
+if one of those parents fails.
+
+```mermaid
+flowchart LR
+    A1["run-simulation-A - RES=1 - Success"]
+    A2["run-simulation-A - RES=2 - Success"]
+    B1["run-simulation-B - RES=1 - Failed"]
+    B2["run-simulation-B - RES=2 - Success"]
+    P["✕ process-simulation - Not run - all-succeeded unmet"]
+    R["✕ report - Not run - upstream dependency blocked"]
+
+    A1 --> P
+    A2 --> P
+    B1 --> P
+    B2 --> P
+    P --> R
+
+    classDef success fill:#d5f5e3,stroke:#1e8449,color:#145a32,stroke-width:2px
+    classDef failed fill:#fadbd8,stroke:#c0392b,color:#7b241c,stroke-width:3px
+    classDef blocked fill:#f2f3f4,stroke:#5d6d7e,color:#273746,stroke-width:2px,stroke-dasharray:6 4
+
+    class A1,A2,B2 success
+    class B1 failed
+    class P,R blocked
+```
+
+#### `all-completed`, one parent fails
+
+This scenario applies `all-completed` conditions to both simulation steps, and shows execution states
+if one of those parents fails.
+
+```mermaid
+flowchart LR
+    A1["run-simulation-A - RES=1 - Success"]
+    A2["run-simulation-A - RES=2 - Success"]
+    B1["run-simulation-B - RES=1 - Failed"]
+    B2["run-simulation-B - RES=2 - Success"]
+    P["process-simulation - Success - all-completed satisfied"]
+    R["report - Success"]
+
+    A1 --> P
+    A2 --> P
+    B1 --> P
+    B2 --> P
+    P --> R
+
+    classDef success fill:#d5f5e3,stroke:#1e8449,color:#145a32,stroke-width:2px
+    classDef failed fill:#fadbd8,stroke:#c0392b,color:#7b241c,stroke-width:3px
+
+    class A1,A2,B2,P,R success
+    class B1 failed
+```
+
+#### `all-completed`, one parent is cancelled
+
+This scenario applies `all-completed` conditions to both simulation steps, and shows execution states
+if one of those parents is cancelled.  Note that in this case, the outcome would be the same using 
+the `all-succeeded` conditions as cancellation is the one state that will halt execution in both proposed
+conditions.
+
+```mermaid
+flowchart LR
+    A1["run-simulation-A - RES=1 - Success"]
+    A2["run-simulation-A - RES=2 - Success"]
+    B1["run-simulation-B - RES=1 - Cancelled"]
+    B2["run-simulation-B - RES=2 - Success"]
+    P["✕ process-simulation - Not run - cancellation barrier"]
+    R["✕ report - Not run - upstream dependency blocked"]
+
+    A1 --> P
+    A2 --> P
+    B1 --> P
+    B2 --> P
+    P --> R
+
+    classDef success fill:#d5f5e3,stroke:#1e8449,color:#145a32,stroke-width:2px
+    classDef cancelled fill:#ede7f6,stroke:#6a1b9a,color:#4a148c,stroke-width:3px
+    classDef blocked fill:#f2f3f4,stroke:#5d6d7e,color:#273746,stroke-width:2px,stroke-dasharray:6 4
+
+    class A1,A2,B2 success
+    class B1 cancelled
+    class P,R blocked
+```
+
